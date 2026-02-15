@@ -1,0 +1,33 @@
+<svg width="600" height="500" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Elements -->
+  <circle cx="300" cy="250" r="200" fill="#E0F2FE" />
+  <circle cx="500" cy="100" r="50" fill="#CCFBF1" />
+  <circle cx="100" cy="400" r="30" fill="#EDE9FE" />
+  
+  <!-- Family Group (Abstract) -->
+  <!-- Father -->
+  <rect x="180" y="200" width="60" height="180" rx="30" fill="#0369A1" />
+  <circle cx="210" cy="170" r="25" fill="#FFDBAC" />
+  
+  <!-- Mother -->
+  <rect x="260" y="220" width="60" height="160" rx="30" fill="#0D9488" />
+  <circle cx="290" cy="190" r="25" fill="#FFDBAC" />
+  
+  <!-- Child -->
+  <rect x="340" y="280" width="40" height="100" rx="20" fill="#F59E0B" />
+  <circle cx="360" cy="260" r="20" fill="#FFDBAC" />
+  
+  <!-- Grandparent -->
+  <rect x="400" y="210" width="60" height="170" rx="30" fill="#64748B" />
+  <circle cx="430" cy="180" r="25" fill="#E2E8F0" />
+  
+  <!-- Symbols -->
+  <!-- Shield held by Father -->
+  <path d="M150 250 L150 300 C150 330 180 350 210 350 C240 350 270 330 270 300 L270 250 Z" fill="#0284C7" stroke="white" stroke-width="4" transform="translate(-40, 20) scale(0.6)"/>
+  
+  <!-- Heart held by Mother -->
+  <path d="M300 250 C300 250 320 230 340 250 C360 270 300 310 300 310 C300 310 240 270 260 250 C280 230 300 250 300 250 Z" fill="#EF4444" stroke="white" stroke-width="4" transform="translate(-10, 20) scale(0.8)"/>
+
+  <!-- Text -->
+  <text x="300" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#0F172A" font-weight="bold">Complete Protection</text>
+</svg>
