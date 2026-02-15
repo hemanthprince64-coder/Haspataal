@@ -55,8 +55,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     };
                 }
 
-                // 3. Check Doctor (Future)
-                // const doctor = await prisma.doctor.findUnique(...)
+                // 3. Check Doctor (Active)
+                const doctor = await prisma.doctor.findFirst({
+                    where: { mobile: mobile }
+                });
+
+                if (doctor && doctor.password === password) {
+                    return {
+                        id: doctor.id,
+                        name: doctor.name,
+                        mobile: doctor.mobile,
+                        role: doctor.role, // DOCTOR
+                        hospitalId: doctor.hospitalId
+                    };
+                }
 
                 return null;
             }

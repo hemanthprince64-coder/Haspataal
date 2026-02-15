@@ -1,6 +1,8 @@
 import "./globals.css";
 import Image from "next/image";
 import Link from "next/link";
+import { CSPostHogProvider } from "./providers";
+import PostHogPageView from "./PostHogPageView";
 
 export const metadata = {
     title: "Haspataal — Hospital Partner Portal",
@@ -21,51 +23,54 @@ export default function RootLayout({ children }) {
                 />
             </head>
             <body>
-                <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-                    {/* Header */}
-                    <header style={{
-                        height: "60px",
-                        borderBottom: "1px solid var(--border)",
-                        background: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0 1.5rem",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 50,
-                    }}>
-                        <Link href="/" style={{
+                <CSPostHogProvider>
+                    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+                        {/* Header */}
+                        <header style={{
+                            height: "60px",
+                            borderBottom: "1px solid var(--border)",
+                            background: "white",
                             display: "flex",
                             alignItems: "center",
-                            gap: "0.5rem",
-                            textDecoration: "none"
+                            justifyContent: "space-between",
+                            padding: "0 1.5rem",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 50,
                         }}>
-                            <Image src="/logo.svg" alt="Haspataal" width={36} height={36} style={{ objectFit: "contain" }} />
-                            <span style={{ fontWeight: "700", color: "var(--primary)", fontSize: "1.1rem" }}>Haspataal</span>
-                            <span style={{
-                                fontSize: "0.65rem",
-                                fontWeight: "600",
-                                color: "var(--text-muted)",
-                                background: "#f1f5f9",
-                                padding: "0.15rem 0.5rem",
-                                borderRadius: "99px",
+                            <Link href="/" style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                                textDecoration: "none"
                             }}>
-                                PARTNER
-                            </span>
-                        </Link>
+                                <Image src="/logo.svg" alt="Haspataal" width={36} height={36} style={{ objectFit: "contain" }} />
+                                <span style={{ fontWeight: "700", color: "var(--primary)", fontSize: "1.1rem" }}>Haspataal</span>
+                                <span style={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: "600",
+                                    color: "var(--text-muted)",
+                                    background: "#f1f5f9",
+                                    padding: "0.15rem 0.5rem",
+                                    borderRadius: "99px",
+                                }}>
+                                    PARTNER
+                                </span>
+                            </Link>
 
-                        <nav style={{ display: "flex", gap: "1rem", alignItems: "center", fontSize: "0.85rem" }}>
-                            <a href="https://haspataal.com" style={{ color: "var(--text-muted)", textDecoration: "none" }}>← Patient Portal</a>
-                            <Link href="/" style={{ color: "var(--primary)", fontWeight: "600", textDecoration: "none" }}>Hospital Home</Link>
-                        </nav>
-                    </header>
+                            <nav style={{ display: "flex", gap: "1rem", alignItems: "center", fontSize: "0.85rem" }}>
+                                <a href="https://haspataal.com" style={{ color: "var(--text-muted)", textDecoration: "none" }}>← Patient Portal</a>
+                                <Link href="/" style={{ color: "var(--primary)", fontWeight: "600", textDecoration: "none" }}>Hospital Home</Link>
+                            </nav>
+                        </header>
 
-                    {/* Content */}
-                    <div style={{ flex: 1 }}>
-                        {children}
+                        {/* Content */}
+                        <PostHogPageView />
+                        <div style={{ flex: 1 }}>
+                            {children}
+                        </div>
                     </div>
-                </div>
+                </CSPostHogProvider>
             </body>
         </html>
     );

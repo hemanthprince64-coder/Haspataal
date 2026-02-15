@@ -25,58 +25,36 @@ export async function POST(req) {
             return NextResponse.json({ message: 'Transaction not legit!' }, { status: 400 });
         }
 
-        // 2. Find or Create Patient
-        let patient = await prisma.patient.findUnique({
-            where: { phone: patientMobile }
-        });
-
-        if (!patient) {
-            patient = await prisma.patient.create({
-                data: {
-                    name: patientName,
-                    phone: patientMobile,
-                    password: patientMobile, // Default password = mobile for guest checkout
-                    city: 'Unknown'
-                }
-            });
-        }
-
-        // 3. Create Appointment & Payment in Transaction
+        // 3. Confirm Appointment & Update Payment
         const result = await prisma.$transaction(async (tx) => {
-            // Create Appointment
-            const appointment = await tx.appointment.create({
+            // Update Appointment Status
+            const appointment = await tx.appointment.update({
+                where: { id: appointmentId }, // Passed from client
                 data: {
-                    patientId: patient.id,
-                    doctorId: doctorId,
-                    date: new Date(date),
-                    slot: "09:00 AM", // Default slot for Month 1 MVP
                     status: "CONFIRMED",
-                    notes: "Online Booking"
+                    // Slot and Date are already set during creation
                 }
             });
 
-            // Create Payment
-            const payment = await tx.payment.create({
+            // Update Payment Status
+            // Find payment by orderId (created in create-order)
+            const payment = await tx.payment.updateMany({
+                where: { orderId: orderCreationId },
                 data: {
-                    appointmentId: appointment.id,
-                    orderId: orderCreationId,
                     paymentId: razorpayPaymentId,
-                    amount: amount,
-                    status: "SUCCESS",
-                    currency: "INR"
+                    status: "SUCCESS"
                 }
             });
 
-            return { appointment, payment };
+            return { appointment };
         });
 
         // 4. Send Notification
-        await sendSMS(patientMobile, `Booking Confirmed! Dr. appointment on ${date}. Order: ${orderCreationId}`);
+        await sendSMS(patientMobile, `Booking Confirmed! Your appointment is on ${new Date(date).toLocaleDateString()} at ${result.appointment.slot}.`);
 
         return NextResponse.json({
             message: 'success',
-            appointmentId: result.appointment.id,
-            paymentId: result.payment.id
+            appointmentId: result.appointment.id
         });
 
     } catch (error) {

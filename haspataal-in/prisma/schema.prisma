@@ -42,7 +42,11 @@ enum Role {
   SUPER_ADMIN
   HOSPITAL_ADMIN
   DOCTOR
-  STAFF
+  RECEPTIONIST
+  STAFF // Keep for backward compatibility if needed, or remove if we migrate data. 
+  // User asked for: SUPER_ADMIN , HOSPITAL_ADMIN , DOCTOR , RECEPTIONIST , PATIENT
+  // I will keep STAFF for now to avoid breaking existing 'Staff' model default, 
+  // but we should migrate 'Staff' model to use RECEPTIONIST default.
   PATIENT
 }
 
@@ -87,6 +91,7 @@ model Doctor {
   hospital     Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   slots        Slot[]
   appointments Appointment[]
+  records      PatientRecord[] // Phase 4 EHR
 
   @@map("doctors")
 }
@@ -97,7 +102,7 @@ model Staff {
   name       String
   mobile     String   @unique
   password   String
-  role       Role     @default(STAFF)
+  role       Role     @default(RECEPTIONIST)
   createdAt  DateTime @default(now()) @map("created_at")
   
   hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
@@ -113,10 +118,12 @@ model Patient {
   password  String
   city      String?
   role      Role     @default(PATIENT) // Added
+  abhaAddress String? @unique @map("abha_address") // Phase 4: ABDM
   createdAt DateTime @default(now()) @map("created_at")
 
-  appointments   Appointment[]
+  appointments Appointment[]
   medicalRecords MedicalRecord[]
+  records        PatientRecord[] // Phase 4 EHR
 
   @@map("patients")
 }
@@ -202,4 +209,47 @@ model MedicalRecord {
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("medical_records")
+}
+
+// ==========================================
+// AUDIT LOGS (Phase 3)
+// ==========================================
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+// ==========================================
+// EHR (Phase 4)
+// ==========================================
+
+model PatientRecord {
+  id           String   @id @default(uuid())
+  patientId    String   @map("patient_id")
+  doctorId     String   @map("doctor_id")
+  visitId      String?  @map("visit_id") // Optional link to a specific visit
+  
+  diagnosis    String
+  prescription String?  @db.Text // Simple text for now, can be JSON later
+  notes        String?
+  
+  // Vitals stored as JSON: { bp: "120/80", weight: 70, temp: 98.6, pulse: 72 }
+  vitals       Json?    
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  // visit   Visit?  @relation(fields: [visitId], references: [id]) // Optional relation
+
+  @@map("patient_records")
 }

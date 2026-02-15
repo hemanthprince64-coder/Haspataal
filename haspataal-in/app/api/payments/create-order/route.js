@@ -14,34 +14,59 @@ export async function POST(req) {
     }
 
     try {
-        const { amount, appointmentId } = await req.json();
+        const { amount, doctorId, patientName, patientMobile, date, slot } = await req.json();
 
-        if (!amount || amount <= 0) {
-            return NextResponse.json({ message: 'Invalid amount' }, { status: 400 });
+        // 1. Upsert Patient (if guest booking) or use Session Patient?
+        // For simpler flow, we trust the form input for now or upsert based on mobile.
+        let patientId = session?.user?.id;
+
+        if (!patientId && patientMobile) {
+            // Guest Flow: Create/Find patient by mobile
+            const patient = await prisma.patient.upsert({
+                where: { phone: patientMobile },
+                update: { name: patientName },
+                create: {
+                    name: patientName,
+                    phone: patientMobile,
+                    password: 'password123' // Temp password
+                }
+            });
+            patientId = patient.id;
         }
 
+        // 2. Create PENDING Appointment
+        const appointment = await prisma.appointment.create({
+            data: {
+                patientId,
+                doctorId,
+                date: new Date(date),
+                slot,
+                status: 'PENDING',
+                notes: 'Online Booking - Payment Pending'
+            }
+        });
+
+        // 3. Create Razorpay Order
         const options = {
             amount: amount * 100, // Amount in paise
             currency: 'INR',
-            receipt: `receipt_${appointmentId ? appointmentId.slice(0, 10) : Date.now()}`,
+            receipt: `receipt_${appointment.id}`,
         };
 
         const order = await razorpay.orders.create(options);
 
-        // Store Pending Payment in DB
-        // NOTE: This requires 'orderId' column in Payment table (Schema update Day 15)
+        // 4. Create Payment Record linked to Appointment
         await prisma.payment.create({
             data: {
                 orderId: order.id,
                 amount: amount * 100,
                 currency: 'INR',
                 status: 'PENDING',
-                // We don't have appointmentId yet, or we could create a PENDING appointment here?
-                // For simplicity, we just track payment. Linking happens in verify.
+                appointmentId: appointment.id
             }
         });
 
-        return NextResponse.json(order);
+        return NextResponse.json({ ...order, appointmentId: appointment.id });
 
     } catch (error) {
         console.error('Razorpay Order Error:', error);

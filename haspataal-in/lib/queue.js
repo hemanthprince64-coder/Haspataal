@@ -11,3 +11,14 @@ export const notificationQueue = new Queue('notifications', { connection });
 export const addNotificationJob = async (type, data) => {
     return await notificationQueue.add(type, data);
 };
+
+export const reportQueue = new Queue('reports', { connection });
+export const cleanupQueue = new Queue('cleanup', { connection });
+
+export const addReportJob = async (type, data) => {
+    return await reportQueue.add(type, data);
+};
+
+export const addCleanupJob = async (type, data) => {
+    return await cleanupQueue.add(type, data);
+};

@@ -6,10 +6,30 @@ import Script from 'next/script';
 
 export default function BookingForm({ doctor }) {
     const [loading, setLoading] = useState(false);
+    const [selectedSlot, setSelectedSlot] = useState(null);
     const router = useRouter();
+
+    const generateSlots = () => {
+        const slots = [];
+        let start = 9; // 9 AM
+        for (let i = 0; i < 16; i++) { // 8 hours * 2 slots
+            const hour = Math.floor(start + i / 2);
+            const minute = (i % 2) === 0 ? '00' : '30';
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour > 12 ? hour - 12 : hour;
+            slots.push(`${displayHour}:${minute} ${ampm}`);
+        }
+        return slots;
+    };
+
+    const slots = generateSlots();
 
     const handleBooking = async (e) => {
         e.preventDefault();
+        if (!selectedSlot) {
+            alert('Please select a time slot');
+            return;
+        }
         setLoading(true);
 
         const formData = new FormData(e.target);
@@ -17,47 +37,50 @@ export default function BookingForm({ doctor }) {
         const patientMobile = formData.get('patientMobile');
         const date = formData.get('date');
 
-        // 1. Create Order
         try {
+            // 1. Create Pending Appointment (Server Action would be better, using API for now to keep flow)
+            // Ideally we call an API that creates APPT -> Returns ID -> Then Create Order
+
+            // For MVP speed: We pass details to create-order and it creates the appointment? 
+            // OR we create a new API route /api/appointments/create
+
+            // Let's use the existing flow but enhance the payload to create-order
             const orderRes = await fetch('/api/payments/create-order', {
                 method: 'POST',
-                body: JSON.stringify({ amount: doctor.fee, appointmentId: 'temp_id_placeholder' }), // API expects JSON
+                body: JSON.stringify({
+                    amount: doctor.fee,
+                    doctorId: doctor.id,
+                    patientName,
+                    patientMobile,
+                    date,
+                    slot: selectedSlot
+                }),
             });
 
-            if (!orderRes.ok) throw new Error('Failed to create order');
-            const order = await orderRes.json();
+            if (!orderRes.ok) throw new Error('Failed to initiate booking');
+            const data = await orderRes.json(); // returns { orderId, appointmentId, ... }
 
-            // 2. Open Razorpay
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'test_key_id',
-                amount: order.amount,
-                currency: order.currency,
+                amount: data.amount,
+                currency: data.currency,
                 name: 'Haspataal',
                 description: `Consultation with ${doctor.name}`,
-                order_id: order.id,
+                order_id: data.id, // Razorpay Order ID
                 handler: async function (response) {
-                    // 3. Verify Payment
                     const verifyRes = await fetch('/api/payments/verify', {
                         method: 'POST',
                         body: JSON.stringify({
-                            orderCreationId: order.id,
+                            orderCreationId: data.id,
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpaySignature: response.razorpay_signature,
-                            // Pass appointment details for creation
-                            patientName,
-                            patientMobile,
-                            date,
-                            doctorId: doctor.id,
-                            amount: doctor.fee
+                            appointmentId: data.appointmentId // Critical linkage
                         }),
                     });
 
                     if (verifyRes.ok) {
-                        alert('Payment Successful! Booking confirmed.');
-                        // Logic to actually create appointment in DB would go here 
-                        // or trigger a server action with payment details.
-                        // For now, redirect home.
-                        router.push('/');
+                        alert('Booking Confirmed! Redirecting...');
+                        router.push('/profile'); // Redirect to profile to see appt
                     } else {
                         alert('Payment Verification Failed');
                     }
@@ -66,9 +89,7 @@ export default function BookingForm({ doctor }) {
                     name: patientName,
                     contact: patientMobile,
                 },
-                theme: {
-                    color: '#0ea5e9',
-                },
+                theme: { color: '#0ea5e9' },
             };
 
             const rzp = new window.Razorpay(options);
@@ -76,7 +97,7 @@ export default function BookingForm({ doctor }) {
 
         } catch (error) {
             console.error(error);
-            alert('Something went wrong. Please try again.');
+            alert('Booking failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -111,6 +132,30 @@ export default function BookingForm({ doctor }) {
                 <div className="form-group">
                     <label className="form-label">Preferred Date</label>
                     <input name="date" type="date" required className="form-input" />
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label">Select Time Slot</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {slots.map(slot => (
+                            <button
+                                key={slot}
+                                type="button"
+                                onClick={() => setSelectedSlot(slot)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '5px',
+                                    border: '1px solid #cbd5e1',
+                                    background: selectedSlot === slot ? '#0284c7' : 'white',
+                                    color: selectedSlot === slot ? 'white' : '#334155',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem'
+                                }}
+                            >
+                                {slot}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <button

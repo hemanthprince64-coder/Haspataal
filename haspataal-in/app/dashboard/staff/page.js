@@ -38,7 +38,7 @@ export default async function StaffPage() {
                         <div className="form-group">
                             <label className="form-label">Role</label>
                             <select name="role" className="form-input">
-                                <option value="STAFF">Staff (Receptionist)</option>
+                                <option value="RECEPTIONIST">Receptionist</option>
                                 <option value="NURSE">Nurse</option>
                             </select>
                         </div>

@@ -7,7 +7,7 @@ export async function createStaff(prevState, formData) {
     const name = formData.get('name');
     const mobile = formData.get('mobile');
     const hospitalId = formData.get('hospitalId');
-    const role = formData.get('role') || 'STAFF'; // Can be DOCTOR if we reuse this form? No, keeps logic separate.
+    const role = formData.get('role') || 'RECEPTIONIST'; // Default to Receptionist
 
     if (!name || !mobile || !hospitalId) {
         return { message: 'Missing fields' };

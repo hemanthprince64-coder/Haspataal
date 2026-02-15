@@ -7,6 +7,7 @@ import prisma from '@/lib/prisma';
 import { signIn, signOut, auth } from "@/auth";
 import { AuthError } from "next-auth";
 import { sendSMS } from '@/lib/notifications';
+import { logAction } from "@/lib/audit";
 
 // ==================== HOSPITAL ACTIONS ====================
 
@@ -37,11 +38,19 @@ export async function loginAction(prevState, formData) {
     }
 
     // Check session to determine redirect
+    // Check session to determine redirect
     const session = await auth();
-    if (session?.user?.role === 'ADMIN') {
+
+    if (session?.user) {
+        await logAction(session.user.id, 'LOGIN', 'User', session.user.id, { role: session.user.role });
+    }
+
+    if (session?.user?.role === 'ADMIN' || session?.user?.role === 'HOSPITAL_ADMIN') {
         redirect('/dashboard');
+    } else if (session?.user?.role === 'DOCTOR') {
+        redirect('/dashboard/doctor'); // New Doctor Dashboard
     } else {
-        redirect('/');
+        redirect('/'); // Patients
     }
 }
 
@@ -60,7 +69,7 @@ export async function registerHospital(prevState, formData) {
     const lng = parseFloat(formData.get('lng') || '0');
 
     try {
-        await prisma.hospital.create({
+        const newHospital = await prisma.hospital.create({
             data: {
                 name,
                 city,
@@ -71,6 +80,10 @@ export async function registerHospital(prevState, formData) {
                 status: 'PENDING'
             }
         });
+
+        // Log Registration (System user or Pending user?)
+        // Since no user is logged in, we use 'SYSTEM' or the new ID
+        await logAction(newHospital.id, 'REGISTER_HOSPITAL', 'Hospital', newHospital.id, { name, city });
 
         return { success: true, message: 'Registration submitted! Pending approval.' };
     } catch (error) {
@@ -185,7 +198,7 @@ export async function addDoctorAction(prevState, formData) {
     }
 
     try {
-        await prisma.doctor.create({
+        const newDoctor = await prisma.doctor.create({
             data: {
                 name,
                 mobile,
@@ -197,6 +210,8 @@ export async function addDoctorAction(prevState, formData) {
                 qualification: `${experience} years exp`
             }
         });
+
+        await logAction(user.id, 'ADD_DOCTOR', 'Doctor', newDoctor.id, { name, speciality });
         return { success: true, message: `Dr. ${name} added successfully!` };
     } catch (error) {
         console.error('Add Doctor Error:', error);
@@ -241,4 +256,38 @@ export async function rejectHospitalAction(formData) {
         data: { status: 'REJECTED' } // Or delete?
     });
     redirect('/admin');
+}
+
+// ==================== DOCTOR ACTIONS ====================
+
+export async function updateAppointmentStatus(formData) {
+    const session = await auth();
+    if (!session || session.user.role !== 'DOCTOR') return { message: 'Unauthorized' };
+
+    const appointmentId = formData.get('appointmentId');
+    const status = formData.get('status');
+
+    try {
+        // Verify ownership
+        const appointment = await prisma.appointment.findUnique({
+            where: { id: appointmentId }
+        });
+
+        if (!appointment || appointment.doctorId !== session.user.id) {
+            return { message: 'Unauthorized access to this appointment.' };
+        }
+
+        await prisma.appointment.update({
+            where: { id: appointmentId },
+            data: { status: status }
+        });
+
+        await logAction(session.user.id, 'UPDATE_APPOINTMENT_STATUS', 'Appointment', appointmentId, { status });
+
+        // Revalidate? For now, standard server action redirect refreshes the page
+        return { success: true };
+    } catch (e) {
+        console.error("Update Status Error", e);
+        return { message: 'Failed to update status' };
+    }
 }
