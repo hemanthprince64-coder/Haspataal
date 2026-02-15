@@ -1,4 +1,4 @@
-import { services } from "@/lib/services";
+import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import BillingForm from "./BillingForm";
@@ -10,7 +10,10 @@ export default async function BillingPage() {
     if (!userCookie) redirect("/login");
     const user = JSON.parse(userCookie.value);
 
-    const doctors = services.hospital.getDoctors(user.hospitalId);
+    const doctors = await prisma.doctor.findMany({
+        where: { hospitalId: user.hospitalId },
+        orderBy: { name: 'asc' }
+    });
 
     return (
         <div className="page-enter">

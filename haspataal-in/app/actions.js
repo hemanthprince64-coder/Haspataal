@@ -3,11 +3,14 @@
 import { services } from '@/lib/services';
 import { db } from '@/lib/data';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import prisma from '@/lib/prisma';
+import { signIn, signOut, auth } from "@/auth";
+import { AuthError } from "next-auth";
+import { sendSMS } from '@/lib/notifications';
 
 // ==================== HOSPITAL ACTIONS ====================
 
-export async function loginHospital(prevState, formData) {
+export async function loginAction(prevState, formData) {
     const mobile = formData.get('mobile');
     const password = formData.get('password');
 
@@ -15,14 +18,31 @@ export async function loginHospital(prevState, formData) {
         return { message: 'Please enter both mobile and password.' };
     }
 
-    const user = services.hospital.login(mobile, password);
-
-    if (!user) {
-        return { message: 'Invalid credentials.' };
+    try {
+        await signIn('credentials', {
+            mobile,
+            password,
+            redirect: false,
+        });
+    } catch (error) {
+        if (error instanceof AuthError) {
+            switch (error.type) {
+                case 'CredentialsSignin':
+                    return { message: 'Invalid credentials.' };
+                default:
+                    return { message: 'Something went wrong.' };
+            }
+        }
+        throw error;
     }
 
-    (await cookies()).set('session_user', JSON.stringify(user));
-    redirect('/dashboard');
+    // Check session to determine redirect
+    const session = await auth();
+    if (session?.user?.role === 'ADMIN') {
+        redirect('/dashboard');
+    } else {
+        redirect('/');
+    }
 }
 
 export async function registerHospital(prevState, formData) {
@@ -36,127 +56,189 @@ export async function registerHospital(prevState, formData) {
         return { message: 'All fields are required.' };
     }
 
-    const hId = `h_${Date.now()}`;
-    const newHospital = { id: hId, name, city, area: city, status: 'PENDING', rating: 0, image: '🏥' };
+    const lat = parseFloat(formData.get('lat') || '0');
+    const lng = parseFloat(formData.get('lng') || '0');
 
-    const uId = `u_${Date.now()}`;
-    const newUser = {
-        id: uId,
-        mobile,
-        name: adminName,
-        role: 'ADMIN',
-        hospitalId: hId,
-        password
-    };
+    try {
+        await prisma.hospital.create({
+            data: {
+                name,
+                city,
+                phone: mobile,
+                password,
+                lat: lat !== 0 ? lat : null,
+                lng: lng !== 0 ? lng : null,
+                status: 'PENDING'
+            }
+        });
 
-    db.hospitals.push(newHospital);
-    db.users.push(newUser);
-
-    return { success: true, message: 'Registration submitted! Your hospital is pending approval by the platform admin.' };
+        return { success: true, message: 'Registration submitted! Pending approval.' };
+    } catch (error) {
+        if (error.code === 'P2002') {
+            return { message: 'A hospital with this mobile number already exists.' };
+        }
+        return { message: 'Registration failed.' };
+    }
 }
 
 export async function logoutHospital() {
-    (await cookies()).delete('session_user');
-    redirect('/login');
+    await signOut({ redirectTo: '/login' });
 }
 
 export async function createVisitAction(prevState, formData) {
-    const userCookie = (await cookies()).get('session_user');
-    if (!userCookie) return { message: 'Unauthorized' };
-    const user = JSON.parse(userCookie.value);
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') return { message: 'Unauthorized' };
+    const user = session.user;
+
+    const patientName = formData.get('patientName');
+    const patientMobile = formData.get('patientMobile');
+    const doctorId = formData.get('doctorId');
+    const age = formData.get('age');
+    const gender = formData.get('gender');
+
+    if (!patientName || !patientMobile || !doctorId) {
+        return { success: false, message: 'All required fields must be filled.' };
+    }
 
     try {
-        const visitData = {
-            doctorId: formData.get('doctorId'),
-            patientName: formData.get('patientName'),
-            patientMobile: formData.get('patientMobile'),
-            age: formData.get('age'),
-            gender: formData.get('gender'),
-            date: new Date().toISOString()
-        };
+        // 1. Upsert Patient
+        const patient = await prisma.patient.upsert({
+            where: { phone: patientMobile },
+            update: { name: patientName },
+            create: {
+                name: patientName,
+                phone: patientMobile,
+                password: 'password123'
+            }
+        });
 
-        if (!visitData.doctorId || !visitData.patientName || !visitData.patientMobile) {
-            return { success: false, message: 'Please fill in all required fields.' };
-        }
+        // 2. Create Appointment (COMPLETED)
+        const appointment = await prisma.appointment.create({
+            data: {
+                patientId: patient.id,
+                doctorId: doctorId,
+                date: new Date(),
+                slot: 'OPD-WALKIN',
+                status: 'COMPLETED',
+                notes: `Age: ${age}, Gender: ${gender}`
+            }
+        });
 
-        services.hospital.createVisit(user.hospitalId, visitData);
-        return { success: true, message: 'Visit created successfully!' };
+        // 3. Create Visit
+        const visit = await prisma.visit.create({
+            data: {
+                hospitalId: user.hospitalId,
+                appointmentId: appointment.id,
+                patientName: patientName,
+                patientPhone: patientMobile,
+                amount: 500
+            }
+        });
+
+        // Send Notification
+        await sendSMS(patientMobile, `Welcome to ${user.name}. Your OPD Visit ID is ${visit.id.slice(0, 8)}. Please wait for your turn.`);
+
+        return { success: true, message: `Visit #${visit.id.slice(0, 8)} created successfully!` };
+
     } catch (e) {
-        return { success: false, message: e.message };
+        console.error('Create Visit Error:', e);
+        return { success: false, message: 'Failed to create visit.' };
     }
 }
 
 export async function cancelVisitHospital(prevState, formData) {
-    const userCookie = (await cookies()).get('session_user');
-    if (!userCookie) return { message: 'Unauthorized' };
-    const user = JSON.parse(userCookie.value);
+    const session = await auth();
+    if (!session?.user) return { message: 'Unauthorized' };
+    const user = session.user;
 
     const visitId = formData.get('visitId');
     const result = services.hospital.cancelVisit(user.hospitalId, visitId);
-
-    if (!result) {
-        return { success: false, message: 'Visit not found or already cancelled.' };
-    }
-
+    if (!result) return { success: false, message: 'Visit not found or already cancelled.' };
     return { success: true, message: 'Visit cancelled successfully.' };
 }
 
 export async function completeVisitHospital(prevState, formData) {
-    const userCookie = (await cookies()).get('session_user');
-    if (!userCookie) return { message: 'Unauthorized' };
-    const user = JSON.parse(userCookie.value);
+    const session = await auth();
+    if (!session?.user) return { message: 'Unauthorized' };
+    const user = session.user;
 
     const visitId = formData.get('visitId');
     const result = services.hospital.completeVisit(user.hospitalId, visitId);
-
-    if (!result) {
-        return { success: false, message: 'Visit not found.' };
-    }
-
+    if (!result) return { success: false, message: 'Visit not found.' };
     return { success: true, message: 'Visit marked as completed.' };
 }
 
 export async function addDoctorAction(prevState, formData) {
-    const userCookie = (await cookies()).get('session_user');
-    if (!userCookie) return { message: 'Unauthorized' };
-    const user = JSON.parse(userCookie.value);
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') return { message: 'Unauthorized' };
+    const user = session.user;
 
-    if (user.role !== 'ADMIN') {
-        return { success: false, message: 'Only admins can add doctors.' };
-    }
+    const name = formData.get('name');
+    const mobile = formData.get('mobile');
+    const speciality = formData.get('speciality');
+    const experience = parseInt(formData.get('experience') || '0');
+    const fee = parseInt(formData.get('fee') || '500');
+    const password = formData.get('password') || '123';
 
-    const doctorData = {
-        name: formData.get('name'),
-        mobile: formData.get('mobile'),
-        speciality: formData.get('speciality'),
-        experience: formData.get('experience'),
-        fee: formData.get('fee'),
-        password: formData.get('password') || '123',
-    };
-
-    if (!doctorData.name || !doctorData.mobile || !doctorData.speciality) {
+    if (!name || !mobile || !speciality) {
         return { success: false, message: 'Name, mobile, and speciality are required.' };
     }
 
-    services.hospital.addDoctor(user.hospitalId, doctorData);
-    return { success: true, message: `Dr. ${doctorData.name} added successfully!` };
+    try {
+        await prisma.doctor.create({
+            data: {
+                name,
+                mobile,
+                specialty: speciality,
+                experience,
+                fee,
+                password,
+                hospitalId: user.hospitalId,
+                qualification: `${experience} years exp`
+            }
+        });
+        return { success: true, message: `Dr. ${name} added successfully!` };
+    } catch (error) {
+        console.error('Add Doctor Error:', error);
+        if (error.code === 'P2002') return { message: 'A doctor with this mobile number already exists.' };
+        return { success: false, message: 'Failed to add doctor.' };
+    }
 }
 
 export async function removeDoctorAction(prevState, formData) {
-    const userCookie = (await cookies()).get('session_user');
-    if (!userCookie) return { message: 'Unauthorized' };
-    const user = JSON.parse(userCookie.value);
-
-    if (user.role !== 'ADMIN') {
-        return { success: false, message: 'Only admins can remove doctors.' };
-    }
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') return { message: 'Unauthorized' };
+    const user = session.user;
 
     const doctorId = formData.get('doctorId');
-    const result = services.hospital.removeDoctor(user.hospitalId, doctorId);
 
-    if (!result) {
-        return { success: false, message: 'Doctor not found.' };
+    try {
+        await prisma.doctor.delete({
+            where: {
+                id: doctorId,
+                hospitalId: user.hospitalId
+            }
+        });
+        return { success: true, message: 'Doctor removed successfully.' };
+    } catch (error) {
+        console.error('Remove Doctor Error:', error);
+        return { success: false, message: 'Failed to remove doctor.' };
     }
+}
+export async function approveHospitalAction(formData) {
+    const id = formData.get('id');
+    await prisma.hospital.update({
+        where: { id },
+        data: { status: 'APPROVED' }
+    });
+    redirect('/admin'); // Refresh page
+}
 
-    return { success: true, message: 'Doctor removed successfully.' };
+export async function rejectHospitalAction(formData) {
+    const id = formData.get('id');
+    await prisma.hospital.update({
+        where: { id },
+        data: { status: 'REJECTED' } // Or delete?
+    });
+    redirect('/admin');
 }

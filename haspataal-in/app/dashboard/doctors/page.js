@@ -1,4 +1,4 @@
-import { services } from "@/lib/services";
+import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import DoctorManagement from "./DoctorManagement";
@@ -19,7 +19,10 @@ export default async function DoctorsPage() {
         );
     }
 
-    const doctors = services.hospital.getDoctors(user.hospitalId);
+    const doctors = await prisma.doctor.findMany({
+        where: { hospitalId: user.hospitalId },
+        orderBy: { createdAt: 'desc' }
+    });
 
     return (
         <div className="page-enter">

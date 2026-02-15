@@ -1,15 +1,13 @@
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { logoutHospital } from "@/app/actions";
 import Image from "next/image";
 
 export default async function DashboardLayout({ children }) {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_user");
-
-    if (!userCookie) redirect("/login");
-    const user = JSON.parse(userCookie.value);
+    const session = await auth();
+    if (!session?.user) redirect("/login");
+    const user = session.user;
 
     const navItems = [
         { href: "/dashboard", label: "Overview", icon: "📊" },

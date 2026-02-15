@@ -1,7 +1,8 @@
-import { services } from "@/lib/services";
+import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redis } from "@/lib/redis";
 
 export default async function HospitalDashboard() {
     const cookieStore = await cookies();
@@ -9,10 +10,74 @@ export default async function HospitalDashboard() {
 
     if (!userCookie) redirect("/login");
     const user = JSON.parse(userCookie.value);
+    const hospitalId = user.hospitalId;
 
-    const stats = services.hospital.getStats(user.hospitalId);
-    const hospital = services.platform.getHospitalById(user.hospitalId);
-    const recentVisits = services.hospital.getVisits(user.hospitalId).slice(0, 5);
+    // Fetch constraints
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // 1. Real-time Data (Recent Visits & Hospital Info)
+    // We want these fresh.
+    const [hospital, recentVisitsData] = await Promise.all([
+        prisma.hospital.findUnique({ where: { id: hospitalId } }),
+        prisma.visit.findMany({
+            where: { hospitalId },
+            orderBy: { date: 'desc' },
+            take: 5,
+            include: { doctor: true }
+        })
+    ]);
+
+    // 2. Statistics (Cached)
+    let stats = null;
+    const cacheKey = `dashboard:stats:${hospitalId}`;
+
+    try {
+        stats = await redis.get(cacheKey);
+    } catch (e) {
+        console.error("Redis Get Error:", e);
+    }
+
+    if (!stats) {
+        console.log("Cache Miss: Fetching Stats from DB");
+        const [
+            totalVisits,
+            todayVisits,
+            scheduledVisits,
+            completedVisits,
+            totalDoctors,
+            uniquePatients
+        ] = await Promise.all([
+            prisma.visit.count({ where: { hospitalId } }),
+            prisma.visit.count({ where: { hospitalId, date: { gte: today, lt: tomorrow } } }),
+            prisma.visit.count({ where: { hospitalId, status: 'PENDING' } }),
+            prisma.visit.count({ where: { hospitalId, status: 'COMPLETED' } }),
+            prisma.doctor.count({ where: { hospitalId } }),
+            prisma.visit.groupBy({
+                by: ['patientPhone'],
+                where: { hospitalId },
+            }),
+        ]);
+
+        stats = {
+            totalVisits,
+            todayVisits,
+            scheduledVisits,
+            completedVisits,
+            totalDoctors,
+            totalPatients: uniquePatients.length
+        };
+
+        try {
+            await redis.set(cacheKey, stats, { ex: 60 }); // Cache for 60 seconds
+        } catch (e) {
+            console.error("Redis Set Error:", e);
+        }
+    } else {
+        console.log("Cache Hit: Data from Redis");
+    }
 
     const statCards = [
         { label: "Today's Visits", value: stats.todayVisits, icon: "📅", color: "#0284c7", bg: "#e0f2fe" },
@@ -92,7 +157,7 @@ export default async function HospitalDashboard() {
                         View All →
                     </Link>
                 </div>
-                {recentVisits.length === 0 ? (
+                {recentVisitsData.length === 0 ? (
                     <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
                         <p>No visits yet. Create your first OPD visit.</p>
                     </div>
@@ -108,22 +173,18 @@ export default async function HospitalDashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {recentVisits.map(v => {
-                                    const doctor = services.platform.getDoctorById(v.doctorId);
-                                    const patient = services.hospital.getPatientById(user.hospitalId, v.patientId);
-                                    return (
-                                        <tr key={v.id}>
-                                            <td>{new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                                            <td>{patient?.name || patient?.mobile || v.patientId}</td>
-                                            <td>{doctor?.name || v.doctorId}</td>
-                                            <td>
-                                                <span className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
-                                                    {v.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {recentVisitsData.map(v => (
+                                    <tr key={v.id}>
+                                        <td>{new Date(v.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                                        <td>{v.patientName || v.patientPhone}</td>
+                                        <td>{v.doctor?.name || 'Dr. Unknown'}</td>
+                                        <td>
+                                            <span className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
+                                                {v.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

@@ -45,6 +45,14 @@ export default function HospitalRegister() {
                         <input name="city" type="text" required className="form-input" placeholder="e.g., Mumbai" />
                     </div>
 
+                    <div className="form-group">
+                        <label className="form-label">Location (Optional)</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <input name="lat" type="number" step="any" className="form-input" placeholder="Latitude (e.g., 19.076)" />
+                            <input name="lng" type="number" step="any" className="form-input" placeholder="Longitude (e.g., 72.877)" />
+                        </div>
+                    </div>
+
                     <hr style={{ border: 'none', borderTop: '1px solid var(--border)' }} />
                     <h3 style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin Contact</h3>
 

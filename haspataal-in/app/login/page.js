@@ -1,13 +1,13 @@
 'use client'
 
 import { useActionState } from 'react';
-import { loginHospital } from '@/app/actions';
+import { loginAction } from '@/app/actions';
 import Link from 'next/link';
 
 const initialState = { message: '' };
 
-export default function HospitalLogin() {
-    const [state, formAction, isPending] = useActionState(loginHospital, initialState);
+export default function LoginPage() {
+    const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
     return (
         <div style={{ padding: '4rem 1rem', display: 'flex', justifyContent: 'center' }}>
@@ -26,8 +26,8 @@ export default function HospitalLogin() {
                     }}>
                         🏥
                     </div>
-                    <h2 style={{ fontWeight: '800', color: 'var(--text-main)', marginBottom: '0.5rem', fontSize: '1.5rem' }}>Hospital Login</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Access your hospital dashboard</p>
+                    <h2 style={{ fontWeight: '800', color: 'var(--text-main)', marginBottom: '0.5rem', fontSize: '1.5rem' }}>Login</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Hospital admins and patients</p>
                 </div>
 
                 <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
