@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+
 export default function PatientHome() {
     const services = [
         {
@@ -144,11 +145,11 @@ export default function PatientHome() {
                         </div>
 
                         {/* Hero Image */}
-                        <div style={{ flex: "1 1 400px", display: "flex", justifyContent: "center" }} className="animate-fade-in-up delay-2">
+                        <div style={{ flex: "1 1 400px", display: "flex", justifyContent: "center" }}>
                             <div style={{
                                 position: "relative",
                                 width: "100%",
-                                maxWidth: "550px",
+                                maxWidth: "650px", // Increased max-width for better visibility
                             }}>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img

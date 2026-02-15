@@ -51,7 +51,7 @@ export default function PatientHeader({ cities }) {
                     color: 'var(--primary)',
                     textDecoration: 'none'
                 }}>
-                    <Image src="/logo.svg" alt="Haspataal" width={44} height={44} style={{ objectFit: 'contain' }} />
+                    {/* <Image src="/logo.svg" alt="Haspataal" width={44} height={44} style={{ objectFit: 'contain' }} /> */}
                     <span className="hide-mobile">Haspataal</span>
                 </Link>
 
