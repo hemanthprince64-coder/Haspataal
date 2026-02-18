@@ -2,12 +2,13 @@
 // Healthcare platform connecting patients with hospitals
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ==========================================
@@ -34,67 +35,417 @@ enum PaymentStatus {
   REFUNDED
 }
 
-// ==========================================
-// CORE MODELS
-// ==========================================
-
 enum Role {
   SUPER_ADMIN
   HOSPITAL_ADMIN
   DOCTOR
   RECEPTIONIST
-  STAFF // Keep for backward compatibility if needed, or remove if we migrate data. 
-  // User asked for: SUPER_ADMIN , HOSPITAL_ADMIN , DOCTOR , RECEPTIONIST , PATIENT
-  // I will keep STAFF for now to avoid breaking existing 'Staff' model default, 
-  // but we should migrate 'Staff' model to use RECEPTIONIST default.
+  STAFF
   PATIENT
 }
 
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 // ==========================================
-// CORE MODELS
+// 1. MASTER TABLES
+// ==========================================
+
+model DoctorMaster {
+  id              String        @id @default(uuid())
+  fullName        String        @map("full_name")
+  dob             DateTime?     @db.Date
+  gender          String?
+  mobile          String        @unique
+  email           String        @unique
+  profilePhotoUrl String?       @map("profile_photo_url")
+  kycStatus       KycStatus     @default(PENDING) @map("kyc_status")
+  accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  registration    DoctorRegistration?
+  identityDocs    DoctorIdentityDoc[]
+  affiliations    DoctorHospitalAffiliation[]
+  professionalHistory DoctorProfessionalHistory[]
+  flags           DoctorFlag[]
+  
+  roles           DoctorRole[]
+  slots           Slot[]
+  records         PatientRecord[]
+  
+  // Diagnostics
+  prescribedOrders DiagnosticOrder[]
+  verifiedResults  DiagnosticResult[]
+  
+  reviews          Review[]
+
+  // Backwards compatibility or future use
+  appointments    Appointment[] // Link via affiliation in future? Or keep direct?
+  // Current app uses direct link. For now, we might break this or need a migration strategy.
+  // The user said "Propose changes". I will break the old link if strict refactor.
+  // But Appointment needs a doctor. I will link to DoctorMaster for now.
+  // Actually, typically Appointment is with a Doctor at a Hospital (Affiliation).
+  // But let's keep it simple: Appointment -> DoctorMaster for identity.
+  
+  @@map("doctors_master")
+}
+
+model DoctorIdentityDoc {
+  id                String             @id @default(uuid())
+  doctorId          String             @map("doctor_id")
+  documentType      String             @map("document_type")
+  documentUrl       String             @map("document_url")
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  verifiedBy        String?            @map("verified_by") // UUID
+  verifiedAt        DateTime?          @map("verified_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  doctor DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_identity_docs")
+}
+
+model DoctorRegistration {
+  id                String             @id @default(uuid())
+  doctorId          String             @unique @map("doctor_id")
+  registrationNumber String            @unique @map("registration_number")
+  councilName       String             @map("council_name")
+  registrationYear  Int?               @map("registration_year")
+  degree            String?
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  verifiedBy        String?            @map("verified_by") // UUID
+  verifiedAt        DateTime?          @map("verified_at")
+  expiryDate        DateTime?          @db.Date @map("expiry_date")
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  doctor DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_registration")
+}
+
+// ==========================================
+// 2. HOSPITAL TABLES
 // ==========================================
 
 model Hospital {
-  id        String         @id @default(uuid())
-  name      String
-  city      String
-  address   String?
-  phone     String         @unique
-  password  String
-  lat       Float?
-  lng       Float?
-  role      Role           @default(HOSPITAL_ADMIN) // Added
-  status    HospitalStatus @default(PENDING)
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
+  id                 String           @id @default(uuid())
+  legalName          String           @map("legal_name")
+  displayName        String?          @map("display_name") // Alias for old 'name' potentially
+  registrationNumber String           @unique @map("registration_number")
+  gstNumber          String?          @map("gst_number")
+  panNumber          String?          @map("pan_number")
+  cinNumber          String?          @map("cin_number")
+  hospitalType       String?          @map("hospital_type") // private | trust | govt | corporate
+  nabhAccredited     Boolean          @default(false) @map("nabh_accredited")
+  bedStrength        Int?             @map("bed_strength")
 
-  doctors Doctor[]
-  visits  Visit[]
-  staff   Staff[]        // Relation to new Staff model
+  // Address
+  addressLine1       String?          @map("address_line1")
+  addressLine2       String?          @map("address_line2")
+  city               String?
+  state              String?
+  pincode            String?
 
-  @@map("hospitals")
+  contactNumber      String?          @map("contact_number")
+  officialEmail      String?          @map("official_email")
+
+  // Status
+  verificationStatus String           @default("pending") @map("verification_status") // pending | verified | rejected
+  accountStatus      String           @default("inactive") @map("account_status") // inactive | active | suspended
+  
+  // Legacy fields (optional/deprecated map)
+  name               String?          @ignore // Use legalName or displayName. Ignoring to force use of new fields? 
+                                            // Actually, keep it for backward compat if needed, mapped to display_name or just separate.
+                                            // Let's use `name` as `legalName` or just keep it?
+                                            // User spec says `legal_name` is required.
+                                            // I will map `name` to `display_name` to keep existing code working?
+                                            // No, `name` was used as the main identifier. 
+                                            // I will add `name` pointing to `legal_name` or `display_name`.
+                                            // Let's make `name` map to `legal_name` to satisfy "legal_name (required)" and keep code working.
+                                            // But wait, `legalName` is also defined. Prisma doesn't like two fields mapping to same column.
+                                            // I will remove `name` and use `legalName`. Code refactor will be needed.
+                                            // Or better: `name String @map("legal_name")`. 
+                                            // Then add `legalName String @map("legal_name")` -> Duplicate.
+                                            // I will rename `name` to `legalName` in model, and add `@@map("hospitals_master")`.
+                                            // And add `displayName`.
+                                            // And `registrationNumber` is already there.
+  
+  // Wait, I can't break `test-architecture.js` immediately without updating it.
+  // But this is PLANNING/EXECUTION.
+  // I will Rename `name` to `legalName` effectively.
+  // But wait, existing code uses `name`. 
+  // I will add `name` as a computed field? No.
+  // I will KEEP `name` and map it to `legal_name`.
+  // And I will add `displayName` mapped to `display_name`.
+  // And `registrationNumber` is already there.
+
+  // Let's try to map `name` to `legal_name`.
+  // name               String           @map("legal_name") 
+
+  // But the user spec calls it `legal_name`.
+  // I should probably start using the new field names in new code.
+  // For now, I will use `name` mapped to `legal_name` to minimize breakage?
+  // No, `legal_name` might be "Apollo Hospitals Pvt Ltd", `display_name` is "Apollo".
+  // `name` in current code is likely `display_name`.
+  // I will map `name` to `display_name`. And make `legalName` a new required field.
+  // This will break `create` calls that don't supply `legalName`.
+
+  // DECISION:
+  // `name` -> `display_name` (optional in spec? No, Spec says `display_name` is optional).
+  // But `name` is required in current Prisma.
+  // I will make `name` map to `legal_name` for now as it is required.
+  // And add `displayName` as optional.
+  // Actually, let's just stick to the spec.
+  // `legalName` (required).
+  // `displayName` (optional).
+  // `name` (deprecated, remove?) -> logic uses it.
+  // I will rename `name` to `legalName` in the model implies refactoring all code usage of `.name`.
+  // That's fine.
+
+  // Re-evaluating:
+  // model Hospital {
+  //   legalName String @map("legal_name")
+  //   ...
+  // }
+  // Refactor services to use `.legalName`.
+
+  // Legacy fields to maintain compatibility or needs migration
+  password           String?          @ignore // Remove or keep? Spec doesn't mention password for Hospital, only Admin.
+                                            // Valid. Hospital doesn't login, Admin does.
+                                            // Remove `password`.
+
+  adminUserId        String?          @map("admin_user_id") // Keep for legacy or map to HospitalAdmin?
+                                            // Spec has `hospital_admins` table.
+                                            // Remove `adminUserId` from Hospital.
+  
+  createdAt          DateTime         @default(now()) @map("created_at")
+  
+  // Relations
+  facilities         HospitalFacilities?
+  admins             HospitalAdmin[]
+  departments        HospitalDepartment[]
+  services           HospitalService[]
+  billingProfile     HospitalBillingProfile?
+  roles              HospitalRole[]
+  doctorRoles        DoctorRole[]
+  verificationLogs   HospitalVerificationLog[]
+  
+  // Diagnostics
+  diagnosticPricing  HospitalDiagnosticPricing[]
+  panelPricing       HospitalPanelPricing[]
+  diagnosticOrders   DiagnosticOrder[]
+  qualityControls    LabQualityControl[]
+  
+  reviews            Review[]
+  
+  affiliations       DoctorHospitalAffiliation[]
+  
+  // Legacy relations
+  visits             Visit[]
+  staff              Staff[]
+
+  @@map("hospitals_master")
 }
 
-model Doctor {
-  id            String   @id @default(uuid())
-  hospitalId    String   @map("hospital_id")
-  name          String
-  specialty     String
-  qualification String?
-  experience    Int?     @default(0)
-  mobile        String?  @unique
-  password      String?  @default("123")
-  role          Role     @default(DOCTOR) // Added
-  fee           Int      @default(500)
-  createdAt     DateTime @default(now()) @map("created_at")
+model HospitalFacilities {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @unique @map("hospital_id")
+  icuAvailable       Boolean  @default(false) @map("icu_available")
+  nicuAvailable      Boolean  @default(false) @map("nicu_available")
+  otCount            Int      @default(0) @map("ot_count")
+  emergency24x7      Boolean  @default(false) @map("emergency_24x7")
+  ambulanceAvailable Boolean  @default(false) @map("ambulance_available")
+  pharmacyAvailable  Boolean  @default(false) @map("pharmacy_available")
+  labAvailable       Boolean  @default(false) @map("lab_available")
+  createdAt          DateTime @default(now()) @map("created_at")
 
-  hospital     Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  slots        Slot[]
-  appointments Appointment[]
-  records      PatientRecord[] // Phase 4 EHR
+  hospital           Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
-  @@map("doctors")
+  @@map("hospital_facilities")
 }
+
+model HospitalAdmin {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @map("hospital_id")
+  fullName           String   @map("full_name")
+  designation        String?
+  mobile             String   @unique
+  email              String   @unique
+  idDocumentUrl      String?  @map("id_document_url")
+  verificationStatus String   @default("pending") @map("verification_status")
+  isPrimary          Boolean  @default(true) @map("is_primary")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  hospital           Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("hospital_admins")
+}
+
+model HospitalDepartment {
+  id             String   @id @default(uuid())
+  hospitalId     String   @map("hospital_id")
+  departmentName String   @map("department_name")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  hospital       Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("hospital_departments")
+}
+
+model HospitalService {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  serviceName String   @map("service_name")
+  basePrice   Decimal  @map("base_price") // Use Decimal for money
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  hospital    Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("hospital_services")
+}
+
+model HospitalBillingProfile {
+  id                   String   @id @default(uuid())
+  hospitalId           String   @unique @map("hospital_id")
+  bankAccountNumber    String?  @map("bank_account_number")
+  bankIfsc             String?  @map("bank_ifsc")
+  gstApplicable        Boolean  @default(false) @map("gst_applicable")
+  tdsApplicable        Boolean  @default(true) @map("tds_applicable")
+  commissionPercentage Decimal? @map("commission_percentage")
+  payoutCycle          String?  @map("payout_cycle") // weekly | monthly
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  hospital             Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("hospital_billing_profile")
+}
+
+model HospitalRole {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  roleName    String   @map("role_name")
+  permissions Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  hospital    Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("hospital_roles")
+}
+
+model HospitalVerificationLog {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @map("hospital_id")
+  verifiedBy         String?  @map("verified_by") // UUID
+  verificationNotes  String?  @map("verification_notes")
+  verificationStatus String?  @map("verification_status")
+  verifiedAt         DateTime? @map("verified_at")
+
+  hospital           Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("hospital_verification_logs")
+}
+
+model DoctorHospitalAffiliation {
+  id                 String             @id @default(uuid())
+  doctorId           String             @map("doctor_id")
+  hospitalId         String             @map("hospital_id")
+  role               String             // e.g. "Consultant", "Resident"
+  department         String?
+  joiningDate        DateTime?          @db.Date @map("joining_date")
+  relievingDate      DateTime?          @db.Date @map("relieving_date")
+  isCurrent          Boolean            @default(true) @map("is_current")
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  approvedBy         String?            @map("approved_by") // UUID
+  approvedAt         DateTime?          @map("approved_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+
+  doctor   DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  hospital Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  
+  // Constraints
+  @@unique([doctorId, hospitalId])
+  @@map("doctor_hospital_affiliations")
+}
+
+// ==========================================
+// 3. PROFESSIONAL HISTORY
+// ==========================================
+
+model DoctorProfessionalHistory {
+  id               String    @id @default(uuid())
+  doctorId         String    @map("doctor_id")
+  organizationName String    @map("organization_name")
+  designation      String?
+  startDate        DateTime? @db.Date @map("start_date")
+  endDate          DateTime? @db.Date @map("end_date")
+  proofDocumentUrl String?   @map("proof_document_url")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  doctor DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_professional_history")
+}
+
+// ==========================================
+// 4. ROLE & PERMISSION SYSTEM
+// ==========================================
+
+model DoctorRole {
+  id          String   @id @default(uuid())
+  doctorId    String   @map("doctor_id") // Foreign key to DoctorMaster (implicit via affiliation logic, but defined as FK here)
+  hospitalId  String   @map("hospital_id")
+  permissions Json?    // jsonb
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // The user schema had direct FKs to Doctor and Hospital. 
+  // It effectively parallels Affiliation but strictly for permissions.
+  // Note: Prisma 1-N require explicit relation fields if we want traversals.
+  hospital    Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  // doctor      DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade) 
+  // Omitted doctor relation on DoctorMaster side to avoid clutter, or add if needed.
+  // Adding explicit relation to DoctorMaster for completeness.
+  doctor      DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, hospitalId])
+  @@map("doctor_roles")
+}
+
+// ==========================================
+// 5. SUSPENSION & BLACKLIST
+// ==========================================
+
+model DoctorFlag {
+  id        String   @id @default(uuid())
+  doctorId  String   @map("doctor_id")
+  reason    String?
+  flagType  String   @map("flag_type") // e.g., "suspension", "blacklist"
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  doctor DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_flags")
+}
+
+// ==========================================
+// LEGACY / EXISTING MODELS (Updated Relations)
+// ==========================================
 
 model Staff {
   id         String   @id @default(uuid())
@@ -117,56 +468,85 @@ model Patient {
   email     String?
   password  String
   city      String?
-  role      Role     @default(PATIENT) // Added
-  abhaAddress String? @unique @map("abha_address") // Phase 4: ABDM
+  role      Role     @default(PATIENT)
+  abhaAddress String? @unique @map("abha_address")
+  
+  // Profile
+  dob            DateTime? @db.Date
+  gender         String?
+  bloodGroup     String?   @map("blood_group")
+  address        String?
+  pincode        String?
+
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   appointments Appointment[]
   medicalRecords MedicalRecord[]
-  records        PatientRecord[] // Phase 4 EHR
+  records        PatientRecord[]
+  
+  // Diagnostics
+  orders         DiagnosticOrder[]
+  
+  reviews        Review[]
 
   @@map("patients")
 }
 
-// ==========================================
-// BOOKING MODELS
-// ==========================================
+model Review {
+  id         String   @id @default(uuid())
+  patientId  String   @map("patient_id")
+  doctorId   String?  @map("doctor_id")
+  hospitalId String?  @map("hospital_id")
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
-model Slot {
-  id       String @id @default(uuid())
-  doctorId String @map("doctor_id")
-  day      String // e.g., "Monday", "Tuesday"
-  time     String // e.g., "09:00 AM", "02:30 PM"
+  patient    Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor     DoctorMaster? @relation(fields: [doctorId], references: [id])
+  hospital   Hospital?     @relation(fields: [hospitalId], references: [id])
 
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-
-  @@unique([doctorId, day, time])
-  @@map("slots")
+  @@map("reviews")
 }
 
+// Booking linkage needs to change. 
+// Appointment linked to Doctor (Legacy) -> DoctorMaster (New Identity)
 model Appointment {
   id        String            @id @default(uuid())
   patientId String            @map("patient_id")
   doctorId  String            @map("doctor_id")
   date      DateTime          @db.Date
-  slot      String            // time slot string
+  slot      String
   status    AppointmentStatus @default(PENDING)
   notes     String?
   createdAt DateTime          @default(now()) @map("created_at")
   updatedAt DateTime          @updatedAt @map("updated_at")
 
-  patient Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor  Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade) // Re-linked to Master
   payment Payment?
   visit   Visit?
 
   @@map("appointments")
 }
 
+// Slot linked to DoctorMaster
+model Slot {
+  id       String @id @default(uuid())
+  doctorId String @map("doctor_id")
+  day      String
+  time     String
+
+  doctor DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, day, time])
+  @@map("slots")
+}
+
 model Payment {
   id            String        @id @default(uuid())
   appointmentId String        @unique @map("appointment_id")
-  amount        Int           // in paise (₹500 = 50000)
+  amount        Int
   currency      String        @default("INR")
   orderId       String        @map("order_id")
   paymentId     String?       @map("payment_id")
@@ -176,6 +556,182 @@ model Payment {
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+
+// ==========================================
+// 6. DIAGNOSTIC SERVICES (GLOBAL MASTER)
+// ==========================================
+
+model DiagnosticCategory {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  parentCategoryId String?  @map("parent_category_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Self-relation
+  parent   DiagnosticCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  children DiagnosticCategory[] @relation("CategoryHierarchy")
+
+  tests  DiagnosticMasterTest[]
+  panels DiagnosticPanel[]
+
+  @@map("diagnostic_categories")
+}
+
+model DiagnosticMasterTest {
+  id                  String   @id @default(uuid())
+  categoryId          String   @map("category_id")
+  testName            String   @map("test_name")
+  testCode            String?  @unique @map("test_code")
+  sampleType          String?  @map("sample_type")
+  method              String?
+  normalRangeText     String?  @map("normal_range_text")
+  unit                String?
+  turnaroundTimeHours Int?     @map("turnaround_time_hours")
+  requiresFasting     Boolean  @default(false) @map("requires_fasting")
+  isPanel             Boolean  @default(false) @map("is_panel")
+  modality            String? // radiology
+  contrastRequired    Boolean? @map("contrast_required")
+  bodyRegion          String?  @map("body_region")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  category DiagnosticCategory @relation(fields: [categoryId], references: [id])
+
+  panelLinks      DiagnosticPanelTest[]
+  hospitalPricing HospitalDiagnosticPricing[]
+  orderItems      DiagnosticOrderItem[]
+
+  // Quality Control
+  qcLogs LabQualityControl[]
+
+  @@map("diagnostic_master_tests")
+}
+
+model DiagnosticPanel {
+  id         String   @id @default(uuid())
+  panelName  String   @map("panel_name")
+  categoryId String   @map("category_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  category DiagnosticCategory @relation(fields: [categoryId], references: [id])
+
+  tests           DiagnosticPanelTest[]
+  hospitalPricing HospitalPanelPricing[]
+
+  @@map("diagnostic_panels")
+}
+
+model DiagnosticPanelTest {
+  id      String @id @default(uuid())
+  panelId String @map("panel_id")
+  testId  String @map("test_id")
+
+  panel DiagnosticPanel      @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  test  DiagnosticMasterTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([panelId, testId])
+  @@map("diagnostic_panel_tests")
+}
+
+// ==========================================
+// 7. DIAGNOSTIC PRICING (HOSPITAL SCOPED)
+// ==========================================
+
+model HospitalDiagnosticPricing {
+  id               String   @id @default(uuid())
+  hospitalId       String   @map("hospital_id")
+  testId           String   @map("test_id")
+  price            Decimal
+  isAvailable      Boolean  @default(true) @map("is_available")
+  tatOverrideHours Int?     @map("tat_override_hours")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  hospital Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  test     DiagnosticMasterTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([hospitalId, testId])
+  @@map("hospital_diagnostic_pricing")
+}
+
+model HospitalPanelPricing {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  panelId     String   @map("panel_id")
+  panelPrice  Decimal  @map("panel_price")
+  isAvailable Boolean  @default(true) @map("is_available")
+
+  hospital Hospital        @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  panel    DiagnosticPanel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@unique([hospitalId, panelId])
+  @@map("hospital_panel_pricing")
+}
+
+// ==========================================
+// 8. DIAGNOSTIC ORDERS
+// ==========================================
+
+model DiagnosticOrder {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  patientId   String   @map("patient_id")
+  doctorId    String?  @map("doctor_id") // Prescriber
+  orderStatus String   @map("order_status") // ordered | collected | processing | completed | cancelled
+  totalAmount Decimal  @map("total_amount")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  hospital Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient  Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor   DoctorMaster? @relation(fields: [doctorId], references: [id])
+
+  items DiagnosticOrderItem[]
+
+  @@map("diagnostic_orders")
+}
+
+model DiagnosticOrderItem {
+  id           String @id @default(uuid())
+  orderId      String @map("order_id")
+  testId       String @map("test_id")
+  priceAtOrder Decimal @map("price_at_order")
+  status       String // pending | processing | completed
+
+  order DiagnosticOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  test  DiagnosticMasterTest @relation(fields: [testId], references: [id])
+
+  results DiagnosticResult[]
+
+  @@map("diagnostic_order_items")
+}
+
+model DiagnosticResult {
+  id             String    @id @default(uuid())
+  orderItemId    String    @map("order_item_id")
+  resultValue    String?   @map("result_value")
+  resultFlag     String?   @map("result_flag") // normal | high | low | critical
+  reportFileUrl  String?   @map("report_file_url")
+  verifiedBy     String?   @map("verified_by") // Doctor ID
+  verifiedAt     DateTime? @map("verified_at")
+  structuredData Json?     @map("structured_data") // e.g. microbiology, pathology
+
+  orderItem DiagnosticOrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  verifier  DoctorMaster?       @relation(fields: [verifiedBy], references: [id])
+
+  @@map("diagnostic_results")
+}
+
+model LabQualityControl {
+  id            String   @id @default(uuid())
+  hospitalId    String   @map("hospital_id")
+  testId        String   @map("test_id")
+  controlResult String?  @map("control_result")
+  qcStatus      String?  @map("qc_status")
+  recordedAt    DateTime @default(now()) @map("recorded_at")
+
+  hospital Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  test     DiagnosticMasterTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@map("lab_quality_controls")
 }
 
 model Visit {
@@ -194,26 +750,18 @@ model Visit {
   @@map("visits")
 }
 
-// ==========================================
-// MEDICAL RECORDS (Phase 2)
-// ==========================================
-
 model MedicalRecord {
   id         String   @id @default(uuid())
   patientId  String   @map("patient_id")
   fileName   String   @map("file_name")
   fileUrl    String   @map("file_url")
-  fileType   String?  @map("file_type") // pdf, jpg, png
+  fileType   String?  @map("file_type")
   uploadedAt DateTime @default(now()) @map("uploaded_at")
 
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("medical_records")
 }
-
-// ==========================================
-// AUDIT LOGS (Phase 3)
-// ==========================================
 
 model AuditLog {
   id        String   @id @default(uuid())
@@ -227,29 +775,23 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// ==========================================
-// EHR (Phase 4)
-// ==========================================
-
 model PatientRecord {
   id           String   @id @default(uuid())
   patientId    String   @map("patient_id")
   doctorId     String   @map("doctor_id")
-  visitId      String?  @map("visit_id") // Optional link to a specific visit
+  visitId      String?  @map("visit_id")
   
   diagnosis    String
-  prescription String?  @db.Text // Simple text for now, can be JSON later
+  prescription String?  @db.Text
   notes        String?
   
-  // Vitals stored as JSON: { bp: "120/80", weight: 70, temp: 98.6, pulse: 72 }
   vitals       Json?    
   
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  // visit   Visit?  @relation(fields: [visitId], references: [id]) // Optional relation
+  patient Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade) // Re-linked
 
   @@map("patient_records")
 }
