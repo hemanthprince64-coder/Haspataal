@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import HeroIllustration from "./components/HeroIllustration";
 
 
 export default function PatientHome() {
@@ -52,120 +53,126 @@ export default function PatientHome() {
         <main>
             {/* Hero Section */}
             <section style={{
-                background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdfa 100%)",
-                padding: "4rem 1rem 5rem",
+                background: "linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%)",
+                padding: "6rem 1rem 6rem",
                 position: "relative",
                 overflow: "hidden"
             }}>
-                {/* Background Blobs */}
-                <div style={{
-                    position: "absolute",
-                    top: "-20%",
-                    right: "10%",
-                    width: "600px",
-                    height: "600px",
-                    background: "radial-gradient(circle, rgba(2, 132, 199, 0.06) 0%, transparent 70%)",
-                    borderRadius: "50%",
-                }} />
-                <div style={{
-                    position: "absolute",
-                    bottom: "-30%",
-                    left: "-5%",
-                    width: "400px",
-                    height: "400px",
-                    background: "radial-gradient(circle, rgba(13, 148, 136, 0.05) 0%, transparent 70%)",
-                    borderRadius: "50%",
-                }} />
-
                 <div className="container" style={{ position: "relative", zIndex: 1 }}>
                     <div style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "3rem",
+                        gap: "2rem",
                         flexWrap: "wrap",
+                        justifyContent: "space-between"
                     }}>
                         {/* Text Content */}
-                        <div style={{ flex: "1 1 480px", maxWidth: "580px" }} className="animate-fade-in-up">
+                        <div style={{ flex: "1 1 500px", maxWidth: "600px" }} className="animate-fade-in-up">
+                            {/* Logo Badge */}
+                            <div style={{ marginBottom: "2.5rem" }}>
+                                <div style={{
+                                    width: "64px",
+                                    height: "64px",
+                                    background: "#1e293b",
+                                    borderRadius: "16px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                                    border: "4px solid white"
+                                }}>
+                                    <Image src="/logo.svg" alt="Haspataal" width={32} height={32} style={{ filter: "brightness(0) invert(1)" }} />
+                                </div>
+                            </div>
+
+                            {/* Trust Badge */}
                             <div style={{
                                 width: "fit-content",
-                                background: "rgba(13, 148, 136, 0.1)",
+                                background: "#ccfbf1",
                                 color: "#0f766e",
-                                padding: "0.5rem 1rem",
-                                borderRadius: "30px",
-                                fontSize: "0.85rem",
+                                padding: "0.6rem 1.25rem",
+                                borderRadius: "100px",
+                                fontSize: "0.9rem",
                                 fontWeight: "700",
                                 marginBottom: "1.5rem",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "0.5rem"
                             }}>
-                                <span style={{ fontSize: "1.2rem" }}>🛡️</span> Trusted by 10,000+ Families
+                                <span style={{ fontSize: "1.1rem" }}>🛡️</span> Trusted by 10,000+ Families
                             </div>
 
                             <h1 style={{
-                                fontSize: "3.25rem",
+                                fontSize: "4rem",
                                 fontWeight: "800",
                                 color: "#0f172a",
-                                lineHeight: "1.15",
-                                marginBottom: "1.25rem",
+                                lineHeight: "1.1",
+                                marginBottom: "1.5rem",
                                 letterSpacing: "-0.03em"
                             }}>
-                                Complete <span style={{ color: "#0284c7" }}>Healthcare</span>{" "}
-                                <span style={{ color: "#0d9488" }}>Assistance</span> for Your Family
+                                Complete <span style={{ color: "#0284c7" }}>Healthcare</span> <br />
+                                <span style={{ color: "#0d9488" }}>Protection</span> for Your <br />
+                                Family
                             </h1>
 
                             <p style={{
-                                fontSize: "1.15rem",
+                                fontSize: "1.25rem",
                                 color: "#475569",
-                                lineHeight: "1.7",
-                                marginBottom: "2rem",
+                                lineHeight: "1.6",
+                                marginBottom: "2.5rem",
+                                maxWidth: "540px",
+                                fontWeight: "500"
                             }}>
-                                India's smart hospital assistance platform — connecting patients with the right
-                                doctors, hospitals, and diagnostic services near you.
+                                Connect with top doctors, diagnostic centers, and hospitals near you.
+                                Secure health records and reliable assistance at every step.
                             </p>
 
                             <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                                <Link href="/search" className="btn btn-primary btn-lg" style={{
+                                <Link href="/search" className="btn btn-primary" style={{
                                     boxShadow: "0 10px 25px rgba(2, 132, 199, 0.25)",
-                                    fontSize: "1.05rem",
-                                    padding: "0.9rem 1.75rem"
+                                    fontSize: "1.1rem",
+                                    padding: "1rem 2.25rem",
+                                    borderRadius: "12px",
+                                    fontWeight: "700"
                                 }}>
-                                    🔍 Find Doctors
+                                    Find Doctors
                                 </Link>
-                                <Link href="/hospitals" className="btn btn-outline btn-lg" style={{
-                                    borderColor: "#cbd5e1",
+                                <Link href="/hospitals" className="btn" style={{
+                                    border: "2px solid #cbd5e1",
                                     color: "#334155",
-                                    background: "white",
-                                    fontSize: "1.05rem",
-                                    padding: "0.9rem 1.75rem"
+                                    background: "transparent",
+                                    fontSize: "1.1rem",
+                                    padding: "1rem 2.25rem",
+                                    borderRadius: "12px",
+                                    fontWeight: "600"
                                 }}>
-                                    🏥 View Hospitals
+                                    View Hospitals
                                 </Link>
                             </div>
                         </div>
 
-                        {/* Hero Image */}
-                        <div style={{ flex: "1 1 400px", display: "flex", justifyContent: "center" }}>
+                        {/* Hero Illustration */}
+                        <div style={{ flex: "1 1 450px", display: "flex", justifyContent: "center" }} className="animate-fade-in-up delay-2">
                             <div style={{
                                 position: "relative",
                                 width: "100%",
-                                maxWidth: "650px", // Increased max-width for better visibility
+                                maxWidth: "600px",
                             }}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src="/hero.svg"
-                                    alt="Family Healthcare Protection"
-                                    style={{
-                                        width: "100%",
-                                        height: "auto",
-                                        filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.08))"
-                                    }}
-                                />
+                                <HeroIllustration />
+                                <div style={{
+                                    textAlign: "center",
+                                    marginTop: "0.5rem",
+                                    fontWeight: "700",
+                                    color: "#0f172a",
+                                    fontSize: "1.2rem"
+                                }}>
+                                    Complete Protection
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </section>>
 
             {/* Stats Bar */}
             <section style={{
