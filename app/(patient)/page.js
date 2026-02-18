@@ -51,92 +51,117 @@ export default function PatientHome() {
         <main>
             {/* Hero Section */}
             <section style={{
-                background: "linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0d9488 100%)",
-                color: "white",
+                background: "linear-gradient(135deg, #eff6ff 0%, #ecfeff 100%)",
                 padding: "5rem 1rem 6rem",
-                textAlign: "center",
                 position: "relative",
                 overflow: "hidden"
             }}>
-                {/* Background decoration */}
-                <div style={{
-                    position: "absolute",
-                    top: "-50%",
-                    right: "-20%",
-                    width: "600px",
-                    height: "600px",
-                    background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
-                    borderRadius: "50%",
-                }} />
-                <div style={{
-                    position: "absolute",
-                    bottom: "-30%",
-                    left: "-10%",
-                    width: "400px",
-                    height: "400px",
-                    background: "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)",
-                    borderRadius: "50%",
-                }} />
-
                 <div className="container" style={{ position: "relative", zIndex: 1 }}>
-                    <div className="animate-fade-in-up" style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
-                        <div style={{
-                            background: "rgba(255,255,255,0.15)",
-                            borderRadius: "20px",
-                            padding: "0.75rem",
-                            backdropFilter: "blur(10px)",
-                        }}>
-                            <Image src="/logo.svg" alt="Haspataal Logo" width={80} height={80} style={{ objectFit: "contain" }} />
+                    <div className="flex-container" style={{
+                        display: "flex",
+                        flexDirection: "column-reverse",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "3rem",
+                        textAlign: "left"
+                    }}>
+                        {/* Text Content */}
+                        <div className="animate-fade-in-up" style={{ flex: 1, maxWidth: "650px" }}>
+                            {/* Trust Badge */}
+                            <div style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                                background: "#f0fdfa",
+                                color: "#0f766e",
+                                padding: "0.6rem 1.25rem",
+                                borderRadius: "9999px",
+                                fontWeight: "700",
+                                fontSize: "0.9rem",
+                                marginBottom: "2rem",
+                                boxShadow: "var(--shadow-sm)",
+                                border: "1px solid #ccfbf1"
+                            }}>
+                                <span style={{ fontSize: "1.1rem" }}>🛡️</span> Trusted by 10,000+ Families
+                            </div>
+
+                            <h1 style={{
+                                fontSize: "3.5rem",
+                                fontWeight: "800",
+                                color: "var(--text-main)",
+                                lineHeight: "1.1",
+                                marginBottom: "1.5rem",
+                                letterSpacing: "-0.02em"
+                            }}>
+                                Complete <span style={{ color: "var(--primary)" }}>Healthcare</span> <br className="hide-mobile" />
+                                <span style={{ color: "var(--accent)" }}>Protection</span> for Your <br className="hide-mobile" />
+                                Family
+                            </h1>
+
+                            <p style={{
+                                fontSize: "1.25rem",
+                                color: "var(--text-muted)",
+                                lineHeight: "1.6",
+                                marginBottom: "2.5rem",
+                                fontWeight: "500",
+                                maxWidth: "550px"
+                            }}>
+                                Connect with top doctors, diagnostic centers, and hospitals near you.
+                                Secure health records and reliable assistance at every step.
+                            </p>
+
+                            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                                <Link href="/search" className="btn btn-primary btn-lg" style={{
+                                    boxShadow: "0 4px 14px 0 rgba(2, 132, 199, 0.39)"
+                                }}>
+                                    Find Doctors
+                                </Link>
+                                <Link href="/hospitals" className="btn btn-outline btn-lg" style={{
+                                    background: "transparent"
+                                }}>
+                                    View Hospitals
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Hero Illustration */}
+                        <div className="animate-fade-in-up delay-2" style={{ flex: 1, display: "flex", justifyContent: "center", width: "100%" }}>
+                            <div style={{ position: "relative", width: "100%", maxWidth: "600px" }}>
+                                <Image
+                                    src="/hero_medical_trust.svg"
+                                    alt="Family Healthcare Protection"
+                                    width={600}
+                                    height={500}
+                                    style={{ width: "100%", height: "auto", filter: "drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))" }}
+                                    priority
+                                />
+                            </div>
                         </div>
                     </div>
-                    <h1 className="animate-fade-in-up delay-1" style={{
-                        fontSize: "3rem",
-                        marginBottom: "0.75rem",
-                        fontWeight: "800",
-                        letterSpacing: "-0.02em",
-                        lineHeight: "1.1"
-                    }}>
-                        Welcome to <span style={{ display: "inline-block" }}>Haspataal</span>
-                    </h1>
-                    <p className="animate-fade-in-up delay-2" style={{
-                        fontSize: "1.3rem",
-                        opacity: 0.95,
-                        marginBottom: "0.75rem",
-                        fontWeight: "500"
-                    }}>
-                        Assistance & Accuracy in Healthcare
-                    </p>
-                    <p className="animate-fade-in-up delay-3" style={{
-                        fontSize: "1rem",
-                        opacity: 0.8,
-                        marginBottom: "2.5rem",
-                        maxWidth: "600px",
-                        margin: "0 auto 2.5rem",
-                        lineHeight: "1.7"
-                    }}>
-                        India's smart hospital assistance platform connecting patients with local hospitals
-                        for outpatient consultations, diagnostic services and inpatient services
-                    </p>
-
-                    <div className="animate-fade-in-up delay-4" style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-                        <Link href="/search" className="btn btn-lg" style={{
-                            background: "white",
-                            color: "var(--primary)",
-                            fontWeight: "700",
-                            boxShadow: "0 4px 15px rgba(0,0,0,0.15)"
-                        }}>
-                            🔍 Find Doctors
-                        </Link>
-                        <Link href="/hospitals" className="btn btn-lg" style={{
-                            background: "rgba(255,255,255,0.15)",
-                            border: "2px solid rgba(255,255,255,0.4)",
-                            color: "white",
-                            backdropFilter: "blur(4px)"
-                        }}>
-                            🏥 View Hospitals
-                        </Link>
-                    </div>
                 </div>
+
+                <style jsx>{`
+                    @media (min-width: 1024px) {
+                        .flex-container {
+                            flex-direction: row !important;
+                            text-align: left !important;
+                        }
+                    }
+                    @media (max-width: 1023px) {
+                        .flex-container {
+                            text-align: center !important;
+                        }
+                        .flex-container > div {
+                            align-items: center; 
+                        }
+                         /* Center the badge and buttons on mobile */
+                        .animate-fade-in-up {
+                             display: flex;
+                             flex-direction: column;
+                             align-items: center;
+                        }
+                    }
+                `}</style>
             </section>
 
             {/* Stats Bar */}
