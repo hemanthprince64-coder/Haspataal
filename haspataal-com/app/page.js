@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import HeroIllustration from "./components/HeroIllustration";
 
 
 export default function PatientHome() {
@@ -158,7 +157,14 @@ export default function PatientHome() {
                                 width: "100%",
                                 maxWidth: "600px",
                             }}>
-                                <HeroIllustration />
+                                <Image
+                                    src="/hero-image.png"
+                                    alt="Family Healthcare Protection"
+                                    width={600}
+                                    height={500}
+                                    style={{ width: "100%", height: "auto" }}
+                                    priority
+                                />
                                 <div style={{
                                     textAlign: "center",
                                     marginTop: "0.5rem",
