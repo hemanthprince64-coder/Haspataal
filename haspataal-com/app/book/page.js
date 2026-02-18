@@ -6,8 +6,8 @@ export default async function BookingPage({ searchParams }) {
     const doctorId = params.doctorId;
     const hospitalId = params.hospitalId;
 
-    const doctor = doctorId ? services.platform.getDoctorById(doctorId) : null;
-    const hospital = hospitalId ? services.platform.getHospitalById(hospitalId) : null;
+    const doctor = doctorId ? await services.platform.getDoctorById(doctorId) : null;
+    const hospital = hospitalId ? await services.platform.getHospitalById(hospitalId) : null;
 
     if (!doctor || !hospital) {
         return (

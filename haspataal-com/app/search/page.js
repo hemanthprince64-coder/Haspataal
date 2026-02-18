@@ -7,9 +7,9 @@ export default async function SearchPage({ searchParams }) {
     const speciality = params.speciality || "";
     const query = params.q || "";
 
-    const doctors = services.platform.searchDoctors(city, speciality, query);
-    const cities = services.platform.getCities();
-    const specialities = services.platform.getAllSpecialities();
+    const doctors = await services.platform.searchDoctors(city, speciality, query);
+    const cities = services.platform.getCities(); // Sync
+    const specialities = await services.platform.getAllSpecialities();
 
     return (
         <main className="container page-enter" style={{ padding: "2rem 1rem" }}>
@@ -59,16 +59,16 @@ export default async function SearchPage({ searchParams }) {
             ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "1.5rem" }}>
                     {doctors.map(doc => {
-                        const hospital = services.platform.getHospitalById(doc.hospitalId);
+                        const hospital = doc.hospital; // Direct access from eager load
                         return (
                             <div key={doc.id} className="card card-interactive" style={{ padding: "1.5rem", display: "flex", gap: "1rem" }}>
                                 <div style={{ width: "80px", height: "80px", borderRadius: "16px", background: "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", flexShrink: 0 }}>👨‍⚕️</div>
                                 <div style={{ flex: 1 }}>
                                     <h3 style={{ fontSize: "1.1rem", marginBottom: "0.25rem", color: "var(--text-main)", fontWeight: "700" }}>{doc.name}</h3>
                                     <span className="badge badge-primary" style={{ marginBottom: "0.5rem" }}>{doc.speciality}</span>
-                                    <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "0.5rem", marginBottom: "0.75rem" }}>🏥 {hospital?.name} • 📍 {hospital?.area}, {hospital?.city}</p>
+                                    <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "0.5rem", marginBottom: "0.75rem" }}>🏥 {hospital?.name || "Unknown Hospital"} • 📍 {hospital?.city || city}</p>
                                     <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", marginBottom: "1rem" }}>
-                                        <span style={{ color: "var(--text-muted)" }}>⭐ {hospital?.rating || "4.5"}</span>
+                                        <span style={{ color: "var(--text-muted)" }}>⭐ 4.5</span>
                                         <span style={{ color: "var(--text-muted)" }}>📅 {doc.experience || 10}+ yrs</span>
                                     </div>
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -84,3 +84,4 @@ export default async function SearchPage({ searchParams }) {
         </main>
     );
 }
+

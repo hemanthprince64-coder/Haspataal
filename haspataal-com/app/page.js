@@ -172,7 +172,7 @@ export default function PatientHome() {
                         </div>
                     </div>
                 </div>
-            </section>>
+            </section>
 
             {/* Stats Bar */}
             <section style={{

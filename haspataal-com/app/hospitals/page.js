@@ -5,8 +5,25 @@ export default async function HospitalsPage({ searchParams }) {
     const params = await searchParams;
     const city = params.city || "Mumbai";
 
-    const hospitals = services.platform.getHospitalsByCity(city);
-    const cities = services.platform.getCities();
+    const hospitalsRaw = await services.platform.getHospitalsByCity(city);
+    const cities = services.platform.getCities(); // Sync
+
+    // Fetch details for each hospital
+    const hospitals = await Promise.all(hospitalsRaw.map(async (hospital) => {
+        const doctors = await services.platform.getHospitalDoctors(hospital.id);
+        const reviews = await services.platform.getHospitalReviews(hospital.id);
+        const avgRating = reviews.length > 0
+            ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+            : (hospital.rating || "4.5"); // Fallback
+
+        return {
+            ...hospital,
+            doctorCount: doctors.length,
+            reviews,
+            avgRating,
+            image: hospital.image || '🏥' // Fallback for emoji
+        };
+    }));
 
     return (
         <main className="container page-enter" style={{ padding: "2rem 1rem" }}>
@@ -45,12 +62,6 @@ export default async function HospitalsPage({ searchParams }) {
             ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
                     {hospitals.map(hospital => {
-                        const doctorCount = services.platform.getHospitalDoctors(hospital.id).length;
-                        const reviews = services.platform.getHospitalReviews(hospital.id);
-                        const avgRating = reviews.length > 0
-                            ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-                            : hospital.rating;
-
                         return (
                             <div key={hospital.id} className="card card-interactive" style={{
                                 padding: "0",
@@ -82,7 +93,7 @@ export default async function HospitalsPage({ searchParams }) {
                                         alignItems: "center",
                                         gap: "0.25rem"
                                     }}>
-                                        ⭐ {avgRating}
+                                        ⭐ {hospital.avgRating}
                                     </div>
                                 </div>
 
@@ -92,13 +103,13 @@ export default async function HospitalsPage({ searchParams }) {
                                     </h3>
 
                                     <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
-                                        📍 {hospital.area}, {hospital.city}
+                                        📍 {hospital.area || hospital.city}, {hospital.city}
                                     </p>
 
                                     <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1.25rem" }}>
-                                        <span className="badge badge-primary">👨‍⚕️ {doctorCount} Doctors</span>
+                                        <span className="badge badge-primary">👨‍⚕️ {hospital.doctorCount} Doctors</span>
                                         <span className="badge badge-success">🕐 Open 24x7</span>
-                                        {reviews.length > 0 && <span className="badge" style={{ background: "#fef3c7", color: "#92400e" }}>💬 {reviews.length} Reviews</span>}
+                                        {hospital.reviews.length > 0 && <span className="badge" style={{ background: "#fef3c7", color: "#92400e" }}>💬 {hospital.reviews.length} Reviews</span>}
                                     </div>
 
                                     <div style={{ display: "flex", gap: "0.75rem" }}>
@@ -126,3 +137,4 @@ export default async function HospitalsPage({ searchParams }) {
         </main>
     );
 }
+

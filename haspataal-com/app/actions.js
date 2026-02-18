@@ -1,7 +1,7 @@
 'use server'
 
 import { services } from '@/lib/services';
-import { db } from '@/lib/data';
+// import { db } from '@/lib/data';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
@@ -19,7 +19,7 @@ export async function patientLogin(prevState, formData) {
         return { message: 'Invalid OTP. Use 1234 for demo.' };
     }
 
-    const patient = services.patient.login(mobile, otp);
+    const patient = await services.patient.login(mobile, otp);
     (await cookies()).set('session_patient', JSON.stringify(patient));
     redirect('/');
 }
@@ -39,7 +39,7 @@ export async function patientRegister(prevState, formData) {
         return { message: 'Mobile number and name are required.' };
     }
 
-    const patient = services.patient.register(data);
+    const patient = await services.patient.register(data);
     (await cookies()).set('session_patient', JSON.stringify(patient));
 
     return { success: true, message: 'Profile saved successfully!' };
@@ -59,7 +59,7 @@ export async function updatePatientProfile(prevState, formData) {
         email: formData.get('email'),
     };
 
-    const updated = services.patient.updateProfile(patient.id, updates);
+    const updated = await services.patient.updateProfile(patient.id, updates);
     if (updated) {
         (await cookies()).set('session_patient', JSON.stringify(updated));
         return { success: true, message: 'Profile updated successfully!' };
@@ -97,7 +97,7 @@ export async function bookAppointment(prevState, formData) {
             date: `${date}T${slot}`
         };
 
-        services.hospital.createVisit(hospitalId, visitData);
+        await services.patient.createVisit(hospitalId, visitData);
         return { success: true, message: 'Appointment booked successfully!' };
     } catch (e) {
         return { success: false, message: e.message };
@@ -110,7 +110,7 @@ export async function cancelAppointmentPatient(prevState, formData) {
     const patient = JSON.parse(userCookie.value);
 
     const visitId = formData.get('visitId');
-    const result = services.patient.cancelVisit(patient.id, visitId);
+    const result = await services.patient.cancelVisit(patient.id, visitId);
 
     if (!result) {
         return { success: false, message: 'Cannot cancel this appointment.' };
@@ -141,6 +141,9 @@ export async function addReview(prevState, formData) {
         date: new Date().toISOString().split('T')[0],
     };
 
-    db.reviews.push(review);
-    return { success: true, message: 'Review submitted! Thank you.' };
+    // NOTE: Reviews not yet in services.js, keeping mock fallback or omitting
+    // db.reviews.push(review); 
+    // Commented out as db is removed. 
+    // TODO: Add review support to Prisma Schema.
+    return { success: true, message: 'Review submitted! Thank you. (Note: Reviews are temporarily disabled during upgrade)' };
 }

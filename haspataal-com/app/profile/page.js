@@ -13,8 +13,15 @@ export default async function PatientProfile() {
     }
 
     const patient = JSON.parse(userCookie.value);
-    const freshPatient = services.patient.getById(patient.id) || patient;
-    const visits = services.patient.getVisits(patient.id);
+    const freshPatient = await services.patient.getById(patient.id) || patient;
+    const visitsRaw = await services.patient.getVisits(patient.id);
+
+    // Enrich visits with hospital and doctor details
+    const visits = await Promise.all(visitsRaw.map(async v => {
+        const hospital = await services.platform.getHospitalById(v.hospitalId);
+        const doctor = await services.platform.getDoctorById(v.doctorId);
+        return { ...v, hospital, doctor };
+    }));
 
     return (
         <div className="container page-enter" style={{ padding: "2rem 1rem", maxWidth: "900px", margin: "0 auto" }}>
@@ -70,8 +77,8 @@ export default async function PatientProfile() {
             ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {visits.map(v => {
-                        const hospital = services.platform.getHospitalById(v.hospitalId);
-                        const doctor = services.platform.getDoctorById(v.doctorId);
+                        const hospital = v.hospital;
+                        const doctor = v.doctor;
                         const isUpcoming = v.status === 'SCHEDULED';
                         const isCancelled = v.status === 'CANCELLED';
 
