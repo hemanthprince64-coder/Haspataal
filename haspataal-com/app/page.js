@@ -51,128 +51,66 @@ export default function PatientHome() {
     return (
         <main>
             {/* Hero Section */}
-            <section style={{
-                background: "linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%)",
-                padding: "6rem 1rem 6rem",
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                <div className="container" style={{ position: "relative", zIndex: 1 }}>
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "2rem",
-                        flexWrap: "wrap",
-                        justifyContent: "space-between"
-                    }}>
+            {/* Hero Section */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 py-20 lg:py-28">
+                <div className="container relative z-10 px-4 mx-auto">
+                    <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-12">
                         {/* Text Content */}
-                        <div style={{ flex: "1 1 500px", maxWidth: "600px" }} className="animate-fade-in-up">
-                            {/* Logo Badge */}
-                            <div style={{ marginBottom: "2.5rem" }}>
-                                <div style={{
-                                    width: "64px",
-                                    height: "64px",
-                                    background: "#1e293b",
-                                    borderRadius: "16px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                                    border: "4px solid white"
-                                }}>
-                                    <Image src="/logo.svg" alt="Haspataal" width={32} height={32} style={{ filter: "brightness(0) invert(1)" }} />
+                        <div className="flex-1 max-w-2xl animate-fade-in-up">
+                            {/* Logo Badge - Optional based on design, keeping distinct from headline */}
+                            <div className="mb-6 hidden md:block">
+                                <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white">
+                                    <Image src="/logo.svg" alt="Haspataal" width={32} height={32} className="brightness-0 invert" />
                                 </div>
                             </div>
 
                             {/* Trust Badge */}
-                            <div style={{
-                                width: "fit-content",
-                                background: "#ccfbf1",
-                                color: "#0f766e",
-                                padding: "0.6rem 1.25rem",
-                                borderRadius: "100px",
-                                fontSize: "0.9rem",
-                                fontWeight: "700",
-                                marginBottom: "1.5rem",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.5rem"
-                            }}>
-                                <span style={{ fontSize: "1.1rem" }}>🛡️</span> Trusted by 10,000+ Families
+                            <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 px-5 py-2.5 rounded-full font-bold text-sm mb-8 shadow-sm border border-teal-100">
+                                <span className="text-lg">🛡️</span> Trusted by 10,000+ Families
                             </div>
 
-                            <h1 style={{
-                                fontSize: "4rem",
-                                fontWeight: "800",
-                                color: "#0f172a",
-                                lineHeight: "1.1",
-                                marginBottom: "1.5rem",
-                                letterSpacing: "-0.03em"
-                            }}>
-                                Complete <span style={{ color: "#0284c7" }}>Healthcare</span> <br />
-                                <span style={{ color: "#0d9488" }}>Protection</span> for Your <br />
+                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.1] mb-6 tracking-tight">
+                                Complete <span className="text-sky-600">Healthcare</span> <br className="hidden lg:block" />
+                                <span className="text-teal-600">Protection</span> for Your <br className="hidden lg:block" />
                                 Family
                             </h1>
 
-                            <p style={{
-                                fontSize: "1.25rem",
-                                color: "#475569",
-                                lineHeight: "1.6",
-                                marginBottom: "2.5rem",
-                                maxWidth: "540px",
-                                fontWeight: "500"
-                            }}>
+                            <p className="text-lg md:text-xl text-slate-600 leading-relaxed mb-10 max-w-lg font-medium">
                                 Connect with top doctors, diagnostic centers, and hospitals near you.
                                 Secure health records and reliable assistance at every step.
                             </p>
 
-                            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                                <Link href="/search" className="btn btn-primary" style={{
-                                    boxShadow: "0 10px 25px rgba(2, 132, 199, 0.25)",
-                                    fontSize: "1.1rem",
-                                    padding: "1rem 2.25rem",
-                                    borderRadius: "12px",
-                                    fontWeight: "700"
-                                }}>
+                            <div className="flex flex-wrap gap-4">
+                                <Link href="/search" className="btn bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-200/50 text-lg px-8 py-4 rounded-xl font-bold transition-all transform hover:-translate-y-1">
                                     Find Doctors
                                 </Link>
-                                <Link href="/hospitals" className="btn" style={{
-                                    border: "2px solid #cbd5e1",
-                                    color: "#334155",
-                                    background: "transparent",
-                                    fontSize: "1.1rem",
-                                    padding: "1rem 2.25rem",
-                                    borderRadius: "12px",
-                                    fontWeight: "600"
-                                }}>
+                                <Link href="/hospitals" className="btn border-2 border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50 text-lg px-8 py-4 rounded-xl font-semibold transition-all">
                                     View Hospitals
                                 </Link>
                             </div>
                         </div>
 
                         {/* Hero Illustration */}
-                        <div style={{ flex: "1 1 450px", display: "flex", justifyContent: "center" }} className="animate-fade-in-up delay-2">
-                            <div style={{
-                                position: "relative",
-                                width: "100%",
-                                maxWidth: "600px",
-                            }}>
+                        <div className="flex-1 flex justify-center lg:justify-end animate-fade-in-up delay-100">
+                            <div className="relative w-full max-w-[600px]">
                                 <Image
-                                    src="/hero-image.png"
+                                    src="/hero_medical_trust.svg"
                                     alt="Family Healthcare Protection"
                                     width={600}
                                     height={500}
-                                    style={{ width: "100%", height: "auto" }}
+                                    className="w-full h-auto drop-shadow-2xl"
                                     priority
                                 />
-                                <div style={{
-                                    textAlign: "center",
-                                    marginTop: "0.5rem",
-                                    fontWeight: "700",
-                                    color: "#0f172a",
-                                    fontSize: "1.2rem"
-                                }}>
-                                    Complete Protection
+                                <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl hidden md:block animate-bounce-slow">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-green-100 p-2 rounded-full text-green-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Status</p>
+                                            <p className="text-slate-900 font-bold">100% Secure</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,36 @@
+<svg width="600" height="500" viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0f2fe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#bae6fd;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background Shield Shape -->
+  <path d="M300 50 C150 50, 50 150, 50 300 C50 450, 150 500, 300 500 C450 500, 550 450, 550 300 C550 150, 450 50, 300 50 Z" fill="url(#g1)" />
+  
+  <!-- Doctor Figure -->
+  <g transform="translate(150, 150)">
+    <circle cx="60" cy="50" r="30" fill="#0ea5e9" /> <!-- Head -->
+    <rect x="30" y="90" width="60" height="100" rx="20" fill="#0284c7" /> <!-- Body -->
+    <path d="M30 90 L30 150 L10 170" stroke="#0284c7" stroke-width="10" stroke-linecap="round" /> <!-- Arm L -->
+    <path d="M90 90 L90 150 L110 170" stroke="#0284c7" stroke-width="10" stroke-linecap="round" /> <!-- Arm R -->
+    <text x="60" y="140" font-family="Arial" font-size="40" text-anchor="middle" fill="white">✚</text>
+  </g>
+
+  <!-- Family Figures -->
+  <g transform="translate(300, 180)">
+    <!-- Parent 1 -->
+    <circle cx="40" cy="40" r="25" fill="#0d9488" />
+    <rect x="15" y="75" width="50" height="80" rx="15" fill="#0f766e" />
+    
+    <!-- Parent 2 -->
+    <circle cx="110" cy="40" r="25" fill="#0d9488" />
+    <rect x="85" y="75" width="50" height="80" rx="15" fill="#0f766e" />
+
+    <!-- Child -->
+    <circle cx="75" cy="110" r="20" fill="#f59e0b" />
+    <rect x="55" y="135" width="40" height="50" rx="10" fill="#d97706" />
+  </g>
+  
+  <text x="300" y="450" font-family="Arial" font-size="24" text-anchor="middle" fill="#0f172a" font-weight="bold">Trusted Protection</text>
+</svg>
