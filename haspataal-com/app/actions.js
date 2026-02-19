@@ -4,6 +4,9 @@ import { services } from '@/lib/services';
 // import { db } from '@/lib/data';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { createSession, deleteSession, decrypt } from '@/lib/session';
+
+// ==================== PATIENT ACTIONS ====================
 
 // ==================== PATIENT ACTIONS ====================
 
@@ -20,7 +23,7 @@ export async function patientLogin(prevState, formData) {
     }
 
     const patient = await services.patient.login(mobile, otp);
-    (await cookies()).set('session_patient', JSON.stringify(patient));
+    await createSession('session_patient', patient);
     redirect('/');
 }
 
@@ -40,15 +43,17 @@ export async function patientRegister(prevState, formData) {
     }
 
     const patient = await services.patient.register(data);
-    (await cookies()).set('session_patient', JSON.stringify(patient));
+    await createSession('session_patient', patient);
 
     return { success: true, message: 'Profile saved successfully!' };
 }
 
 export async function updatePatientProfile(prevState, formData) {
-    const userCookie = (await cookies()).get('session_patient');
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get('session_patient');
     if (!userCookie) return { message: 'Please login first.' };
-    const patient = JSON.parse(userCookie.value);
+    const patient = await decrypt(userCookie.value);
+    if (!patient) return { message: 'Please login first.' };
 
     const updates = {
         name: formData.get('name'),
@@ -61,7 +66,7 @@ export async function updatePatientProfile(prevState, formData) {
 
     const updated = await services.patient.updateProfile(patient.id, updates);
     if (updated) {
-        (await cookies()).set('session_patient', JSON.stringify(updated));
+        await createSession('session_patient', updated);
         return { success: true, message: 'Profile updated successfully!' };
     }
 
@@ -69,14 +74,16 @@ export async function updatePatientProfile(prevState, formData) {
 }
 
 export async function logoutPatient() {
-    (await cookies()).delete('session_patient');
+    await deleteSession('session_patient');
     redirect('/');
 }
 
 export async function bookAppointment(prevState, formData) {
-    const userCookie = (await cookies()).get('session_patient');
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get('session_patient');
     if (!userCookie) return { message: 'Please login to book an appointment.' };
-    const patient = JSON.parse(userCookie.value);
+    const patient = await decrypt(userCookie.value);
+    if (!patient) return { message: 'Please login to book an appointment.' };
 
     const doctorId = formData.get('doctorId');
     const hospitalId = formData.get('hospitalId');
@@ -105,9 +112,11 @@ export async function bookAppointment(prevState, formData) {
 }
 
 export async function cancelAppointmentPatient(prevState, formData) {
-    const userCookie = (await cookies()).get('session_patient');
+    const cookieStore = await cookies();
+    const userCookie = cookieStore.get('session_patient');
     if (!userCookie) return { message: 'Please login first.' };
-    const patient = JSON.parse(userCookie.value);
+    const patient = await decrypt(userCookie.value);
+    if (!patient) return { message: 'Please login first.' };
 
     const visitId = formData.get('visitId');
     const result = await services.patient.cancelVisit(patient.id, visitId);
@@ -120,30 +129,6 @@ export async function cancelAppointmentPatient(prevState, formData) {
 }
 
 export async function addReview(prevState, formData) {
-    const userCookie = (await cookies()).get('session_patient');
-    if (!userCookie) return { message: 'Please login to leave a review.' };
-    const patient = JSON.parse(userCookie.value);
-
-    const hospitalId = formData.get('hospitalId');
-    const rating = parseInt(formData.get('rating'));
-    const comment = formData.get('comment');
-
-    if (!hospitalId || !rating) {
-        return { success: false, message: 'Please provide a rating.' };
-    }
-
-    const review = {
-        id: `r_${Date.now()}`,
-        hospitalId,
-        patientMobile: patient.mobile,
-        rating,
-        comment: comment || '',
-        date: new Date().toISOString().split('T')[0],
-    };
-
-    // NOTE: Reviews not yet in services.js, keeping mock fallback or omitting
-    // db.reviews.push(review); 
-    // Commented out as db is removed. 
-    // TODO: Add review support to Prisma Schema.
-    return { success: true, message: 'Review submitted! Thank you. (Note: Reviews are temporarily disabled during upgrade)' };
+    // Reviews disabled
+    return { success: true, message: 'Reviews are temporarily disabled during upgrade' };
 }
