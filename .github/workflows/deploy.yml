@@ -1,0 +1,44 @@
+
+name: Haspataal CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: './haspataal-in/package-lock.json'
+        
+    - name: Install Dependencies
+      working-directory: ./haspataal-in
+      run: npm ci
+      
+    - name: Run Linter
+      working-directory: ./haspataal-in
+      run: npm run lint
+      
+    # - name: Run Tests
+    #   working-directory: ./haspataal-in
+    #   run: npm test
+      
+    - name: Security Audit
+      working-directory: ./haspataal-in
+      run: npm audit --audit-level=high
+      
+    # - name: Check RLS Policies (Placeholder)
+    #   run: echo "Checking RLS policies..." 
