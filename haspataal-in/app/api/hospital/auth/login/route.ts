@@ -1,8 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { verifyPassword } from '@/lib/auth/hash';
 import { generateToken } from '@/lib/auth/jwt';
-import { createClient } from '@/lib/supabase/client'; // Using the centralized client
+import prisma from '@/lib/prisma';
+import { AuditService } from '@/lib/services/audit';
 
 export async function POST(req: Request) {
     try {
@@ -12,31 +12,31 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
         }
 
-        const supabase = createClient();
+        const user = await prisma.staff.findUnique({
+            where: { mobile }
+        });
 
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('mobile', mobile)
-            .single();
-
-        if (error || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
-        const valid = await verifyPassword(password, user.password_hash);
+        const valid = await verifyPassword(password, user.password);
         if (!valid) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
-        const token = await generateToken(user);
+        const token = await generateToken({
+            id: user.id,
+            hospital_id: user.hospitalId,
+            role: user.role.toLowerCase()
+        });
 
         // Audit Log
-        const { AuditService } = await import('@/lib/services/audit');
-        // user.hospital_id might be null for super admins, but schema allows nullable
-        await AuditService.log('LOGIN', user.hospital_id, user.id, 'users', user.id);
+        try {
+            await AuditService.log('LOGIN', user.hospitalId, user.id, 'staff', user.id);
+        } catch (e) { /* ignore audit error safely */ }
 
-        return NextResponse.json({ token });
+        return NextResponse.json({ token, hospital_id: user.hospitalId, user_id: user.id });
     } catch (err) {
         console.error('Login error:', err);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
