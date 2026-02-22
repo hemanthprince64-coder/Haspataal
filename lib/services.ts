@@ -171,12 +171,19 @@ export const services = {
                 });
             }
             logger.info({ action: 'patient_login', patientId: patient.id }, 'Patient logged in successfully');
-            return patient;
+            return {
+                user: {
+                    id: patient.id,
+                    name: patient.name || 'Patient',
+                    role: UserRole.PATIENT,
+                    mobile: patient.phone
+                }
+            };
         },
 
         register: async (data: { mobile: string; name: string; age?: string; gender?: string; bloodGroup?: string; city?: string; email?: string; }) => {
             logger.info({ action: 'patient_register', data }, 'Patient registering profile');
-            return await prisma.patient.upsert({
+            const patient = await prisma.patient.upsert({
                 where: { phone: data.mobile },
                 update: {
                     name: data.name,
@@ -191,6 +198,14 @@ export const services = {
                     password: 'password123'
                 }
             });
+            return {
+                user: {
+                    id: patient.id,
+                    name: patient.name || 'Patient',
+                    role: UserRole.PATIENT,
+                    mobile: patient.phone
+                }
+            };
         },
 
         updateProfile: async (id: string, updates: any) => {
@@ -232,6 +247,26 @@ export const services = {
                 where: { id: visitId, patientId },
                 data: { status: 'CANCELLED' }
             });
+        },
+
+        getById: async (id: string) => {
+            const patient = await prisma.patient.findUnique({ where: { id } });
+            return patient;
+        },
+
+        getVisits: async (patientId: string) => {
+            const appointments = await prisma.appointment.findMany({
+                where: { patientId },
+                orderBy: { date: 'desc' }
+            });
+            return appointments.map(a => ({
+                id: a.id,
+                doctorId: a.doctorId,
+                hospitalId: '', // appointments don't directly store hospitalId
+                date: a.date,
+                status: a.status,
+                patientId: a.patientId
+            }));
         }
     },
 
@@ -276,6 +311,33 @@ export const services = {
             }));
         },
 
+        getDoctors: async (hospitalId: string) => {
+            const affiliations = await prisma.doctorHospitalAffiliation.findMany({
+                where: { hospitalId, isCurrent: true },
+                include: { doctor: true }
+            });
+            return affiliations.map(a => ({
+                id: a.doctor.id,
+                name: a.doctor.fullName,
+                speciality: '',
+                mobile: a.doctor.mobile,
+                role: a.role
+            }));
+        },
+
+        getPatientById: async (hospitalId: string, patientId: string) => {
+            // Look up patient from visit records for this hospital
+            const visit = await prisma.visit.findFirst({
+                where: { hospitalId, id: patientId }
+            });
+            if (visit) {
+                return { name: visit.patientName, mobile: visit.patientPhone };
+            }
+            // Fall back to finding the patient by ID
+            const patient = await prisma.patient.findUnique({ where: { id: patientId } });
+            return patient ? { name: patient.name, mobile: patient.phone } : null;
+        },
+
         login: async (mobile: string, password?: string) => {
             const hospital = await prisma.hospital.findFirst({
                 where: { contactNumber: mobile }
@@ -284,10 +346,12 @@ export const services = {
             if (hospital && (hospital as any).password === password) {
                 logger.info({ action: 'hospital_login', hospitalId: hospital.id }, 'Hospital logged in successfully');
                 return {
-                    id: hospital.id,
-                    name: hospital.legalName || (hospital as any).name,
-                    role: UserRole.HOSPITAL_ADMIN,
-                    hospitalId: hospital.id
+                    user: {
+                        id: hospital.id,
+                        name: hospital.legalName || (hospital as any).name,
+                        role: UserRole.HOSPITAL_ADMIN,
+                        hospitalId: hospital.id
+                    }
                 };
             }
             logger.warn({ action: 'hospital_login_failed', mobile }, 'Failed hospital login attempt');
@@ -370,7 +434,13 @@ export const services = {
         login: async (username: string, password?: string) => {
             if (username === 'admin' && password === 'admin123') {
                 logger.info({ action: 'admin_login', username }, 'Admin logged in successfully');
-                return { id: 'admin', role: UserRole.PLATFORM_ADMIN, name: 'Platform Admin' };
+                return {
+                    user: {
+                        id: 'admin',
+                        role: UserRole.PLATFORM_ADMIN,
+                        name: 'Platform Admin'
+                    }
+                };
             }
             logger.warn({ action: 'admin_login_failed', username }, 'Failed admin login attempt');
             return null;
