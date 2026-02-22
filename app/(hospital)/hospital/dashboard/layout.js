@@ -4,12 +4,16 @@ import Link from "next/link";
 import { logoutHospital } from "@/app/actions";
 import Image from "next/image";
 
-export default async function DashboardLayout({ children }) {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_user");
+import { requireRole } from "../../../../lib/auth/requireRole";
+import { UserRole } from "../../../../types";
 
-    if (!userCookie) redirect("/hospital/login");
-    const user = JSON.parse(userCookie.value);
+export default async function DashboardLayout({ children }) {
+    let user;
+    try {
+        user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
+    } catch (e) {
+        redirect("/hospital/login");
+    }
 
     const navItems = [
         { href: "/hospital/dashboard", label: "Overview", icon: "📊" },

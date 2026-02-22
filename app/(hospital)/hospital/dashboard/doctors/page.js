@@ -1,16 +1,12 @@
 import { services } from "@/lib/services";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth/requireRole";
+import { UserRole } from "@/types";
 import DoctorManagement from "./DoctorManagement";
 
 export default async function DoctorsPage() {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_user");
+    const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
 
-    if (!userCookie) redirect("/hospital/login");
-    const user = JSON.parse(userCookie.value);
-
-    if (user.role !== 'ADMIN') {
+    if (user.role !== UserRole.HOSPITAL_ADMIN) {
         return (
             <div className="page-enter" style={{ padding: "3rem", textAlign: "center" }}>
                 <h2>Access Denied</h2>
@@ -19,7 +15,7 @@ export default async function DoctorsPage() {
         );
     }
 
-    const doctors = services.hospital.getDoctors(user.hospitalId);
+    const doctors = await services.hospital.getDoctors(user.hospitalId);
 
     return (
         <div className="page-enter">

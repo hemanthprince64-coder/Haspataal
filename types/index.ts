@@ -27,6 +27,11 @@ export interface Hospital {
     // added for frontend convenience
     name?: string;
     addressLine1?: string | null;
+    area?: string;
+    rating?: string;
+    avgRating?: string;
+    doctorCount?: number;
+    reviews?: any[];
 }
 
 export interface HospitalFacilities {
@@ -45,6 +50,13 @@ export interface Doctor {
     profilePhotoUrl?: string | null;
     kycStatus: string;
     accountStatus: string;
+    // Computed/Frontend properties
+    name?: string;
+    speciality?: string;
+    hospitalId?: string;
+    fee?: number;
+    experience?: number;
+    hospital?: any;
 }
 
 export interface Appointment {

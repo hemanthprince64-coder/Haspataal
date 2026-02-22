@@ -1,20 +1,24 @@
 import { services } from "@/lib/services";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth/requireRole";
+import { UserRole } from "@/types";
 import Link from "next/link";
 import ProfileActions from "./ProfileActions";
 
 export default async function PatientProfile() {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_patient");
+    const patientObj = await requireRole(UserRole.PATIENT, "session_patient");
 
-    if (!userCookie) {
-        redirect("/login");
-    }
+    const freshPatient = await services.patient.getById(patientObj.id) || patientObj;
 
-    const patient = JSON.parse(userCookie.value);
-    const freshPatient = services.patient.getById(patient.id) || patient;
-    const visits = services.patient.getVisits(patient.id);
+    let allVisits = [];
+    try {
+        allVisits = await services.patient.getVisits(patientObj.id);
+    } catch (e) { }
+
+    const visits = await Promise.all(allVisits.map(async (v) => {
+        const hospital = await services.platform.getHospitalById(v.hospitalId);
+        const doctor = await services.platform.getDoctorById(v.doctorId);
+        return { ...v, hospital, doctor };
+    }));
 
     return (
         <div className="container page-enter" style={{ padding: "2rem 1rem", maxWidth: "900px", margin: "0 auto" }}>
@@ -70,8 +74,6 @@ export default async function PatientProfile() {
             ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {visits.map(v => {
-                        const hospital = services.platform.getHospitalById(v.hospitalId);
-                        const doctor = services.platform.getDoctorById(v.doctorId);
                         const isUpcoming = v.status === 'SCHEDULED';
                         const isCancelled = v.status === 'CANCELLED';
 
@@ -87,13 +89,13 @@ export default async function PatientProfile() {
                             }}>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                                        <h4 style={{ fontWeight: "600" }}>{doctor?.name || v.doctorId}</h4>
+                                        <h4 style={{ fontWeight: "600" }}>{v.doctor?.name || v.doctorId}</h4>
                                         <span className={`badge ${isUpcoming ? 'badge-primary' : isCancelled ? 'badge-danger' : 'badge-success'}`}>
                                             {v.status}
                                         </span>
                                     </div>
                                     <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                                        <span>🏥 {hospital?.name || v.hospitalId}</span>
+                                        <span>🏥 {v.hospital?.name || v.hospitalId}</span>
                                         <span>📅 {new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                                         <span>🕐 {new Date(v.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>

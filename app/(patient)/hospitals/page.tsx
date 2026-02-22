@@ -1,4 +1,4 @@
-import { services } from "@/lib/services";
+import { services } from "../../../lib/services";
 import Link from "next/link";
 
 interface PageProps {
@@ -7,7 +7,7 @@ interface PageProps {
 
 export default async function HospitalsPage({ searchParams }: PageProps) {
     const params = await searchParams;
-    const city = params.city || "Mumbai";
+    const city = (params.city as string) || "Mumbai";
 
     const hospitals = await services.platform.getHospitalsByCity(city);
     const cities = services.platform.getCities();

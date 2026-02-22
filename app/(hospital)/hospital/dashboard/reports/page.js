@@ -1,16 +1,19 @@
 import { services } from "@/lib/services";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth/requireRole";
+import { UserRole } from "@/types";
 import ReportActions from "./ReportActions";
 
 export default async function ReportsPage() {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_user");
+    const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
 
-    if (!userCookie) redirect("/hospital/login");
-    const user = JSON.parse(userCookie.value);
-
-    const visits = services.hospital.getVisits(user.hospitalId);
+    const rawVisits = await services.hospital.getVisits(user.hospitalId);
+    const visits = await Promise.all(
+        rawVisits.map(async (v) => {
+            const doctor = await services.platform.getDoctorById(v.doctorId);
+            const patient = await services.hospital.getPatientById(user.hospitalId, v.patientId);
+            return { ...v, doctor, patient };
+        })
+    );
 
     return (
         <div className="page-enter">
@@ -42,46 +45,42 @@ export default async function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {visits.map(v => {
-                                    const doctor = services.platform.getDoctorById(v.doctorId);
-                                    const patient = services.hospital.getPatientById(user.hospitalId, v.patientId);
-                                    return (
-                                        <tr key={v.id}>
-                                            <td style={{ fontSize: "0.8rem", fontFamily: "monospace", color: "var(--text-muted)" }}>
-                                                {v.id}
-                                            </td>
-                                            <td>
-                                                {new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                <br />
-                                                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                                    {new Date(v.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <strong>{patient?.name || 'Unknown'}</strong>
-                                                <br />
-                                                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                                    📱 {patient?.mobile || '—'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <strong>{doctor?.name || v.doctorId}</strong>
-                                                <br />
-                                                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                                    {doctor?.speciality || ''}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
-                                                    {v.status}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <ReportActions visitId={v.id} status={v.status} />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {visits.map(v => (
+                                    <tr key={v.id}>
+                                        <td style={{ fontSize: "0.8rem", fontFamily: "monospace", color: "var(--text-muted)" }}>
+                                            {v.id.substring(0, 8)}...
+                                        </td>
+                                        <td>
+                                            {new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            <br />
+                                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                                {new Date(v.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{v.patient?.name || 'Unknown'}</strong>
+                                            <br />
+                                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                                📱 {v.patient?.mobile || '—'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{v.doctor?.name || v.doctorId}</strong>
+                                            <br />
+                                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                                {v.doctor?.speciality || ''}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
+                                                {v.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <ReportActions visitId={v.id} status={v.status} />
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

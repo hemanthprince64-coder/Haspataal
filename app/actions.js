@@ -5,6 +5,8 @@ import { db } from '@/lib/data';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
+import { requireRole } from '../lib/auth/requireRole';
+import { UserRole } from '../types';
 
 // ==================== HOSPITAL ACTIONS ====================
 

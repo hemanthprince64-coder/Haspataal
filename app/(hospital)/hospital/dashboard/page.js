@@ -1,18 +1,17 @@
 import { services } from "@/lib/services";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth/requireRole";
+import { UserRole } from "@/types";
 import Link from "next/link";
 
-export default async function HospitalDashboard() {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_user");
+export default async function DashboardPage() {
+    const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
 
-    if (!userCookie) redirect("/hospital/login");
-    const user = JSON.parse(userCookie.value);
+    const stats = await services.hospital.getStats(user.hospitalId);
+    const hospital = await services.platform.getHospitalById(user.hospitalId);
 
-    const stats = services.hospital.getStats(user.hospitalId);
-    const hospital = services.platform.getHospitalById(user.hospitalId);
-    const recentVisits = services.hospital.getVisits(user.hospitalId).slice(0, 5);
+    // getVisits is now completely async and awaited.
+    const allVisits = await services.hospital.getVisits(user.hospitalId);
+    const recentVisits = allVisits.slice(0, 5);
 
     const statCards = [
         { label: "Today's Visits", value: stats.todayVisits, icon: "📅", color: "#0284c7", bg: "#e0f2fe" },
@@ -77,7 +76,7 @@ export default async function HospitalDashboard() {
                 <Link href="/hospital/dashboard/reports" className="btn btn-outline">
                     📊 View Reports
                 </Link>
-                {user.role === 'ADMIN' && (
+                {user.role === 'HOSPITAL_ADMIN' && (
                     <Link href="/hospital/dashboard/doctors" className="btn btn-outline">
                         👨‍⚕️ Manage Doctors
                     </Link>
@@ -109,13 +108,11 @@ export default async function HospitalDashboard() {
                             </thead>
                             <tbody>
                                 {recentVisits.map(v => {
-                                    const doctor = services.platform.getDoctorById(v.doctorId);
-                                    const patient = services.hospital.getPatientById(user.hospitalId, v.patientId);
                                     return (
                                         <tr key={v.id}>
                                             <td>{new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                                            <td>{patient?.name || patient?.mobile || v.patientId}</td>
-                                            <td>{doctor?.name || v.doctorId}</td>
+                                            <td>{v.patientId}</td>
+                                            <td>{v.doctorId}</td>
                                             <td>
                                                 <span className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
                                                     {v.status}

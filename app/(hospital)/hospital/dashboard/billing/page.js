@@ -1,16 +1,11 @@
 import { services } from "@/lib/services";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireRole } from "@/lib/auth/requireRole";
+import { UserRole } from "@/types";
 import BillingForm from "./BillingForm";
 
 export default async function BillingPage() {
-    const cookieStore = await cookies();
-    const userCookie = cookieStore.get("session_user");
-
-    if (!userCookie) redirect("/hospital/login");
-    const user = JSON.parse(userCookie.value);
-
-    const doctors = services.hospital.getDoctors(user.hospitalId);
+    const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
+    const doctors = await services.hospital.getDoctors(user.hospitalId);
 
     return (
         <div className="page-enter">

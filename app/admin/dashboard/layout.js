@@ -4,12 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { logoutAdmin } from "@/app/actions";
 
-export default async function AdminDashboardLayout({ children }) {
-    const cookieStore = await cookies();
-    const adminCookie = cookieStore.get("session_admin");
+import { requireRole } from "../../../lib/auth/requireRole";
+import { UserRole } from "../../../types";
 
-    if (!adminCookie) redirect("/admin");
-    const admin = JSON.parse(adminCookie.value);
+export default async function AdminDashboardLayout({ children }) {
+    let admin;
+    try {
+        admin = await requireRole(UserRole.PLATFORM_ADMIN, "session_admin");
+    } catch (e) {
+        redirect("/admin");
+    }
 
     const navItems = [
         { href: "/admin/dashboard", label: "Overview", icon: "📊" },

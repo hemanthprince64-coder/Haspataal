@@ -286,7 +286,7 @@ export const services = {
                 return {
                     id: hospital.id,
                     name: hospital.legalName || (hospital as any).name,
-                    role: 'ADMIN',
+                    role: UserRole.HOSPITAL_ADMIN,
                     hospitalId: hospital.id
                 };
             }
@@ -358,10 +358,19 @@ export const services = {
 
     // --- Admin Services ---
     admin: {
+        getPlatformStats: async () => {
+            return {
+                totalHospitals: await prisma.hospital.count(),
+                verifiedHospitals: await prisma.hospital.count({ where: { verificationStatus: 'verified' } }),
+                totalDoctors: await prisma.doctorMaster.count(),
+                totalPatients: await prisma.patient.count()
+            };
+        },
+
         login: async (username: string, password?: string) => {
             if (username === 'admin' && password === 'admin123') {
                 logger.info({ action: 'admin_login', username }, 'Admin logged in successfully');
-                return { id: 'admin', role: 'PLATFORM_ADMIN', name: 'Platform Admin' };
+                return { id: 'admin', role: UserRole.PLATFORM_ADMIN, name: 'Platform Admin' };
             }
             logger.warn({ action: 'admin_login_failed', username }, 'Failed admin login attempt');
             return null;
