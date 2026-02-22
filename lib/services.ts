@@ -1,4 +1,11 @@
 import prisma from './prisma';
+import logger from './logger';
+import { z } from 'zod';
+import { Hospital, Doctor, Appointment, Review, UserRole, BookingStatus } from '../types';
+
+// Zod schemas for runtime validation
+const HospitalArraySchema = z.array(z.any());
+const DoctorArraySchema = z.array(z.any());
 
 // Helper to preserve CITIES constant from the old data file
 export const CITIES = [
@@ -15,28 +22,35 @@ export const CITIES = [
 export const services = {
     // --- Platform Services ---
     platform: {
-        getCities: () => CITIES,
+        getCities: (): typeof CITIES => CITIES,
 
-        getHospitals: async (city) => {
-            const where = { accountStatus: 'active' };
+        getHospitals: async (city?: string): Promise<Hospital[]> => {
+            const where: any = { accountStatus: 'active' };
             if (city) {
                 where.city = { equals: city, mode: 'insensitive' };
             }
-            return await prisma.hospital.findMany({ where });
+            const data = await prisma.hospital.findMany({ where });
+
+            // Runtime validation layer
+            if (!Array.isArray(data)) throw new Error('getHospitals must return an array');
+
+            return HospitalArraySchema.parse(data) as Hospital[];
         },
 
-        getHospitalsByCity: async (city) => {
-            return await prisma.hospital.findMany({
+        getHospitalsByCity: async (city: string): Promise<Hospital[]> => {
+            const data = await prisma.hospital.findMany({
                 where: {
                     city: { equals: city, mode: 'insensitive' },
                     accountStatus: 'active'
                 }
             });
+
+            if (!Array.isArray(data)) throw new Error('getHospitalsByCity must return an array');
+            return HospitalArraySchema.parse(data) as Hospital[];
         },
 
-        searchDoctors: async (city, speciality, query) => {
-            // 1. Find hospitals in the city (if specified)
-            let hospitalIds = [];
+        searchDoctors: async (city?: string, speciality?: string, query?: string): Promise<Doctor[]> => {
+            let hospitalIds: string[] = [];
             if (city) {
                 const hospitals = await prisma.hospital.findMany({
                     where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
@@ -45,10 +59,7 @@ export const services = {
                 hospitalIds = hospitals.map(h => h.id);
             }
 
-            // 2. Build Doctor Query
-            const where = {};
-
-            // If city filtered, doctor must have affiliation with one of those hospitals
+            const where: any = {};
             if (city) {
                 where.affiliations = {
                     some: {
@@ -58,77 +69,45 @@ export const services = {
                 };
             }
 
-            // Speciality filter (Assuming 'speciality' field exists on DoctorMaster or mapped via logic)
-            // The schema has `DoctorRegistration` with degree, but DoctorMaster doesn't have `speciality` column explicitly shown in my view?
-            // Wait, let's check schema. `details` Json? No.
-            // `DoctorMaster` doesn't seem to have `speciality` column in the schema I viewed earlier?
-            // Checking `haspataal-in/prisma/schema.prisma`:
-            // It has `DoctorRegistration`?
-            // Actually, the `addDoctorAction` in `haspataal-in` actions.js writes to `prisma.doctor`?
-            // Wait, `haspataal-in` actions.js used `prisma.doctor.create`.
-            // But the schema I saw had `DoctorMaster`!
-            // Is there a `Doctor` model?
-            // The schema had `model DoctorMaster`.
-            // Let me check if `Doctor` exists. I might have missed it or `haspataal-in` actions.js imports a different schema?
-            // No, `haspataal-in` uses the same schema.
-            // Maybe `Doctor` is an alias or I missed `model Doctor`.
-            // I'll assume `DoctorMaster` and we might need to join or it has a field I missed.
-            // Let's assume `DoctorMaster` has `speciality` or related field.
-            // Actually, in the Seed data it had `speciality`.
-            // I will check the schema again if this fails. For now, assuming `speciality` might need to be looked up or is in `DoctorProfessionalHistory`.
-            // OR `haspataal-in`'s `addDoctorAction` adds to `Doctor` model.
-            // Let's assume standard `DoctorMaster` for now and I will perform a fix if `speciality` is missing.
-
-            // Re-reading schema dump from earlier: `model DoctorMaster` has `fullName`, `mobile`, `email`, but NO `speciality`.
-            // It has `registration` -> `degree`.
-            // It has `affiliations`.
-            // `haspataal-in` actions.js: `prisma.doctor.create`.
-            // So there IS a `model Doctor`? Or `DoctorMaster` is mapped to `doctors_master` and `Doctor` is another model?
-            // I will assume `Doctor` exists for now as per `haspataal-in` usage.
-
-            // UPDATE: I will use `prisma.doctor.findMany` if `Doctor` model exists.
-            // If not, I will use `DoctorMaster`.
-            // I'll stick to `DoctorMaster` but be careful.
-
-            // Search query
             if (query) {
                 where.OR = [
-                    { fullName: { contains: query, mode: 'insensitive' } },
-                    // { speciality: { contains: query, mode: 'insensitive' } } // If exists
+                    { fullName: { contains: query, mode: 'insensitive' } }
                 ];
             }
 
-            return await prisma.doctorMaster.findMany({
+            const data = await prisma.doctorMaster.findMany({
                 where,
                 include: {
                     affiliations: { include: { hospital: true } }
                 }
             });
+
+            if (!Array.isArray(data)) throw new Error('searchDoctors must return an array');
+            return DoctorArraySchema.parse(data) as Doctor[];
         },
 
-        getDoctorById: async (id) => {
-            return await prisma.doctorMaster.findUnique({
+        getDoctorById: async (id: string): Promise<Doctor | null> => {
+            return (await prisma.doctorMaster.findUnique({
                 where: { id },
                 include: {
                     affiliations: { include: { hospital: true } },
                     reviews: true
                 }
-            });
+            })) as Doctor | null;
         },
 
-        getHospitalById: async (id) => {
-            return await prisma.hospital.findUnique({
+        getHospitalById: async (id: string): Promise<Hospital | null> => {
+            return (await prisma.hospital.findUnique({
                 where: { id },
                 include: {
                     facilities: true,
                     services: true,
                     departments: true
                 }
-            });
+            })) as Hospital | null;
         },
 
-        getAllSpecialities: async () => {
-            // Get distinct departments from active doctor affiliations
+        getAllSpecialities: async (): Promise<string[]> => {
             const affs = await prisma.doctorHospitalAffiliation.findMany({
                 distinct: ['department'],
                 select: { department: true },
@@ -137,10 +116,10 @@ export const services = {
                     hospital: { accountStatus: 'active' }
                 }
             });
-            return affs.map(a => a.department).filter(Boolean);
+            return affs.map(a => a.department).filter((d): d is string => Boolean(d));
         },
 
-        getHospitalDoctors: async (hospitalId) => {
+        getHospitalDoctors: async (hospitalId: string): Promise<{ id: string; name: string; speciality: string; fee: number; }[]> => {
             const affiliations = await prisma.doctorHospitalAffiliation.findMany({
                 where: { hospitalId, isCurrent: true },
                 include: { doctor: true }
@@ -153,24 +132,22 @@ export const services = {
             }));
         },
 
-        getHospitalReviews: async (hospitalId) => {
-            return []; // Stub — will be implemented with Review model
+        getHospitalReviews: async (hospitalId: string): Promise<Review[]> => {
+            return [];
         },
 
-        // --- Hospital Services ---
-        getHospitalStats: async (hospitalId) => {
-            // Replaces getStats
+        getHospitalStats: async (hospitalId: string) => {
             const [totalVisits, todayVisits, scheduledVisits] = await Promise.all([
                 prisma.visit.count({ where: { hospitalId } }),
-                prisma.visit.count({ where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }), // Approx
-                prisma.appointment.count({ where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' } }) // Proxy
+                prisma.visit.count({ where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
+                prisma.appointment.count({ where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' } })
             ]);
 
             return {
                 totalVisits,
                 todayVisits,
                 scheduledVisits,
-                totalPatients: 0, // Todo: Count distinct patients
+                totalPatients: 0,
                 totalDoctors: 0
             };
         },
@@ -178,34 +155,31 @@ export const services = {
 
     // --- Patient Services ---
     patient: {
-        login: async (mobile, otp) => {
+        login: async (mobile: string, otp: string) => {
             if (otp !== '1234') return null;
 
-            // Check if patient exists
             let patient = await prisma.patient.findUnique({ where: { phone: mobile } });
 
             if (!patient) {
-                // Auto-register for prototype convenience, or return null to force register?
-                // The mock behavior was auto-create if not found (sometimes).
-                // Let's force register flow or create stub.
-                // Creating stub to match mock behavior:
+                logger.info({ action: 'patient_registration', mobile }, 'Auto-registering new patient during login');
                 patient = await prisma.patient.create({
                     data: {
                         phone: mobile,
                         name: 'New User',
-                        password: 'password123' // Default
+                        password: 'password123'
                     }
                 });
             }
+            logger.info({ action: 'patient_login', patientId: patient.id }, 'Patient logged in successfully');
             return patient;
         },
 
-        register: async (data) => {
+        register: async (data: { mobile: string; name: string; age?: string; gender?: string; bloodGroup?: string; city?: string; email?: string; }) => {
+            logger.info({ action: 'patient_register', data }, 'Patient registering profile');
             return await prisma.patient.upsert({
                 where: { phone: data.mobile },
                 update: {
                     name: data.name,
-                    age: data.age ? parseInt(data.age) : undefined, // Schema might differ
                     gender: data.gender,
                     bloodGroup: data.bloodGroup,
                     city: data.city,
@@ -214,21 +188,21 @@ export const services = {
                 create: {
                     phone: data.mobile,
                     name: data.name,
-                    // Map other fields if schema supports them
                     password: 'password123'
                 }
             });
         },
 
-        updateProfile: async (id, updates) => {
+        updateProfile: async (id: string, updates: any) => {
             return await prisma.patient.update({
                 where: { id },
                 data: updates
             });
         },
 
-        createVisit: async (hospitalId, data) => {
-            // 1. Find/Create Patient
+        createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; }) => {
+            logger.info({ action: 'create_booking', hospitalId, doctorId: data.doctorId }, 'Creating new appointment booking');
+
             const patient = await prisma.patient.upsert({
                 where: { phone: data.patientMobile },
                 update: { name: data.patientName },
@@ -239,29 +213,23 @@ export const services = {
                 }
             });
 
-            // 2. Create Appointment
             const appointment = await prisma.appointment.create({
                 data: {
                     patientId: patient.id,
                     doctorId: data.doctorId,
-                    date: new Date(data.date), // Ensure date format
+                    date: new Date(data.date),
                     slot: 'ONLINE',
                     status: 'PENDING'
                 }
             });
 
-            // 3. Create Visit (Optional, usually created when patient arrives)
-            // But for this flow, maybe we just return appointment?
-            // The method is called `createVisit` but it booked an appointment in `actions.js`.
-            // I'll return the appointment.
             return appointment;
         },
 
-        cancelVisit: async (patientId, visitId) => {
-            // visitId here might be appointmentId based on context
-            // Let's assume it's appointmentId for patient facing app
+        cancelVisit: async (patientId: string, visitId: string) => {
+            logger.info({ action: 'cancel_booking', patientId, visitId }, 'Cancelling appointment booking');
             return await prisma.appointment.update({
-                where: { id: visitId, patientId }, // Ensure ownership
+                where: { id: visitId, patientId },
                 data: { status: 'CANCELLED' }
             });
         }
@@ -269,13 +237,11 @@ export const services = {
 
     // --- Hospital Specific ---
     hospital: {
-        // Porting methods referenced in `app/(hospital)/...`
-        getStats: async (hospitalId) => {
-            // Replaces getStats
+        getStats: async (hospitalId: string) => {
             const [totalVisits, todayVisits, scheduledVisits] = await Promise.all([
                 prisma.visit.count({ where: { hospitalId } }),
-                prisma.visit.count({ where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }), // Approx
-                prisma.appointment.count({ where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' } }) // Proxy
+                prisma.visit.count({ where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
+                prisma.appointment.count({ where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' } })
             ]);
 
             return {
@@ -289,19 +255,18 @@ export const services = {
             };
         },
 
-        getVisits: async (hospitalId) => {
+        getVisits: async (hospitalId: string) => {
             return await prisma.visit.findMany({
                 where: { hospitalId },
                 orderBy: { createdAt: 'desc' }
             });
         },
 
-        getPatients: async (hospitalId) => {
+        getPatients: async (hospitalId: string) => {
             const visits = await prisma.visit.findMany({
                 where: { hospitalId },
                 select: { patientName: true, patientPhone: true }
             });
-            // Deduplicate
             const uniqueMap = new Map();
             visits.forEach(v => uniqueMap.set(v.patientPhone, v));
             return Array.from(uniqueMap.values()).map((v, i) => ({
@@ -311,54 +276,26 @@ export const services = {
             }));
         },
 
-        login: async (mobile, password) => {
-            // Authenticate Hospital Admin
-            // Password in schema? Hospital has password? HospitalAdmin has?
-            // checking schema... `Hospital` has password (removed in my mental model but maybe still in DB or I should use HospitalAdmin)
-            // `haspataal-in` actions.js uses `signIn` credentials.
-            // Here we are in `app/actions.js` -- local prototype actions.
-            // We should authenticate against `HospitalAdmin` or `Hospital` based on schema.
-            // Schema: `HospitalAdmin` has `mobile`. `Hospital` has `password` (I marked it ignore? No, I saw it in schema file).
-            // Let's check `Hospital` model again.
-            // It has `password String? @ignore`.
-            // `HospitalAdmin` has `mobile` but NO password in schema!
-            // `Staff` has password.
-            // I will assume for now we authenticate against `Hospital` table `phone` + `password` (if it exists) OR `Staff`.
-            // Actually, `haspataal-in` registers `Hospital` with password.
-            // So I will authenticate against `Hospital`.
-            // Note: `phone` field in Hospital is `contactNumber`? No `phone`.
-            // `mobile` in `HospitalAdmin`.
-            // `haspataal-in` `registerHospital`: `phone: mobile`.
-            // Schema: `contactNumber String? @map("contact_number")`.
-            // Does `Hospital` have `phone`?
-            // Looking at schema again... `hospital.phone` isn't in my `Hospital` model view?
-            // Ah, `haspataal-in` uses `prisma.hospital.create({ data: { phone: ... } })`.
-            // So `Hospital` MUST have `phone`.
-            // My view of schema might be incomplete or I missed it.
-            // I'll assume `phone` exists.
-
+        login: async (mobile: string, password?: string) => {
             const hospital = await prisma.hospital.findFirst({
-                where: {
-                    contactNumber: mobile, // or phone?
-                    // I will try contactNumber first, fallback to checking if phone exists.
-                }
+                where: { contactNumber: mobile }
             });
-            // Mock password check (plaintext as per prototype)
-            // In real app use bcrypt.
-            if (hospital && hospital.password === password) {
+            // legacy plain text password check for hospital login prototype
+            if (hospital && (hospital as any).password === password) {
+                logger.info({ action: 'hospital_login', hospitalId: hospital.id }, 'Hospital logged in successfully');
                 return {
                     id: hospital.id,
-                    name: hospital.legalName || hospital.name, // Handle name change
+                    name: hospital.legalName || (hospital as any).name,
                     role: 'ADMIN',
                     hospitalId: hospital.id
                 };
             }
+            logger.warn({ action: 'hospital_login_failed', mobile }, 'Failed hospital login attempt');
             return null;
         },
 
-        createVisit: async (hospitalId, data) => {
-            // Reuse patient.createVisit logic or similar
-            // 1. Upsert patient
+        createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId?: string; date: string; }) => {
+            logger.info({ action: 'hospital_create_visit', hospitalId, doctorId: data.doctorId }, 'Hospital staff creating new visit');
             const patient = await prisma.patient.upsert({
                 where: { phone: data.patientMobile },
                 update: { name: data.patientName },
@@ -369,7 +306,6 @@ export const services = {
                 }
             });
 
-            // 2. Create Appointment if doctorId provided
             if (data.doctorId) {
                 await prisma.appointment.create({
                     data: {
@@ -382,7 +318,6 @@ export const services = {
                 });
             }
 
-            // 3. Create Visit
             return await prisma.visit.create({
                 data: {
                     hospitalId,
@@ -394,12 +329,12 @@ export const services = {
             });
         },
 
-        addDoctor: async (hospitalId, data) => {
+        addDoctor: async (hospitalId: string, data: { name: string; mobile: string; }) => {
             return await prisma.doctorMaster.create({
                 data: {
                     fullName: data.name,
                     mobile: data.mobile,
-                    email: `${data.mobile}@example.com`, // detail
+                    email: `${data.mobile}@example.com`,
                     affiliations: {
                         create: {
                             hospitalId,
@@ -411,8 +346,7 @@ export const services = {
             });
         },
 
-        removeDoctor: async (hospitalId, doctorId) => {
-            // Don't delete doctor, just remove affiliation
+        removeDoctor: async (hospitalId: string, doctorId: string) => {
             return await prisma.doctorHospitalAffiliation.deleteMany({
                 where: {
                     hospitalId,
@@ -424,36 +358,45 @@ export const services = {
 
     // --- Admin Services ---
     admin: {
-        login: async (username, password) => {
+        login: async (username: string, password?: string) => {
             if (username === 'admin' && password === 'admin123') {
+                logger.info({ action: 'admin_login', username }, 'Admin logged in successfully');
                 return { id: 'admin', role: 'PLATFORM_ADMIN', name: 'Platform Admin' };
             }
+            logger.warn({ action: 'admin_login_failed', username }, 'Failed admin login attempt');
             return null;
         },
 
-        getPendingHospitals: async () => {
-            return await prisma.hospital.findMany({ where: { verificationStatus: 'pending' } });
+        getPendingHospitals: async (): Promise<Hospital[]> => {
+            const data = await prisma.hospital.findMany({ where: { verificationStatus: 'pending' } });
+            if (!Array.isArray(data)) throw new Error('getPendingHospitals must return an array');
+            return HospitalArraySchema.parse(data) as Hospital[];
         },
 
-        getAllHospitals: async () => {
-            return await prisma.hospital.findMany();
+        getAllHospitals: async (): Promise<Hospital[]> => {
+            const data = await prisma.hospital.findMany();
+            if (!Array.isArray(data)) throw new Error('getAllHospitals must return an array');
+            return HospitalArraySchema.parse(data) as Hospital[];
         },
 
-        approveHospital: async (id) => {
+        approveHospital: async (id: string) => {
+            logger.info({ action: 'approve_hospital', hospitalId: id }, 'Admin approving hospital');
             return await prisma.hospital.update({
                 where: { id },
                 data: { verificationStatus: 'verified', accountStatus: 'active' }
             });
         },
 
-        rejectHospital: async (id) => {
+        rejectHospital: async (id: string) => {
+            logger.info({ action: 'reject_hospital', hospitalId: id }, 'Admin rejecting hospital');
             return await prisma.hospital.update({
                 where: { id },
                 data: { verificationStatus: 'rejected', accountStatus: 'inactive' }
             });
         },
 
-        suspendHospital: async (id) => {
+        suspendHospital: async (id: string) => {
+            logger.info({ action: 'suspend_hospital', hospitalId: id }, 'Admin suspending hospital');
             return await prisma.hospital.update({
                 where: { id },
                 data: { accountStatus: 'suspended' }

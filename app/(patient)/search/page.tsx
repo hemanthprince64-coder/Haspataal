@@ -1,7 +1,11 @@
 import { services } from "@/lib/services";
 import Link from "next/link";
 
-export default async function SearchPage({ searchParams }) {
+interface PageProps {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function SearchPage({ searchParams }: PageProps) {
     const params = await searchParams;
     const city = params.city || "Mumbai";
     const speciality = params.speciality || "";
