@@ -28,7 +28,24 @@ export async function loginHospital(prevState, formData) {
 }
 
 export async function registerHospital(prevState, formData) {
-    return { message: 'Hospital registration temporarily disabled for migration. Please contact Admin.' };
+    try {
+        const data = {
+            hospitalName: formData.get('hospitalName'),
+            city: formData.get('city'),
+            adminName: formData.get('adminName'),
+            mobile: formData.get('mobile'),
+            password: formData.get('password')
+        };
+
+        if (!data.hospitalName || !data.city || !data.adminName || !data.mobile || !data.password) {
+            return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        await services.hospital.register(data);
+        return { success: true, message: 'Hospital registered successfully! Account is pending admin approval.' };
+    } catch (e) {
+        return { success: false, message: e.message || 'Registration failed.' };
+    }
 }
 
 export async function logoutHospital() {
@@ -103,6 +120,8 @@ export async function addDoctorAction(prevState, formData) {
         experience: formData.get('experience'),
         fee: formData.get('fee'),
         password: formData.get('password') || '123',
+        qualifications: formData.get('qualifications'),
+        schedule: formData.get('schedule')
     };
 
     if (!doctorData.name || !doctorData.mobile || !doctorData.speciality) {
@@ -125,6 +144,117 @@ export async function removeDoctorAction(prevState, formData) {
     await services.hospital.removeDoctor(user.hospitalId, doctorId);
 
     return { success: true, message: 'Doctor removed successfully.' };
+}
+
+export async function approveDoctorAffiliationAction(prevState, formData) {
+    let user;
+    try {
+        user = await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user');
+    } catch (e) {
+        return { success: false, message: 'Only hospital admins can approve doctors.' };
+    }
+
+    const doctorId = formData.get('doctorId');
+    await services.hospital.approveDoctorAffiliation(user.hospitalId, doctorId);
+    return { success: true, message: 'Doctor approved successfully.' };
+}
+
+export async function rejectDoctorAffiliationAction(prevState, formData) {
+    let user;
+    try {
+        user = await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user');
+    } catch (e) {
+        return { success: false, message: 'Only hospital admins can reject doctors.' };
+    }
+
+    const doctorId = formData.get('doctorId');
+    await services.hospital.rejectDoctorAffiliation(user.hospitalId, doctorId);
+    return { success: true, message: 'Doctor rejected successfully.' };
+}
+
+export async function registerDoctor(prevState, formData) {
+    try {
+        const data = {
+            fullName: formData.get('fullName'),
+            mobile: formData.get('mobile'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            registrationNumber: formData.get('registrationNumber'),
+            councilName: formData.get('councilName')
+        };
+
+        if (!data.fullName || !data.mobile || !data.email || !data.registrationNumber) {
+            return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        await services.doctor.register(data);
+        return { success: true, message: 'Doctor registered successfully! Complete your KYC inside the dashboard.' };
+    } catch (e) {
+        return { success: false, message: e.message || 'Registration failed.' };
+    }
+}
+
+export async function registerAgent(prevState, formData) {
+    try {
+        const data = {
+            fullName: formData.get('fullName'),
+            mobile: formData.get('mobile'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            area: formData.get('area'),
+            city: formData.get('city'),
+            state: formData.get('state'),
+        };
+
+        if (!data.fullName || !data.mobile || !data.email || !data.password) {
+            return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        await services.agent.register(data);
+        return { success: true, message: 'Agent registered successfully! Partner approval is pending.' };
+    } catch (e) {
+        return { success: false, message: e.message || 'Registration failed.' };
+    }
+}
+
+export async function registerLab(prevState, formData) {
+    try {
+        const data = {
+            labName: formData.get('labName'),
+            city: formData.get('city'),
+            adminName: formData.get('adminName'),
+            mobile: formData.get('mobile'),
+            password: formData.get('password'),
+            registrationNumber: formData.get('registrationNumber')
+        };
+
+        if (!data.labName || !data.city || !data.adminName || !data.mobile || !data.password) {
+            return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        await services.hospital.registerLab(data);
+        return { success: true, message: 'Lab registered successfully! Account is pending admin approval.' };
+    } catch (e) {
+        return { success: false, message: e.message || 'Registration failed.' };
+    }
+}
+
+export async function agentLogin(prevState, formData) {
+    const mobile = formData.get('mobile');
+    const password = formData.get('password');
+
+    if (!mobile || !password) {
+        return { message: 'Please enter mobile number and password.' };
+    }
+
+    try {
+        const result = await services.agent.login(mobile, password);
+        await createSession('session_agent', result);
+    } catch (e) {
+        return { message: e.message || 'Login failed.' };
+    }
+
+    redirect('/agent/dashboard');
 }
 
 // ==================== PATIENT ACTIONS ====================
@@ -326,4 +456,15 @@ export async function suspendHospitalAction(prevState, formData) {
     await services.admin.suspendHospital(hospitalId);
 
     return { success: true, message: `Hospital suspended.` };
+}
+
+export async function getAvailableSlotsAction(doctorId, date) {
+    if (!doctorId || !date) return [];
+    try {
+        const slots = await services.patient.getAvailableSlots(doctorId, date);
+        return slots;
+    } catch (error) {
+        console.error('Failed to get slots:', error);
+        return [];
+    }
 }

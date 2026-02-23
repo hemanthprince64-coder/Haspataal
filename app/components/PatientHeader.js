@@ -8,8 +8,10 @@ export default function PatientHeader({ cities }) {
     const [selectedCity, setSelectedCity] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         const savedCity = localStorage.getItem('haspataal_city');
         if (savedCity) setSelectedCity(savedCity);
 
@@ -73,12 +75,13 @@ export default function PatientHeader({ cities }) {
                     <NavItem href="/" label="Home" />
                     <NavItem href="/search" label="Doctors" />
                     <NavItem href="/hospitals" label="Hospitals" />
-                    {isLoggedIn ? (
+                    {mounted && isLoggedIn ? (
                         <>
                             <NavItem href="/profile" label="My Visits" active />
                             <form action="/api/logout" method="POST" style={{ display: 'inline' }}>
                                 <button
                                     type="button"
+                                    suppressHydrationWarning
                                     onClick={async () => {
                                         const { logoutPatient } = await import('@/app/actions');
                                         logoutPatient();
@@ -98,17 +101,18 @@ export default function PatientHeader({ cities }) {
                                 </button>
                             </form>
                         </>
-                    ) : (
+                    ) : mounted ? (
                         <Link href="/login" className="btn btn-primary btn-sm" style={{ marginLeft: '0.5rem' }}>
                             Login
                         </Link>
-                    )}
+                    ) : null}
                 </nav>
 
                 {/* Mobile Menu Button */}
                 <button
                     className="show-mobile-only"
                     onClick={() => setMenuOpen(!menuOpen)}
+                    suppressHydrationWarning
                     style={{
                         background: 'none',
                         border: 'none',
@@ -137,10 +141,11 @@ export default function PatientHeader({ cities }) {
                         <MobileNavItem href="/" label="🏠 Home" onClick={() => setMenuOpen(false)} />
                         <MobileNavItem href="/search" label="👨‍⚕️ Find Doctors" onClick={() => setMenuOpen(false)} />
                         <MobileNavItem href="/hospitals" label="🏥 Hospitals" onClick={() => setMenuOpen(false)} />
-                        {isLoggedIn ? (
+                        {mounted && isLoggedIn ? (
                             <>
                                 <MobileNavItem href="/profile" label="📋 My Visits" onClick={() => setMenuOpen(false)} />
                                 <button
+                                    suppressHydrationWarning
                                     onClick={async () => {
                                         const { logoutPatient } = await import('@/app/actions');
                                         logoutPatient();
@@ -160,11 +165,11 @@ export default function PatientHeader({ cities }) {
                                     🚪 Logout
                                 </button>
                             </>
-                        ) : (
+                        ) : mounted ? (
                             <Link href="/login" className="btn btn-primary" style={{ textAlign: 'center', marginTop: '0.5rem' }}>
                                 Login / Register
                             </Link>
-                        )}
+                        ) : null}
                     </nav>
                 </div>
             )}

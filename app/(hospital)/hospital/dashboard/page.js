@@ -32,36 +32,38 @@ export default async function DashboardPage() {
             {/* Stats Grid */}
             <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-                gap: "1rem",
-                marginBottom: "2rem"
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: "1.5rem",
+                marginBottom: "3rem"
             }}>
                 {statCards.map(s => (
-                    <div key={s.label} className="card" style={{
+                    <div key={s.label} className="card card-interactive" style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "1rem",
-                        padding: "1.25rem"
+                        gap: "1.25rem",
+                        padding: "1.5rem",
+                        borderLeft: `4px solid ${s.color}`
                     }}>
                         <div style={{
-                            width: "50px",
-                            height: "50px",
-                            borderRadius: "12px",
+                            width: "56px",
+                            height: "56px",
+                            borderRadius: "14px",
                             background: s.bg,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            fontSize: "1.5rem",
-                            flexShrink: 0
+                            fontSize: "1.75rem",
+                            flexShrink: 0,
+                            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.05)"
                         }}>
                             {s.icon}
                         </div>
-                        <div>
-                            <div style={{ fontSize: "1.5rem", fontWeight: "800", color: s.color }}>
-                                {s.value}
-                            </div>
-                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: "500" }}>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
                                 {s.label}
+                            </div>
+                            <div style={{ fontSize: "1.75rem", fontWeight: "800", color: "var(--text-main)", lineHeight: 1 }}>
+                                {s.value}
                             </div>
                         </div>
                     </div>
@@ -84,7 +86,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Recent Visits */}
-            <div className="card" style={{ padding: "0", overflow: "hidden" }}>
+            <div className="card" style={{ padding: "0", overflow: "hidden", marginBottom: "2rem" }}>
                 <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <h3 style={{ fontWeight: "700" }}>Recent Visits</h3>
                     <Link href="/hospital/dashboard/reports" style={{ color: "var(--primary)", fontSize: "0.85rem", fontWeight: "600" }}>
@@ -125,6 +127,26 @@ export default async function DashboardPage() {
                         </table>
                     </div>
                 )}
+            </div>
+
+            {/* Revenue Placeholder */}
+            <div style={{ marginBottom: "3rem" }}>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: "700", marginBottom: "1rem" }}>Earnings & Revenue</h2>
+                <div className="card" style={{
+                    height: "300px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--bg-card)",
+                    backgroundImage: "radial-gradient(var(--border) 1px, transparent 1px)",
+                    backgroundSize: "20px 20px"
+                }}>
+                    <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💰</div>
+                        <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text-main)" }}>Revenue Dashboard Coming Soon</h3>
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Track OPD income, platform fees, and settlements here.</p>
+                    </div>
+                </div>
             </div>
         </div>
     );

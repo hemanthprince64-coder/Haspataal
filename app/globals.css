@@ -1,23 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Haspataal Brand Colors - Trust, Cleanliness, Modern */
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --primary-light: #e0f2fe;
-  --secondary: #64748b;
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
-  --accent-light: #ccfbf1;
+  /* Haspataal Brand Colors - Premium & Trustworthy */
+  --primary: #2563eb;
+  /* Royal Blue */
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --secondary: #475569;
+  --accent: #0ea5e9;
+  /* Ocean Blue */
+  --accent-hover: #0284c7;
+  --accent-light: #e0f2fe;
 
-  --success: #16a34a;
-  --success-light: #dcfce7;
-  --warning: #f59e0b;
+  --success: #059669;
+  /* Rich Green */
+  --success-light: #d1fae5;
+  --warning: #d97706;
   --warning-light: #fef3c7;
-  --danger: #ef4444;
+  --danger: #dc2626;
   --danger-light: #fee2e2;
 
   --bg-main: #f8fafc;
+  /* Crisp Slate */
   --bg-card: #ffffff;
   --bg-input: #f1f5f9;
 
@@ -27,19 +31,22 @@
 
   --border: #e2e8f0;
   --border-hover: #cbd5e1;
-  --radius: 10px;
-  --radius-lg: 16px;
+  --radius: 12px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
 
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* Premium Soft Shadows */
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.05), 0 10px 10px -5px rgba(15, 23, 42, 0.02);
+  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
 
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
-  --transition-slow: 0.4s ease;
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -59,6 +66,59 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Scale */
+h1 {
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--text-main);
+  margin-bottom: 0.875rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+  color: var(--text-main);
+  margin-bottom: 0.75rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+.text-small {
+  font-size: 0.875rem;
+  color: var(--text-light);
 }
 
 a {
@@ -104,13 +164,18 @@ textarea:focus {
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: all var(--transition-normal);
   text-decoration: none;
   cursor: pointer;
   border: none;
   position: relative;
   overflow: hidden;
+  will-change: transform, box-shadow;
+}
+
+.btn:active {
+  transform: scale(0.97) !important;
 }
 
 .btn::after {
@@ -129,27 +194,23 @@ textarea:focus {
 .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   color: white;
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(37, 99, 235, 0.35);
 }
 
 .btn-accent {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   color: white;
-  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25);
+  box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
 }
 
 .btn-accent:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(14, 165, 233, 0.35);
 }
 
 .btn-outline {
@@ -164,13 +225,13 @@ textarea:focus {
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+  background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
   color: white;
 }
 
 .btn-danger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -2px rgba(220, 38, 38, 0.35);
 }
 
 .btn-sm {
@@ -197,6 +258,7 @@ textarea:focus {
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+  will-change: transform, box-shadow;
 }
 
 .card:hover {
@@ -204,8 +266,8 @@ textarea:focus {
 }
 
 .card-interactive:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-xl);
   border-color: var(--border-hover);
 }
 
@@ -397,15 +459,19 @@ textarea:focus {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.5s ease forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s ease forwards;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-down {
-  animation: slideDown 0.3s ease forwards;
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Staggered animation delays */

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 export default function PatientHome() {
     const services = [
@@ -53,117 +52,110 @@ export default function PatientHome() {
         <main>
             {/* Hero Section */}
             <section style={{
-                background: "linear-gradient(135deg, #eff6ff 0%, #ecfeff 100%)",
-                padding: "5rem 1rem 6rem",
+                background: "radial-gradient(ellipse at top, #eff6ff 0%, #ffffff 100%)",
+                padding: "6rem 1rem 3rem",
                 position: "relative",
-                overflow: "hidden"
+                overflow: "hidden",
+                textAlign: "center"
             }}>
-                <div className="container" style={{ position: "relative", zIndex: 1 }}>
-                    <div className="flex-container" style={{
-                        display: "flex",
-                        flexDirection: "column-reverse",
+                <div className="container" style={{ position: "relative", zIndex: 1, maxWidth: "850px" }}>
+
+                    {/* Top Trust Badge */}
+                    <div className="animate-fade-in-up" style={{
+                        display: "inline-flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "3rem",
-                        textAlign: "left"
+                        gap: "0.5rem",
+                        background: "#f0fdfa",
+                        color: "#0f766e",
+                        padding: "0.5rem 1rem",
+                        borderRadius: "9999px",
+                        fontWeight: "700",
+                        fontSize: "0.85rem",
+                        marginBottom: "1.5rem",
+                        boxShadow: "var(--shadow-sm)",
+                        border: "1px solid #ccfbf1"
                     }}>
-                        {/* Text Content */}
-                        <div className="animate-fade-in-up" style={{ flex: 1, maxWidth: "650px" }}>
-                            {/* Trust Badge */}
-                            <div style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.5rem",
-                                background: "#f0fdfa",
-                                color: "#0f766e",
-                                padding: "0.6rem 1.25rem",
-                                borderRadius: "9999px",
-                                fontWeight: "700",
-                                fontSize: "0.9rem",
-                                marginBottom: "2rem",
-                                boxShadow: "var(--shadow-sm)",
-                                border: "1px solid #ccfbf1"
-                            }}>
-                                <span style={{ fontSize: "1.1rem" }}>🛡️</span> Trusted by 10,000+ Families
-                            </div>
-
-                            <h1 style={{
-                                fontSize: "3.5rem",
-                                fontWeight: "800",
-                                color: "var(--text-main)",
-                                lineHeight: "1.1",
-                                marginBottom: "1.5rem",
-                                letterSpacing: "-0.02em"
-                            }}>
-                                Complete <span style={{ color: "var(--primary)" }}>Healthcare</span> <br className="hide-mobile" />
-                                <span style={{ color: "var(--accent)" }}>Protection</span> for Your <br className="hide-mobile" />
-                                Family
-                            </h1>
-
-                            <p style={{
-                                fontSize: "1.25rem",
-                                color: "var(--text-muted)",
-                                lineHeight: "1.6",
-                                marginBottom: "2.5rem",
-                                fontWeight: "500",
-                                maxWidth: "550px"
-                            }}>
-                                Connect with top doctors, diagnostic centers, and hospitals near you.
-                                Secure health records and reliable assistance at every step.
-                            </p>
-
-                            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                                <Link href="/search" className="btn btn-primary btn-lg" style={{
-                                    boxShadow: "0 4px 14px 0 rgba(2, 132, 199, 0.39)"
-                                }}>
-                                    Find Doctors
-                                </Link>
-                                <Link href="/hospitals" className="btn btn-outline btn-lg" style={{
-                                    background: "transparent"
-                                }}>
-                                    View Hospitals
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Hero Illustration */}
-                        <div className="animate-fade-in-up delay-2" style={{ flex: 1, display: "flex", justifyContent: "center", width: "100%" }}>
-                            <div style={{ position: "relative", width: "100%", maxWidth: "600px" }}>
-                                <Image
-                                    src="/hero_medical_trust.svg"
-                                    alt="Family Healthcare Protection"
-                                    width={600}
-                                    height={500}
-                                    style={{ width: "100%", height: "auto", filter: "drop-shadow(0 10px 15px rgba(0, 0, 0, 0.1))" }}
-                                    priority
-                                />
-                            </div>
-                        </div>
+                        <span style={{ fontSize: "1rem" }}>🌟</span> India's Most Trusted Healthcare Network
                     </div>
-                </div>
 
-                <style jsx>{`
-                    @media (min-width: 1024px) {
-                        .flex-container {
-                            flex-direction: row !important;
-                            text-align: left !important;
-                        }
-                    }
-                    @media (max-width: 1023px) {
-                        .flex-container {
-                            text-align: center !important;
-                        }
-                        .flex-container > div {
-                            align-items: center; 
-                        }
-                         /* Center the badge and buttons on mobile */
-                        .animate-fade-in-up {
-                             display: flex;
-                             flex-direction: column;
-                             align-items: center;
-                        }
-                    }
-                `}</style>
+                    <h1 className="animate-fade-in-up delay-1" style={{
+                        fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+                        fontWeight: "800",
+                        color: "var(--text-main)",
+                        lineHeight: "1.1",
+                        marginBottom: "1.5rem",
+                        letterSpacing: "-0.03em"
+                    }}>
+                        Find the Right <span style={{ color: "var(--primary)" }}>Doctor</span>. <br />
+                        At the Right <span style={{ color: "var(--accent)" }}>Hospital</span>.
+                    </h1>
+
+                    <p className="animate-fade-in-up delay-2" style={{
+                        fontSize: "clamp(1.1rem, 2vw, 1.25rem)",
+                        color: "var(--text-muted)",
+                        lineHeight: "1.6",
+                        marginBottom: "2.5rem",
+                        fontWeight: "400",
+                        maxWidth: "600px",
+                        margin: "0 auto 2.5rem"
+                    }}>
+                        Search availability, compare reviews, and book confirmed appointments across top-rated medical facilities instantly.
+                    </p>
+
+                    {/* Centered Search Bar */}
+                    <form action="/search" method="GET" className="animate-fade-in-up delay-3" style={{
+                        display: "flex",
+                        gap: "0.5rem",
+                        background: "white",
+                        padding: "0.5rem",
+                        borderRadius: "var(--radius-full)",
+                        boxShadow: "var(--shadow-lg)",
+                        maxWidth: "700px",
+                        margin: "0 auto 2rem",
+                        border: "1px solid var(--border)",
+                        position: "relative",
+                        transition: "box-shadow 0.2s"
+                    }}>
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", paddingLeft: "1rem" }}>
+                            <span style={{ fontSize: "1.25rem", color: "var(--text-light)", marginRight: "0.5rem" }}>🔍</span>
+                            <input
+                                type="text"
+                                name="q"
+                                placeholder="Search by doctor, hospital, or speciality..."
+                                style={{
+                                    border: "none",
+                                    outline: "none",
+                                    width: "100%",
+                                    fontSize: "1.05rem",
+                                    color: "var(--text-main)",
+                                    background: "transparent",
+                                    boxShadow: 'none',
+                                    padding: '0.5rem 0'
+                                }}
+                            />
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ borderRadius: "9999px", padding: "0.875rem 2rem", fontSize: "1rem" }}>
+                            Search
+                        </button>
+                    </form>
+
+                    {/* Trust Signals */}
+                    <div className="animate-fade-in-up delay-4" style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: "2rem",
+                        flexWrap: "wrap",
+                        marginBottom: "4rem",
+                        color: "var(--text-muted)",
+                        fontWeight: "600",
+                        fontSize: "0.9rem"
+                    }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>✅ Verified Doctors</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>🔒 Secure Booking</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>🚑 24/7 Support</span>
+                    </div>
+
+                </div>
             </section>
 
             {/* Stats Bar */}
@@ -171,7 +163,7 @@ export default function PatientHome() {
                 background: "white",
                 borderBottom: "1px solid var(--border)",
                 padding: "0 1rem",
-                marginTop: "-2rem",
+                marginTop: "0",
                 position: "relative",
                 zIndex: 2
             }}>

@@ -1,14 +1,18 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { addDoctorAction, removeDoctorAction } from '@/app/actions';
+import { addDoctorAction, removeDoctorAction, approveDoctorAffiliationAction, rejectDoctorAffiliationAction } from '@/app/actions';
 
 const addInitialState = { message: '', success: false };
 const removeInitialState = { message: '', success: false };
+const approveInitialState = { message: '', success: false };
+const rejectInitialState = { message: '', success: false };
 
-export default function DoctorManagement({ doctors: initialDoctors }) {
+export default function DoctorManagement({ doctors: initialDoctors, pendingDoctors }) {
     const [addState, addAction, isAdding] = useActionState(addDoctorAction, addInitialState);
     const [removeState, removeAction, isRemoving] = useActionState(removeDoctorAction, removeInitialState);
+    const [approveState, approveAction, isApproving] = useActionState(approveDoctorAffiliationAction, approveInitialState);
+    const [rejectState, rejectAction, isRejecting] = useActionState(rejectDoctorAffiliationAction, rejectInitialState);
     const [showForm, setShowForm] = useState(false);
 
     return (
@@ -65,9 +69,19 @@ export default function DoctorManagement({ doctors: initialDoctors }) {
                             </div>
                         </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Password</label>
-                            <input name="password" type="password" className="form-input" placeholder="Default: 123" />
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+                            <div className="form-group">
+                                <label className="form-label">Password</label>
+                                <input name="password" type="password" className="form-input" placeholder="Default: 123" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Qualifications</label>
+                                <input name="qualifications" type="text" className="form-input" placeholder="e.g. MBBS, MD" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">Schedule</label>
+                                <input name="schedule" type="text" className="form-input" placeholder="e.g. Mon-Fri 9AM-5PM" />
+                            </div>
                         </div>
 
                         {addState?.message && (
@@ -83,7 +97,60 @@ export default function DoctorManagement({ doctors: initialDoctors }) {
                 </div>
             )}
 
-            {/* Doctor List */}
+            {/* Pending Doctors Section */}
+            {pendingDoctors && pendingDoctors.length > 0 && (
+                <div style={{ marginBottom: "3rem" }}>
+                    <h3 style={{ fontWeight: "700", marginBottom: "1rem" }}>
+                        Pending Approvals <span className="badge badge-warning" style={{ fontSize: "0.8rem", marginLeft: "0.5rem" }}>{pendingDoctors.length} New</span>
+                    </h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1rem" }}>
+                        {pendingDoctors.map(doc => (
+                            <div key={doc.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderLeft: "4px solid var(--warning)" }}>
+                                <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                                    <div style={{
+                                        width: "50px",
+                                        height: "50px",
+                                        borderRadius: "12px",
+                                        background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "1.5rem",
+                                        flexShrink: 0
+                                    }}>
+                                        🧑‍⚕️
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: "700", fontSize: "1rem" }}>{doc.name}</div>
+                                        <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+                                            Requested Role: <span style={{ fontWeight: "600" }}>{doc.speciality || 'General'}</span>
+                                        </div>
+                                        <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.1rem" }}>
+                                            Mobile: {doc.mobile} | Email: {doc.email}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", gap: "0.5rem" }}>
+                                    <form action={rejectAction}>
+                                        <input type="hidden" name="doctorId" value={doc.id} />
+                                        <button disabled={isRejecting} type="submit" className="btn btn-outline" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                                            Reject
+                                        </button>
+                                    </form>
+                                    <form action={approveAction}>
+                                        <input type="hidden" name="doctorId" value={doc.id} />
+                                        <button disabled={isApproving} type="submit" className="btn btn-primary">
+                                            Approve
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Doctor List Section */}
             <h3 style={{ fontWeight: "700", marginBottom: "1rem" }}>
                 Current Doctors <span style={{ color: "var(--text-muted)", fontWeight: "400" }}>({initialDoctors.length})</span>
             </h3>

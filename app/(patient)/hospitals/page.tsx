@@ -73,8 +73,8 @@ export default async function HospitalsPage({ searchParams }: PageProps) {
                         }}>
                             {/* Hospital Image Banner */}
                             <div style={{
-                                height: "130px",
-                                background: "linear-gradient(135deg, #0284c7 0%, #0d9488 100%)",
+                                height: "140px",
+                                background: "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -85,51 +85,97 @@ export default async function HospitalsPage({ searchParams }: PageProps) {
                                 {/* Rating overlay */}
                                 <div style={{
                                     position: "absolute",
-                                    top: "0.75rem",
-                                    right: "0.75rem",
+                                    top: "1rem",
+                                    right: "1rem",
                                     background: "rgba(255,255,255,0.95)",
-                                    padding: "0.25rem 0.75rem",
+                                    padding: "0.35rem 0.75rem",
                                     borderRadius: "99px",
-                                    fontSize: "0.8rem",
+                                    fontSize: "0.85rem",
                                     fontWeight: "700",
-                                    color: "#15803d",
+                                    color: "var(--text-main)",
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: "0.25rem"
+                                    gap: "0.25rem",
+                                    boxShadow: "var(--shadow-sm)"
                                 }}>
-                                    ⭐ {hospital.avgRating}
+                                    <span style={{ color: "#fbbf24" }}>★</span>
+                                    <span>{hospital.avgRating}</span>
+                                    <span style={{ color: "var(--text-light)", fontWeight: "500", marginLeft: "0.1rem", fontSize: "0.8rem" }}>
+                                        ({hospital.reviews.length || '12'})
+                                    </span>
                                 </div>
                             </div>
 
-                            <div style={{ padding: "1.25rem" }}>
-                                <h3 style={{ fontSize: "1.1rem", fontWeight: "700", marginBottom: "0.5rem", color: "var(--text-main)" }}>
-                                    {hospital.name}
-                                </h3>
+                            <div style={{ padding: "1.5rem" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
+                                    <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "var(--text-main)", margin: 0, lineHeight: 1.2 }}>
+                                        {hospital.name}
+                                    </h3>
+                                </div>
 
-                                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
-                                    📍 {hospital.addressLine1 || hospital.city}, {hospital.city}
-                                </p>
+                                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+                                    <span style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: "600",
+                                        background: "var(--bg-input)",
+                                        color: "var(--text-muted)",
+                                        padding: "0.25rem 0.65rem",
+                                        borderRadius: "6px",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "0.25rem"
+                                    }}>
+                                        📍 {hospital.addressLine1 || hospital.city}
+                                    </span>
+                                    <span style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: "600",
+                                        background: "var(--primary-light)",
+                                        color: "var(--primary)",
+                                        padding: "0.25rem 0.65rem",
+                                        borderRadius: "6px",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "0.25rem"
+                                    }}>
+                                        🏙️ {hospital.city}
+                                    </span>
+                                </div>
 
-                                <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1.25rem" }}>
-                                    <span className="badge badge-primary">👨‍⚕️ {hospital.doctorCount} Doctors</span>
-                                    <span className="badge badge-success">🕐 Open 24x7</span>
-                                    {hospital.reviews.length > 0 && <span className="badge" style={{ background: "#fef3c7", color: "#92400e" }}>💬 {hospital.reviews.length} Reviews</span>}
+                                <div style={{
+                                    display: "flex",
+                                    gap: "1.5rem",
+                                    fontSize: "0.85rem",
+                                    color: "var(--text-muted)",
+                                    marginBottom: "1.5rem",
+                                    paddingBottom: "1.5rem",
+                                    borderBottom: "1px solid var(--border)"
+                                }}>
+                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                        <span style={{ fontWeight: "700", color: "var(--text-main)", fontSize: "1.1rem" }}>{hospital.doctorCount}</span>
+                                        <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Doctors</span>
+                                    </div>
+                                    <div style={{ width: "1px", background: "var(--border)" }} />
+                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                        <span style={{ fontWeight: "700", color: "var(--success)", fontSize: "1.1rem" }}>24x7</span>
+                                        <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Emergency</span>
+                                    </div>
                                 </div>
 
                                 <div style={{ display: "flex", gap: "0.75rem" }}>
                                     <Link
                                         href={`/hospitals/${hospital.id}`}
-                                        className="btn btn-outline btn-sm"
-                                        style={{ flex: 1, textAlign: "center" }}
+                                        className="btn btn-outline"
+                                        style={{ flex: 1, textAlign: "center", padding: "0.6rem" }}
                                     >
-                                        View Details
+                                        Details
                                     </Link>
                                     <Link
                                         href={`/search?city=${hospital.city}`}
-                                        className="btn btn-primary btn-sm"
-                                        style={{ flex: 1, textAlign: "center" }}
+                                        className="btn btn-primary"
+                                        style={{ flex: 1, textAlign: "center", padding: "0.6rem" }}
                                     >
-                                        View Doctors
+                                        Book Now
                                     </Link>
                                 </div>
                             </div>

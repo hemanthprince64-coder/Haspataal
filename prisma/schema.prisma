@@ -19,7 +19,8 @@ enum HospitalStatus {
 }
 
 enum AppointmentStatus {
-  PENDING
+  AWAITING_PAYMENT
+  BOOKED
   CONFIRMED
   COMPLETED
   CANCELLED
@@ -59,6 +60,12 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum HospitalType {
+  HOSPITAL
+  CLINIC
+  DIAGNOSTIC_CENTER
+}
+
 // ==========================================
 // 1. MASTER TABLES
 // ==========================================
@@ -70,6 +77,7 @@ model DoctorMaster {
   gender          String?
   mobile          String        @unique
   email           String        @unique
+  password        String?       // Added for doctor self-registration login
   profilePhotoUrl String?       @map("profile_photo_url")
   kycStatus       KycStatus     @default(PENDING) @map("kyc_status")
   accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
@@ -223,13 +231,15 @@ model Hospital {
   // Refactor services to use `.legalName`.
 
   // Legacy fields to maintain compatibility or needs migration
-  password           String?          @ignore // Remove or keep? Spec doesn't mention password for Hospital, only Admin.
+  password           String?          // Remove or keep? Spec doesn't mention password for Hospital, only Admin.
                                             // Valid. Hospital doesn't login, Admin does.
                                             // Remove `password`.
 
   adminUserId        String?          @map("admin_user_id") // Keep for legacy or map to HospitalAdmin?
                                             // Spec has `hospital_admins` table.
                                             // Remove `adminUserId` from Hospital.
+                                            
+  type               HospitalType     @default(HOSPITAL)
   
   createdAt          DateTime         @default(now()) @map("created_at")
   
@@ -253,9 +263,12 @@ model Hospital {
   
   affiliations       DoctorHospitalAffiliation[]
   
-  // Legacy relations
   visits             Visit[]
   staff              Staff[]
+
+  // Agent Relation
+  agentId            String?          @map("agent_id")
+  agent              Agent?           @relation(fields: [agentId], references: [id])
 
   @@map("hospitals_master")
 }
@@ -367,6 +380,7 @@ model DoctorHospitalAffiliation {
   joiningDate        DateTime?          @db.Date @map("joining_date")
   relievingDate      DateTime?          @db.Date @map("relieving_date")
   isCurrent          Boolean            @default(true) @map("is_current")
+  schedule           String?            // e.g. "Mon-Fri 9AM-5PM"
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
   approvedBy         String?            @map("approved_by") // UUID
   approvedAt         DateTime?          @map("approved_at")
@@ -487,6 +501,10 @@ model Patient {
   
   reviews        Review[]
 
+  // Agent Relation
+  agentId        String?  @map("agent_id")
+  agent          Agent?   @relation(fields: [agentId], references: [id])
+
   @@map("patients")
 }
 
@@ -514,16 +532,19 @@ model Appointment {
   doctorId  String            @map("doctor_id")
   date      DateTime          @db.Date
   slot      String
-  status    AppointmentStatus @default(PENDING)
+  status    AppointmentStatus @default(BOOKED)
   notes     String?
   createdAt DateTime          @default(now()) @map("created_at")
   updatedAt DateTime          @updatedAt @map("updated_at")
 
+  // Relations
   patient Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor  DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade) // Re-linked to Master
+  doctor  DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   payment Payment?
   visit   Visit?
 
+  // Prevents double booking at the database level
+  @@unique([doctorId, date, slot])
   @@map("appointments")
 }
 
@@ -791,4 +812,30 @@ model PatientRecord {
   doctor  DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade) // Re-linked
 
   @@map("patient_records")
+}
+
+// ==========================================
+// 10. AGENT SYSTEM
+// ==========================================
+
+model Agent {
+  id              String        @id @default(uuid())
+  fullName        String        @map("full_name")
+  mobile          String        @unique
+  email           String        @unique
+  password        String
+  area            String?
+  city            String?
+  state           String?
+  kycStatus       KycStatus     @default(PENDING) @map("kyc_status")
+  accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
+  commissionRate  Float?        @map("commission_rate") // e.g., 5.0 for 5%
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Onboarded Entities
+  hospitals       Hospital[]
+  patients        Patient[]
+
+  @@map("agents")
 }

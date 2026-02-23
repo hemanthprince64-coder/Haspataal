@@ -15,6 +15,7 @@ export default function LocationSelector({ cities, currentCity, onCityChange }) 
             {/* Location Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
+                suppressHydrationWarning
                 style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -72,6 +73,7 @@ export default function LocationSelector({ cities, currentCity, onCityChange }) 
                                 placeholder="Search city..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
+                                suppressHydrationWarning
                                 style={{
                                     width: '100%',
                                     padding: '0.75rem 1rem',
@@ -93,6 +95,7 @@ export default function LocationSelector({ cities, currentCity, onCityChange }) 
                                         setIsOpen(false);
                                         setSearch('');
                                     }}
+                                    suppressHydrationWarning
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -121,6 +124,7 @@ export default function LocationSelector({ cities, currentCity, onCityChange }) 
                                 alert('In a real app, this would detect your location via GPS');
                                 setIsOpen(false);
                             }}
+                            suppressHydrationWarning
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',

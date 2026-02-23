@@ -215,38 +215,138 @@ export const services = {
             });
         },
 
-        createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; }) => {
-            logger.info({ action: 'create_booking', hospitalId, doctorId: data.doctorId }, 'Creating new appointment booking');
+        getAvailableSlots: async (doctorId: string, date: string) => {
+            const targetDate = new Date(date);
+            targetDate.setHours(0, 0, 0, 0);
 
-            const patient = await prisma.patient.upsert({
-                where: { phone: data.patientMobile },
-                update: { name: data.patientName },
-                create: {
-                    phone: data.patientMobile,
-                    name: data.patientName,
-                    password: 'password123'
-                }
+            // Fetch existing bookings for this doctor on this date
+            const existingBookings = await prisma.appointment.findMany({
+                where: {
+                    doctorId,
+                    date: targetDate,
+                    status: { in: [BookingStatus.BOOKED, BookingStatus.CONFIRMED] }
+                },
+                select: { slot: true }
             });
 
-            const appointment = await prisma.appointment.create({
-                data: {
-                    patientId: patient.id,
-                    doctorId: data.doctorId,
-                    date: new Date(data.date),
-                    slot: 'ONLINE',
-                    status: 'PENDING'
+            const bookedSlots = new Set(existingBookings.map(b => b.slot));
+
+            // Standard clinic hours: 09:00 to 17:00, 30-min intervals
+            const allSlots = [
+                '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+                '15:00', '15:30', '16:00', '16:30'
+            ];
+
+            return allSlots.map(time => ({
+                time,
+                available: !bookedSlots.has(time)
+            }));
+        },
+
+        createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; slot?: string; }) => {
+            logger.info({ action: 'create_booking_attempt', hospitalId, doctorId: data.doctorId, date: data.date, slot: data.slot }, 'Attempting transactional appointment booking');
+            const targetDate = new Date(data.date);
+            targetDate.setHours(0, 0, 0, 0);
+            const targetSlot = data.slot || 'ONLINE';
+
+            try {
+                // ACID Transaction to prevent double booking race conditions
+                const appointment = await prisma.$transaction(async (tx) => {
+                    // 1. Ensure patient exists
+                    const patient = await tx.patient.upsert({
+                        where: { phone: data.patientMobile },
+                        update: { name: data.patientName },
+                        create: {
+                            phone: data.patientMobile,
+                            name: data.patientName,
+                            password: 'password123'
+                        }
+                    });
+
+                    // 2. Check if slot is already taken in this transaction snapshot
+                    const existing = await tx.appointment.findFirst({
+                        where: {
+                            doctorId: data.doctorId,
+                            date: targetDate,
+                            slot: targetSlot,
+                            status: { in: [BookingStatus.BOOKED, BookingStatus.CONFIRMED] }
+                        }
+                    });
+
+                    if (existing) {
+                        throw new Error(`SLOT_UNAVAILABLE: The slot ${targetSlot} has already been booked.`);
+                    }
+
+                    // 3. Create the appointment. The @@unique(doctorId, date, slot) constraint 
+                    // acts as the final database-level lock against parallel inserts.
+                    return await tx.appointment.create({
+                        data: {
+                            patientId: patient.id,
+                            doctorId: data.doctorId,
+                            date: targetDate,
+                            slot: targetSlot,
+                            status: BookingStatus.BOOKED
+                        }
+                    });
+                });
+
+                logger.info({ action: 'booking_created', appointmentId: appointment.id }, 'Successfully booked appointment');
+                return appointment;
+
+            } catch (error: any) {
+                // Handle Prisma unique constraint violation explicitly (P2002)
+                if (error.code === 'P2002') {
+                    logger.warn({ action: 'booking_conflict', doctorId: data.doctorId, slot: targetSlot }, 'Race condition double-booking prevented by Unique Constraint');
+                    throw new Error('This slot was just booked by someone else. Please choose another.');
                 }
+                logger.error({ action: 'booking_transaction_failed', error: error.message }, 'Booking transaction failed');
+                throw error;
+            }
+        },
+
+        updateVisitStatus: async (visitId: string, patientId: string, newStatus: BookingStatus) => {
+            const appointment = await prisma.appointment.findUnique({
+                where: { id: visitId, patientId }
             });
 
-            return appointment;
+            if (!appointment) throw new Error('Appointment not found');
+
+            const current = appointment.status;
+
+            // Strict State Machine Enforcement
+            const validTransitions: Record<string, string[]> = {
+                [BookingStatus.BOOKED]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+                [BookingStatus.CONFIRMED]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
+                [BookingStatus.CANCELLED]: [],
+                [BookingStatus.COMPLETED]: []
+            };
+
+            const allowed = validTransitions[current] || [];
+            if (!allowed.includes(newStatus)) {
+                logger.warn({ action: 'invalid_status_transition', visitId, current, newStatus }, 'Attempted invalid status transition');
+                throw new Error(`Invalid state transition: Cannot move from ${current} to ${newStatus}`);
+            }
+
+            const updated = await prisma.appointment.update({
+                where: { id: visitId },
+                data: { status: newStatus }
+            });
+
+            logger.info({ action: 'status_transition', visitId, oldStatus: current, newStatus }, `Appointment status updated to ${newStatus}`);
+            return updated;
         },
 
         cancelVisit: async (patientId: string, visitId: string) => {
-            logger.info({ action: 'cancel_booking', patientId, visitId }, 'Cancelling appointment booking');
-            return await prisma.appointment.update({
-                where: { id: visitId, patientId },
-                data: { status: 'CANCELLED' }
-            });
+            logger.info({ action: 'cancel_booking_attempt', patientId, visitId }, 'Attempting to cancel appointment');
+
+            // Delegate to the state machine to ensure it's a valid transition
+            const cancelled = await services.patient.updateVisitStatus(visitId, patientId, BookingStatus.CANCELLED);
+
+            // # TODO: Refund integration
+            // # TODO: Notification trigger
+
+            return cancelled;
         },
 
         getById: async (id: string) => {
@@ -319,10 +419,40 @@ export const services = {
             return affiliations.map(a => ({
                 id: a.doctor.id,
                 name: a.doctor.fullName,
-                speciality: '',
+                speciality: a.department || '',
                 mobile: a.doctor.mobile,
-                role: a.role
+                role: a.role,
+                fee: 500
             }));
+        },
+
+        getPendingDoctors: async (hospitalId: string) => {
+            const affiliations = await prisma.doctorHospitalAffiliation.findMany({
+                where: { hospitalId, verificationStatus: 'PENDING' },
+                include: { doctor: true }
+            });
+            return affiliations.map(a => ({
+                id: a.doctor.id,
+                name: a.doctor.fullName,
+                speciality: a.department || '',
+                mobile: a.doctor.mobile,
+                role: a.role,
+                schedule: a.schedule
+            }));
+        },
+
+        approveDoctorAffiliation: async (hospitalId: string, doctorId: string) => {
+            return await prisma.doctorHospitalAffiliation.updateMany({
+                where: { hospitalId, doctorId },
+                data: { verificationStatus: 'VERIFIED', isCurrent: true, approvedAt: new Date() }
+            });
+        },
+
+        rejectDoctorAffiliation: async (hospitalId: string, doctorId: string) => {
+            return await prisma.doctorHospitalAffiliation.updateMany({
+                where: { hospitalId, doctorId },
+                data: { verificationStatus: 'REJECTED', isCurrent: false }
+            });
         },
 
         getPatientById: async (hospitalId: string, patientId: string) => {
@@ -336,6 +466,21 @@ export const services = {
             // Fall back to finding the patient by ID
             const patient = await prisma.patient.findUnique({ where: { id: patientId } });
             return patient ? { name: patient.name, mobile: patient.phone } : null;
+        },
+
+        getDiagnosticCatalog: async (hospitalId: string) => {
+            return await prisma.hospitalDiagnosticPricing.findMany({
+                where: { hospitalId },
+                include: { category: true }
+            });
+        },
+
+        getLabOrders: async (hospitalId: string) => {
+            return await prisma.diagnosticOrder.findMany({
+                where: { hospitalId },
+                include: { patient: true },
+                orderBy: { createdAt: 'desc' }
+            });
         },
 
         login: async (mobile: string, password?: string) => {
@@ -356,6 +501,76 @@ export const services = {
             }
             logger.warn({ action: 'hospital_login_failed', mobile }, 'Failed hospital login attempt');
             return null;
+        },
+
+        register: async (data: { hospitalName: string; city: string; adminName: string; mobile: string; password?: string; registrationNumber?: string; }) => {
+            logger.info({ action: 'hospital_register', hospitalName: data.hospitalName }, 'Registering new hospital');
+
+            return await prisma.$transaction(async (tx) => {
+                // Generate a random registration number if not provided
+                const regNumber = data.registrationNumber || `REG-${Date.now()}`;
+
+                // 1. Create Hospital
+                const hospital = await tx.hospital.create({
+                    data: {
+                        legalName: data.hospitalName,
+                        registrationNumber: regNumber,
+                        city: data.city,
+                        contactNumber: data.mobile,
+                        verificationStatus: 'pending',
+                        accountStatus: 'inactive',
+                        password: data.password
+                    }
+                });
+
+                // 2. Add Primary Admin
+                await tx.hospitalAdmin.create({
+                    data: {
+                        hospitalId: hospital.id,
+                        fullName: data.adminName,
+                        mobile: data.mobile,
+                        email: `${data.mobile}@example.com`,
+                        isPrimary: true,
+                        verificationStatus: 'pending'
+                    }
+                });
+
+                return hospital;
+            });
+        },
+
+        registerLab: async (data: { labName: string; city: string; adminName: string; mobile: string; password?: string; registrationNumber?: string; }) => {
+            logger.info({ action: 'lab_register', labName: data.labName }, 'Registering new diagnostic lab');
+
+            return await prisma.$transaction(async (tx) => {
+                const regNumber = data.registrationNumber || `LAB-${Date.now()}`;
+
+                const lab = await tx.hospital.create({
+                    data: {
+                        legalName: data.labName,
+                        registrationNumber: regNumber,
+                        city: data.city,
+                        contactNumber: data.mobile,
+                        verificationStatus: 'pending',
+                        accountStatus: 'inactive',
+                        password: data.password,
+                        type: 'DIAGNOSTIC_CENTER'
+                    }
+                });
+
+                await tx.hospitalAdmin.create({
+                    data: {
+                        hospitalId: lab.id,
+                        fullName: data.adminName,
+                        mobile: data.mobile,
+                        email: `${data.mobile}@example.com`,
+                        isPrimary: true,
+                        verificationStatus: 'pending'
+                    }
+                });
+
+                return lab;
+            });
         },
 
         createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId?: string; date: string; }) => {
@@ -393,17 +608,25 @@ export const services = {
             });
         },
 
-        addDoctor: async (hospitalId: string, data: { name: string; mobile: string; }) => {
+        addDoctor: async (hospitalId: string, data: { name: string; mobile: string; schedule?: string; qualifications?: string; }) => {
             return await prisma.doctorMaster.create({
                 data: {
                     fullName: data.name,
                     mobile: data.mobile,
                     email: `${data.mobile}@example.com`,
+                    registration: {
+                        create: {
+                            registrationNumber: `HOSP-${Date.now()}`,
+                            councilName: 'Hospital Added',
+                            degree: data.qualifications
+                        }
+                    },
                     affiliations: {
                         create: {
                             hospitalId,
                             role: 'DOCTOR',
-                            isCurrent: true
+                            isCurrent: true,
+                            schedule: data.schedule
                         }
                     }
                 }
@@ -418,6 +641,34 @@ export const services = {
                 }
             });
         }
+    },
+
+    // --- Doctor Specific ---
+    doctor: {
+        register: async (data: { fullName: string; mobile: string; email: string; password?: string; registrationNumber: string; councilName: string; }) => {
+            logger.info({ action: 'doctor_register', mobile: data.mobile }, 'Self-registering new doctor');
+
+            return await prisma.$transaction(async (tx) => {
+                const doctor = await tx.doctorMaster.create({
+                    data: {
+                        fullName: data.fullName,
+                        mobile: data.mobile,
+                        email: data.email,
+                        password: data.password || 'password123',
+                        kycStatus: 'PENDING',
+                        accountStatus: 'INACTIVE',
+                        registration: {
+                            create: {
+                                registrationNumber: data.registrationNumber,
+                                councilName: data.councilName,
+                                verificationStatus: 'PENDING'
+                            }
+                        }
+                    }
+                });
+                return doctor;
+            });
+        },
     },
 
     // --- Admin Services ---
@@ -474,12 +725,86 @@ export const services = {
             });
         },
 
-        suspendHospital: async (id: string) => {
-            logger.info({ action: 'suspend_hospital', hospitalId: id }, 'Admin suspending hospital');
-            return await prisma.hospital.update({
-                where: { id },
-                data: { accountStatus: 'suspended' }
+    },
+
+    // --- Agent Services ---
+    agent: {
+        register: async (data: { fullName: string; mobile: string; email: string; password?: string; area?: string; city?: string; state?: string; }) => {
+            logger.info({ action: 'agent_register', mobile: data.mobile }, 'Registering new agent');
+
+            return await prisma.agent.create({
+                data: {
+                    fullName: data.fullName,
+                    mobile: data.mobile,
+                    email: data.email,
+                    password: data.password || 'password123',
+                    area: data.area,
+                    city: data.city,
+                    state: data.state,
+                    kycStatus: 'PENDING',
+                    accountStatus: 'INACTIVE',
+                    commissionRate: 5.0
+                }
             });
+        },
+
+        login: async (mobile: string, password?: string) => {
+            const agent = await prisma.agent.findFirst({
+                where: { mobile }
+            });
+
+            if (!agent) {
+                throw new Error('Agent not found. Please register first.');
+            }
+
+            if (agent.accountStatus !== 'ACTIVE') {
+                throw new Error('Your account is not active. Please wait for admin approval.');
+            }
+
+            if (password && agent.password !== password) {
+                throw new Error('Invalid credentials.');
+            }
+
+            return {
+                id: agent.id,
+                role: 'AGENT',
+                name: agent.fullName,
+                mobile: agent.mobile,
+                status: agent.accountStatus
+            };
+        },
+
+        getDashboardData: async (agentId: string) => {
+            const hospitals = await prisma.hospital.findMany({
+                where: { agentId },
+                select: {
+                    id: true,
+                    legalName: true,
+                    verificationStatus: true,
+                    createdAt: true
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            const patients = await prisma.patient.findMany({
+                where: { agentId },
+                select: {
+                    id: true,
+                    name: true,
+                    createdAt: true
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            return {
+                hospitals,
+                patients,
+                stats: {
+                    totalHospitals: hospitals.length,
+                    approvedHospitals: hospitals.filter(h => h.verificationStatus === 'VERIFIED').length,
+                    totalPatients: patients.length
+                }
+            };
         }
     }
 };

@@ -1,7 +1,7 @@
 'use client'
 
-import { useActionState } from 'react';
-import { bookAppointment } from '@/app/actions';
+import { useActionState, useState, useEffect } from 'react';
+import { bookAppointment, getAvailableSlotsAction } from '@/app/actions';
 import Link from 'next/link';
 
 const initialState = {
@@ -11,6 +11,33 @@ const initialState = {
 
 export default function BookingForm({ doctorId, hospitalId }) {
     const [state, formAction, isPending] = useActionState(bookAppointment, initialState);
+
+    const today = new Date().toISOString().split('T')[0];
+    const [selectedDate, setSelectedDate] = useState(today);
+    const [slots, setSlots] = useState([]);
+    const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        async function fetchSlots() {
+            if (!doctorId || !selectedDate) return;
+            setIsLoadingSlots(true);
+            try {
+                const available = await getAvailableSlotsAction(doctorId, selectedDate);
+                if (isMounted) setSlots(available);
+            } catch (error) {
+                console.error('Failed to load slots', error);
+            } finally {
+                if (isMounted) setIsLoadingSlots(false);
+            }
+        }
+
+        fetchSlots();
+
+        return () => { isMounted = false; };
+    }, [doctorId, selectedDate]);
+
 
     if (state?.success) {
         return (
@@ -26,8 +53,6 @@ export default function BookingForm({ doctorId, hospitalId }) {
         );
     }
 
-    const today = new Date().toISOString().split('T')[0];
-
     return (
         <div className="card">
             <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -36,34 +61,61 @@ export default function BookingForm({ doctorId, hospitalId }) {
 
                 <div className="form-group">
                     <label className="form-label">📅 Select Date</label>
-                    <input name="date" type="date" required min={today} className="form-input" />
+                    <input
+                        name="date"
+                        type="date"
+                        required
+                        min={today}
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="form-input"
+                    />
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">🕐 Select Time Slot</label>
+                    <label className="form-label">
+                        🕐 Select Time Slot
+                        {isLoadingSlots && <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--primary)' }}>Loading...</span>}
+                    </label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                        {[
-                            { time: '09:00', label: '9:00 AM' },
-                            { time: '10:00', label: '10:00 AM' },
-                            { time: '11:00', label: '11:00 AM' },
-                            { time: '14:00', label: '2:00 PM' },
-                            { time: '16:00', label: '4:00 PM' },
-                            { time: '18:00', label: '6:00 PM' },
-                        ].map(slot => (
-                            <label key={slot.time} style={{
-                                border: '1.5px solid var(--border)',
-                                padding: '0.75rem',
-                                borderRadius: 'var(--radius)',
-                                textAlign: 'center',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                fontWeight: '500',
-                                transition: 'all 0.15s',
-                            }}>
-                                <input type="radio" name="slot" value={slot.time} required style={{ display: 'none' }} />
-                                {slot.label}
-                            </label>
-                        ))}
+                        {slots.length > 0 ? slots.map(slot => {
+                            const isAvailable = slot.available;
+                            return (
+                                <label key={slot.time} style={{
+                                    border: `1.5px solid ${isAvailable ? 'var(--border)' : '#e5e7eb'}`,
+                                    background: isAvailable ? 'transparent' : '#f9fafb',
+                                    padding: '0.75rem',
+                                    borderRadius: 'var(--radius)',
+                                    textAlign: 'center',
+                                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '500',
+                                    transition: 'all 0.15s',
+                                    opacity: isAvailable ? 1 : 0.5,
+                                    position: 'relative'
+                                }}>
+                                    <input
+                                        type="radio"
+                                        name="slot"
+                                        value={slot.time}
+                                        required
+                                        disabled={!isAvailable}
+                                        style={{ display: 'none' }}
+                                    />
+                                    {/* Formatting HH:mm for simple AM/PM display */}
+                                    {parseInt(slot.time.split(':')[0]) > 12
+                                        ? `${parseInt(slot.time.split(':')[0]) - 12}:${slot.time.split(':')[1]} PM`
+                                        : parseInt(slot.time.split(':')[0]) === 12
+                                            ? `12:${slot.time.split(':')[1]} PM`
+                                            : `${parseInt(slot.time.split(':')[0])}:${slot.time.split(':')[1]} AM`
+                                    }
+                                </label>
+                            );
+                        }) : !isLoadingSlots && (
+                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>
+                                No slots available for this date.
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -71,7 +123,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
                     <div className="alert alert-error">⚠️ {state.message}</div>
                 )}
 
-                <button type="submit" disabled={isPending} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                <button type="submit" disabled={isPending || isLoadingSlots || slots.filter(s => s.available).length === 0} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
                     {isPending ? '⏳ Booking...' : '✓ Confirm Appointment'}
                 </button>
             </form>

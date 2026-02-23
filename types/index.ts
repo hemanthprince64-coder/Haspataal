@@ -6,7 +6,8 @@ export enum UserRole {
 }
 
 export enum BookingStatus {
-    PENDING = 'PENDING',
+    AWAITING_PAYMENT = 'AWAITING_PAYMENT',
+    BOOKED = 'BOOKED',
     CONFIRMED = 'CONFIRMED',
     COMPLETED = 'COMPLETED',
     CANCELLED = 'CANCELLED'

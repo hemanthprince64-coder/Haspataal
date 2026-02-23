@@ -16,12 +16,13 @@ export default async function DoctorsPage() {
     }
 
     const doctors = await services.hospital.getDoctors(user.hospitalId);
+    const pendingDoctors = await services.hospital.getPendingDoctors(user.hospitalId);
 
     return (
         <div className="page-enter">
             <h1 style={{ fontSize: "1.75rem", fontWeight: "800", marginBottom: "0.5rem" }}>Manage Doctors</h1>
             <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Add, view, and manage your hospital's doctors</p>
-            <DoctorManagement doctors={doctors} />
+            <DoctorManagement doctors={doctors} pendingDoctors={pendingDoctors} />
         </div>
     );
 }
