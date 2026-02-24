@@ -29,7 +29,7 @@ export default function PatientLayout({ children }) {
                             🏥 Haspataal
                         </h3>
                         <p style={{ fontSize: '0.85rem', lineHeight: '1.7' }}>
-                            India's smart hospital assistance platform. Connecting patients with the right healthcare, one step at a time.
+                            India&apos;s smart hospital assistance platform. Connecting patients with the right healthcare, one step at a time.
                         </p>
                     </div>
 

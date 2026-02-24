@@ -2,26 +2,27 @@
 
 import { useActionState } from 'react';
 import { updatePatientProfile } from '@/app/actions';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 
 const initialState = { message: '', success: false };
 
+function getPatientFromCookie() {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';');
+    const sessionCookie = cookies.find(c => c.trim().startsWith('session_patient='));
+    if (sessionCookie) {
+        try {
+            const val = decodeURIComponent(sessionCookie.split('=').slice(1).join('='));
+            return JSON.parse(val);
+        } catch { }
+    }
+    return null;
+}
+
 export default function EditProfile() {
     const [state, formAction, isPending] = useActionState(updatePatientProfile, initialState);
-    const [patient, setPatient] = useState(null);
-
-    useEffect(() => {
-        // Read patient data from cookie
-        const cookies = document.cookie.split(';');
-        const sessionCookie = cookies.find(c => c.trim().startsWith('session_patient='));
-        if (sessionCookie) {
-            try {
-                const val = decodeURIComponent(sessionCookie.split('=').slice(1).join('='));
-                setPatient(JSON.parse(val));
-            } catch { }
-        }
-    }, []);
+    const [patient] = useState(() => getPatientFromCookie());
 
     if (state?.success) {
         return (

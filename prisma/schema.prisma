@@ -108,6 +108,7 @@ model DoctorMaster {
   // Actually, typically Appointment is with a Doctor at a Hospital (Affiliation).
   // But let's keep it simple: Appointment -> DoctorMaster for identity.
   
+  @@index([email])
   @@map("doctors_master")
 }
 
@@ -270,6 +271,7 @@ model Hospital {
   agentId            String?          @map("agent_id")
   agent              Agent?           @relation(fields: [agentId], references: [id])
 
+  @@index([city])
   @@map("hospitals_master")
 }
 
@@ -304,6 +306,8 @@ model HospitalAdmin {
 
   hospital           Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
+  @@index([hospitalId])
+  @@index([email])
   @@map("hospital_admins")
 }
 
@@ -391,6 +395,8 @@ model DoctorHospitalAffiliation {
   
   // Constraints
   @@unique([doctorId, hospitalId])
+  @@index([hospitalId])
+  @@index([role])
   @@map("doctor_hospital_affiliations")
 }
 
@@ -469,6 +475,8 @@ model Staff {
   
   hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
+  @@index([hospitalId])
+  @@index([role])
   @@map("staff")
 }
 
@@ -505,6 +513,9 @@ model Patient {
   agentId        String?  @map("agent_id")
   agent          Agent?   @relation(fields: [agentId], references: [id])
 
+  @@index([city])
+  @@index([email])
+  @@index([role])
   @@map("patients")
 }
 

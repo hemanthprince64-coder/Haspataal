@@ -75,7 +75,7 @@ export default function PatientHome() {
                         boxShadow: "var(--shadow-sm)",
                         border: "1px solid #ccfbf1"
                     }}>
-                        <span style={{ fontSize: "1rem" }}>🌟</span> India's Most Trusted Healthcare Network
+                        <span style={{ fontSize: "1rem" }}>🌟</span> India&apos;s Most Trusted Healthcare Network
                     </div>
 
                     <h1 className="animate-fade-in-up delay-1" style={{
@@ -275,7 +275,7 @@ export default function PatientHome() {
                 <div className="container">
                     <div style={{ textAlign: "center", marginBottom: "3rem" }}>
                         <p style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>
-                            The 4 A's
+                            The 4 A&apos;s
                         </p>
                         <h2 style={{ fontSize: "2.25rem", fontWeight: "800", color: "var(--text-main)" }}>
                             Why Choose Haspataal

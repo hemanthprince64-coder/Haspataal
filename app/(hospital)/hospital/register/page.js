@@ -29,7 +29,7 @@ export default function HospitalRegister() {
             <div className="card animate-fade-in-up" style={{ maxWidth: '500px', width: '100%', padding: '2.5rem' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <h2 style={{ fontWeight: '800', color: 'var(--text-main)', marginBottom: '0.5rem', fontSize: '1.5rem' }}>Register Hospital</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Join Haspataal's growing hospital network</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Join Haspataal&apos;s growing hospital network</p>
                 </div>
 
                 <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

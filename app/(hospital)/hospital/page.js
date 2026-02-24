@@ -19,7 +19,7 @@ export default function HospitalLanding() {
                 </div>
                 <h1 style={{ fontSize: "2.25rem", fontWeight: "800", marginBottom: "0.75rem" }}>Hospital Partner Portal</h1>
                 <p style={{ color: "var(--text-muted)", lineHeight: "1.7", maxWidth: "500px", margin: "0 auto 2.5rem" }}>
-                    Join Haspataal's network. Digitize your OPD, manage patients, and grow your practice.
+                    Join Haspataal&apos;s network. Digitize your OPD, manage patients, and grow your practice.
                 </p>
             </div>
 

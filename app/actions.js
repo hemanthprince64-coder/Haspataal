@@ -1,6 +1,9 @@
 'use server'
 
 import { services } from '@/lib/services';
+import { z } from 'zod';
+
+const PasswordSchema = z.string().min(6, 'Password must be at least 6 characters long.');
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
@@ -39,6 +42,11 @@ export async function registerHospital(prevState, formData) {
 
         if (!data.hospitalName || !data.city || !data.adminName || !data.mobile || !data.password) {
             return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        const pwdCheck = PasswordSchema.safeParse(data.password);
+        if (!pwdCheck.success) {
+            return { success: false, message: pwdCheck.error.errors[0].message };
         }
 
         await services.hospital.register(data);
@@ -183,8 +191,13 @@ export async function registerDoctor(prevState, formData) {
             councilName: formData.get('councilName')
         };
 
-        if (!data.fullName || !data.mobile || !data.email || !data.registrationNumber) {
+        if (!data.fullName || !data.mobile || !data.email || !data.registrationNumber || !data.password) {
             return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        const pwdCheck = PasswordSchema.safeParse(data.password);
+        if (!pwdCheck.success) {
+            return { success: false, message: pwdCheck.error.errors[0].message };
         }
 
         await services.doctor.register(data);
@@ -210,6 +223,11 @@ export async function registerAgent(prevState, formData) {
             return { success: false, message: 'Please fill in all required fields.' };
         }
 
+        const pwdCheck = PasswordSchema.safeParse(data.password);
+        if (!pwdCheck.success) {
+            return { success: false, message: pwdCheck.error.errors[0].message };
+        }
+
         await services.agent.register(data);
         return { success: true, message: 'Agent registered successfully! Partner approval is pending.' };
     } catch (e) {
@@ -230,6 +248,11 @@ export async function registerLab(prevState, formData) {
 
         if (!data.labName || !data.city || !data.adminName || !data.mobile || !data.password) {
             return { success: false, message: 'Please fill in all required fields.' };
+        }
+
+        const pwdCheck = PasswordSchema.safeParse(data.password);
+        if (!pwdCheck.success) {
+            return { success: false, message: pwdCheck.error.errors[0].message };
         }
 
         await services.hospital.registerLab(data);

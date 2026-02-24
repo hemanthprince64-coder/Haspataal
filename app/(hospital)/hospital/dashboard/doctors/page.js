@@ -21,7 +21,7 @@ export default async function DoctorsPage() {
     return (
         <div className="page-enter">
             <h1 style={{ fontSize: "1.75rem", fontWeight: "800", marginBottom: "0.5rem" }}>Manage Doctors</h1>
-            <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Add, view, and manage your hospital's doctors</p>
+            <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Add, view, and manage your hospital&apos;s doctors</p>
             <DoctorManagement doctors={doctors} pendingDoctors={pendingDoctors} />
         </div>
     );

@@ -15,13 +15,25 @@ export default async function SearchPage({ searchParams }: PageProps) {
     const cities = services.platform.getCities();
     const specialities = await services.platform.getAllSpecialities();
 
-    // Pre-resolve hospital data for all doctors (avoid await inside .map)
-    const doctorsWithHospitals = await Promise.all(
-        doctors.map(async (doc) => {
-            const hospital = await services.platform.getHospitalById(doc.hospitalId);
-            return { ...doc, hospital };
-        })
-    );
+    // Extract hospital data from already-included affiliations (no extra DB call needed)
+    const doctorsWithHospitals = doctors.map((doc: any) => {
+        const aff = doc.affiliations?.[0];
+        const hospital = aff?.hospital || null;
+        return {
+            id: doc.id,
+            name: doc.fullName,
+            speciality: aff?.department || 'General',
+            fee: 500,
+            experience: 10,
+            hospitalId: aff?.hospitalId || '',
+            hospital: hospital ? {
+                name: hospital.legalName || hospital.displayName || 'Hospital',
+                city: hospital.city || '',
+                area: hospital.addressLine1 || hospital.city || '',
+                rating: '4.5'
+            } : null
+        };
+    });
 
     return (
         <main className="container page-enter" style={{ padding: "2rem 1rem" }}>

@@ -4,14 +4,16 @@ import { notFound } from "next/navigation";
 
 export default async function HospitalDetailPage({ params }) {
     const { id } = await params;
-    const hospital = services.platform.getHospitalById(id);
+    const hospital = await services.platform.getHospitalById(id);
 
     if (!hospital) {
         notFound();
     }
 
-    const doctors = services.platform.getHospitalDoctors(hospital.id);
-    const reviews = services.platform.getHospitalReviews(hospital.id);
+    const doctorsRaw = await services.platform.getHospitalDoctors(hospital.id);
+    const reviewsRaw = await services.platform.getHospitalReviews(hospital.id);
+    const doctors = Array.isArray(doctorsRaw) ? doctorsRaw : [];
+    const reviews = Array.isArray(reviewsRaw) ? reviewsRaw : [];
     const avgRating = reviews.length > 0
         ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
         : hospital.rating;

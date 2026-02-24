@@ -42,7 +42,7 @@ export default function AgentLogin() {
 
                 <div style={{ textAlign: 'center' }}>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                        Don't have a partner account? <br />
+                        Don&apos;t have a partner account? <br />
                         <Link href="/agent/register" style={{ color: 'var(--primary)', fontWeight: '600', display: 'inline-block', marginTop: '0.5rem' }}>Apply Now →</Link>
                     </p>
                 </div>

@@ -10,7 +10,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    "lib/generated/**"
+    "lib/generated/**",
+    // Sub-project directories (each has its own lint config)
+    "haspataal-in/**",
+    "haspataal-admin/**",
+    "haspataal-com/**",
+    "haspataal-mobile/**",
+    "scripts/**",
   ]),
 ]);
 

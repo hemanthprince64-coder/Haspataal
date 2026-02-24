@@ -2,7 +2,6 @@
 
 import { useActionState } from 'react';
 import { adminLogin } from '@/app/actions';
-import Image from 'next/image';
 
 const initialState = { message: '' };
 
@@ -48,9 +47,11 @@ export default function AdminLoginPage() {
                         <input name="password" type="password" placeholder="Admin password" required className="form-input" />
                     </div>
 
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>
-                        💡 Demo: <strong>admin</strong> / <strong>admin123</strong>
-                    </p>
+                    {process.env.NODE_ENV === 'development' && (
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>
+                            💡 Demo: <strong>admin</strong> / <strong>admin123</strong>
+                        </p>
+                    )}
 
                     {state?.message && (
                         <div className="alert alert-error">⚠️ {state.message}</div>

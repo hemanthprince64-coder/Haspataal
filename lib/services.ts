@@ -1,11 +1,22 @@
 import prisma from './prisma';
 import logger from './logger';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { Hospital, Doctor, Appointment, Review, UserRole, BookingStatus } from '../types';
 
 // Zod schemas for runtime validation
 const HospitalArraySchema = z.array(z.any());
 const DoctorArraySchema = z.array(z.any());
+
+// Strip sensitive fields from any object (password, etc.)
+function stripSensitive<T extends Record<string, any>>(obj: T | null): T | null {
+    if (!obj) return null;
+    const { password, ...safe } = obj as any;
+    return safe as T;
+}
+function stripSensitiveArray<T extends Record<string, any>>(arr: T[]): T[] {
+    return arr.map(item => stripSensitive(item)!);
+}
 
 // Helper to preserve CITIES constant from the old data file
 export const CITIES = [
@@ -29,7 +40,7 @@ export const services = {
             if (city) {
                 where.city = { equals: city, mode: 'insensitive' };
             }
-            const data = await prisma.hospital.findMany({ where });
+            const data = stripSensitiveArray(await prisma.hospital.findMany({ where }));
 
             // Runtime validation layer
             if (!Array.isArray(data)) throw new Error('getHospitals must return an array');
@@ -38,12 +49,12 @@ export const services = {
         },
 
         getHospitalsByCity: async (city: string): Promise<Hospital[]> => {
-            const data = await prisma.hospital.findMany({
+            const data = stripSensitiveArray(await prisma.hospital.findMany({
                 where: {
                     city: { equals: city, mode: 'insensitive' },
                     accountStatus: 'active'
                 }
-            });
+            }));
 
             if (!Array.isArray(data)) throw new Error('getHospitalsByCity must return an array');
             return HospitalArraySchema.parse(data) as Hospital[];
@@ -87,24 +98,26 @@ export const services = {
         },
 
         getDoctorById: async (id: string): Promise<Doctor | null> => {
-            return (await prisma.doctorMaster.findUnique({
+            const doc = await prisma.doctorMaster.findUnique({
                 where: { id },
                 include: {
                     affiliations: { include: { hospital: true } },
                     reviews: true
                 }
-            })) as Doctor | null;
+            });
+            return stripSensitive(doc) as Doctor | null;
         },
 
         getHospitalById: async (id: string): Promise<Hospital | null> => {
-            return (await prisma.hospital.findUnique({
+            const hospital = await prisma.hospital.findUnique({
                 where: { id },
                 include: {
                     facilities: true,
                     services: true,
                     departments: true
                 }
-            })) as Hospital | null;
+            });
+            return stripSensitive(hospital) as Hospital | null;
         },
 
         getAllSpecialities: async (): Promise<string[]> => {
@@ -162,11 +175,12 @@ export const services = {
 
             if (!patient) {
                 logger.info({ action: 'patient_registration', mobile }, 'Auto-registering new patient during login');
+                const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
                 patient = await prisma.patient.create({
                     data: {
                         phone: mobile,
                         name: 'New User',
-                        password: 'password123'
+                        password: hashedPassword
                     }
                 });
             }
@@ -181,8 +195,10 @@ export const services = {
             };
         },
 
-        register: async (data: { mobile: string; name: string; age?: string; gender?: string; bloodGroup?: string; city?: string; email?: string; }) => {
+        register: async (data: { mobile: string; name: string; password?: string; age?: string; gender?: string; bloodGroup?: string; city?: string; email?: string; }) => {
             logger.info({ action: 'patient_register', data }, 'Patient registering profile');
+            if (!data.password) throw new Error("PASSWORD_REQUIRED");
+            const hashedPassword = await bcrypt.hash(data.password, 12);
             const patient = await prisma.patient.upsert({
                 where: { phone: data.mobile },
                 update: {
@@ -195,7 +211,7 @@ export const services = {
                 create: {
                     phone: data.mobile,
                     name: data.name,
-                    password: 'password123'
+                    password: hashedPassword
                 }
             });
             return {
@@ -254,13 +270,14 @@ export const services = {
                 // ACID Transaction to prevent double booking race conditions
                 const appointment = await prisma.$transaction(async (tx) => {
                     // 1. Ensure patient exists
+                    const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
                     const patient = await tx.patient.upsert({
                         where: { phone: data.patientMobile },
                         update: { name: data.patientName },
                         create: {
                             phone: data.patientMobile,
                             name: data.patientName,
-                            password: 'password123'
+                            password: hashedPassword
                         }
                     });
 
@@ -350,7 +367,7 @@ export const services = {
         },
 
         getById: async (id: string) => {
-            const patient = await prisma.patient.findUnique({ where: { id } });
+            const patient = stripSensitive(await prisma.patient.findUnique({ where: { id } }));
             return patient;
         },
 
@@ -484,11 +501,12 @@ export const services = {
         },
 
         login: async (mobile: string, password?: string) => {
+            if (!password) throw new Error("PASSWORD_REQUIRED");
             const hospital = await prisma.hospital.findFirst({
                 where: { contactNumber: mobile }
             });
             // legacy plain text password check for hospital login prototype
-            if (hospital && (hospital as any).password === password) {
+            if (hospital && (hospital as any).password && await bcrypt.compare(password, (hospital as any).password)) {
                 logger.info({ action: 'hospital_login', hospitalId: hospital.id }, 'Hospital logged in successfully');
                 return {
                     user: {
@@ -505,6 +523,8 @@ export const services = {
 
         register: async (data: { hospitalName: string; city: string; adminName: string; mobile: string; password?: string; registrationNumber?: string; }) => {
             logger.info({ action: 'hospital_register', hospitalName: data.hospitalName }, 'Registering new hospital');
+            if (!data.password) throw new Error("PASSWORD_REQUIRED");
+            const hashedPassword = await bcrypt.hash(data.password, 12);
 
             return await prisma.$transaction(async (tx) => {
                 // Generate a random registration number if not provided
@@ -519,7 +539,7 @@ export const services = {
                         contactNumber: data.mobile,
                         verificationStatus: 'pending',
                         accountStatus: 'inactive',
-                        password: data.password
+                        password: hashedPassword
                     }
                 });
 
@@ -541,6 +561,8 @@ export const services = {
 
         registerLab: async (data: { labName: string; city: string; adminName: string; mobile: string; password?: string; registrationNumber?: string; }) => {
             logger.info({ action: 'lab_register', labName: data.labName }, 'Registering new diagnostic lab');
+            if (!data.password) throw new Error("PASSWORD_REQUIRED");
+            const hashedPassword = await bcrypt.hash(data.password, 12);
 
             return await prisma.$transaction(async (tx) => {
                 const regNumber = data.registrationNumber || `LAB-${Date.now()}`;
@@ -553,7 +575,7 @@ export const services = {
                         contactNumber: data.mobile,
                         verificationStatus: 'pending',
                         accountStatus: 'inactive',
-                        password: data.password,
+                        password: hashedPassword,
                         type: 'DIAGNOSTIC_CENTER'
                     }
                 });
@@ -575,13 +597,14 @@ export const services = {
 
         createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId?: string; date: string; }) => {
             logger.info({ action: 'hospital_create_visit', hospitalId, doctorId: data.doctorId }, 'Hospital staff creating new visit');
+            const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
             const patient = await prisma.patient.upsert({
                 where: { phone: data.patientMobile },
                 update: { name: data.patientName },
                 create: {
                     phone: data.patientMobile,
                     name: data.patientName,
-                    password: 'password123'
+                    password: hashedPassword
                 }
             });
 
@@ -647,6 +670,8 @@ export const services = {
     doctor: {
         register: async (data: { fullName: string; mobile: string; email: string; password?: string; registrationNumber: string; councilName: string; }) => {
             logger.info({ action: 'doctor_register', mobile: data.mobile }, 'Self-registering new doctor');
+            if (!data.password) throw new Error("PASSWORD_REQUIRED");
+            const hashedPassword = await bcrypt.hash(data.password, 12);
 
             return await prisma.$transaction(async (tx) => {
                 const doctor = await tx.doctorMaster.create({
@@ -654,7 +679,7 @@ export const services = {
                         fullName: data.fullName,
                         mobile: data.mobile,
                         email: data.email,
-                        password: data.password || 'password123',
+                        password: hashedPassword,
                         kycStatus: 'PENDING',
                         accountStatus: 'INACTIVE',
                         registration: {
@@ -683,7 +708,9 @@ export const services = {
         },
 
         login: async (username: string, password?: string) => {
-            if (username === 'admin' && password === 'admin123') {
+            const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+            const adminUser = process.env.ADMIN_USERNAME || 'admin';
+            if (username === adminUser && password === adminPass) {
                 logger.info({ action: 'admin_login', username }, 'Admin logged in successfully');
                 return {
                     user: {
@@ -725,19 +752,29 @@ export const services = {
             });
         },
 
+        suspendHospital: async (id: string) => {
+            logger.info({ action: 'suspend_hospital', hospitalId: id }, 'Admin suspending hospital');
+            return await prisma.hospital.update({
+                where: { id },
+                data: { accountStatus: 'suspended' }
+            });
+        },
+
     },
 
     // --- Agent Services ---
     agent: {
         register: async (data: { fullName: string; mobile: string; email: string; password?: string; area?: string; city?: string; state?: string; }) => {
             logger.info({ action: 'agent_register', mobile: data.mobile }, 'Registering new agent');
+            if (!data.password) throw new Error("PASSWORD_REQUIRED");
+            const hashedPassword = await bcrypt.hash(data.password, 12);
 
             return await prisma.agent.create({
                 data: {
                     fullName: data.fullName,
                     mobile: data.mobile,
                     email: data.email,
-                    password: data.password || 'password123',
+                    password: hashedPassword,
                     area: data.area,
                     city: data.city,
                     state: data.state,
@@ -749,6 +786,7 @@ export const services = {
         },
 
         login: async (mobile: string, password?: string) => {
+            if (!password) throw new Error("PASSWORD_REQUIRED");
             const agent = await prisma.agent.findFirst({
                 where: { mobile }
             });
@@ -761,7 +799,8 @@ export const services = {
                 throw new Error('Your account is not active. Please wait for admin approval.');
             }
 
-            if (password && agent.password !== password) {
+            const isValid = await bcrypt.compare(password, agent.password);
+            if (!isValid) {
                 throw new Error('Invalid credentials.');
             }
 
