@@ -206,7 +206,8 @@ export const services = {
                     gender: data.gender,
                     bloodGroup: data.bloodGroup,
                     city: data.city,
-                    email: data.email
+                    email: data.email,
+                    password: hashedPassword
                 },
                 create: {
                     phone: data.mobile,
@@ -488,7 +489,7 @@ export const services = {
         getDiagnosticCatalog: async (hospitalId: string) => {
             return await prisma.hospitalDiagnosticPricing.findMany({
                 where: { hospitalId },
-                include: { category: true }
+                include: { test: { include: { category: true } } }
             });
         },
 
@@ -805,11 +806,13 @@ export const services = {
             }
 
             return {
-                id: agent.id,
-                role: 'AGENT',
-                name: agent.fullName,
-                mobile: agent.mobile,
-                status: agent.accountStatus
+                user: {
+                    id: agent.id,
+                    role: 'AGENT',
+                    name: agent.fullName,
+                    mobile: agent.mobile,
+                    status: agent.accountStatus
+                }
             };
         },
 

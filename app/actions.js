@@ -2,6 +2,7 @@
 
 import { services } from '@/lib/services';
 import { z } from 'zod';
+import logger from '@/lib/logger';
 
 const PasswordSchema = z.string().min(6, 'Password must be at least 6 characters long.');
 import { redirect } from 'next/navigation';
@@ -487,7 +488,7 @@ export async function getAvailableSlotsAction(doctorId, date) {
         const slots = await services.patient.getAvailableSlots(doctorId, date);
         return slots;
     } catch (error) {
-        console.error('Failed to get slots:', error);
+        logger.error({ action: 'get_available_slots_failed', error: error.message }, 'Failed to get slots');
         return [];
     }
 }
