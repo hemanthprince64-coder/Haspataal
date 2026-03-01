@@ -168,8 +168,29 @@ export const services = {
 
     // --- Patient Services ---
     patient: {
+        requestOtp: async (mobile: string) => {
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+            await prisma.otpCode.upsert({
+                where: { phone: mobile },
+                update: { code, expiresAt },
+                create: { phone: mobile, code, expiresAt }
+            });
+
+            logger.info({ action: 'otp_generated', mobile, code }, `DEMO: Use this code to login: ${code}`);
+            return true;
+        },
+
         login: async (mobile: string, otp: string) => {
-            if (otp !== '1234') return null;
+            const otpRecord = await prisma.otpCode.findUnique({ where: { phone: mobile } });
+
+            if (!otpRecord) throw new Error('OTP not requested for this number. Please request a new OTP.');
+            if (otpRecord.code !== otp) throw new Error('Invalid OTP. Please try again.');
+            if (new Date() > otpRecord.expiresAt) throw new Error('OTP has expired. Please request a new OTP.');
+
+            // Prevent replay attacks
+            await prisma.otpCode.delete({ where: { id: otpRecord.id } });
 
             let patient = await prisma.patient.findUnique({ where: { phone: mobile } });
 

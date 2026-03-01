@@ -1,7 +1,7 @@
 'use client'
 
-import { useActionState } from 'react';
-import { patientLogin } from '@/app/actions';
+import { useState, useActionState } from 'react';
+import { patientLogin, requestOtpAction } from '@/app/actions';
 import Link from 'next/link';
 
 const initialState = {
@@ -10,6 +10,29 @@ const initialState = {
 
 export default function PatientLogin() {
     const [state, formAction, isPending] = useActionState(patientLogin, initialState);
+
+    const [step, setStep] = useState(1);
+    const [mobile, setMobile] = useState('');
+    const [otpMessage, setOtpMessage] = useState('');
+    const [isRequesting, setIsRequesting] = useState(false);
+
+    const handleRequestOtp = async (e) => {
+        e.preventDefault();
+        setOtpMessage('');
+        setIsRequesting(true);
+
+        const fd = new FormData();
+        fd.append('mobile', mobile);
+
+        const res = await requestOtpAction(null, fd);
+        setIsRequesting(false);
+
+        if (res.success) {
+            setStep(2);
+        } else {
+            setOtpMessage(res.message);
+        }
+    };
 
     return (
         <div style={{ padding: '4rem 1rem', display: 'flex', justifyContent: 'center' }}>
@@ -32,28 +55,60 @@ export default function PatientLogin() {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Login to book appointments and view your health history</p>
                 </div>
 
-                <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div className="form-group">
-                        <label className="form-label">📱 Mobile Number</label>
-                        <input name="mobile" type="tel" placeholder="10-digit mobile number" required className="form-input" maxLength="10" />
-                    </div>
+                {step === 1 ? (
+                    <form onSubmit={handleRequestOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div className="form-group">
+                            <label className="form-label">📱 Mobile Number</label>
+                            <input
+                                name="mobile"
+                                type="tel"
+                                placeholder="10-digit mobile number"
+                                required
+                                className="form-input"
+                                maxLength="10"
+                                value={mobile}
+                                onChange={(e) => setMobile(e.target.value)}
+                            />
+                        </div>
 
-                    <div className="form-group">
-                        <label className="form-label">🔑 OTP</label>
-                        <input name="otp" type="text" placeholder="Enter OTP" required className="form-input" maxLength="4" />
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
-                            💡 Use <strong>1234</strong> as OTP for demo
-                        </p>
-                    </div>
+                        {otpMessage && (
+                            <div className="alert alert-error">⚠️ {otpMessage}</div>
+                        )}
 
-                    {state?.message && (
-                        <div className="alert alert-error">⚠️ {state.message}</div>
-                    )}
+                        <button type="submit" disabled={isRequesting} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                            {isRequesting ? '⏳ Sending OTP...' : 'Get OTP'}
+                        </button>
+                    </form>
+                ) : (
+                    <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div className="form-group">
+                            <label className="form-label">📱 Mobile Number</label>
+                            <input name="mobile" type="tel" readOnly value={mobile} className="form-input" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-muted)' }} />
+                        </div>
 
-                    <button type="submit" disabled={isPending} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                        {isPending ? '⏳ Verifying...' : '→ Login'}
-                    </button>
-                </form>
+                        <div className="form-group">
+                            <label className="form-label">🔑 OTP</label>
+                            <input name="otp" type="text" placeholder="Enter 4-digit OTP" required className="form-input" maxLength="4" autoFocus />
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                                💡 Check console logs for the demo OTP code
+                            </p>
+                        </div>
+
+                        {state?.message && (
+                            <div className="alert alert-error">⚠️ {state.message}</div>
+                        )}
+
+                        <button type="submit" disabled={isPending} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                            {isPending ? '⏳ Verifying...' : '→ Login'}
+                        </button>
+
+                        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                            <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' }}>
+                                Incorrect number? Go back
+                            </button>
+                        </div>
+                    </form>
+                )}
 
                 <div className="divider" />
 

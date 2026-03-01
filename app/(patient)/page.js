@@ -208,11 +208,9 @@ export default function PatientHome() {
                     </p>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1.5rem" }}>
+                <div className="services-grid">
                     {services.map((service, i) => (
-                        <div key={service.title} className="card card-interactive" style={{
-                            textAlign: "center",
-                            padding: "2rem 1.5rem",
+                        <div key={service.title} className="card card-interactive service-card" style={{
                             cursor: "pointer",
                             position: "relative",
                             overflow: "hidden"

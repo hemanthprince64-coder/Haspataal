@@ -291,16 +291,31 @@ export async function patientLogin(prevState, formData) {
         return { message: 'Please enter mobile number and OTP.' };
     }
 
-    if (otp !== '1234') {
-        return { message: 'Invalid OTP. Use 1234 for demo.' };
+    try {
+        const result = await services.patient.login(mobile, otp);
+        if (!result) {
+            return { message: 'Login failed due to an unknown error.' };
+        }
+        await createSession('session_patient', result);
+    } catch (e) {
+        return { message: e.message || 'Login failed.' };
     }
 
-    const result = await services.patient.login(mobile, otp);
-    if (!result) {
-        return { message: 'Login failed.' };
-    }
-    await createSession('session_patient', result);
     redirect('/');
+}
+
+export async function requestOtpAction(prevState, formData) {
+    const mobile = formData.get('mobile');
+    if (!mobile || mobile.length < 10) {
+        return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
+    }
+
+    try {
+        await services.patient.requestOtp(mobile);
+        return { success: true, message: 'OTP sent successfully!' };
+    } catch (e) {
+        return { success: false, message: 'Failed to send OTP. Please try again.' };
+    }
 }
 
 export async function patientRegister(prevState, formData) {
