@@ -1,103 +1,119 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="400" height="520">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 640" fill="none">
   <defs>
-    <!-- Main pin gradient - dark to light blue -->
-    <linearGradient id="pinGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1565C0"/>
-      <stop offset="40%" stop-color="#1976D2"/>
-      <stop offset="100%" stop-color="#42A5F5"/>
+    <!-- Main Blue Gradient (Pin Body) -->
+    <linearGradient id="pinGrad" x1="256" y1="0" x2="256" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="35%" stop-color="#1E56A0"/>
+      <stop offset="100%" stop-color="#0D2B55"/>
     </linearGradient>
-    
-    <!-- Left side darker gradient -->
-    <linearGradient id="pinLeftGradient" x1="0" y1="0" x2="1" y2="0.5">
-      <stop offset="0%" stop-color="#0D47A1"/>
-      <stop offset="100%" stop-color="#1565C0"/>
+
+    <!-- Left Highlight Gradient -->
+    <linearGradient id="highlightGrad" x1="100" y1="80" x2="350" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#1E3A6E" stop-opacity="0"/>
     </linearGradient>
-    
-    <!-- Right side lighter gradient -->
-    <linearGradient id="pinRightGradient" x1="0" y1="0" x2="1" y2="0.5">
-      <stop offset="0%" stop-color="#1E88E5"/>
-      <stop offset="100%" stop-color="#64B5F6"/>
+
+    <!-- Shield Gradient -->
+    <linearGradient id="shieldGrad" x1="256" y1="120" x2="256" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#DBEAFE"/>
+      <stop offset="100%" stop-color="#93C5FD"/>
     </linearGradient>
-    
-    <!-- Shield gradient -->
-    <linearGradient id="shieldGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-      <stop offset="0%" stop-color="#1976D2"/>
-      <stop offset="100%" stop-color="#0D47A1"/>
+
+    <!-- Inner Shield Gradient -->
+    <linearGradient id="innerShieldGrad" x1="256" y1="150" x2="256" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E56A0"/>
+      <stop offset="100%" stop-color="#0D2B55"/>
     </linearGradient>
-    
-    <!-- Inner shield gradient -->
-    <linearGradient id="innerShieldGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-      <stop offset="0%" stop-color="#E3F2FD"/>
-      <stop offset="60%" stop-color="#BBDEFB"/>
-      <stop offset="100%" stop-color="#90CAF9"/>
-    </linearGradient>
-    
-    <!-- Highlight gradient for pin top edge -->
-    <linearGradient id="highlightGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#64B5F6"/>
-      <stop offset="100%" stop-color="#42A5F5"/>
-    </linearGradient>
-    
-    <!-- Shadow ellipse gradient -->
-    <radialGradient id="shadowGradient" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%" stop-color="rgba(0,0,0,0.25)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
-    </radialGradient>
-    
-    <!-- Pin body gradient -->
-    <linearGradient id="pinBodyGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0D47A1"/>
-      <stop offset="30%" stop-color="#1565C0"/>
-      <stop offset="60%" stop-color="#1E88E5"/>
-      <stop offset="100%" stop-color="#42A5F5"/>
-    </linearGradient>
-    
-    <!-- Cross/H icon gradient -->
-    <linearGradient id="crossGradient" x1="0.5" y1="0" x2="0.5" y2="1">
-      <stop offset="0%" stop-color="#1565C0"/>
-      <stop offset="100%" stop-color="#0D47A1"/>
-    </linearGradient>
-    
-    <!-- Pin shine -->
-    <linearGradient id="shineGradient" x1="0.3" y1="0" x2="0.7" y2="1">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.3)"/>
-      <stop offset="50%" stop-color="rgba(255,255,255,0.05)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-    </linearGradient>
+
+    <!-- Shadow Filter -->
+    <filter id="shadow" x="-20%" y="-5%" width="140%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="12"/>
+      <feOffset dy="8"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.25"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Drop shadow for the whole logo -->
+    <filter id="dropShadow" x="-10%" y="-5%" width="120%" height="115%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0D2B55" flood-opacity="0.3"/>
+    </filter>
   </defs>
-  
-  <!-- Shadow -->
-  <ellipse cx="200" cy="480" rx="80" ry="18" fill="url(#shadowGradient)"/>
-  
-  <!-- Main pin shape -->
-  <path d="M200 460 C200 460 60 280 60 180 C60 103 123 40 200 40 C277 40 340 103 340 180 C340 280 200 460 200 460Z" 
-        fill="url(#pinBodyGradient)" />
-  
-  <!-- Pin highlight/shine overlay -->
-  <path d="M200 460 C200 460 60 280 60 180 C60 103 123 40 200 40 C277 40 340 103 340 180 C340 280 200 460 200 460Z" 
-        fill="url(#shineGradient)" />
-  
-  <!-- Inner highlight rim -->
-  <path d="M200 50 C130 50 70 110 70 180 C70 270 200 445 200 445 C200 445 330 270 330 180 C330 110 270 50 200 50Z" 
-        fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
-  
-  <!-- Top edge highlight arc -->
-  <path d="M120 100 C150 65 175 52 200 50" 
-        fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="3" stroke-linecap="round"/>
-  
-  <!-- Shield outer shape -->
-  <path d="M200 110 L260 135 L260 210 C260 250 230 275 200 290 C170 275 140 250 140 210 L140 135 Z" 
-        fill="url(#shieldGradient)" stroke="rgba(255,255,255,0.8)" stroke-width="4"/>
-  
-  <!-- Shield inner white area -->
-  <path d="M200 125 L250 146 L250 208 C250 242 225 263 200 276 C175 263 150 242 150 208 L150 146 Z" 
-        fill="url(#innerShieldGradient)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
-  
-  <!-- Medical cross with H -->
-  <!-- Cross shape -->
-  <path d="M180 165 L180 155 C180 152 183 149 186 149 L214 149 C217 149 220 152 220 155 L220 165 L230 165 C233 165 236 168 236 171 L236 199 C236 202 233 205 230 205 L220 205 L220 215 C220 218 217 221 214 221 L186 221 C183 221 180 218 180 215 L180 205 L170 205 C167 205 164 202 164 199 L164 171 C164 168 167 165 170 165 Z" 
-        fill="url(#crossGradient)"/>
-  
-  <!-- H letter -->
-  <text x="200" y="195" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="38" fill="white">H</text>
+
+  <!-- Ground Shadow (Ellipse) -->
+  <ellipse cx="256" cy="580" rx="100" ry="18" fill="#0D2B55" opacity="0.12"/>
+
+  <!-- === LOCATION PIN BODY === -->
+  <g filter="url(#dropShadow)">
+    <!-- Pin Shape: circle top + pointed bottom -->
+    <path d="
+      M256 540
+      C240 490, 80 380, 80 220
+      C80 122.68, 158.68 44, 256 44
+      C353.32 44, 432 122.68, 432 220
+      C432 380, 272 490, 256 540Z
+    " fill="url(#pinGrad)"/>
+
+    <!-- Left Highlight Crescent -->
+    <path d="
+      M256 540
+      C240 490, 80 380, 80 220
+      C80 122.68, 158.68 44, 256 44
+      C200 44, 130 122.68, 130 220
+      C130 360, 248 482, 256 540Z
+    " fill="url(#highlightGrad)"/>
+
+    <!-- Thin bright rim at top -->
+    <path d="
+      M140 220
+      C140 145, 195 72, 256 72
+      C317 72, 372 145, 372 220
+    " fill="none" stroke="#60A5FA" stroke-width="2" opacity="0.4"/>
+
+    <!-- === SHIELD (Outer White/Light Blue) === -->
+    <path d="
+      M256 130
+      L340 165
+      C345 167, 348 172, 348 178
+      L348 260
+      C348 300, 310 340, 256 365
+      C202 340, 164 300, 164 260
+      L164 178
+      C164 172, 167 167, 172 165
+      Z
+    " fill="url(#shieldGrad)" opacity="0.95"/>
+
+    <!-- Shield Inner (Dark Blue Fill) -->
+    <path d="
+      M256 152
+      L324 180
+      C328 182, 330 186, 330 190
+      L330 255
+      C330 288, 300 320, 256 340
+      C212 320, 182 288, 182 255
+      L182 190
+      C182 186, 184 182, 188 180
+      Z
+    " fill="url(#innerShieldGrad)"/>
+
+    <!-- === MEDICAL CROSS + H LETTER === -->
+    <!-- Medical Cross Shape (white outline) -->
+    <path d="
+      M234 200 L278 200 L278 215 L300 215 L300 260 L278 260 L278 295 L234 295 L234 260 L212 260 L212 215 L234 215 Z
+    " fill="none" stroke="white" stroke-width="3" opacity="0.35"/>
+
+    <!-- Letter H -->
+    <g fill="white" font-family="Arial, Helvetica, sans-serif" font-weight="900">
+      <!-- Left vertical bar -->
+      <rect x="230" y="218" width="16" height="62" rx="2"/>
+      <!-- Right vertical bar -->
+      <rect x="266" y="218" width="16" height="62" rx="2"/>
+      <!-- Horizontal connector -->
+      <rect x="230" y="240" width="52" height="16" rx="2"/>
+    </g>
+  </g>
 </svg>

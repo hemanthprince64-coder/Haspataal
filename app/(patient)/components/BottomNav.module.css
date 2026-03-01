@@ -1,0 +1,32 @@
+.bottomNav {
+    position: sticky;
+    bottom: 0;
+    background: var(--navy);
+    display: flex;
+    padding: 8px 0 6px;
+    z-index: 100;
+    border-top: 3px solid var(--blue);
+    width: 100%;
+}
+
+.navItem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    text-decoration: none;
+}
+
+.navItem.active {
+    color: #60a5fa;
+}
+
+.navIcon {
+    font-size: 20px;
+}

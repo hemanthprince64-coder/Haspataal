@@ -1,0 +1,261 @@
+/* ═══════════════════════════════════════
+   HASPATAAL — Responsive App Shell
+   Desktop: Top Nav + Sidebar + Content
+   Mobile:  Full Width + Bottom Nav
+   ═══════════════════════════════════════ */
+
+.appShell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-main);
+}
+
+/* ─── Desktop Top Nav ─── */
+.desktopNav {
+    display: none;
+    background: var(--navy);
+    border-bottom: 3px solid var(--blue);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+}
+
+.navInner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.logoIcon {
+    width: 36px;
+    height: 36px;
+    background: var(--blue);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+}
+
+.logoImg {
+    width: 36px;
+    height: 44px;
+    object-fit: contain;
+}
+
+.logoText {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 900;
+    color: white;
+    letter-spacing: -0.5px;
+}
+
+.logoDot {
+    color: #60A5FA;
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 900;
+    margin-left: -6px;
+}
+
+.navLinks {
+    display: flex;
+    gap: 8px;
+}
+
+.navLink {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.navLink:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.navLinkActive {
+    color: white;
+    background: rgba(37, 99, 235, 0.3);
+}
+
+.navActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emergencyBtn {
+    background: var(--red);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+}
+
+.emergencyBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
+}
+
+.profileBtn {
+    text-decoration: none;
+}
+
+.profileAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: border-color 0.2s;
+}
+
+.profileAvatar:hover {
+    border-color: var(--blue);
+}
+
+/* ─── Main Area ─── */
+.mainArea {
+    flex: 1;
+    display: flex;
+}
+
+/* ─── Sidebar (Desktop Only) ─── */
+.sidebar {
+    display: none;
+    width: 260px;
+    min-width: 260px;
+    background: white;
+    border-right: 1px solid var(--grey2);
+    padding: 24px 16px;
+    flex-direction: column;
+    justify-content: space-between;
+    position: sticky;
+    top: 67px;
+    height: calc(100vh - 67px);
+    overflow-y: auto;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebarLink {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.sidebarLink:hover {
+    background: var(--blue-light);
+    color: var(--blue);
+}
+
+.sidebarLinkActive {
+    background: var(--blue-light);
+    color: var(--blue);
+    font-weight: 700;
+}
+
+.sidebarIcon {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+}
+
+.sidebarFooter {
+    border-top: 1px solid var(--grey2);
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ─── Content Area ─── */
+.content {
+    flex: 1;
+    min-height: 100vh;
+    background: var(--bg-main);
+    padding-bottom: 72px;
+    /* space for bottom nav on mobile */
+}
+
+/* ─── Mobile Bottom Nav ─── */
+.mobileOnly {
+    display: block;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ═══════════════════════════════════════ */
+
+/* Tablet & Desktop: 768px+ */
+@media (min-width: 768px) {
+    .desktopNav {
+        display: block;
+    }
+
+    .mobileOnly {
+        display: none;
+    }
+
+    .content {
+        padding-bottom: 0;
+        max-width: 1140px;
+        margin: 0 auto;
+        width: 100%;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+/* Full Desktop: 1024px+ */
+@media (min-width: 1024px) {
+    .sidebar {
+        display: flex;
+    }
+}
+
+/* Large Desktop: 1400px+ */
+@media (min-width: 1400px) {
+    .content {
+        max-width: 1200px;
+    }
+}

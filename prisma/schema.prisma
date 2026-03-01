@@ -340,9 +340,10 @@ model Appointment {
   slot      String
   status    AppointmentStatus @default(BOOKED)
   notes     String?
-  createdAt DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
-  doctor    DoctorMaster      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+  deletedAt  DateTime?         @map("deleted_at")
+  doctor     DoctorMaster      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   payment   Payment?
   visit     Visit?
@@ -473,6 +474,7 @@ model DiagnosticOrder {
   orderStatus String                @map("order_status")
   totalAmount Decimal               @map("total_amount")
   createdAt   DateTime              @default(now()) @map("created_at")
+  deletedAt   DateTime?             @map("deleted_at")
   items       DiagnosticOrderItem[]
   doctor      DoctorMaster?         @relation(fields: [doctorId], references: [id])
   hospital    Hospital              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
@@ -531,6 +533,7 @@ model Visit {
   diagnosis     String?
   amount        Int          @default(0)
   createdAt     DateTime     @default(now()) @map("created_at")
+  deletedAt     DateTime?    @map("deleted_at")
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   hospital      Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
@@ -538,13 +541,14 @@ model Visit {
 }
 
 model MedicalRecord {
-  id         String   @id @default(uuid())
-  patientId  String   @map("patient_id")
-  fileName   String   @map("file_name")
-  fileUrl    String   @map("file_url")
-  fileType   String?  @map("file_type")
-  uploadedAt DateTime @default(now()) @map("uploaded_at")
-  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  patientId  String    @map("patient_id")
+  fileName   String    @map("file_name")
+  fileUrl    String    @map("file_url")
+  fileType   String?   @map("file_type")
+  uploadedAt DateTime  @default(now()) @map("uploaded_at")
+  deletedAt  DateTime? @map("deleted_at")
+  patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("medical_records")
 }
@@ -572,6 +576,7 @@ model PatientRecord {
   vitals       Json?
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at")
   doctor       DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   patient      Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
 

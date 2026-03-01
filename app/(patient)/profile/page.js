@@ -1,114 +1,75 @@
-import { services } from "@/lib/services";
-import { requireRole } from "@/lib/auth/requireRole";
-import { UserRole } from "@/types";
+"use client";
+
 import Link from "next/link";
-import ProfileActions from "./ProfileActions";
+import Image from "next/image";
 
-export default async function PatientProfile() {
-    const patientObj = await requireRole(UserRole.PATIENT, "session_patient");
-
-    const freshPatient = await services.patient.getById(patientObj.id) || patientObj;
-
-    let allVisits = [];
-    try {
-        allVisits = await services.patient.getVisits(patientObj.id);
-    } catch (e) { }
-
-    const visits = await Promise.all(allVisits.map(async (v) => {
-        const hospital = await services.platform.getHospitalById(v.hospitalId);
-        const doctor = await services.platform.getDoctorById(v.doctorId);
-        return { ...v, hospital, doctor };
-    }));
+export default function ProfilePage() {
+    const user = {
+        name: "Ravi Kumar",
+        phone: "+91 98765 43210",
+        email: "ravi.kumar@example.com",
+        bloodGroup: "O+",
+        dob: "14 Aug 1990"
+    };
 
     return (
-        <div className="container page-enter" style={{ padding: "2rem 1rem", maxWidth: "900px", margin: "0 auto" }}>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: "800", marginBottom: "2rem" }}>My Profile</h1>
+        <>
+            <div className="page-header" style={{ padding: '32px 20px 60px', textAlign: 'center', background: 'var(--navy)' }}>
+                <h1 style={{ fontSize: '20px', margin: 0, color: 'white' }}>Profile</h1>
+            </div>
 
-            {/* Profile Card */}
-            <div className="card" style={{ marginBottom: "2rem", display: "flex", gap: "1.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                <div style={{
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "2rem",
-                    fontWeight: "bold",
-                    color: "var(--primary)",
-                    flexShrink: 0,
-                }}>
-                    {freshPatient.name ? freshPatient.name.charAt(0).toUpperCase() : '👤'}
-                </div>
-                <div style={{ flex: 1 }}>
-                    <h3 style={{ fontWeight: "700", fontSize: "1.2rem", marginBottom: "0.25rem" }}>
-                        {freshPatient.name || 'Patient'}
-                    </h3>
-                    <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                        <span>📱 {freshPatient.mobile}</span>
-                        {freshPatient.city && <span>📍 {freshPatient.city}</span>}
-                        {freshPatient.age && <span>🎂 {freshPatient.age} yrs</span>}
-                        {freshPatient.gender && <span>⚤ {freshPatient.gender === 'M' ? 'Male' : freshPatient.gender === 'F' ? 'Female' : 'Other'}</span>}
-                        {freshPatient.bloodGroup && <span>🩸 {freshPatient.bloodGroup}</span>}
+            <div className="section" style={{ marginTop: '-40px', position: 'relative', zIndex: 10 }}>
+                <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '24px' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--blue-light)', color: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold', marginBottom: '16px' }}>
+                        {user.name.charAt(0)}
+                    </div>
+                    <h2 style={{ fontSize: '20px', margin: '0 0 4px 0', fontFamily: 'var(--font-serif)' }}>{user.name}</h2>
+                    <p style={{ color: 'var(--text3)', margin: '0 0 16px 0', fontSize: '14px' }}>{user.phone}</p>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{ background: 'var(--red-light)', color: 'var(--red)', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}>🩸 {user.bloodGroup}</span>
+                        <span style={{ background: 'var(--grey1)', color: 'var(--text2)', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}>🎂 {user.dob}</span>
                     </div>
                 </div>
-                <Link href="/profile/edit" className="btn btn-outline btn-sm">
-                    ✏️ Edit Profile
-                </Link>
-            </div>
 
-            {/* Visit History */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: "700" }}>Visit History</h2>
-                <span className="badge badge-primary">{visits.length} visits</span>
-            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                    <Link href="/records" className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ fontSize: '20px' }}>📋</span>
+                            <span style={{ fontSize: '15px', color: 'var(--text)', fontWeight: '500' }}>Medical Records</span>
+                        </div>
+                        <span style={{ color: 'var(--grey3)' }}>→</span>
+                    </Link>
 
-            {visits.length === 0 ? (
-                <div className="card empty-state">
-                    <div className="empty-state-icon">📋</div>
-                    <p className="empty-state-title">No visits yet</p>
-                    <p className="empty-state-text">Book your first appointment to see your visit history here.</p>
-                    <Link href="/search" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>Find a Doctor</Link>
+                    <Link href="/family" className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ fontSize: '20px' }}>👨‍👩‍👧‍👦</span>
+                            <span style={{ fontSize: '15px', color: 'var(--text)', fontWeight: '500' }}>Family Members</span>
+                        </div>
+                        <span style={{ color: 'var(--grey3)' }}>→</span>
+                    </Link>
+
+                    <Link href="/payments" className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ fontSize: '20px' }}>💳</span>
+                            <span style={{ fontSize: '15px', color: 'var(--text)', fontWeight: '500' }}>Payment Methods</span>
+                        </div>
+                        <span style={{ color: 'var(--grey3)' }}>→</span>
+                    </Link>
+
+                    <Link href="/settings" className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <span style={{ fontSize: '20px' }}>⚙️</span>
+                            <span style={{ fontSize: '15px', color: 'var(--text)', fontWeight: '500' }}>Settings</span>
+                        </div>
+                        <span style={{ color: 'var(--grey3)' }}>→</span>
+                    </Link>
                 </div>
-            ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                    {visits.map(v => {
-                        const isUpcoming = v.status === 'SCHEDULED';
-                        const isCancelled = v.status === 'CANCELLED';
 
-                        return (
-                            <div key={v.id} className="card" style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                gap: "1rem",
-                                flexWrap: "wrap",
-                                borderLeft: `4px solid ${isUpcoming ? 'var(--primary)' : isCancelled ? 'var(--danger)' : 'var(--success)'}`,
-                                opacity: isCancelled ? 0.7 : 1,
-                            }}>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-                                        <h4 style={{ fontWeight: "600" }}>{v.doctor?.name || v.doctorId}</h4>
-                                        <span className={`badge ${isUpcoming ? 'badge-primary' : isCancelled ? 'badge-danger' : 'badge-success'}`}>
-                                            {v.status}
-                                        </span>
-                                    </div>
-                                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                                        <span>🏥 {v.hospital?.name || v.hospitalId}</span>
-                                        <span>📅 {new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                        <span>🕐 {new Date(v.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                </div>
-
-                                {isUpcoming && (
-                                    <ProfileActions visitId={v.id} />
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
+                <button className="btn btn-outline" style={{ width: '100%', padding: '16px', borderRadius: '16px', fontSize: '15px', color: 'var(--red)', borderColor: 'var(--red-light)', background: 'var(--red-light)' }}>
+                    Log Out
+                </button>
+            </div>
+        </>
     );
 }

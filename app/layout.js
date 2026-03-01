@@ -1,7 +1,17 @@
-import { Inter } from "next/font/google";
+import { Merriweather, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const merriweather = Merriweather({
+  weight: ['400', '700', '900'],
+  subsets: ["latin"],
+  variable: '--font-merriweather',
+});
+
+const sourceSans = Source_Sans_3({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ["latin"],
+  variable: '--font-source-sans',
+});
 
 export const metadata = {
   title: "Haspataal — Healthcare Assistance Platform",
@@ -14,8 +24,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={`${merriweather.variable} ${sourceSans.variable}`}>
+      <body className={sourceSans.className}>{children}</body>
     </html>
   );
 }

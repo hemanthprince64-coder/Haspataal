@@ -121,6 +121,7 @@ export default function PatientHome() {
                             <input
                                 type="text"
                                 name="q"
+                                suppressHydrationWarning
                                 placeholder="Search by doctor, hospital, or speciality..."
                                 style={{
                                     border: "none",
@@ -134,7 +135,7 @@ export default function PatientHome() {
                                 }}
                             />
                         </div>
-                        <button type="submit" className="btn btn-primary" style={{ borderRadius: "9999px", padding: "0.875rem 2rem", fontSize: "1rem" }}>
+                        <button type="submit" suppressHydrationWarning className="btn btn-primary" style={{ borderRadius: "9999px", padding: "0.875rem 2rem", fontSize: "1rem" }}>
                             Search
                         </button>
                     </form>
