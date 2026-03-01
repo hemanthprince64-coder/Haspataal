@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { patientLogout } from "@/app/actions";
 
 export default function ProfilePage() {
     const user = {
@@ -66,9 +67,11 @@ export default function ProfilePage() {
                     </Link>
                 </div>
 
-                <button className="btn btn-outline" style={{ width: '100%', padding: '16px', borderRadius: '16px', fontSize: '15px', color: 'var(--red)', borderColor: 'var(--red-light)', background: 'var(--red-light)' }}>
-                    Log Out
-                </button>
+                <form action={patientLogout}>
+                    <button type="submit" className="btn btn-outline" style={{ width: '100%', padding: '16px', borderRadius: '16px', fontSize: '15px', color: 'var(--red)', borderColor: 'var(--red-light)', background: 'var(--red-light)', cursor: 'pointer' }}>
+                        Log Out
+                    </button>
+                </form>
             </div>
         </>
     );

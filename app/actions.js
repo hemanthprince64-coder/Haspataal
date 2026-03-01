@@ -339,6 +339,11 @@ export async function patientRegister(prevState, formData) {
     return { success: true, message: 'Profile saved successfully!' };
 }
 
+export async function patientLogout() {
+    await deleteSession('session_patient');
+    redirect('/login');
+}
+
 export async function updatePatientProfile(prevState, formData) {
     let patient;
     try {
