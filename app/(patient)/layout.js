@@ -6,7 +6,8 @@ import BottomNav from "./components/BottomNav";
 import styles from "./layout.module.css";
 
 export default function PatientLayout({ children }) {
-    const pathname = usePathname();
+    const pathname = usePathname() || "";
+    const isAuthPage = pathname === "/login" || pathname === "/register";
 
     const navLinks = [
         { name: "Home", href: "/home", icon: "🏠" },
@@ -41,39 +42,43 @@ export default function PatientLayout({ children }) {
                     </nav>
                     <div className={styles.navActions}>
                         <Link href="/emergency" className={styles.emergencyBtn}>🚑 Emergency</Link>
-                        <Link href="/profile" className={styles.profileBtn}>
-                            <span className={styles.profileAvatar}>R</span>
-                        </Link>
+                        {!isAuthPage && (
+                            <Link href="/profile" className={styles.profileBtn}>
+                                <span className={styles.profileAvatar}>R</span>
+                            </Link>
+                        )}
                     </div>
                 </div>
             </header>
 
             {/* Desktop: Sidebar + Content | Mobile: Full Content + BottomNav */}
             <div className={styles.mainArea}>
-                <aside className={styles.sidebar}>
-                    <nav className={styles.sidebarNav}>
-                        {navLinks.map(link => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`${styles.sidebarLink} ${pathname.startsWith(link.href) ? styles.sidebarLinkActive : ""}`}
-                            >
-                                <span className={styles.sidebarIcon}>{link.icon}</span>
-                                <span>{link.name}</span>
+                {!isAuthPage && (
+                    <aside className={styles.sidebar}>
+                        <nav className={styles.sidebarNav}>
+                            {navLinks.map(link => (
+                                <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    className={`${styles.sidebarLink} ${pathname.startsWith(link.href) ? styles.sidebarLinkActive : ""}`}
+                                >
+                                    <span className={styles.sidebarIcon}>{link.icon}</span>
+                                    <span>{link.name}</span>
+                                </Link>
+                            ))}
+                        </nav>
+                        <div className={styles.sidebarFooter}>
+                            <Link href="/tracker" className={styles.sidebarLink}>
+                                <span className={styles.sidebarIcon}>🤰</span>
+                                <span>Pregnancy Tracker</span>
                             </Link>
-                        ))}
-                    </nav>
-                    <div className={styles.sidebarFooter}>
-                        <Link href="/tracker" className={styles.sidebarLink}>
-                            <span className={styles.sidebarIcon}>🤰</span>
-                            <span>Pregnancy Tracker</span>
-                        </Link>
-                        <Link href="/profile" className={styles.sidebarLink}>
-                            <span className={styles.sidebarIcon}>👤</span>
-                            <span>My Profile</span>
-                        </Link>
-                    </div>
-                </aside>
+                            <Link href="/profile" className={styles.sidebarLink}>
+                                <span className={styles.sidebarIcon}>👤</span>
+                                <span>My Profile</span>
+                            </Link>
+                        </div>
+                    </aside>
+                )}
 
                 <main className={styles.content}>
                     {children}
@@ -81,9 +86,11 @@ export default function PatientLayout({ children }) {
             </div>
 
             {/* Mobile: Bottom Navigation */}
-            <div className={styles.mobileOnly}>
-                <BottomNav />
-            </div>
+            {!isAuthPage && (
+                <div className={styles.mobileOnly}>
+                    <BottomNav />
+                </div>
+            )}
         </div>
     );
 }
