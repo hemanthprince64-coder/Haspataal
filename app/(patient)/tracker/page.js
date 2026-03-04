@@ -20,7 +20,7 @@ export default function TrackerPage() {
                     <p style={{ fontSize: '14px', color: 'var(--text3)', margin: 0 }}>Approx. 30cm long • 600g weight</p>
                 </div>
 
-                <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>This Week's Checklist</h3>
+                <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>This Week&apos;s Checklist</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
                     <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>

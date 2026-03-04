@@ -340,10 +340,10 @@ model Appointment {
   slot      String
   status    AppointmentStatus @default(BOOKED)
   notes     String?
-  createdAt  DateTime          @default(now()) @map("created_at")
-  updatedAt  DateTime          @updatedAt @map("updated_at")
-  deletedAt  DateTime?         @map("deleted_at")
-  doctor     DoctorMaster      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  deletedAt DateTime?         @map("deleted_at")
+  doctor    DoctorMaster      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   payment   Payment?
   visit     Visit?
