@@ -24,8 +24,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${merriweather.variable} ${sourceSans.variable}`}>
-      <body className={sourceSans.className}>{children}</body>
+    <html lang="en" className={`${merriweather.variable} ${sourceSans.variable}`} suppressHydrationWarning>
+      <body className={sourceSans.className} suppressHydrationWarning>{children}</body>
     </html>
   );
 }
