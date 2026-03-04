@@ -512,3 +512,40 @@ export async function getAvailableSlotsAction(doctorId, date) {
         return [];
     }
 }
+
+// ==================== MEDCHAT AI TRIAGE ====================
+
+import { MedChatInputSchema } from '@/lib/medchat/schemas';
+import { triagePatient } from '@/lib/medchat/triage-engine';
+
+export async function medchatTriageAction(prevState, formData) {
+    try {
+        const rawInput = {
+            age: formData.get('age'),
+            gender: formData.get('gender'),
+            city: formData.get('city'),
+            duration: formData.get('duration'),
+            symptoms: formData.get('symptoms'),
+            fever: formData.get('fever'),
+            breathingDifficulty: formData.get('breathingDifficulty'),
+            seizure: formData.get('seizure'),
+            consciousnessNormal: formData.get('consciousnessNormal'),
+        };
+
+        const parsed = MedChatInputSchema.safeParse(rawInput);
+        if (!parsed.success) {
+            const firstError = parsed.error.errors[0];
+            return { success: false, message: `Invalid input: ${firstError.path.join('.')} — ${firstError.message}` };
+        }
+
+        const result = triagePatient(parsed.data);
+
+        // Strip internal-only fields from client response
+        const { probable_differentials_hidden, risk_score_internal, ...clientResult } = result;
+
+        return { success: true, result: clientResult };
+    } catch (e) {
+        logger.error({ action: 'medchat_triage_failed', error: e.message }, 'MedChat triage error');
+        return { success: false, message: 'An error occurred during symptom analysis. Please try again.' };
+    }
+}

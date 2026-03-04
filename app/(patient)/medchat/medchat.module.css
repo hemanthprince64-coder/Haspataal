@@ -1,0 +1,766 @@
+/* ═══════════════════════════════════════════════════════════
+   MedChat AI — Premium Triage Interface Styles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── PAGE LAYOUT ─────────────────────────────────────────── */
+
+.pageWrapper {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+  min-height: 80vh;
+}
+
+/* ── HERO HEADER ─────────────────────────────────────────── */
+
+.heroHeader {
+  text-align: center;
+  padding: 2.5rem 1.5rem 2rem;
+  background: linear-gradient(135deg, #0D2B55 0%, #1A4480 60%, #0F766E 100%);
+  border-radius: 24px;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroHeader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+}
+
+.heroIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 18px;
+  font-size: 32px;
+  margin-bottom: 1rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.heroTitle {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.heroTitle span {
+  color: #60A5FA;
+}
+
+.heroSubtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 400;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.trustBar {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.trustTag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 0.75rem;
+  border-radius: 99px;
+}
+
+/* ── STEP PROGRESS BAR ───────────────────────────────────── */
+
+.progressBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.progressStep {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.stepCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--grey2);
+  background: var(--bg-card);
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
+.stepCircleActive {
+  border-color: #2563EB;
+  background: #2563EB;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
+.stepCircleDone {
+  border-color: #059669;
+  background: #059669;
+  color: #fff;
+}
+
+.stepLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-top: 0.25rem;
+  text-align: center;
+  display: none;
+}
+
+.stepLine {
+  width: 60px;
+  height: 2px;
+  background: var(--grey2);
+  transition: background 0.3s;
+}
+
+.stepLineDone {
+  background: #059669;
+}
+
+/* ── FORM CARD ───────────────────────────────────────────── */
+
+.formCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 4px 24px rgba(13, 43, 85, 0.08);
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stepTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stepDesc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+/* ── FORM FIELDS ─────────────────────────────────────────── */
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.02em;
+}
+
+.input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.input:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 2.5rem;
+}
+
+/* ── BOOLEAN TOGGLES ─────────────────────────────────────── */
+
+.toggleGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.toggleCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.toggleCard:hover {
+  border-color: #2563EB;
+  background: #EFF6FF;
+}
+
+.toggleCardDanger:hover {
+  border-color: #DC2626;
+  background: #FEF2F2;
+}
+
+.toggleLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggleLabelIcon {
+  font-size: 1rem;
+}
+
+.toggleSwitch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--grey2);
+  border-radius: 12px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggleSwitchActive {
+  background: #2563EB;
+}
+
+.toggleSwitchDanger {
+  background: #DC2626;
+}
+
+.toggleDot {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.toggleDotActive {
+  transform: translateX(20px);
+}
+
+/* ── BUTTONS ─────────────────────────────────────────────── */
+
+.buttonRow {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.btnPrimary {
+  flex: 1;
+  padding: 0.85rem 1.5rem;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+}
+
+.btnPrimary:active {
+  transform: scale(0.97);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btnSecondary {
+  padding: 0.85rem 1.5rem;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  font-family: inherit;
+}
+
+.btnSecondary:hover {
+  border-color: #2563EB;
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+/* ── SPINNER ─────────────────────────────────────────────── */
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── ERROR MESSAGE ───────────────────────────────────────── */
+
+.errorMsg {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #B91C1C;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 1rem;
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESULT DISPLAY
+   ═══════════════════════════════════════════════════════════ */
+
+.resultWrapper {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── EMERGENCY BANNER ────────────────────────────────────── */
+
+.emergencyBanner {
+  background: linear-gradient(135deg, #B91C1C, #DC2626);
+  color: #fff;
+  padding: 1.5rem;
+  border-radius: 18px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  animation: emergencyPulse 2s ease-in-out infinite;
+  box-shadow: 0 4px 20px rgba(185, 28, 28, 0.3);
+}
+
+@keyframes emergencyPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(185, 28, 28, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 4px 30px rgba(185, 28, 28, 0.55);
+  }
+}
+
+.emergencyIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  animation: emergencyShake 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes emergencyShake {
+  0% {
+    transform: rotate(-5deg);
+  }
+
+  100% {
+    transform: rotate(5deg);
+  }
+}
+
+.emergencyText h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+  color: #fff;
+}
+
+.emergencyText p {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── URGENCY BADGE ───────────────────────────────────────── */
+
+.resultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.urgencyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badgeEmergency {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 2px solid #FECACA;
+  animation: emergencyPulse 2s ease-in-out infinite;
+}
+
+.badgeUrgent {
+  background: #FFFBEB;
+  color: #B45309;
+  border: 2px solid #FDE68A;
+}
+
+.badgeRoutine {
+  background: #F0FDF4;
+  color: #15803D;
+  border: 2px solid #BBF7D0;
+}
+
+.specialityTag {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  background: #EFF6FF;
+  color: #2563EB;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ── RESULT CARDS ────────────────────────────────────────── */
+
+.resultCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 12px rgba(13, 43, 85, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.resultCard:hover {
+  box-shadow: 0 4px 20px rgba(13, 43, 85, 0.1);
+}
+
+.resultCardTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resultCardBody {
+  font-size: 0.925rem;
+  color: var(--text-main);
+  line-height: 1.7;
+}
+
+.categoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.categoryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  background: #F1F5F9;
+  color: var(--text-muted);
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.toonCodeBlock {
+  margin: 0;
+  padding: 12px;
+  background-color: #0f172a;
+  color: #38bdf8;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+}
+
+/* ── DISCLAIMER ──────────────────────────────────────────── */
+
+.disclaimer {
+  background: #F8FAFC;
+  border: 1px solid var(--grey2);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.disclaimerTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.disclaimerText {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── CTA BUTTONS (result) ────────────────────────────────── */
+
+.resultActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.ctaBook {
+  flex: 1;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.ctaBookPrimary {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  color: #fff;
+}
+
+.ctaBookPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+}
+
+.ctaEmergency {
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+  color: #fff;
+}
+
+.ctaEmergency:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+}
+
+.ctaOutline {
+  background: #fff;
+  color: var(--text-main);
+  border: 1.5px solid var(--border);
+}
+
+.ctaOutline:hover {
+  border-color: #2563EB;
+  color: #2563EB;
+  background: #EFF6FF;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .pageWrapper {
+    padding: 1rem 0.75rem 5rem;
+  }
+
+  .heroHeader {
+    padding: 2rem 1rem 1.5rem;
+    border-radius: 18px;
+    margin-bottom: 1.25rem;
+  }
+
+  .heroTitle {
+    font-size: 1.35rem;
+  }
+
+  .heroSubtitle {
+    font-size: 0.85rem;
+  }
+
+  .formCard {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .toggleGroup {
+    grid-template-columns: 1fr;
+  }
+
+  .resultActions {
+    flex-direction: column;
+  }
+
+  .resultHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .buttonRow {
+    flex-direction: column;
+  }
+
+  .trustBar {
+    gap: 0.5rem;
+  }
+
+  .progressStep .stepLine {
+    width: 36px;
+  }
+}
