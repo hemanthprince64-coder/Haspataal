@@ -1,8 +1,37 @@
 import { NextResponse } from 'next/server';
 import { decrypt } from '@/lib/session';
 
+// Very basic in-memory rate limiting (per Edge isolate instance)
+const ratelimit = new Map();
+const WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 100; // 100 requests per minute per IP
+
 export async function proxy(request) {
     const { pathname } = request.nextUrl;
+
+    // ── AUDIT LOGGING & RATE LIMITING ────────────────────────────
+    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+
+    if (ip !== 'unknown') {
+        const record = ratelimit.get(ip) || { count: 0, startTime: now };
+        if (now - record.startTime > WINDOW_MS) {
+            record.count = 1;
+            record.startTime = now;
+        } else {
+            record.count += 1;
+        }
+        ratelimit.set(ip, record);
+
+        if (record.count > MAX_REQUESTS) {
+            console.warn(`[SECURITY AUDIT] Rate limit exceeded for IP: ${ip} on path: ${pathname}`);
+            return new NextResponse('Too Many Requests', { status: 429 });
+        }
+    }
+
+    // Basic Request Audit Log
+    console.log(`[AUDIT LOG] ${request.method} ${pathname} - IP: ${ip}`);
+    // ─────────────────────────────────────────────────────────────
 
     // Platform Admin Protection
     if (pathname.startsWith('/admin/dashboard')) {
