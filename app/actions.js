@@ -538,7 +538,7 @@ export async function medchatTriageAction(prevState, formData) {
             return { success: false, message: `Invalid input: ${firstError.path.join('.')} — ${firstError.message}` };
         }
 
-        const result = triagePatient(parsed.data);
+        const result = await triagePatient(parsed.data);
 
         // Strip internal-only fields from client response
         const { probable_differentials_hidden, risk_score_internal, ...clientResult } = result;
@@ -547,5 +547,24 @@ export async function medchatTriageAction(prevState, formData) {
     } catch (e) {
         logger.error({ action: 'medchat_triage_failed', error: e.message }, 'MedChat triage error');
         return { success: false, message: 'An error occurred during symptom analysis. Please try again.' };
+    }
+}
+
+export async function getTopDoctorsBySpeciality(speciality, city) {
+    try {
+        if (!speciality) return [];
+        const doctors = await services.platform.searchDoctors(city, speciality);
+        return doctors.slice(0, 3).map(doc => ({
+            id: doc.id,
+            name: doc.fullName,
+            fullName: doc.fullName,
+            speciality: speciality,
+            hospital: doc.affiliations?.[0]?.hospital?.legalName || 'Haspataal Partner',
+            stars: 4.5,
+            distance: 'Near you'
+        }));
+    } catch (e) {
+        logger.error({ action: 'get_top_doctors_failed', error: e.message });
+        return [];
     }
 }
