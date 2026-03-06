@@ -18,20 +18,27 @@ Reliability, data privacy, and clean UI are non-negotiable.
 
 ---
 
-## 🏗 Platform Architecture
+## 🏗 Platform Architecture (Microservices)
 
-| Portal | Domain | Purpose |
-|---|---|---|
-| **Patient Portal** | haspataal.com | Doctor booking, hospital discovery, MedChat AI triage, digital health records |
-| **Provider Portal** | haspataal.in | OPD/IPD management, billing, appointment management, analytics |
-| **Admin Portal** | haspataal-admin | Hospital onboarding, commission management, platform analytics |
-| **Marketing Site** | haspataal-com | Landing pages, SEO, public information |
-| **Mobile App** | haspataal-mobile | Patient mobile experience (Expo/React Native) |
+| Portal | Domain | Purpose | Tech Stack |
+|---|---|---|---|
+| **Patient Portal** | haspataal.com | Doctor booking, discovery, MedChat AI, records | Next.js, FastAPI |
+| **Provider Portal** | haspataal.in | OPD/IPD, billing, dashboards, analytics | Next.js, Node.js |
+| **Admin Portal** | haspataal-admin | Onboarding, commissions, platform management | Next.js |
+| **Mobile App** | haspataal-mobile | Patient mobile experience | Expo/React Native |
 
-### Shared Backend
-- Single Prisma schema with role-based access control
-- Supabase PostgreSQL with Row-Level Security
-- JWT authentication via `jose` + `bcryptjs`
+### 🛠 Decomposed Services (MetaGPT Design)
+- **Auth Service:** JWT via `jose` + `bcryptjs`, RBAC.
+- **Doctor/Hospital Service:** Profile management, credential verification.
+- **Appointment Service:** Real-time slot management (Redis-backed).
+- **Billing Service:** Payment processing, invoicing, insurance integration.
+- **MedChat AI Service:** FastAPI/Python service for clinical triage (Gemini 2.5).
+- **Video Consult Service:** WebRTC-based secure sessions.
+
+### Shared Infrastructure
+- **Primary DB:** Supabase PostgreSQL with Row-Level Security (RLS).
+- **Cache/State:** Redis for real-time slot locking and session management.
+- **Validation:** Zod 4 for all internal/external schemas.
 
 ---
 
@@ -156,6 +163,7 @@ security: security patch
 - **Prisma select/include conflict:** Never mix `select` and `include` on the same relation field — use one or the other. *(Fixed in conversation 842dbe37)*
 - **Logout flow:** Patient logout requires a dedicated server action that clears the JWT cookie; client-side only clearing is insufficient. *(Fixed in conversation 4c8aae98)*
 - **Supabase RLS:** Row-Level Security policies must be audited when adding new tables or modifying access patterns — see `supabase_rls_audit_day11.sql` for reference.
+- **Scaling Roadmaps:** See `SCALING_STRATEGY.md` for long-term growth plans across Vertical, Horizontal, and AI axes.
 - **MedChat triage is async:** `triagePatient()` is now `async` due to Gemini integration — always `await` it.
 - **Gemini fallback:** If `GEMINI_API_KEY` is not set, MedChat gracefully falls back to deterministic rules.
 

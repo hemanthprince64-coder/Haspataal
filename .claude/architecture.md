@@ -1,30 +1,39 @@
 # Haspataal System Architecture
 
-## High-Level Overview
+## High-Level Overview (Microservices)
 
 ```mermaid
 graph TD
-    subgraph "Patient Facing"
-        A["haspataal.com<br/>Patient Portal"] --> API
-        M["haspataal-mobile<br/>Expo App"] --> API
+    subgraph "Frontend Layer"
+        P1["haspataal.com (Patient)"]
+        P2["haspataal.in (Provider)"]
+        P3["haspataal-mobile (App)"]
     end
 
-    subgraph "Provider Facing"
-        B["haspataal.in<br/>Doctor/Hospital Portal"] --> API
+    subgraph "Gateway & Auth"
+        AGW["API Gateway (Next.js/Node)"]
+        ASV["Auth Service (JWT/RBAC)"]
     end
 
-    subgraph "Administration"
-        C["haspataal-admin<br/>Admin Dashboard"] --> API
-        D["haspataal-com<br/>Marketing Site"]
+    subgraph "Core Microservices"
+        DSV["Doctor Service"]
+        HSV["Hospital Service"]
+        APS["Appointment Service"]
+        BSV["Billing Service"]
+        ASR["AI Triage (FastAPI)"]
     end
 
-    subgraph "Backend Layer"
-        API["Shared API Layer<br/>Next.js Server Actions"]
-        API --> PRISMA["Prisma ORM 5.10"]
-        PRISMA --> DB["Supabase PostgreSQL<br/>Row-Level Security"]
-        API --> AI["Gemini 2.0 Flash<br/>MedChat AI Triage"]
-        API --> AUTH["JWT Auth<br/>jose + bcryptjs"]
+    subgraph "Data & State"
+        DB[("Supabase PG (RLS)")]
+        RD[("Redis (Caching/Locks)")]
     end
+
+    P1 & P2 & P3 --> AGW
+    AGW --> ASV
+    AGW --> DSV & HSV & APS & BSV & ASR
+    DSV & HSV & APS & BSV --> DB
+    APS & ASV --> RD
+    ASR --> AI["Gemini 2.5 Flash"]
 ```
 
 ---
