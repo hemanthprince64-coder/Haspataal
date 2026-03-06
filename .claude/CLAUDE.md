@@ -163,6 +163,9 @@ security: security patch
 - **Prisma select/include conflict:** Never mix `select` and `include` on the same relation field — use one or the other. *(Fixed in conversation 842dbe37)*
 - **Logout flow:** Patient logout requires a dedicated server action that clears the JWT cookie; client-side only clearing is insufficient. *(Fixed in conversation 4c8aae98)*
 - **Supabase RLS:** Row-Level Security policies must be audited when adding new tables or modifying access patterns — see `supabase_rls_audit_day11.sql` for reference.
+- **Backend Strengthening (Redis):** Implemented distributed locking in `lib/redis-lock.ts` to prevent race conditions during appointment bookings. Always use `acquireSlotLock` before transactional booking logic.
+- **AI Triage Isolation:** Offloaded AI clinical reasoning to a dedicated FastAPI microservice in `services/medchat-ai-service/` for better performance and Python ecosystem integration.
+- **Shared Schemas:** Use `common/schemas.ts` for all cross-service data models (Patient, Appointment, Billing) to maintain type safety and prevent schema drift.
 - **Scaling Roadmaps:** See `SCALING_STRATEGY.md` for long-term growth plans across Vertical, Horizontal, and AI axes.
 - **MedChat triage is async:** `triagePatient()` is now `async` due to Gemini integration — always `await` it.
 - **Gemini fallback:** If `GEMINI_API_KEY` is not set, MedChat gracefully falls back to deterministic rules.
