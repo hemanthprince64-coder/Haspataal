@@ -169,6 +169,16 @@ security: security patch
 - **Scaling Roadmaps:** See `SCALING_STRATEGY.md` for long-term growth plans across Vertical, Horizontal, and AI axes.
 - **MedChat triage is async:** `triagePatient()` is now `async` due to Gemini integration — always `await` it.
 - **Gemini fallback:** If `GEMINI_API_KEY` is not set, MedChat gracefully falls back to deterministic rules.
+- **MetaGPT `_think()` guard:** When using `use_fixed_sop=True`, role `_think()` methods must use `state > len(actions) - 1` (not `>=`) to prevent infinite loops. *(Fixed in conversation 4459901a)*
+- **MetaGPT Ollama system prompts dropped:** `OllamaMessageChat.apply()` only processed `messages[0]`, dropping the system prompt. Fixed to iterate all messages preserving roles. *(Fixed in conversation 4459901a)*
+- **MetaGPT n_round:** 5 rounds is insufficient for a full team (PM+Arch+PM+Eng+QA). Use `n_round=15` minimum for complete pipeline execution.
+- **MetaGPT Groq model:** Use `llama-3.3-70b-versatile` instead of `llama-3.1-8b-instant` — the 8B model hits rate limits quickly and produces poor architectural output.
+- **MetaGPT Ollama timeout:** Local 7B models need 1200s timeout and streaming enabled (`stream: True`) for long code generation prompts.
+- **MetaGPT context window:** Custom Ollama model needs `num_ctx ≥ 16384` for full project context (PRD+Design+Tasks). Temperature should be 0.3 for code, not 0.7.
+- **MetaGPT hybrid routing:** Use Groq for ProductManager/Architect/ProjectManager (reasoning) and Ollama for Engineer/QaEngineer (code gen). Engineer's `WriteCodePlanAndChange` can use Groq via `plan_llm` kwarg.
+- **Multi-Model Local AI:** 3 specialized Ollama models for Haspataal development: `haspataal-planner` (phi3:mini, temp 0.4, ctx 4K for fast planning), `haspataal-coder` (deepseek-coder:6.7b, temp 0.2, ctx 16K for code gen), `haspataal-medchat` (qwen2.5:7b, temp 0.7, ctx 8K for patient triage). Total ~11GB RAM.
+- **Ollama parallelism:** Set `OLLAMA_NUM_PARALLEL=3` for concurrent model loading on 24GB RAM systems.
+- **Ollama timeout for local 7B:** Local models on code gen prompts need `timeout ≥ 3600s` and `stream: True` to survive long inference without HTTP drops.
 
 ---
 
