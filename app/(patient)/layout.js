@@ -5,12 +5,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BottomNav from "./components/BottomNav";
 import Sidebar from "./components/Sidebar";
+import { getPatientFullProfile } from "@/app/actions";
 
 export default function PatientLayout({ children }) {
     const pathname = usePathname() || "";
     const isAuthPage = pathname === "/login" || pathname === "/register";
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [patient, setPatient] = useState(null);
+
+    useEffect(() => {
+        if (!isAuthPage) {
+            getPatientFullProfile().then(setPatient);
+        }
+    }, [isAuthPage]);
 
     // Prevent body scroll when sidebar is open
     useEffect(() => {
@@ -32,6 +40,7 @@ export default function PatientLayout({ children }) {
                         className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 p-2 rounded-xl transition-all duration-200 mr-2 sm:mr-4 flex items-center justify-center focus-ring"
                         onClick={() => setIsSidebarOpen(true)}
                         aria-label="Open menu"
+                        suppressHydrationWarning
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -59,9 +68,13 @@ export default function PatientLayout({ children }) {
                         {!isAuthPage && (
                             <Link
                                 href="/profile"
-                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-medical-50 text-medical-700 font-bold text-sm hover:bg-medical-100 transition-all duration-200 border border-medical-200"
+                                className="flex items-center justify-center w-9 h-9 rounded-xl bg-medical-50 text-medical-700 font-bold text-sm hover:bg-medical-100 transition-all duration-200 border border-medical-200 overflow-hidden"
                             >
-                                R
+                                {patient?.profilePhotoUrl ? (
+                                    <img src={patient.profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    (patient?.nickname || patient?.name || 'R').charAt(0).toUpperCase()
+                                )}
                             </Link>
                         )}
                     </div>

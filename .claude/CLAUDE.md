@@ -178,6 +178,11 @@ security: security patch
 - **MetaGPT hybrid routing:** Use Groq for ProductManager/Architect/ProjectManager (reasoning) and Ollama for Engineer/QaEngineer (code gen). Engineer's `WriteCodePlanAndChange` can use Groq via `plan_llm` kwarg.
 - **Supabase RLS on new Prisma models:** When pushing new schemas (e.g., health modules, `vaccination_records`), always run a custom `.sql` migration adding `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;` and restrictive policies, otherwise Supabase PostgREST exposes the tables globally triggering `0013_rls_disabled_in_public` error lints. Fixed in `enable_rls_health_modules.sql`.
 - **Prisma DB Push vs Supabase Infrastructure:** When trying to add simple database indexes, `prisma db push` may attempt to drop related tables like `user_profiles` if their foreign keys are tied into Supabase's strict internal RLS policies (e.g. `patients_owner_select`). Do not let Prisma manage `user_profiles` schema. Apply indexes manually via `npx prisma db execute --file raw_sql.sql` instead.
+- **Patient Profile Personalization:** Integrated dynamic "Hi, [Nickname] 👋" greetings and automated profile photo avatars to the main dashboard header and home page hero. Native image uploads are handled via `lib/supabase.ts` and synced with the Prisma `Patient` model via a custom `nickname` field.
+- **Supabase Storage Bucket:** Profile photo uploads require a public bucket named `avatars` with a folder structure `profile-photos/`. Ensure CORS and local development environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are correctly set in `.env`.
+- **Server Action File Handling:** When handling `File` objects in Next.js Server Actions (e.g., `profilePhotoFile`), check `file.size > 0` and `file.name` before processing to avoid empty uploads or crashes.
+- **Health Module Security:** New health-related tables (e.g., `vaccination_records`) must have RLS enabled via manual SQL migrations (see `enable_rls_health_modules.sql`) to prevent unauthorized data exposure through Supabase PostgREST.
+
 
 ---
 

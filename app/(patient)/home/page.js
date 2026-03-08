@@ -3,12 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useState, useEffect } from "react";
+import { getPatientFullProfile } from "@/app/actions";
 
 const DoctorCard = dynamic(() => import("../components/DoctorCard"), {
     loading: () => <div className="h-32 w-full bg-slate-100 animate-pulse rounded-2xl"></div>
 });
 
 export default function PatientHome() {
+    const [patient, setPatient] = useState(null);
+
+    useEffect(() => {
+        getPatientFullProfile().then(setPatient);
+    }, []);
+
+    const displayName = patient?.nickname || patient?.name;
+
     const topDoctors = [
         {
             id: "dr-sharma-123",
@@ -48,6 +58,12 @@ export default function PatientHome() {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         Trusted by 50+ Top Hospitals
                     </div>
+
+                    {displayName && (
+                        <div className="text-medical-400 font-bold mb-2 animate-fade-in flex items-center gap-2">
+                            <span>Hi, {displayName}! 👋</span>
+                        </div>
+                    )}
 
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-3 tracking-tight leading-[1.15] text-white">
                         Your Health,<br />

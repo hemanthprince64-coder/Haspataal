@@ -425,8 +425,8 @@ export async function updatePatientProfile(prevState, formData) {
             const uploadedUrl = await uploadProfilePhoto(photoFile, patient.id);
             if (uploadedUrl) updates.profilePhotoUrl = uploadedUrl;
         } catch (e) {
-            console.error('Photo upload failed:', e);
-            return { message: 'Failed to upload profile photo.' };
+            console.error('DEBUG_PHOTO_UPLOAD_ERROR:', e);
+            return { message: `Failed to upload profile photo: ${e.message || 'Unknown error'}` };
         }
     } else {
         // Fallback for direct URL input
@@ -436,19 +436,23 @@ export async function updatePatientProfile(prevState, formData) {
     // Remove undefined values
     Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
 
-    const updated = await services.patient.updateProfile(patient.id, updates);
-    if (updated) {
-        await createSession('session_patient', {
-            user: {
-                id: updated.id,
-                name: updated.name || 'Patient',
-                role: UserRole.PATIENT,
-                mobile: updated.phone,
-                nickname: updated.nickname || undefined,
-                profilePhotoUrl: updated.profilePhotoUrl || undefined
-            }
-        });
-        return { success: true, message: 'Profile updated successfully!' };
+    try {
+        const updated = await services.patient.updateProfile(patient.id, updates);
+        if (updated) {
+            await createSession('session_patient', {
+                user: {
+                    id: updated.id,
+                    name: updated.name || 'Patient',
+                    role: UserRole.PATIENT,
+                    mobile: updated.phone,
+                    nickname: updated.nickname || undefined,
+                    profilePhotoUrl: updated.profilePhotoUrl || undefined
+                }
+            });
+            return { success: true, message: 'Profile updated successfully!' };
+        }
+    } catch (error) {
+        console.error("DEBUG_UPDATE_PROFILE_ERROR:", error);
     }
 
     return { message: 'Failed to update profile.' };

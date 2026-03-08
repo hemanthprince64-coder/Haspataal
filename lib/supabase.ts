@@ -21,11 +21,20 @@ export async function uploadProfilePhoto(file, patientId) {
     const filePath = `profile-photos/${fileName}`;
 
     // Upload the file to the 'avatars' bucket
+    // Note: The 'avatars' bucket must be created in Supabase dashboard with Public access enabled
+    const arrayBuffer = await file.arrayBuffer();
+
     const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, arrayBuffer, {
+            upsert: true,
+            contentType: file.type || 'image/jpeg'
+        });
 
     if (uploadError) {
+        if (uploadError.message.includes('bucket not found')) {
+            throw new Error(`Storage bucket 'avatars' not found. Please create it in Supabase dashboard with Public access.`);
+        }
         throw new Error(`Failed to upload image: ${uploadError.message}`);
     }
 

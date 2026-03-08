@@ -84,6 +84,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 focus-ring"
                         onClick={onClose}
                         aria-label="Close menu"
+                        suppressHydrationWarning
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

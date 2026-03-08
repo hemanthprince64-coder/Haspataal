@@ -305,6 +305,7 @@ model Patient {
   updatedAt               DateTime            @default(now()) @updatedAt @map("updated_at")
   agentId                 String?             @map("agent_id")
   // New demographic fields
+  nickname                String?
   state                   String?
   country                 String?
   occupation              String?
