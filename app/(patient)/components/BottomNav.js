@@ -7,7 +7,7 @@ export default function BottomNav() {
     const pathname = usePathname();
 
     const navItems = [
-        { name: "Home", href: "/home", icon: "🏠" },
+        { name: "Home", href: "/", icon: "🏠" },
         { name: "Search", href: "/search", icon: "🔍" },
         { name: "MedChat", href: "/medchat", icon: "🤖" },
         { name: "Records", href: "/records", icon: "📋" },
@@ -23,8 +23,8 @@ export default function BottomNav() {
                         key={item.name}
                         href={item.href}
                         className={`flex flex-col items-center gap-0.5 font-sans text-[11px] font-medium no-underline transition-colors duration-200 py-1 px-3 rounded-lg ${isActive
-                                ? "text-medical-600"
-                                : "text-slate-400 hover:text-slate-600"
+                            ? "text-medical-600"
+                            : "text-slate-400 hover:text-slate-600"
                             }`}
                     >
                         <span className={`text-xl transition-transform duration-200 ${isActive ? "scale-110" : "scale-100 grayscale opacity-60"}`}>

@@ -10,7 +10,7 @@ export default function EmergencyPage() {
         <div style={{ background: 'var(--red)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <div className="page-header" style={{ padding: '32px 20px 24px', textAlign: 'left', background: 'transparent', border: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
-                    <Link href="/home" style={{ color: 'white', textDecoration: 'none', fontSize: '24px' }}>←</Link>
+                    <Link href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '24px' }}>←</Link>
                     <h1 style={{ fontSize: '24px', margin: 0, color: 'white' }}>Emergency SOS</h1>
                 </div>
             </div>

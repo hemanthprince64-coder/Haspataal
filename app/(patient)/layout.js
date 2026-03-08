@@ -48,7 +48,7 @@ export default function PatientLayout({ children }) {
                     </button>
 
                     {/* Logo */}
-                    <Link href="/home" className="flex items-center gap-2 no-underline">
+                    <Link href="/" className="flex items-center gap-2 no-underline">
                         <img src="/logo.svg" alt="Haspataal" className="w-7 h-9 object-contain" />
                         <span className="text-xl font-extrabold text-slate-900 tracking-tight">Haspataal</span>
                         <span className="text-xl font-extrabold text-medical-600 -ml-1">.</span>

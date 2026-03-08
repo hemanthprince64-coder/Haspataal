@@ -9,7 +9,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     const sidebarRef = useRef(null);
 
     const navLinks = [
-        { name: "Home", href: "/home", icon: "🏠" },
+        { name: "Home", href: "/", icon: "🏠" },
         { name: "MedChat AI", href: "/medchat", icon: "🤖" },
         { name: "Find Doctors", href: "/search", icon: "🔍" },
         { name: "Hospitals", href: "/hospitals", icon: "🏥" },
@@ -75,7 +75,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                    <Link href="/home" className="flex items-center gap-2 no-underline" onClick={onClose}>
+                    <Link href="/" className="flex items-center gap-2 no-underline" onClick={onClose}>
                         <img src="/logo.svg" alt="Haspataal" className="w-7 h-9 object-contain" />
                         <span className="text-lg font-extrabold text-slate-900 tracking-tight">Haspataal</span>
                         <span className="text-lg font-extrabold text-medical-600 -ml-1">.</span>
@@ -102,7 +102,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     <ul className="flex flex-col gap-0.5 m-0 p-0 list-none">
                         {navLinks.map((link) => {
                             const isActive = pathname.startsWith(link.href) && link.href !== '/';
-                            const isExactActive = pathname === link.href || (pathname === '/' && link.href === '/home');
+                            const isExactActive = pathname === link.href;
                             const active = isActive || isExactActive;
                             return (
                                 <li key={link.href}>
