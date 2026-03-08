@@ -371,6 +371,8 @@ model Appointment {
   payment   Payment?
   visit     Visit?
 
+  @@index([patientId])
+  @@index([doctorId])
   @@unique([doctorId, date, slot])
   @@map("appointments")
 }
@@ -397,6 +399,7 @@ model Payment {
   paymentId     String?       @map("payment_id")
   appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
+  @@index([appointmentId])
   @@map("payments")
 }
 
@@ -503,6 +506,9 @@ model DiagnosticOrder {
   hospital    Hospital              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient     Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
+  @@index([hospitalId])
+  @@index([patientId])
+  @@index([doctorId])
   @@map("diagnostic_orders")
 }
 
@@ -516,6 +522,8 @@ model DiagnosticOrderItem {
   test         DiagnosticMasterTest @relation(fields: [testId], references: [id])
   results      DiagnosticResult[]
 
+  @@index([orderId])
+  @@index([testId])
   @@map("diagnostic_order_items")
 }
 
@@ -560,6 +568,8 @@ model Visit {
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   hospital      Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
+  @@index([hospitalId])
+  @@index([appointmentId])
   @@map("visits")
 }
 
@@ -573,6 +583,7 @@ model MedicalRecord {
   deletedAt  DateTime? @map("deleted_at")
   patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
+  @@index([patientId])
   @@map("medical_records")
 }
 

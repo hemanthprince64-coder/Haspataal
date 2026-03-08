@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { patientLogout, getPatientFullProfile } from "@/app/actions";
 
 const sections = [
-    { name: "Edit Profile", href: "/profile/edit", icon: "✏️", desc: "Advanced Details", color: "bg-blue-50 text-blue-600 border-blue-200" },
     { name: "Medical History", href: "/medical-history", icon: "🏥", desc: "Conditions & allergies", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
     { name: "Medications", href: "/medications", icon: "💊", desc: "Current medicines", color: "bg-violet-50 text-violet-600 border-violet-200" },
     { name: "Vitals Tracker", href: "/vitals", icon: "❤️", desc: "BP, weight, sugar", color: "bg-red-50 text-red-600 border-red-200" },
@@ -31,8 +30,8 @@ export default function ProfilePage() {
         return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading profile...</div>;
     }
 
-    const { name, phone } = patient || {};
-    const displayName = name || 'Patient';
+    const { name, phone, nickname, profilePhotoUrl } = patient || {};
+    const displayName = nickname || name || 'Patient';
     const displayPhone = phone || '—';
 
     return (
@@ -42,16 +41,21 @@ export default function ProfilePage() {
                 <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-xl" />
                 <div className="relative flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold border-2 border-white/30 shadow-lg">
-                        {displayName.charAt(0).toUpperCase()}
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold border-2 border-white/30 shadow-lg overflow-hidden shrink-0">
+                        {profilePhotoUrl ? (
+                            <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            displayName.charAt(0).toUpperCase()
+                        )}
                     </div>
-                    <div className="flex-1">
-                        <h1 className="text-xl font-bold tracking-tight">{displayName}</h1>
-                        <p className="text-white/80 text-sm mt-0.5">{displayPhone}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-white/80 text-sm font-medium mb-0.5">Hi, welcome back! 👋</p>
+                        <h1 className="text-xl font-bold tracking-tight truncate">{displayName}</h1>
+                        <p className="text-white/80 text-xs mt-0.5 truncate">{displayPhone}</p>
                     </div>
                     <Link
                         href="/profile/edit"
-                        className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-semibold py-2 px-3.5 rounded-xl transition-all duration-200 no-underline border border-white/20"
+                        className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-semibold py-2 px-3.5 rounded-xl transition-all duration-200 no-underline border border-white/20 shrink-0"
                     >
                         ✏️ Edit
                     </Link>

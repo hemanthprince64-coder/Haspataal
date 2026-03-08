@@ -127,6 +127,29 @@ export default function EditProfile() {
                 {openSections.identity && (
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
                         <FormField label="Full Name" name="name" defaultValue={p.name} required placeholder="Enter full name" />
+                        <FormField label="Nickname" name="nickname" defaultValue={p.nickname} placeholder="What should we call you?" />
+                        {/* Profile Photo Upload */}
+                        <div className="space-y-1.5 pt-2">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Photo</label>
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
+                                    {p.profilePhotoUrl ? (
+                                        <img src={p.profilePhotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                    ) : (
+                                        "👤"
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <input
+                                        type="file"
+                                        name="profilePhotoFile"
+                                        accept="image/*"
+                                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-medical-50 file:text-medical-700 hover:file:bg-medical-100 transition-all cursor-pointer"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1.5">Max size 5MB. Jpeg or Png.</p>
+                                </div>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-2 gap-3">
                             <FormField label="Date of Birth" name="dob" type="date" defaultValue={p.dob} />
                             <FormField label="Gender" name="gender" defaultValue={p.gender} options={genderOptions} />

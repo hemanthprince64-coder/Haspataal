@@ -385,6 +385,8 @@ export async function getPatientFullProfile() {
     }
 }
 
+import { uploadProfilePhoto } from '@/lib/supabase';
+
 export async function updatePatientProfile(prevState, formData) {
     let patient;
     try {
@@ -395,6 +397,7 @@ export async function updatePatientProfile(prevState, formData) {
 
     const updates = {
         name: formData.get('name'),
+        nickname: formData.get('nickname') || undefined,
         gender: formData.get('gender'),
         bloodGroup: formData.get('bloodGroup'),
         city: formData.get('city'),
@@ -415,6 +418,21 @@ export async function updatePatientProfile(prevState, formData) {
         preferredDoctor: formData.get('preferredDoctor') || undefined,
     };
 
+    // Handle Profile Photo File Upload
+    const photoFile = formData.get('profilePhotoFile');
+    if (photoFile && photoFile.size > 0 && photoFile.name) {
+        try {
+            const uploadedUrl = await uploadProfilePhoto(photoFile, patient.id);
+            if (uploadedUrl) updates.profilePhotoUrl = uploadedUrl;
+        } catch (e) {
+            console.error('Photo upload failed:', e);
+            return { message: 'Failed to upload profile photo.' };
+        }
+    } else {
+        // Fallback for direct URL input
+        updates.profilePhotoUrl = formData.get('profilePhotoUrl') || undefined;
+    }
+
     // Remove undefined values
     Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
 
@@ -425,7 +443,9 @@ export async function updatePatientProfile(prevState, formData) {
                 id: updated.id,
                 name: updated.name || 'Patient',
                 role: UserRole.PATIENT,
-                mobile: updated.phone
+                mobile: updated.phone,
+                nickname: updated.nickname || undefined,
+                profilePhotoUrl: updated.profilePhotoUrl || undefined
             }
         });
         return { success: true, message: 'Profile updated successfully!' };

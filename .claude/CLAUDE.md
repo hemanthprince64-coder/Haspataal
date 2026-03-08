@@ -176,8 +176,8 @@ security: security patch
 - **MetaGPT Ollama timeout:** Local 7B models need 1200s timeout and streaming enabled (`stream: True`) for long code generation prompts.
 - **MetaGPT context window:** Custom Ollama model needs `num_ctx ≥ 16384` for full project context (PRD+Design+Tasks). Temperature should be 0.3 for code, not 0.7.
 - **MetaGPT hybrid routing:** Use Groq for ProductManager/Architect/ProjectManager (reasoning) and Ollama for Engineer/QaEngineer (code gen). Engineer's `WriteCodePlanAndChange` can use Groq via `plan_llm` kwarg.
-- **MetaGPT Ollama Timeout Avoidance:** To run a full MetaGPT team locally on 24GB RAM without hanging, you must: (1) Force all agents to share a single lightweight model (`phi3:mini` or `qwen2.5`) to prevent memory thrashing; (2) Set `timeout=1200` in `config2.yaml`; and (3) Set `$env:OLLAMA_KEEP_ALIVE="-1"`.
-- **MetaGPT Bypass:** When MetaGPT pipeline overhead becomes fatal, querying the local Ollama LLMs directly (via a custom Python client) is an effective fallback to achieve the user's software goals.
+- **Supabase RLS on new Prisma models:** When pushing new schemas (e.g., health modules, `vaccination_records`), always run a custom `.sql` migration adding `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;` and restrictive policies, otherwise Supabase PostgREST exposes the tables globally triggering `0013_rls_disabled_in_public` error lints. Fixed in `enable_rls_health_modules.sql`.
+- **Prisma DB Push vs Supabase Infrastructure:** When trying to add simple database indexes, `prisma db push` may attempt to drop related tables like `user_profiles` if their foreign keys are tied into Supabase's strict internal RLS policies (e.g. `patients_owner_select`). Do not let Prisma manage `user_profiles` schema. Apply indexes manually via `npx prisma db execute --file raw_sql.sql` instead.
 
 ---
 
