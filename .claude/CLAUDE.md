@@ -153,6 +153,17 @@ security: security patch
 | `npm run dev` | Start dev server (port 3000) |
 | `npm run build` | Production build |
 | `npx eslint . --fix` | Lint & auto-fix |
+| `./scripts/run-metagpt.ps1 -Idea '...'` | Run optimized MetaGPT pipeline |
+
+---
+
+## 🤖 MetaGPT Environment
+We use a **hybrid routing** strategy for maximum reasoning speed and code generation efficiency:
+- **Groq (`llama-3.3-70b-versatile`)**: Reasoning (PM, Architect, Project Manager).
+- **Ollama (`deepseek-coder:6.7b`)**: Implementation (Engineer, QA).
+- **Setup:** Optimized via `.metagpt/config2.yaml`.
+- **Agents:** Specialized definitions in `.claude/agents/` (Healthcare PM/Architect).
+- **Compliance:** All AI generations must follow `.claude/METAGPT_SOP.md`.
 
 ---
 
