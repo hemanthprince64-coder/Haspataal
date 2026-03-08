@@ -406,6 +406,178 @@ export const services = {
                 status: a.status,
                 patientId: a.patientId
             }));
+        },
+
+        // --- Family Members ---
+        getFamilyMembers: async (patientId: string) => {
+            return await prisma.familyMember.findMany({
+                where: { patientId },
+                orderBy: { createdAt: 'desc' }
+            });
+        },
+        addFamilyMember: async (patientId: string, data: { name: string; relation: string; dob?: string; gender?: string; bloodGroup?: string }) => {
+            return await prisma.familyMember.create({
+                data: {
+                    patientId,
+                    name: data.name,
+                    relation: data.relation,
+                    dob: data.dob ? new Date(data.dob) : null,
+                    gender: data.gender || null,
+                    bloodGroup: data.bloodGroup || null
+                }
+            });
+        },
+        deleteFamilyMember: async (patientId: string, memberId: string) => {
+            return await prisma.familyMember.deleteMany({
+                where: { id: memberId, patientId }
+            });
+        },
+
+        // --- Medical History ---
+        getMedicalHistory: async (patientId: string) => {
+            return await prisma.patientMedicalHistory.findUnique({
+                where: { patientId }
+            });
+        },
+        saveMedicalHistory: async (patientId: string, data: { chronicDiseases?: string; pastIllnesses?: string; surgeries?: string; allergies?: string; drugAllergies?: string; hospitalizations?: string }) => {
+            return await prisma.patientMedicalHistory.upsert({
+                where: { patientId },
+                update: data,
+                create: { patientId, ...data }
+            });
+        },
+
+        // --- Medications ---
+        getMedications: async (patientId: string) => {
+            return await prisma.patientMedication.findMany({
+                where: { patientId },
+                orderBy: { createdAt: 'desc' }
+            });
+        },
+        addMedication: async (patientId: string, data: { drugName: string; dose?: string; frequency?: string; startDate?: string }) => {
+            return await prisma.patientMedication.create({
+                data: {
+                    patientId,
+                    drugName: data.drugName,
+                    dose: data.dose || null,
+                    frequency: data.frequency || null,
+                    startDate: data.startDate ? new Date(data.startDate) : null
+                }
+            });
+        },
+        deleteMedication: async (patientId: string, medicationId: string) => {
+            return await prisma.patientMedication.deleteMany({
+                where: { id: medicationId, patientId }
+            });
+        },
+
+        // --- Vitals ---
+        getVitals: async (patientId: string) => {
+            return await prisma.vitalRecord.findMany({
+                where: { patientId },
+                orderBy: { recordedAt: 'desc' },
+                take: 20
+            });
+        },
+        addVital: async (patientId: string, data: { weight?: number; height?: number; bloodPressure?: string; pulse?: number; bloodSugar?: number; spo2?: number; temperature?: number }) => {
+            const bmi = data.weight && data.height ? parseFloat((data.weight / ((data.height / 100) ** 2)).toFixed(1)) : null;
+            return await prisma.vitalRecord.create({
+                data: {
+                    patientId,
+                    weight: data.weight ?? null,
+                    height: data.height ?? null,
+                    bmi,
+                    bloodPressure: data.bloodPressure || null,
+                    pulse: data.pulse ?? null,
+                    bloodSugar: data.bloodSugar ?? null,
+                    spo2: data.spo2 ?? null,
+                    temperature: data.temperature ?? null
+                }
+            });
+        },
+
+        // --- Vaccinations ---
+        getVaccinations: async (patientId: string) => {
+            return await prisma.vaccinationRecord.findMany({
+                where: { patientId },
+                orderBy: { createdAt: 'desc' }
+            });
+        },
+        addVaccination: async (patientId: string, data: { vaccineName: string; dateGiven?: string; nextDueDate?: string }) => {
+            return await prisma.vaccinationRecord.create({
+                data: {
+                    patientId,
+                    vaccineName: data.vaccineName,
+                    dateGiven: data.dateGiven ? new Date(data.dateGiven) : null,
+                    nextDueDate: data.nextDueDate ? new Date(data.nextDueDate) : null
+                }
+            });
+        },
+
+        // --- Pregnancy Profile ---
+        getPregnancyProfile: async (patientId: string) => {
+            return await prisma.pregnancyProfile.findUnique({
+                where: { patientId }
+            });
+        },
+        savePregnancyProfile: async (patientId: string, data: { lmp?: string; edd?: string; gestationalAge?: number; highRisk?: boolean; ancVisits?: number; dangerSigns?: string; deliveryPlan?: string }) => {
+            return await prisma.pregnancyProfile.upsert({
+                where: { patientId },
+                update: {
+                    lmp: data.lmp ? new Date(data.lmp) : undefined,
+                    edd: data.edd ? new Date(data.edd) : undefined,
+                    gestationalAge: data.gestationalAge,
+                    highRisk: data.highRisk,
+                    ancVisits: data.ancVisits,
+                    dangerSigns: data.dangerSigns,
+                    deliveryPlan: data.deliveryPlan
+                },
+                create: {
+                    patientId,
+                    lmp: data.lmp ? new Date(data.lmp) : null,
+                    edd: data.edd ? new Date(data.edd) : null,
+                    gestationalAge: data.gestationalAge,
+                    highRisk: data.highRisk ?? false,
+                    ancVisits: data.ancVisits,
+                    dangerSigns: data.dangerSigns,
+                    deliveryPlan: data.deliveryPlan
+                }
+            });
+        },
+
+        // --- Insurance ---
+        getInsurance: async (patientId: string) => {
+            return await prisma.insuranceDetail.findMany({
+                where: { patientId },
+                orderBy: { createdAt: 'desc' }
+            });
+        },
+        saveInsurance: async (patientId: string, data: { id?: string; company: string; policyNumber?: string; coverageAmount?: number; expiryDate?: string }) => {
+            if (data.id) {
+                return await prisma.insuranceDetail.update({
+                    where: { id: data.id },
+                    data: {
+                        company: data.company,
+                        policyNumber: data.policyNumber || null,
+                        coverageAmount: data.coverageAmount ?? null,
+                        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null
+                    }
+                });
+            }
+            return await prisma.insuranceDetail.create({
+                data: {
+                    patientId,
+                    company: data.company,
+                    policyNumber: data.policyNumber || null,
+                    coverageAmount: data.coverageAmount ?? null,
+                    expiryDate: data.expiryDate ? new Date(data.expiryDate) : null
+                }
+            });
+        },
+        deleteInsurance: async (patientId: string, insuranceId: string) => {
+            return await prisma.insuranceDetail.deleteMany({
+                where: { id: insuranceId, patientId }
+            });
         }
     },
 

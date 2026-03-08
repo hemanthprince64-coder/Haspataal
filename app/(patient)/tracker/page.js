@@ -1,60 +1,128 @@
 "use client";
 
+import { useActionState } from 'react';
+import { savePregnancyProfileAction } from '@/app/actions';
+import { useState, useEffect } from 'react';
 import Link from "next/link";
-import { useState } from "react";
+
+const initialState = { message: '', success: false };
 
 export default function TrackerPage() {
-    const [week, setWeek] = useState(24);
+    const [state, formAction, isPending] = useActionState(savePregnancyProfileAction, initialState);
+    const [showForm, setShowForm] = useState(false);
+    const [pregnancyProfile, setPregnancyProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        import('@/app/actions').then(({ getPatientFullProfile }) => {
+            getPatientFullProfile().then(data => {
+                setPregnancyProfile(data?.pregnancyProfile || {});
+                setLoading(false);
+            });
+        });
+    }, []);
+
+    if (loading) {
+        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading pregnancy tracker...</div>;
+    }
 
     return (
-        <>
-            <div className="page-header" style={{ padding: '32px 20px 24px', textAlign: 'left', background: 'var(--navy)' }}>
-                <h1 style={{ fontSize: '24px', marginBottom: '8px' }}>Pregnancy Tracker</h1>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', margin: 0 }}>Week {week} • Trimester 2</p>
+        <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Link href="/profile" className="text-medical-600 hover:text-medical-700 font-medium text-sm no-underline">← Back</Link>
+                    <h1 className="text-xl font-extrabold text-slate-900">Pregnancy Tracker</h1>
+                </div>
+                <button
+                    onClick={() => setShowForm(!showForm)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-pink-600 bg-pink-50 hover:bg-pink-100 py-2 px-3.5 rounded-xl border border-pink-200 transition-all cursor-pointer"
+                >
+                    {showForm ? '✕ Close' : '✏️ Edit'}
+                </button>
             </div>
 
-            <div className="section" style={{ paddingTop: '16px' }}>
-                <div className="card" style={{ padding: '24px', textAlign: 'center', marginBottom: '24px', background: 'linear-gradient(135deg, var(--teal-pale) 0%, white 100%)', border: '1px solid var(--teal-light)' }}>
-                    <div style={{ fontSize: '64px', marginBottom: '16px', animation: 'float 3s ease-in-out infinite' }}>👶</div>
-                    <h2 style={{ fontSize: '20px', color: 'var(--navy)', marginBottom: '8px' }}>Your baby is the size of a Cantaloupe!</h2>
-                    <p style={{ fontSize: '14px', color: 'var(--text3)', margin: 0 }}>Approx. 30cm long • 600g weight</p>
-                </div>
-
-                <h3 style={{ fontSize: '16px', marginBottom: '16px' }}>This Week&apos;s Checklist</h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-                    <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--teal)' }}></div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <h4 style={{ fontSize: '14px', margin: '0 0 4px 0', color: 'var(--text)' }}>Schedule Glucose Screening</h4>
-                            <p style={{ fontSize: '12px', color: 'var(--text3)', margin: 0 }}>Between weeks 24-28</p>
-                        </div>
-                    </div>
-
-                    <div className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid var(--grey3)' }}></div>
-                        <div style={{ flex: 1 }}>
-                            <h4 style={{ fontSize: '14px', margin: '0 0 4px 0', color: 'var(--text)' }}>Start counting baby kicks</h4>
-                            <p style={{ fontSize: '12px', color: 'var(--text3)', margin: 0 }}>Daily monitoring recommended</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <div className="card" style={{ flex: 1, padding: '16px', textAlign: 'center', background: 'var(--blue-light)', border: 'none' }}>
-                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>📅</div>
-                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--blue)' }}>Next Scan</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>In 2 weeks</div>
-                    </div>
-                    <div className="card" style={{ flex: 1, padding: '16px', textAlign: 'center', background: 'var(--amber-light)', border: 'none' }}>
-                        <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚖️</div>
-                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--amber)' }}>Weight Log</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>+ 6.2 kg total</div>
-                    </div>
+            {/* Hero Card */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-6 border border-pink-200 text-center shadow-sm">
+                <div className="absolute -top-8 -right-8 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl" />
+                <div className="relative">
+                    <div className="text-5xl mb-3" style={{ animation: 'float 3s ease-in-out infinite' }}>👶</div>
+                    <h2 className="text-lg font-bold text-slate-800 mb-1">Maternal Health Tracker</h2>
+                    <p className="text-sm text-slate-500">Track your pregnancy journey with Haspataal</p>
                 </div>
             </div>
-        </>
+
+            {state?.success && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm">
+                    ✅ {state.message}
+                </div>
+            )}
+
+            {showForm && (
+                <form action={formAction} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">LMP (Last Menstrual Period)</label>
+                            <input name="lmp" type="date" defaultValue={pregnancyProfile.lmp ? new Date(pregnancyProfile.lmp).toISOString().split('T')[0] : ''} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all outline-none" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">EDD (Expected Delivery)</label>
+                            <input name="edd" type="date" defaultValue={pregnancyProfile.edd ? new Date(pregnancyProfile.edd).toISOString().split('T')[0] : ''} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all outline-none" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gestational Age (weeks)</label>
+                            <input name="gestationalAge" type="number" defaultValue={pregnancyProfile.gestationalAge || ''} placeholder="e.g. 24" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all outline-none" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">ANC Visits</label>
+                            <input name="ancVisits" type="number" defaultValue={pregnancyProfile.ancVisits || ''} placeholder="Number of visits" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all outline-none" />
+                        </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            High Risk Pregnancy
+                            <input name="highRisk" type="checkbox" value="true" defaultChecked={pregnancyProfile.highRisk} className="rounded" />
+                        </label>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Danger Signs</label>
+                        <textarea name="dangerSigns" defaultValue={pregnancyProfile.dangerSigns || ''} placeholder="e.g. Bleeding, severe headache, reduced fetal movement..." rows={2} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all outline-none resize-none" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Delivery Plan</label>
+                        <textarea name="deliveryPlan" defaultValue={pregnancyProfile.deliveryPlan || ''} placeholder="e.g. Hospital name, preferred doctor, delivery type..." rows={2} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all outline-none resize-none" />
+                    </div>
+
+                    {state?.message && !state.success && (
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+                            ⚠️ {state.message}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={isPending}
+                        className="w-full py-3 rounded-xl text-sm font-bold bg-pink-600 text-white hover:bg-pink-700 disabled:opacity-50 transition-all duration-200 shadow-md cursor-pointer"
+                    >
+                        {isPending ? '⏳ Saving...' : '🤰 Save Profile'}
+                    </button>
+                </form>
+            )}
+
+            {/* Quick info cards */}
+            <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl p-4 bg-blue-50 border border-blue-200 text-center">
+                    <div className="text-xl mb-1">📅</div>
+                    <div className="text-xs font-bold text-blue-600 uppercase tracking-wider">Next Scan</div>
+                    <div className="text-sm text-slate-600 mt-1">Schedule via appointments</div>
+                </div>
+                <div className="rounded-xl p-4 bg-amber-50 border border-amber-200 text-center">
+                    <div className="text-xl mb-1">⚖️</div>
+                    <div className="text-xs font-bold text-amber-600 uppercase tracking-wider">Weight Log</div>
+                    <div className="text-sm text-slate-600 mt-1">Track in Vitals section</div>
+                </div>
+            </div>
+        </div>
     );
 }

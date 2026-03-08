@@ -176,9 +176,8 @@ security: security patch
 - **MetaGPT Ollama timeout:** Local 7B models need 1200s timeout and streaming enabled (`stream: True`) for long code generation prompts.
 - **MetaGPT context window:** Custom Ollama model needs `num_ctx ≥ 16384` for full project context (PRD+Design+Tasks). Temperature should be 0.3 for code, not 0.7.
 - **MetaGPT hybrid routing:** Use Groq for ProductManager/Architect/ProjectManager (reasoning) and Ollama for Engineer/QaEngineer (code gen). Engineer's `WriteCodePlanAndChange` can use Groq via `plan_llm` kwarg.
-- **Multi-Model Local AI:** 3 specialized Ollama models for Haspataal development: `haspataal-planner` (phi3:mini, temp 0.4, ctx 4K for fast planning), `haspataal-coder` (deepseek-coder:6.7b, temp 0.2, ctx 16K for code gen), `haspataal-medchat` (qwen2.5:7b, temp 0.7, ctx 8K for patient triage). Total ~11GB RAM.
-- **Ollama parallelism:** Set `OLLAMA_NUM_PARALLEL=3` for concurrent model loading on 24GB RAM systems.
-- **Ollama timeout for local 7B:** Local models on code gen prompts need `timeout ≥ 3600s` and `stream: True` to survive long inference without HTTP drops.
+- **MetaGPT Ollama Timeout Avoidance:** To run a full MetaGPT team locally on 24GB RAM without hanging, you must: (1) Force all agents to share a single lightweight model (`phi3:mini` or `qwen2.5`) to prevent memory thrashing; (2) Set `timeout=1200` in `config2.yaml`; and (3) Set `$env:OLLAMA_KEEP_ALIVE="-1"`.
+- **MetaGPT Bypass:** When MetaGPT pipeline overhead becomes fatal, querying the local Ollama LLMs directly (via a custom Python client) is an effective fallback to achieve the user's software goals.
 
 ---
 

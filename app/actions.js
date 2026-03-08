@@ -344,6 +344,47 @@ export async function patientLogout() {
     redirect('/login');
 }
 
+export async function getPatientFullProfile() {
+    try {
+        const patientCookie = await requireRole(UserRole.PATIENT, 'session_patient');
+        const patientData = await services.patient.getById(patientCookie.id);
+
+        if (!patientData) return null;
+
+        // Fetch all related health details
+        const [
+            familyMembers,
+            medicalHistory,
+            medications,
+            vitals,
+            vaccinations,
+            pregnancyProfile,
+            insurance
+        ] = await Promise.all([
+            services.patient.getFamilyMembers(patientCookie.id),
+            services.patient.getMedicalHistory(patientCookie.id),
+            services.patient.getMedications(patientCookie.id),
+            services.patient.getVitals(patientCookie.id),
+            services.patient.getVaccinations(patientCookie.id),
+            services.patient.getPregnancyProfile(patientCookie.id),
+            services.patient.getInsurance(patientCookie.id)
+        ]);
+
+        return {
+            ...patientData,
+            familyMembers,
+            medicalHistory,
+            medications,
+            vitals,
+            vaccinations,
+            pregnancyProfile,
+            insurance
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
 export async function updatePatientProfile(prevState, formData) {
     let patient;
     try {
@@ -354,16 +395,31 @@ export async function updatePatientProfile(prevState, formData) {
 
     const updates = {
         name: formData.get('name'),
-        age: formData.get('age'),
         gender: formData.get('gender'),
         bloodGroup: formData.get('bloodGroup'),
         city: formData.get('city'),
         email: formData.get('email'),
+        dob: formData.get('dob') ? new Date(formData.get('dob')) : undefined,
+        address: formData.get('address') || undefined,
+        state: formData.get('state') || undefined,
+        country: formData.get('country') || undefined,
+        pincode: formData.get('pincode') || undefined,
+        occupation: formData.get('occupation') || undefined,
+        maritalStatus: formData.get('maritalStatus') || undefined,
+        emergencyContactName: formData.get('emergencyContactName') || undefined,
+        emergencyContactRelation: formData.get('emergencyContactRelation') || undefined,
+        emergencyContactPhone: formData.get('emergencyContactPhone') || undefined,
+        emergencyContactAltPhone: formData.get('emergencyContactAltPhone') || undefined,
+        preferredHospital: formData.get('preferredHospital') || undefined,
+        preferredSpeciality: formData.get('preferredSpeciality') || undefined,
+        preferredDoctor: formData.get('preferredDoctor') || undefined,
     };
+
+    // Remove undefined values
+    Object.keys(updates).forEach(key => updates[key] === undefined && delete updates[key]);
 
     const updated = await services.patient.updateProfile(patient.id, updates);
     if (updated) {
-        // Re-create session with updated user data
         await createSession('session_patient', {
             user: {
                 id: updated.id,
@@ -376,6 +432,214 @@ export async function updatePatientProfile(prevState, formData) {
     }
 
     return { message: 'Failed to update profile.' };
+}
+
+// ==================== FAMILY MEMBER ACTIONS ====================
+
+export async function addFamilyMemberAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        name: formData.get('name'),
+        relation: formData.get('relation'),
+        dob: formData.get('dob') || undefined,
+        gender: formData.get('gender') || undefined,
+        bloodGroup: formData.get('bloodGroup') || undefined,
+    };
+
+    if (!data.name || !data.relation) {
+        return { message: 'Name and relation are required.' };
+    }
+
+    await services.patient.addFamilyMember(patient.id, data);
+    return { success: true, message: 'Family member added!' };
+}
+
+export async function deleteFamilyMemberAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+    const memberId = formData.get('memberId');
+    await services.patient.deleteFamilyMember(patient.id, memberId);
+    return { success: true, message: 'Family member removed.' };
+}
+
+// ==================== MEDICAL HISTORY ACTIONS ====================
+
+export async function saveMedicalHistoryAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        chronicDiseases: formData.get('chronicDiseases') || undefined,
+        pastIllnesses: formData.get('pastIllnesses') || undefined,
+        surgeries: formData.get('surgeries') || undefined,
+        allergies: formData.get('allergies') || undefined,
+        drugAllergies: formData.get('drugAllergies') || undefined,
+        hospitalizations: formData.get('hospitalizations') || undefined,
+    };
+
+    await services.patient.saveMedicalHistory(patient.id, data);
+    return { success: true, message: 'Medical history saved!' };
+}
+
+// ==================== MEDICATION ACTIONS ====================
+
+export async function addMedicationAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        drugName: formData.get('drugName'),
+        dose: formData.get('dose') || undefined,
+        frequency: formData.get('frequency') || undefined,
+        startDate: formData.get('startDate') || undefined,
+    };
+
+    if (!data.drugName) {
+        return { message: 'Drug name is required.' };
+    }
+
+    await services.patient.addMedication(patient.id, data);
+    return { success: true, message: 'Medication added!' };
+}
+
+export async function deleteMedicationAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+    const medicationId = formData.get('medicationId');
+    await services.patient.deleteMedication(patient.id, medicationId);
+    return { success: true, message: 'Medication removed.' };
+}
+
+// ==================== VITAL ACTIONS ====================
+
+export async function addVitalAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        weight: formData.get('weight') ? parseFloat(formData.get('weight')) : undefined,
+        height: formData.get('height') ? parseFloat(formData.get('height')) : undefined,
+        bloodPressure: formData.get('bloodPressure') || undefined,
+        pulse: formData.get('pulse') ? parseInt(formData.get('pulse')) : undefined,
+        bloodSugar: formData.get('bloodSugar') ? parseFloat(formData.get('bloodSugar')) : undefined,
+        spo2: formData.get('spo2') ? parseFloat(formData.get('spo2')) : undefined,
+        temperature: formData.get('temperature') ? parseFloat(formData.get('temperature')) : undefined,
+    };
+
+    await services.patient.addVital(patient.id, data);
+    return { success: true, message: 'Vitals recorded!' };
+}
+
+// ==================== VACCINATION ACTIONS ====================
+
+export async function addVaccinationAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        vaccineName: formData.get('vaccineName'),
+        dateGiven: formData.get('dateGiven') || undefined,
+        nextDueDate: formData.get('nextDueDate') || undefined,
+    };
+
+    if (!data.vaccineName) {
+        return { message: 'Vaccine name is required.' };
+    }
+
+    await services.patient.addVaccination(patient.id, data);
+    return { success: true, message: 'Vaccination record added!' };
+}
+
+// ==================== PREGNANCY PROFILE ACTIONS ====================
+
+export async function savePregnancyProfileAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        lmp: formData.get('lmp') || undefined,
+        edd: formData.get('edd') || undefined,
+        gestationalAge: formData.get('gestationalAge') ? parseInt(formData.get('gestationalAge')) : undefined,
+        highRisk: formData.get('highRisk') === 'true',
+        ancVisits: formData.get('ancVisits') ? parseInt(formData.get('ancVisits')) : undefined,
+        dangerSigns: formData.get('dangerSigns') || undefined,
+        deliveryPlan: formData.get('deliveryPlan') || undefined,
+    };
+
+    await services.patient.savePregnancyProfile(patient.id, data);
+    return { success: true, message: 'Pregnancy profile saved!' };
+}
+
+// ==================== INSURANCE ACTIONS ====================
+
+export async function saveInsuranceAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        id: formData.get('insuranceId') || undefined,
+        company: formData.get('company'),
+        policyNumber: formData.get('policyNumber') || undefined,
+        coverageAmount: formData.get('coverageAmount') ? parseFloat(formData.get('coverageAmount')) : undefined,
+        expiryDate: formData.get('expiryDate') || undefined,
+    };
+
+    if (!data.company) {
+        return { message: 'Insurance company name is required.' };
+    }
+
+    await services.patient.saveInsurance(patient.id, data);
+    return { success: true, message: 'Insurance details saved!' };
+}
+
+export async function deleteInsuranceAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+    const insuranceId = formData.get('insuranceId');
+    await services.patient.deleteInsurance(patient.id, insuranceId);
+    return { success: true, message: 'Insurance removed.' };
 }
 
 export async function logoutPatient() {

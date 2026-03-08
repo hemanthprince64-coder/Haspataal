@@ -33,7 +33,7 @@ export const BillingTransactionSchema = z.object({
     amount: z.number().positive(),
     currency: z.string().default('INR'),
     status: z.enum(['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED']),
-    paymentMethod: z.z.enum(['UPI', 'CARD', 'NET_BANKING', 'CASH']),
+    paymentMethod: z.enum(['UPI', 'CARD', 'NET_BANKING', 'CASH']),
 });
 
 export type PatientRecord = z.infer<typeof PatientRecordSchema>;

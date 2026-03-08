@@ -16,6 +16,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         { name: "Lab Tests", href: "/lab-tests", icon: "🔬" },
         { name: "My Records", href: "/records", icon: "📋" },
         { name: "My Profile", href: "/profile", icon: "👤" },
+        { name: "Medical History", href: "/medical-history", icon: "🩺" },
+        { name: "Medications", href: "/medications", icon: "💊" },
+        { name: "Vitals", href: "/vitals", icon: "❤️" },
+        { name: "Vaccinations", href: "/vaccinations", icon: "💉" },
+        { name: "Pregnancy", href: "/tracker", icon: "🤰" },
+        { name: "Insurance", href: "/insurance", icon: "🛡️" },
     ];
 
     useEffect(() => {
@@ -102,8 +108,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                                     <Link
                                         href={link.href}
                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 no-underline ${active
-                                                ? "bg-medical-50 text-medical-700 font-semibold border-l-[3px] border-medical-600 pl-[9px]"
-                                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                                            ? "bg-medical-50 text-medical-700 font-semibold border-l-[3px] border-medical-600 pl-[9px]"
+                                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
                                             }`}
                                         onClick={onClose}
                                     >

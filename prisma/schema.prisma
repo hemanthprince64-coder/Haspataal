@@ -288,28 +288,51 @@ model Staff {
 }
 
 model Patient {
-  id             String            @id @default(uuid())
-  name           String
-  phone          String            @unique
-  email          String?
-  password       String
-  city           String?
-  createdAt      DateTime          @default(now()) @map("created_at")
-  abhaAddress    String?           @unique @map("abha_address")
-  role           Role              @default(PATIENT)
-  address        String?
-  bloodGroup     String?           @map("blood_group")
-  dob            DateTime?         @db.Date
-  gender         String?
-  pincode        String?
-  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at")
-  agentId        String?           @map("agent_id")
-  appointments   Appointment[]
-  orders         DiagnosticOrder[]
-  medicalRecords MedicalRecord[]
-  records        PatientRecord[]
-  agent          Agent?            @relation(fields: [agentId], references: [id])
-  reviews        Review[]
+  id                      String              @id @default(uuid())
+  name                    String
+  phone                   String              @unique
+  email                   String?
+  password                String
+  city                    String?
+  createdAt               DateTime            @default(now()) @map("created_at")
+  abhaAddress             String?             @unique @map("abha_address")
+  role                    Role                @default(PATIENT)
+  address                 String?
+  bloodGroup              String?             @map("blood_group")
+  dob                     DateTime?           @db.Date
+  gender                  String?
+  pincode                 String?
+  updatedAt               DateTime            @default(now()) @updatedAt @map("updated_at")
+  agentId                 String?             @map("agent_id")
+  // New demographic fields
+  state                   String?
+  country                 String?
+  occupation              String?
+  maritalStatus           String?             @map("marital_status")
+  profilePhotoUrl         String?             @map("profile_photo_url")
+  // Emergency contact
+  emergencyContactName    String?             @map("emergency_contact_name")
+  emergencyContactRelation String?            @map("emergency_contact_relation")
+  emergencyContactPhone   String?             @map("emergency_contact_phone")
+  emergencyContactAltPhone String?            @map("emergency_contact_alt_phone")
+  // Preferred hospital/doctor
+  preferredHospital       String?             @map("preferred_hospital")
+  preferredSpeciality     String?             @map("preferred_speciality")
+  preferredDoctor         String?             @map("preferred_doctor")
+  // Relations
+  appointments            Appointment[]
+  orders                  DiagnosticOrder[]
+  medicalRecords          MedicalRecord[]
+  records                 PatientRecord[]
+  agent                   Agent?              @relation(fields: [agentId], references: [id])
+  reviews                 Review[]
+  familyMembers           FamilyMember[]
+  medicalHistories        PatientMedicalHistory[]
+  medications             PatientMedication[]
+  vitalRecords            VitalRecord[]
+  vaccinationRecords      VaccinationRecord[]
+  pregnancyProfile        PregnancyProfile?
+  insuranceDetails        InsuranceDetail[]
 
   @@index([city])
   @@index([email])
@@ -601,6 +624,113 @@ model Agent {
   patients       Patient[]
 
   @@map("agents")
+}
+
+model FamilyMember {
+  id         String   @id @default(uuid())
+  patientId  String   @map("patient_id")
+  name       String
+  relation   String
+  dob        DateTime? @db.Date
+  gender     String?
+  bloodGroup String?  @map("blood_group")
+  createdAt  DateTime @default(now()) @map("created_at")
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("family_members")
+}
+
+model PatientMedicalHistory {
+  id              String   @id @default(uuid())
+  patientId       String   @unique @map("patient_id")
+  chronicDiseases String?  @map("chronic_diseases")
+  pastIllnesses   String?  @map("past_illnesses")
+  surgeries       String?
+  allergies       String?
+  drugAllergies   String?  @map("drug_allergies")
+  hospitalizations String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_medical_history")
+}
+
+model PatientMedication {
+  id        String    @id @default(uuid())
+  patientId String    @map("patient_id")
+  drugName  String    @map("drug_name")
+  dose      String?
+  frequency String?
+  startDate DateTime? @map("start_date") @db.Date
+  createdAt DateTime  @default(now()) @map("created_at")
+  patient   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("patient_medications")
+}
+
+model VitalRecord {
+  id            String   @id @default(uuid())
+  patientId     String   @map("patient_id")
+  weight        Decimal?
+  height        Decimal?
+  bmi           Decimal?
+  bloodPressure String?  @map("blood_pressure")
+  pulse         Int?
+  bloodSugar    Decimal? @map("blood_sugar")
+  spo2          Decimal?
+  temperature   Decimal?
+  recordedAt    DateTime @default(now()) @map("recorded_at")
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("vital_records")
+}
+
+model VaccinationRecord {
+  id          String    @id @default(uuid())
+  patientId   String    @map("patient_id")
+  vaccineName String    @map("vaccine_name")
+  dateGiven   DateTime? @map("date_given") @db.Date
+  nextDueDate DateTime? @map("next_due_date") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("vaccination_records")
+}
+
+model PregnancyProfile {
+  id              String   @id @default(uuid())
+  patientId       String   @unique @map("patient_id")
+  lmp             DateTime? @db.Date
+  edd             DateTime? @db.Date
+  gestationalAge  Int?     @map("gestational_age")
+  highRisk        Boolean  @default(false) @map("high_risk")
+  ancVisits       Int?     @map("anc_visits")
+  dangerSigns     String?  @map("danger_signs")
+  deliveryPlan    String?  @map("delivery_plan")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("pregnancy_profiles")
+}
+
+model InsuranceDetail {
+  id              String    @id @default(uuid())
+  patientId       String    @map("patient_id")
+  company         String
+  policyNumber    String?   @map("policy_number")
+  coverageAmount  Decimal?  @map("coverage_amount")
+  expiryDate      DateTime? @map("expiry_date") @db.Date
+  createdAt       DateTime  @default(now()) @map("created_at")
+  patient         Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("insurance_details")
 }
 
 model OtpCode {
