@@ -1,0 +1,136 @@
+version: '3.9'
+
+networks:
+  haspataal_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+
+
+services:
+
+  # ================================================================
+  # FRONTENDS — Next.js portals
+  # ================================================================
+  patient-portal:
+    image: haspataal/patient-portal:latest
+    build: .
+    container_name: patient-portal
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
+      - NEXT_PUBLIC_AUTH_URL=http://auth-service:4001
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    ports:
+      - "3000:3000"
+    networks:
+      - haspataal_network
+
+  doctor-portal:
+    image: haspataal/doctor-portal:latest
+    build: ./doctor-portal
+    container_name: doctor-portal
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
+      - NEXT_PUBLIC_AUTH_URL=http://auth-service:4001
+    ports:
+      - "3001:3000"
+    networks:
+      - haspataal_network
+
+  hospital-hms:
+    image: haspataal/hospital-hms:latest
+    build: ./hospital-hms
+    container_name: hospital-hms
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
+      - NEXT_PUBLIC_AUTH_URL=http://auth-service:4001
+    ports:
+      - "3002:3000"
+    networks:
+      - haspataal_network
+
+  admin-panel:
+    image: haspataal/admin-panel:latest
+    build: ./haspataal-admin
+    container_name: admin-panel
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
+    ports:
+      - "3003:3000"
+    networks:
+      - haspataal_network
+
+  # ================================================================
+  # BACKEND MICROSERVICES
+  # ================================================================
+  auth-service:
+    image: haspataal/auth-service:latest
+    build: ./auth-service
+    container_name: auth-service
+    restart: unless-stopped
+    environment:
+      - AUTH_SERVICE_PORT=4001
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+    ports:
+      - "4001:4001"
+    networks:
+      - haspataal_network
+
+  api-gateway:
+    image: haspataal/api-gateway:latest
+    build: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    environment:
+      - API_GATEWAY_PORT=4002
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379
+    ports:
+      - "4002:4002"
+    depends_on:
+      - auth-service
+      - redis
+    networks:
+      - haspataal_network
+
+  # ================================================================
+  # INFRASTRUCTURE
+  # ================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: haspataal-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - haspataal_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: haspataal-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - patient-portal
+      - doctor-portal
+      - hospital-hms
+      - admin-panel
+      - api-gateway
+      - auth-service
+    networks:
+      - haspataal_network

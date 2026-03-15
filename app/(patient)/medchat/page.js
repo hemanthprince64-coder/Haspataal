@@ -258,12 +258,14 @@ export default function MedChatPage() {
                 <button
                     className={`${styles.langBtn} ${lang === 'en' ? styles.langBtnActive : ''}`}
                     onClick={() => setLang('en')}
+                    suppressHydrationWarning
                 >
                     EN
                 </button>
                 <button
                     className={`${styles.langBtn} ${lang === 'hi' ? styles.langBtnActive : ''} ml-2`}
                     onClick={() => setLang('hi')}
+                    suppressHydrationWarning
                 >
                     हिन्दी
                 </button>
@@ -322,6 +324,7 @@ export default function MedChatPage() {
                                 max="150"
                                 value={formData.age}
                                 onChange={(e) => updateField("age", e.target.value)}
+                                suppressHydrationWarning
                             />
                         </div>
                         <div className={styles.field}>
@@ -331,6 +334,7 @@ export default function MedChatPage() {
                                 className={`${styles.input} ${styles.select}`}
                                 value={formData.gender}
                                 onChange={(e) => updateField("gender", e.target.value)}
+                                suppressHydrationWarning
                             >
                                 {GENDERS.map((g) => (
                                     <option key={g} value={g}>{g}</option>
@@ -348,6 +352,7 @@ export default function MedChatPage() {
                             placeholder="e.g. Hyderabad"
                             value={formData.city}
                             onChange={(e) => updateField("city", e.target.value)}
+                            suppressHydrationWarning
                         />
                     </div>
 
@@ -381,6 +386,7 @@ export default function MedChatPage() {
                             value={formData.symptoms}
                             onChange={(e) => updateField("symptoms", e.target.value)}
                             maxLength={2000}
+                            suppressHydrationWarning
                         />
                         {/* Real-time feedback pills */}
                         <div className={styles.realtimePills}>
@@ -399,6 +405,7 @@ export default function MedChatPage() {
                             className={`${styles.input} ${styles.select}`}
                             value={formData.duration}
                             onChange={(e) => updateField("duration", e.target.value)}
+                            suppressHydrationWarning
                         >
                             {DURATIONS.map((d) => (
                                 <option key={d} value={d}>{d}</option>
@@ -503,7 +510,7 @@ export default function MedChatPage() {
                     )}
 
                     <div className={styles.buttonRow}>
-                        <button type="button" className={styles.btnSecondary} onClick={() => setStep(1)}>
+                        <button type="button" className={styles.btnSecondary} onClick={() => setStep(1)} suppressHydrationWarning>
                             {t.backBtn}
                         </button>
                         <button
@@ -511,6 +518,7 @@ export default function MedChatPage() {
                             className={styles.btnPrimary}
                             disabled={isPending}
                             onClick={handleSubmit}
+                            suppressHydrationWarning
                         >
                             {isPending ? (
                                 <>

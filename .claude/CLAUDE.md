@@ -1,8 +1,9 @@
 # 🩺 HASPATAAL — Project Configuration
 
 ## 🎯 High-Level Mission
-Haspataal is a healthcare marketplace platform connecting patients with doctors, hospitals, diagnostics, and digital health records.
-Reliability, data privacy, and clean UI are non-negotiable.
+**MISSION: BUILD PRACTO-SCALE HEALTHCARE PLATFORM INFRASTRUCTURE (HASPATAAL)**
+
+We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engineering team. The objective is to design and implement a scalable healthcare platform using a single domain (`haspataal.com`) with multiple subdomains for role-based dashboards. The system must support millions of users, feature Row-Level Security, multi-tenant hospital architecture, high SEO performance, and follow production-grade HIPAA-style architecture used by companies like Practo.
 
 ---
 
@@ -22,10 +23,14 @@ Reliability, data privacy, and clean UI are non-negotiable.
 
 | Portal | Domain | Purpose | Tech Stack |
 |---|---|---|---|
-| **Patient Portal** | haspataal.com | Doctor booking, discovery, MedChat AI, records | Next.js, FastAPI |
-| **Provider Portal** | haspataal.in | OPD/IPD, billing, dashboards, analytics | Next.js, Node.js |
-| **Admin Portal** | haspataal-admin | Onboarding, commissions, platform management | Next.js |
-| **Mobile App** | haspataal-mobile | Patient mobile experience | Expo/React Native |
+| **Patient Portal** | haspataal.com | Doctor booking, discovery, MedChat AI, records | Next.js, React |
+| **Doctor Dashboard** | doctor.haspataal.com | Doctor specific tools, appointments, RX | Next.js |
+| **Hospital HMS** | hospital.haspataal.com | OPD/IPD, billing, multi-tenant isolation | Next.js |
+| **Admin Control** | admin.haspataal.com | Onboarding, commissions, platform management | Next.js |
+| **Backend APIs** | api.haspataal.com | Core centralized backend microservices | Node.js (NestJS/FastAPI) |
+| **Auth Service** | auth.haspataal.com | JWT + OAuth centralized authentication | Node.js |
+| **CDN Assets** | cdn.haspataal.com | Fast delivery of static assets & media | Cloudflare |
+
 
 ### 🛠 Decomposed Services (MetaGPT Design)
 - **Auth Service:** JWT via `jose` + `bcryptjs`, RBAC.
@@ -157,13 +162,33 @@ security: security patch
 
 ---
 
-## 🤖 MetaGPT Environment
-We use a **hybrid routing** strategy for maximum reasoning speed and code generation efficiency:
-- **Groq (`llama-3.3-70b-versatile`)**: Reasoning (PM, Architect, Project Manager).
-- **Ollama (`deepseek-coder:6.7b`)**: Implementation (Engineer, QA).
-- **Setup:** Optimized via `.metagpt/config2.yaml`.
-- **Agents:** Specialized definitions in `.claude/agents/` (Healthcare PM/Architect).
-- **Compliance:** All AI generations must follow `.claude/METAGPT_SOP.md`.
+## 🤖 MetaGPT CORE TEAM (AGENT PERSONAS)
+We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
+
+- **CEO Agent**: Defines product vision, roadmap, and feature priorities.
+- **Product Manager Agent**: Creates PRDs and feature specifications.
+- **System Architect Agent**: Designs complete architecture (microservices, schema, topology, APIs, scaling).
+- **Backend Engineer Agent**: Builds auth, appointment engines, patient/doctor profiles, HMS integration, and telemedicine services.
+- **Frontend Engineer Agent**: Builds web apps for the primary domains (`haspataal.com`, `doctor.`, `hospital.`, `admin.`).
+- **DevOps Engineer Agent**: Handles DNS, subdomains, Nginx proxy, K8s orchestration, CI/CD, and monitoring.
+- **Security Engineer Agent**: Implements RBAC, Row Level Security, encryption, and audit logs.
+- **Database Engineer Agent**: Designs PostgreSQL schema supporting multi-hospital tenancy using `hospital_id`.
+
+**Execution Phases:**
+- **Phase 1** → Infrastructure setup
+- **Phase 2** → Core backend APIs
+- **Phase 3** → Frontend dashboards
+- **Phase 4** → Security and compliance
+- **Phase 5** → SEO growth engine (dynamic routing)
+- **Phase 6** → Production deployment
+
+
+---
+
+## 🧠 AI & Agentic Scaling
+- **MedChat 2.0:** Devolving the triage agent into specialized diagnostic sub-agents (e.g., PediatricAgent, CardioAgent).
+- **Auto-Fixing Agents:** Integrating MetaGPT directly into the CI/CD pipeline to automatically repair bugs identified in audits.
+- **Predictive Analytics:** Using patient history for preventative health suggestions.
 
 ---
 

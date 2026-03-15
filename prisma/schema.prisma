@@ -93,6 +93,8 @@ model Hospital {
   password           String?
   adminUserId        String?                     @map("admin_user_id")
   createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @default(now()) @map("updated_at")
+
   agentId            String?                     @map("agent_id")
   type               HospitalType                @default(HOSPITAL)
   diagnosticOrders   DiagnosticOrder[]
