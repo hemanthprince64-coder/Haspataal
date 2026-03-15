@@ -119,27 +119,67 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 
 ## 📋 Coding Standards
 
+> These rules are adapted from the **everything-claude-code SaaS Next.js CLAUDE.md** (battle-tested with Next.js + Supabase + Stripe).
+
+### Database (CRITICAL — Supabase/Prisma)
+- All queries use Supabase client **with RLS enabled** — never bypass RLS with service role key on client
+- Prisma migrations in `prisma/migrations/` — never modify the database directly via Supabase Studio
+- Use `select: { field: true }` in Prisma — never `findMany()` without field selection
+- All user-facing queries must include `.take()` / `.limit()` to prevent unbounded results
+- Use `DATABASE_URL` (port 6543, PgBouncer) for app queries; `DIRECT_URL` (port 5432) for migrations
+- `hospital_id` must be present on all patient-scoped tables — no exceptions
+
+### Authentication
+- Use `createServerClient()` from `@supabase/ssr` in Server Components
+- Use `createBrowserClient()` from `@supabase/ssr` in Client Components
+- Protected routes verify JWT via `requireAuth` middleware — never trust client-sent role claims
+- Never trust `getSession()` alone for auth — always verify with `getUser()` server-side
+
+### API Pattern (Zod-First)
+```typescript
+// Standardized API Response format for api.haspataal.com
+type ApiResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: string; code?: string }
+```
+
+### Server Action Pattern
+```typescript
+'use server'
+import { z } from 'zod'
+
+const schema = z.object({ id: z.string().uuid() })
+
+export async function bookAppointment(formData: FormData) {
+  const parsed = schema.safeParse({ id: formData.get('appointmentId') })
+  if (!parsed.success) return { success: false, error: parsed.error.flatten() }
+  // ... verify JWT, check hospital_id isolation, then write
+}
+```
+
+### Code Style
+- Immutable patterns only — spread operator, never mutate objects
+- Server Components: no `'use client'`, no `useState`/`useEffect`
+- Client Components: `'use client'` at top, minimal state — extract logic to hooks
+- All input validation via **Zod 4** (API routes, forms, env vars)
+- TypeScript strict mode enabled — `"strict": true` in tsconfig
+
 ### Architecture
 - Modular services with clear separation of concerns
-- API-first architecture
-- Strict validation for all inputs
+- API-first architecture — frontend consumes `api.haspataal.com` only
+- Never expose Supabase service role key to frontend bundles
 
 ### Naming Conventions
 - `PascalCase` for React Components
 - `camelCase` for variables and functions
 - `kebab-case` for folder and file names
+- `SCREAMING_SNAKE_CASE` for env var names
 
 ### Imports
 - Use absolute paths: `@/components/...`, `@/lib/...`
 - Never use relative imports for cross-module references
 
-### Safety
-- Never expose secrets or API keys in client code
-- All patient-related data objects are immutable
-- Follow OWASP best practices
-
-### Commits
-Use Conventional Commits:
+### Commits (Conventional Commits)
 ```
 feat: new feature
 fix: bug fix
@@ -148,6 +188,17 @@ docs: documentation
 perf: performance improvement
 security: security patch
 ```
+
+---
+
+## 🤖 Agent Personas (`.claude/agents/`)
+
+| Agent | File | When to Use |
+|---|---|---|
+| **Database Reviewer** | `database-reviewer.md` | Before any Prisma migration, schema change, or slow query |
+| **Security Reviewer** | `security-reviewer.md` | Before any PR touching auth, middleware, or APIs |
+
+Run AgentShield security scan anytime: `npx ecc-agentshield scan`
 
 ---
 
@@ -218,6 +269,10 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **Supabase Storage Bucket:** Profile photo uploads require a public bucket named `avatars` with a folder structure `profile-photos/`. Ensure CORS and local development environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are correctly set in `.env`.
 - **Server Action File Handling:** When handling `File` objects in Next.js Server Actions (e.g., `profilePhotoFile`), check `file.size > 0` and `file.name` before processing to avoid empty uploads or crashes.
 - **Health Module Security:** New health-related tables (e.g., `vaccination_records`) must have RLS enabled via manual SQL migrations (see `enable_rls_health_modules.sql`) to prevent unauthorized data exposure through Supabase PostgREST.
+- **WAR ROOM Audit — Admin Panel path:** `haspataal-admin` uses the non-src Next.js 13+ layout (`app/` not `src/app/`). Always check the pattern per project before assuming `src/` structure.
+- **WAR ROOM Audit — NEXTAUTH_SECRET:** The `.env` file had `NEXTAUTH_SECRET` commented out. Must be active for JWT signing in auth-service. Run `node scripts/platform-health-check.js` to verify env vars before deployment.
+- **WAR ROOM Audit — create-next-app conflict:** `create-next-app` refuses to scaffold into a pre-existing directory even if it only has a few files (e.g., `.env.local`, `src/`). Workaround: Copy scaffold files (package.json, tsconfig, next.config.mjs) manually from a working portal.
+- **WAR ROOM Platform Health Check:** `scripts/platform-health-check.js` is the single-command audit covering all 5 WAR ROOM steps. Run after every major change.
 
 
 ---

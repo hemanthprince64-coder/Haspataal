@@ -1,0 +1,96 @@
+{
+    "_readme": "Haspataal MCP Server Configuration — copy relevant servers to your Claude settings",
+    "_usage": "Add mcpServers entries to ~/.claude.json or project .claude/settings.json",
+    "_context_warning": "Keep under 10 MCPs active to preserve your 200k context window",
+    "_haspataal_recommended": [
+        "supabase",
+        "github",
+        "filesystem"
+    ],
+    "mcpServers": {
+        "supabase": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@supabase/mcp-server-supabase@latest",
+                "--supabase-url",
+                "https://deqcehtgwbpmwlajsore.supabase.co",
+                "--supabase-key",
+                "${SUPABASE_SERVICE_ROLE_KEY}"
+            ],
+            "env": {
+                "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+            },
+            "description": "Supabase MCP — query tables, run migrations, manage RLS policies, inspect schema. Use for haspataal DB operations."
+        },
+        "github": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+            },
+            "description": "GitHub MCP — create PRs, review code, manage issues, search the haspataal repo."
+        },
+        "filesystem": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "c:/Users/heman/.gemini/antigravity/scratch/haspataal"
+            ],
+            "description": "Filesystem MCP — read/write files in the haspataal project root. Use for bulk file operations."
+        },
+        "postgres": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "${DATABASE_URL}"
+            ],
+            "env": {
+                "DATABASE_URL": "${DATABASE_URL}"
+            },
+            "description": "Direct PostgreSQL MCP — run raw SQL, check query plans via EXPLAIN ANALYZE, inspect RLS policies. Use with postgres-patterns skill."
+        },
+        "memory": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-memory"
+            ],
+            "description": "Persistent memory MCP — store and recall cross-session context. Use for remembering ongoing tasks and WAR ROOM decisions."
+        },
+        "_disabled_by_default": {
+            "vercel": {
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@vercel/mcp-adapter"
+                ],
+                "env": {
+                    "VERCEL_TOKEN": "YOUR_VERCEL_TOKEN_HERE"
+                },
+                "description": "Vercel MCP — manage deployments. Enable when deploying to production."
+            },
+            "redis": {
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@modelcontextprotocol/server-redis",
+                    "redis://localhost:6379"
+                ],
+                "description": "Redis MCP — inspect appointment slot cache and session data. Enable for cache debugging."
+            }
+        }
+    },
+    "_setup_instructions": {
+        "step1": "Get your Supabase service role key from: https://supabase.com/dashboard/project/deqcehtgwbpmwlajsore/settings/api",
+        "step2": "Create a GitHub Personal Access Token at: https://github.com/settings/tokens (repo scope)",
+        "step3": "Add to your environment or .env: SUPABASE_SERVICE_ROLE_KEY=... GITHUB_TOKEN=...",
+        "step4": "Copy the mcpServers section to your Claude project settings or ~/.claude.json",
+        "step5": "Keep only haspataal_recommended servers active to preserve context window"
+    }
+}
