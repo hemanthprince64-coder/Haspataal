@@ -35,77 +35,86 @@ export default function ProfilePage() {
     const displayPhone = phone || '—';
 
     return (
-        <div className="py-6 space-y-6 animate-fade-in-up">
-            {/* Profile Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-medical-600 via-medical-500 to-blue-500 p-6 text-white shadow-xl">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-xl" />
-                <div className="relative flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-2xl font-bold border-2 border-white/30 shadow-lg overflow-hidden shrink-0">
+        <div className="py-4 space-y-8 animate-fade-in text-senior-base">
+            {/* Profile Card — Compact Clinical */}
+            <div className="card-clinical p-6 relative overflow-hidden border-2 border-blue-50 shadow-md">
+                <div className="relative flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-20 h-20 rounded-2xl border-2 border-blue-100 bg-white shadow-lg shrink-0 overflow-hidden">
                         {profilePhotoUrl ? (
                             <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                            displayName.charAt(0).toUpperCase()
+                            <div className="w-full h-full flex items-center justify-center text-3xl font-black text-blue-600 bg-blue-50">
+                                {displayName.charAt(0).toUpperCase()}
+                            </div>
                         )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-white/80 text-sm font-medium mb-0.5">Hi, welcome back! 👋</p>
-                        <h1 className="text-xl font-bold tracking-tight truncate">{displayName}</h1>
-                        <p className="text-white/80 text-xs mt-0.5 truncate">{displayPhone}</p>
+                    <div className="flex-1 text-center md:text-left min-w-0 space-y-1">
+                        <p className="text-blue-600 text-xs font-black uppercase tracking-[0.2em]">
+                            {new Date().getHours() < 12 ? '☀️ Good Morning' : new Date().getHours() < 17 ? '🌤️ Good Afternoon' : '🌙 Good Evening'}, Welcome
+                        </p>
+                        <h1 className="text-3xl font-black text-[#0D2B55] tracking-tight truncate">{displayName}</h1>
+                        <p className="text-slate-500 text-lg font-bold">{displayPhone}</p>
                     </div>
-                    <Link
-                        href="/profile/edit"
-                        className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-xs font-semibold py-2 px-3.5 rounded-xl transition-all duration-200 no-underline border border-white/20 shrink-0"
-                    >
-                        ✏️ Edit
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <Link
+                            href="/profile/edit"
+                            className="bg-white text-blue-700 border-2 border-blue-100 px-5 py-2 rounded-xl text-sm font-bold hover:bg-blue-50 transition-all text-center"
+                        >
+                            ✏️ Edit Profile
+                        </Link>
+                        <Link
+                            href="/profile/details"
+                            className="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all text-center shadow-md"
+                        >
+                            View Dashboard
+                        </Link>
+                    </div>
                 </div>
             </div>
 
-            {/* Section Grid */}
-            <div>
-                <div className="flex items-center justify-between mb-3 px-1">
-                    <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                        Health Sections
+            {/* Section Grid — Compact Senior-Friendly Services */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <h2 className="text-[#0D2B55] font-black uppercase tracking-widest text-xs opacity-60">
+                        Clinical Services
                     </h2>
                     <button
                         onClick={() => {
                             import('@/app/export').then(m => m.downloadPatientReport(patient))
                         }}
-                        className="text-xs bg-slate-100/80 text-slate-600 font-semibold px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        className="text-blue-600 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest border border-blue-100 hover:bg-blue-50 transition-colors cursor-pointer"
                     >
-                        <span>⬇️</span> Export Data
+                        PDF Report ⬇️
                     </button>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {sections.map((s) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {sections.map((s, i) => (
                         <Link
                             key={s.href}
                             href={s.href}
-                            className={`group flex items-center gap-3.5 p-4 rounded-xl border bg-white hover:shadow-md transition-all duration-200 no-underline`}
+                            className="card-clinical card-clinical-hover p-4 flex flex-row md:flex-col items-center md:items-start gap-4 no-underline group"
                         >
-                            <div className={`w-10 h-10 rounded-xl ${s.color} flex items-center justify-center text-lg shrink-0 border transition-transform duration-200 group-hover:scale-110`}>
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                                 {s.icon}
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <div className="text-sm font-semibold text-slate-800 truncate">{s.name}</div>
-                                <div className="text-xs text-slate-400 truncate">{s.desc}</div>
+                            <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="text-lg font-black text-[#0D2B55] group-hover:text-blue-600 transition-colors truncate">
+                                    {s.name}
+                                </div>
+                                <div className="text-xs text-slate-500 font-bold leading-tight truncate">{s.desc}</div>
                             </div>
-                            <svg className="w-4 h-4 text-slate-300 group-hover:text-slate-500 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
                         </Link>
                     ))}
                 </div>
             </div>
 
-            {/* Logout */}
-            <form action={patientLogout} className="pt-2">
+            {/* Logout — Compact Danger Action */}
+            <form action={patientLogout} className="pt-4">
                 <button
                     type="submit"
-                    className="w-full py-3 rounded-xl text-sm font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all duration-200 cursor-pointer"
+                    className="w-full py-4 rounded-2xl bg-red-50 text-red-600 border border-red-200 font-black tracking-widest text-sm hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 uppercase"
                 >
-                    Log Out
+                    Safe Logout
                 </button>
             </form>
         </div>
