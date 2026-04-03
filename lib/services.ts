@@ -282,7 +282,7 @@ export const services = {
             }));
         },
 
-        createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; slot?: string; }) => {
+        createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; slot?: string; status?: any; }) => {
             logger.info({ action: 'create_booking_attempt', hospitalId, doctorId: data.doctorId, date: data.date, slot: data.slot }, 'Attempting transactional appointment booking');
             const targetDate = new Date(data.date);
             targetDate.setHours(0, 0, 0, 0);
@@ -325,7 +325,7 @@ export const services = {
                             doctorId: data.doctorId,
                             date: targetDate,
                             slot: targetSlot,
-                            status: BookingStatus.BOOKED
+                            status: data.status || BookingStatus.BOOKED
                         }
                     });
                 });
@@ -379,11 +379,27 @@ export const services = {
         cancelVisit: async (patientId: string, visitId: string) => {
             logger.info({ action: 'cancel_booking_attempt', patientId, visitId }, 'Attempting to cancel appointment');
 
+            const visit = await prisma.appointment.findUnique({ where: { id: visitId } });
+            if (!visit) throw new Error('Appointment not found');
+            if (visit.patientId !== patientId) throw new Error('Unauthorized');
+
+            const hrLimit = 6 * 60 * 60 * 1000;
+            if (visit.date.getTime() - Date.now() < hrLimit) {
+                throw new Error('Appointments cannot be cancelled within 6 hours of the scheduled time');
+            }
+
+            // If the user previously paid for this appointment, process a refund
+            if (visit.status === 'CONFIRMED' || visit.status === 'BOOKED') {
+                await services.patient.addWalletTransaction(patientId, {
+                    type: 'CREDIT',
+                    amount: 500, // Assuming a flat 500 consultation fee for now
+                    source: 'REFUND',
+                    description: `Refund for cancelled appointment`
+                });
+            }
+
             // Delegate to the state machine to ensure it's a valid transition
             const cancelled = await services.patient.updateVisitStatus(visitId, patientId, BookingStatus.CANCELLED);
-
-            // # TODO: Refund integration
-            // # TODO: Notification trigger
 
             return cancelled;
         },
@@ -396,16 +412,38 @@ export const services = {
         getVisits: async (patientId: string) => {
             const appointments = await prisma.appointment.findMany({
                 where: { patientId },
+                include: {
+                    doctor: {
+                        include: {
+                            registration: true,
+                            affiliations: true
+                        }
+                    },
+                    patient: true
+                },
                 orderBy: { date: 'desc' }
             });
-            return appointments.map(a => ({
-                id: a.id,
-                doctorId: a.doctorId,
-                hospitalId: '', // appointments don't directly store hospitalId
-                date: a.date,
-                status: a.status,
-                patientId: a.patientId
-            }));
+            return appointments.map(a => {
+                // Extract specialization from registration degree or affiliation department
+                const degree = a.doctor?.registration?.degree || null;
+                const department = a.doctor?.affiliations?.[0]?.department || null;
+                const specialization = degree || department || 'General Consultation';
+
+                return {
+                    id: a.id,
+                    doctorId: a.doctorId,
+                    doctorName: a.doctor?.fullName || 'Doctor',
+                    specialization,
+                    patientName: a.patient?.name || 'Patient',
+                    createdAt: a.createdAt ? a.createdAt.toISOString() : null,
+                    amountPaid: (a.status === 'CONFIRMED' || a.status === 'COMPLETED') ? 500 : 0,
+                    hospitalId: a.hospitalId || '',
+                    date: a.date,
+                    slot: a.slot,
+                    status: a.status,
+                    patientId: a.patientId
+                };
+            });
         },
 
         // --- Family Members ---
@@ -577,6 +615,135 @@ export const services = {
         deleteInsurance: async (patientId: string, insuranceId: string) => {
             return await prisma.insuranceDetail.deleteMany({
                 where: { id: insuranceId, patientId }
+            });
+        },
+
+        // --- Addresses ---
+        getAddresses: async (patientId: string) => {
+            return await prisma.patientAddress.findMany({
+                where: { patientId },
+                orderBy: { createdAt: 'desc' }
+            });
+        },
+        addAddress: async (patientId: string, data: { type?: string; address: string; city: string; state?: string; pincode: string; landmark?: string; isDefault?: boolean }) => {
+            if (data.isDefault) {
+                await prisma.patientAddress.updateMany({
+                   where: { patientId, isDefault: true },
+                   data: { isDefault: false }
+                });
+            }
+            return await prisma.patientAddress.create({
+                data: {
+                    patientId,
+                    type: data.type || 'Home',
+                    address: data.address,
+                    city: data.city,
+                    state: data.state || null,
+                    pincode: data.pincode,
+                    landmark: data.landmark || null,
+                    isDefault: data.isDefault || false
+                }
+            });
+        },
+        deleteAddress: async (patientId: string, addressId: string) => {
+            return await prisma.patientAddress.deleteMany({
+                where: { id: addressId, patientId }
+            });
+        },
+        setDefaultAddress: async (patientId: string, addressId: string) => {
+            await prisma.patientAddress.updateMany({
+                where: { patientId, isDefault: true },
+                data: { isDefault: false }
+            });
+            return await prisma.patientAddress.update({
+                where: { id: addressId },
+                data: { isDefault: true }
+            });
+        },
+
+        // --- Wallet ---
+        getWallet: async (patientId: string) => {
+            let wallet = await prisma.wallet.findUnique({
+                where: { patientId },
+                include: {
+                    transactions: { orderBy: { createdAt: 'desc' }, take: 10 }
+                }
+            });
+            if (!wallet) {
+                wallet = await prisma.wallet.create({
+                    data: { patientId, balance: 0.0 },
+                    include: { transactions: true }
+                });
+            }
+            return {
+                ...wallet,
+                balance: wallet.balance.toNumber(),
+                transactions: wallet.transactions.map(t => ({
+                    ...t,
+                    amount: t.amount.toNumber()
+                }))
+            };
+        },
+        addWalletTransaction: async (patientId: string, data: { type: string; amount: number; source: string; description?: string }) => {
+            return await prisma.$transaction(async (tx) => {
+                const wallet = await tx.wallet.upsert({
+                    where: { patientId },
+                    update: { balance: data.type === 'CREDIT' ? { increment: data.amount } : { decrement: data.amount } },
+                    create: { patientId, balance: data.type === 'CREDIT' ? data.amount : 0 }
+                });
+
+                await tx.walletTransaction.create({
+                    data: {
+                        walletId: wallet.id,
+                        type: data.type,
+                        amount: data.amount,
+                        source: data.source,
+                        description: data.description || null
+                    }
+                });
+
+                return wallet;
+            });
+        },
+
+        // --- Prescriptions ---
+        getPrescriptions: async (patientId: string) => {
+            return await prisma.patientPrescription.findMany({
+                where: { patientId },
+                include: { items: true, doctor: { select: { fullName: true } } },
+                orderBy: { createdAt: 'desc' }
+            });
+        },
+        addStructuredPrescription: async (patientId: string, data: { doctorId?: string; appointmentId?: string; notes?: string; items: { medicineName: string; dosage: string; duration: string; instructions?: string }[] }) => {
+            return await prisma.patientPrescription.create({
+                data: {
+                    patientId,
+                    doctorId: data.doctorId || null,
+                    appointmentId: data.appointmentId || null,
+                    type: 'STRUCTURED',
+                    notes: data.notes || null,
+                    items: {
+                        create: data.items.map(i => ({
+                            medicineName: i.medicineName,
+                            dosage: i.dosage,
+                            duration: i.duration,
+                            instructions: i.instructions || null
+                        }))
+                    }
+                },
+                include: { items: true }
+            });
+        },
+        uploadPrescriptionFile: async (patientId: string, data: { doctorId?: string; appointmentId?: string; fileUrl: string; notes?: string }) => {
+            return await prisma.patientPrescription.create({
+                data: {
+                    patientId,
+                    doctorId: data.doctorId || null,
+                    appointmentId: data.appointmentId || null,
+                    type: 'FILE',
+                    fileUrl: data.fileUrl,
+                    notes: data.notes || null
+                }
             });
         }
     },

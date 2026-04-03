@@ -359,7 +359,10 @@ export async function getPatientFullProfile() {
             vitals,
             vaccinations,
             pregnancyProfile,
-            insurance
+            insurance,
+            addresses,
+            wallet,
+            prescriptions
         ] = await Promise.all([
             services.patient.getFamilyMembers(patientCookie.id),
             services.patient.getMedicalHistory(patientCookie.id),
@@ -367,7 +370,10 @@ export async function getPatientFullProfile() {
             services.patient.getVitals(patientCookie.id),
             services.patient.getVaccinations(patientCookie.id),
             services.patient.getPregnancyProfile(patientCookie.id),
-            services.patient.getInsurance(patientCookie.id)
+            services.patient.getInsurance(patientCookie.id),
+            services.patient.getAddresses(patientCookie.id),
+            services.patient.getWallet(patientCookie.id),
+            services.patient.getPrescriptions(patientCookie.id)
         ]);
 
         return {
@@ -378,7 +384,10 @@ export async function getPatientFullProfile() {
             vitals,
             vaccinations,
             pregnancyProfile,
-            insurance
+            insurance,
+            addresses,
+            wallet,
+            prescriptions
         };
     } catch (e) {
         return null;
@@ -666,6 +675,129 @@ export async function deleteInsuranceAction(prevState, formData) {
     return { success: true, message: 'Insurance removed.' };
 }
 
+// ==================== APPOINTMENT ACTIONS ====================
+export async function getMyAppointmentsAction() {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { success: false, message: 'Please login first.' };
+    }
+    const visits = await services.patient.getVisits(patient.id);
+    return { success: true, data: visits };
+}
+
+export async function cancelAppointmentAction(prevState, formData) {
+    try {
+        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
+        const visitId = formData.get('visitId');
+        if (!visitId) throw new Error('Visit ID required');
+
+        await services.patient.cancelVisit(patient.id, visitId);
+        return { success: true, message: 'Appointment cancelled successfully.' };
+    } catch (e) {
+        return { success: false, message: e.message || 'Failed to cancel appointment.' };
+    }
+}
+
+// ==================== ADDRESS ACTIONS ====================
+
+export async function addAddressAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        type: formData.get('type') || 'Home',
+        address: formData.get('address'),
+        city: formData.get('city'),
+        state: formData.get('state') || undefined,
+        pincode: formData.get('pincode'),
+        landmark: formData.get('landmark') || undefined,
+        isDefault: formData.get('isDefault') === 'true',
+    };
+
+    if (!data.address || !data.city || !data.pincode) {
+        return { message: 'Address, city, and pincode are required.' };
+    }
+
+    await services.patient.addAddress(patient.id, data);
+    return { success: true, message: 'Address saved!' };
+}
+
+export async function deleteAddressAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+    const addressId = formData.get('addressId');
+    await services.patient.deleteAddress(patient.id, addressId);
+    return { success: true, message: 'Address removed.' };
+}
+
+export async function setDefaultAddressAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+    const addressId = formData.get('addressId');
+    await services.patient.setDefaultAddress(patient.id, addressId);
+    return { success: true, message: 'Default address updated.' };
+}
+
+// ==================== WALLET ACTIONS ====================
+
+export async function addWalletTransactionAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const data = {
+        type: formData.get('type'), // CREDIT, DEBIT
+        amount: parseFloat(formData.get('amount')),
+        source: formData.get('source'), // TOPUP, APPOINTMENT, etc
+        description: formData.get('description') || undefined
+    };
+
+    if (!data.type || !data.amount || !data.source || isNaN(data.amount)) {
+        return { message: 'Missing or invalid transaction details.' };
+    }
+    await services.patient.addWalletTransaction(patient.id, data);
+    return { success: true, message: 'Transaction successful!' };
+}
+
+// ==================== PRESCRIPTION ACTIONS ====================
+
+export async function uploadPrescriptionAction(prevState, formData) {
+    let patient;
+    try {
+        patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e) {
+        return { message: 'Please login first.' };
+    }
+
+    const fileUrl = formData.get('fileUrl');
+    if (!fileUrl) return { message: 'File URL is required' };
+
+    await services.patient.uploadPrescriptionFile(patient.id, {
+        fileUrl,
+        notes: formData.get('notes') || undefined,
+        doctorId: formData.get('doctorId') || undefined
+    });
+
+    return { success: true, message: 'Prescription uploaded!' };
+}
+
 export async function logoutPatient() {
     await deleteSession('session_patient');
     redirect('/');
@@ -689,17 +821,36 @@ export async function bookAppointment(prevState, formData) {
     }
 
     try {
+        const payWithWallet = formData.get('payWithWallet') === 'true';
+        let assignedStatus = 'BOOKED';
+
+        if (payWithWallet) {
+            const wallet = await services.patient.getWallet(patient.id);
+            if (wallet.balance < 500) { // Assuming 500 consultation fee
+                return { success: false, message: 'Insufficient wallet balance. Please top up your wallet.' };
+            }
+            await services.patient.addWalletTransaction(patient.id, {
+                type: 'DEBIT',
+                amount: 500,
+                source: 'APPOINTMENT',
+                description: `Payment for appointment on ${date} at ${slot}`
+            });
+            assignedStatus = 'CONFIRMED';
+        }
+
         const visitData = {
             doctorId,
             patientName: patient.name || patient.mobile,
             patientMobile: patient.mobile,
             age: 0,
             gender: 'O',
-            date: `${date}T${slot}`
+            date: date,
+            slot: slot,
+            status: assignedStatus
         };
 
         await services.patient.createVisit(hospitalId, visitData);
-        return { success: true, message: 'Appointment booked successfully!' };
+        return { success: true, message: payWithWallet ? 'Appointment confirmed and paid via wallet!' : 'Appointment booked successfully! (Awaiting Payment)' };
     } catch (e) {
         return { success: false, message: e.message };
     }
