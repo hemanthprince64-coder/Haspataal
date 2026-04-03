@@ -33,6 +33,7 @@ model DoctorMaster {
   records             PatientRecord[]
   reviews             Review[]
   slots               Slot[]
+  PatientPrescription PatientPrescription[]
 
   @@index([email])
   @@map("doctors_master")
@@ -70,50 +71,50 @@ model DoctorRegistration {
 }
 
 model Hospital {
-  id                 String                      @id @default(uuid())
-  legalName          String                      @map("legal_name")
-  displayName        String?                     @map("display_name")
-  registrationNumber String                      @unique @map("registration_number")
-  gstNumber          String?                     @map("gst_number")
-  panNumber          String?                     @map("pan_number")
-  cinNumber          String?                     @map("cin_number")
-  hospitalType       String?                     @map("hospital_type")
-  nabhAccredited     Boolean                     @default(false) @map("nabh_accredited")
-  bedStrength        Int?                        @map("bed_strength")
-  addressLine1       String?                     @map("address_line1")
-  addressLine2       String?                     @map("address_line2")
+  id                 String   @id @default(uuid())
+  legalName          String   @map("legal_name")
+  displayName        String?  @map("display_name")
+  registrationNumber String   @unique @map("registration_number")
+  gstNumber          String?  @map("gst_number")
+  panNumber          String?  @map("pan_number")
+  cinNumber          String?  @map("cin_number")
+  hospitalType       String?  @map("hospital_type")
+  nabhAccredited     Boolean  @default(false) @map("nabh_accredited")
+  bedStrength        Int?     @map("bed_strength")
+  addressLine1       String?  @map("address_line1")
+  addressLine2       String?  @map("address_line2")
   city               String?
   state              String?
   pincode            String?
-  contactNumber      String?                     @map("contact_number")
-  officialEmail      String?                     @map("official_email")
-  verificationStatus String                      @default("pending") @map("verification_status")
-  accountStatus      String                      @default("inactive") @map("account_status")
-  name               String?                     @ignore
+  contactNumber      String?  @map("contact_number")
+  officialEmail      String?  @map("official_email")
+  verificationStatus String   @default("pending") @map("verification_status")
+  accountStatus      String   @default("inactive") @map("account_status")
+  name               String?  @ignore
   password           String?
-  adminUserId        String?                     @map("admin_user_id")
-  createdAt          DateTime                    @default(now()) @map("created_at")
-  updatedAt          DateTime                    @updatedAt @default(now()) @map("updated_at")
+  adminUserId        String?  @map("admin_user_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
 
-  agentId            String?                     @map("agent_id")
-  type               HospitalType                @default(HOSPITAL)
-  diagnosticOrders   DiagnosticOrder[]
-  affiliations       DoctorHospitalAffiliation[]
-  doctorRoles        DoctorRole[]
-  admins             HospitalAdmin[]
-  billingProfile     HospitalBillingProfile?
-  departments        HospitalDepartment[]
-  diagnosticPricing  HospitalDiagnosticPricing[]
-  facilities         HospitalFacilities?
-  panelPricing       HospitalPanelPricing[]
-  roles              HospitalRole[]
-  services           HospitalService[]
-  verificationLogs   HospitalVerificationLog[]
-  agent              Agent?                      @relation(fields: [agentId], references: [id])
-  qualityControls    LabQualityControl[]
-  reviews            Review[]
-  staff              Staff[]
-  visits             Visit[]
+  agentId           String?                     @map("agent_id")
+  type              HospitalType                @default(HOSPITAL)
+  diagnosticOrders  DiagnosticOrder[]
+  affiliations      DoctorHospitalAffiliation[]
+  doctorRoles       DoctorRole[]
+  admins            HospitalAdmin[]
+  billingProfile    HospitalBillingProfile?
+  departments       HospitalDepartment[]
+  diagnosticPricing HospitalDiagnosticPricing[]
+  facilities        HospitalFacilities?
+  panelPricing      HospitalPanelPricing[]
+  roles             HospitalRole[]
+  services          HospitalService[]
+  verificationLogs  HospitalVerificationLog[]
+  agent             Agent?                      @relation(fields: [agentId], references: [id])
+  qualityControls   LabQualityControl[]
+  reviews           Review[]
+  staff             Staff[]
+  visits            Visit[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -290,57 +291,138 @@ model Staff {
 }
 
 model Patient {
-  id                      String              @id @default(uuid())
-  name                    String
-  phone                   String              @unique
-  email                   String?
-  password                String
-  city                    String?
-  createdAt               DateTime            @default(now()) @map("created_at")
-  abhaAddress             String?             @unique @map("abha_address")
-  role                    Role                @default(PATIENT)
-  address                 String?
-  bloodGroup              String?             @map("blood_group")
-  dob                     DateTime?           @db.Date
-  gender                  String?
-  pincode                 String?
-  updatedAt               DateTime            @default(now()) @updatedAt @map("updated_at")
-  agentId                 String?             @map("agent_id")
+  id                       String                  @id @default(uuid())
+  name                     String
+  phone                    String                  @unique
+  email                    String?
+  password                 String
+  city                     String?
+  createdAt                DateTime                @default(now()) @map("created_at")
+  abhaAddress              String?                 @unique @map("abha_address")
+  role                     Role                    @default(PATIENT)
+  address                  String?
+  bloodGroup               String?                 @map("blood_group")
+  dob                      DateTime?               @db.Date
+  gender                   String?
+  pincode                  String?
+  updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
+  agentId                  String?                 @map("agent_id")
   // New demographic fields
-  nickname                String?
-  state                   String?
-  country                 String?
-  occupation              String?
-  maritalStatus           String?             @map("marital_status")
-  profilePhotoUrl         String?             @map("profile_photo_url")
+  nickname                 String?
+  state                    String?
+  country                  String?
+  occupation               String?
+  maritalStatus            String?                 @map("marital_status")
+  profilePhotoUrl          String?                 @map("profile_photo_url")
   // Emergency contact
-  emergencyContactName    String?             @map("emergency_contact_name")
-  emergencyContactRelation String?            @map("emergency_contact_relation")
-  emergencyContactPhone   String?             @map("emergency_contact_phone")
-  emergencyContactAltPhone String?            @map("emergency_contact_alt_phone")
+  emergencyContactName     String?                 @map("emergency_contact_name")
+  emergencyContactRelation String?                 @map("emergency_contact_relation")
+  emergencyContactPhone    String?                 @map("emergency_contact_phone")
+  emergencyContactAltPhone String?                 @map("emergency_contact_alt_phone")
   // Preferred hospital/doctor
-  preferredHospital       String?             @map("preferred_hospital")
-  preferredSpeciality     String?             @map("preferred_speciality")
-  preferredDoctor         String?             @map("preferred_doctor")
+  preferredHospital        String?                 @map("preferred_hospital")
+  preferredSpeciality      String?                 @map("preferred_speciality")
+  preferredDoctor          String?                 @map("preferred_doctor")
   // Relations
-  appointments            Appointment[]
-  orders                  DiagnosticOrder[]
-  medicalRecords          MedicalRecord[]
-  records                 PatientRecord[]
-  agent                   Agent?              @relation(fields: [agentId], references: [id])
-  reviews                 Review[]
-  familyMembers           FamilyMember[]
-  medicalHistories        PatientMedicalHistory[]
-  medications             PatientMedication[]
-  vitalRecords            VitalRecord[]
-  vaccinationRecords      VaccinationRecord[]
-  pregnancyProfile        PregnancyProfile?
-  insuranceDetails        InsuranceDetail[]
+  appointments             Appointment[]
+  orders                   DiagnosticOrder[]
+  medicalRecords           MedicalRecord[]
+  records                  PatientRecord[]
+  agent                    Agent?                  @relation(fields: [agentId], references: [id])
+  reviews                  Review[]
+  familyMembers            FamilyMember[]
+  medicalHistories         PatientMedicalHistory[]
+  medications              PatientMedication[]
+  vitalRecords             VitalRecord[]
+  vaccinationRecords       VaccinationRecord[]
+  pregnancyProfile         PregnancyProfile?
+  insuranceDetails         InsuranceDetail[]
+  // Financial & Prescription
+  wallet                   Wallet?
+  addresses                PatientAddress[]
+  prescriptions            PatientPrescription[]
 
   @@index([city])
   @@index([email])
   @@index([role])
   @@map("patients")
+}
+
+model PatientAddress {
+  id        String   @id @default(uuid())
+  patientId String   @map("patient_id")
+  type      String   @default("Home") // Home, Work, Other
+  address   String
+  city      String
+  state     String?
+  pincode   String
+  landmark  String?
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("patient_addresses")
+}
+
+model Wallet {
+  id           String              @id @default(uuid())
+  patientId    String              @unique @map("patient_id")
+  balance      Decimal             @default(0.0)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  transactions WalletTransaction[]
+  patient      Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  walletId    String   @map("wallet_id")
+  type        String // CREDIT, DEBIT
+  amount      Decimal
+  source      String // APPOINTMENT, REFUND, TOPUP
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@map("wallet_transactions")
+}
+
+model PatientPrescription {
+  id            String             @id @default(uuid())
+  patientId     String             @map("patient_id")
+  doctorId      String?            @map("doctor_id")
+  appointmentId String?            @map("appointment_id")
+  type          String // STRUCTURED, FILE
+  fileUrl       String?            @map("file_url")
+  notes         String?
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  items         PrescriptionItem[]
+  patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor        DoctorMaster?      @relation(fields: [doctorId], references: [id])
+  appointment   Appointment?       @relation(fields: [appointmentId], references: [id])
+
+  @@index([patientId])
+  @@map("patient_prescriptions")
+}
+
+model PrescriptionItem {
+  id             String              @id @default(uuid())
+  prescriptionId String              @map("prescription_id")
+  medicineName   String              @map("medicine_name")
+  dosage         String
+  duration       String
+  instructions   String?
+  createdAt      DateTime            @default(now()) @map("created_at")
+  prescription   PatientPrescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+  @@map("prescription_items")
 }
 
 model Review {
@@ -359,24 +441,29 @@ model Review {
 }
 
 model Appointment {
-  id        String            @id @default(uuid())
-  patientId String            @map("patient_id")
-  doctorId  String            @map("doctor_id")
-  date      DateTime          @db.Date
-  slot      String
-  status    AppointmentStatus @default(BOOKED)
-  notes     String?
-  createdAt DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
-  deletedAt DateTime?         @map("deleted_at")
-  doctor    DoctorMaster      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  payment   Payment?
-  visit     Visit?
+  id                  String                @id @default(uuid())
+  patientId           String                @map("patient_id")
+  doctorId            String                @map("doctor_id")
+  hospitalId          String?               @map("hospital_id")
+  patientGlobalId     String?               @map("patient_global_id")
+  date                DateTime              @db.Date
+  slot                String
+  slotTime            DateTime?             @map("slot_time")
+  idempotencyKey      String?               @unique @map("idempotency_key")
+  status              AppointmentStatus     @default(BOOKED)
+  notes               String?
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  deletedAt           DateTime?             @map("deleted_at")
+  doctor              DoctorMaster          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient             Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payment             Payment?
+  visit               Visit?
+  PatientPrescription PatientPrescription[]
 
+  @@unique([doctorId, date, slot])
   @@index([patientId])
   @@index([doctorId])
-  @@unique([doctorId, date, slot])
   @@map("appointments")
 }
 
@@ -641,32 +728,32 @@ model Agent {
 }
 
 model FamilyMember {
-  id         String   @id @default(uuid())
-  patientId  String   @map("patient_id")
+  id         String    @id @default(uuid())
+  patientId  String    @map("patient_id")
   name       String
   relation   String
   dob        DateTime? @db.Date
   gender     String?
-  bloodGroup String?  @map("blood_group")
-  createdAt  DateTime @default(now()) @map("created_at")
-  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bloodGroup String?   @map("blood_group")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  patient    Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([patientId])
   @@map("family_members")
 }
 
 model PatientMedicalHistory {
-  id              String   @id @default(uuid())
-  patientId       String   @unique @map("patient_id")
-  chronicDiseases String?  @map("chronic_diseases")
-  pastIllnesses   String?  @map("past_illnesses")
-  surgeries       String?
-  allergies       String?
-  drugAllergies   String?  @map("drug_allergies")
+  id               String   @id @default(uuid())
+  patientId        String   @unique @map("patient_id")
+  chronicDiseases  String?  @map("chronic_diseases")
+  pastIllnesses    String?  @map("past_illnesses")
+  surgeries        String?
+  allergies        String?
+  drugAllergies    String?  @map("drug_allergies")
   hospitalizations String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("patient_medical_history")
 }
@@ -717,31 +804,31 @@ model VaccinationRecord {
 }
 
 model PregnancyProfile {
-  id              String   @id @default(uuid())
-  patientId       String   @unique @map("patient_id")
-  lmp             DateTime? @db.Date
-  edd             DateTime? @db.Date
-  gestationalAge  Int?     @map("gestational_age")
-  highRisk        Boolean  @default(false) @map("high_risk")
-  ancVisits       Int?     @map("anc_visits")
-  dangerSigns     String?  @map("danger_signs")
-  deliveryPlan    String?  @map("delivery_plan")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid())
+  patientId      String    @unique @map("patient_id")
+  lmp            DateTime? @db.Date
+  edd            DateTime? @db.Date
+  gestationalAge Int?      @map("gestational_age")
+  highRisk       Boolean   @default(false) @map("high_risk")
+  ancVisits      Int?      @map("anc_visits")
+  dangerSigns    String?   @map("danger_signs")
+  deliveryPlan   String?   @map("delivery_plan")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("pregnancy_profiles")
 }
 
 model InsuranceDetail {
-  id              String    @id @default(uuid())
-  patientId       String    @map("patient_id")
-  company         String
-  policyNumber    String?   @map("policy_number")
-  coverageAmount  Decimal?  @map("coverage_amount")
-  expiryDate      DateTime? @map("expiry_date") @db.Date
-  createdAt       DateTime  @default(now()) @map("created_at")
-  patient         Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid())
+  patientId      String    @map("patient_id")
+  company        String
+  policyNumber   String?   @map("policy_number")
+  coverageAmount Decimal?  @map("coverage_amount")
+  expiryDate     DateTime? @map("expiry_date") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at")
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([patientId])
   @@map("insurance_details")
@@ -757,6 +844,117 @@ model OtpCode {
   @@map("otp_codes")
 }
 
+<<<<<<< HEAD
+=======
+// ============================================================
+// INFRASTRUCTURE MODELS (Smart Slot Engine + Operational Layer)
+// ============================================================
+
+model DoctorSlot {
+  id        String   @id @default(uuid())
+  doctorId  String   @map("doctor_id")
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+  capacity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([doctorId, startTime])
+  @@index([doctorId, startTime])
+  @@map("doctor_slots")
+}
+
+model DoctorSchedule {
+  id                  String   @id @default(uuid())
+  doctorId            String   @map("doctor_id")
+  dayOfWeek           Int      @map("day_of_week")
+  startTime           String   @map("start_time")
+  endTime             String   @map("end_time")
+  slotDurationMinutes Int      @default(30) @map("slot_duration_minutes")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@unique([doctorId, dayOfWeek, startTime])
+  @@index([doctorId])
+  @@map("doctor_schedules")
+}
+
+model DoctorSlotBlock {
+  id         String   @id @default(uuid())
+  doctorId   String   @map("doctor_id")
+  blockStart DateTime @map("block_start")
+  blockEnd   DateTime @map("block_end")
+  reason     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([doctorId, blockStart])
+  @@map("doctor_slot_blocks")
+}
+
+model OutboxEvent {
+  id          String    @id @default(uuid())
+  eventType   String    @map("event_type")
+  payload     Json
+  processed   Boolean   @default(false)
+  processedAt DateTime? @map("processed_at")
+  errorCount  Int       @default(0) @map("error_count")
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([processed, createdAt])
+  @@map("outbox_events")
+}
+
+model EventLog {
+  id         String   @id @default(uuid())
+  eventType  String   @map("event_type")
+  payload    Json
+  executedBy String?  @map("executed_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("event_logs")
+}
+
+model WaitlistEntry {
+  id              String   @id @default(uuid())
+  hospitalId      String?  @map("hospital_id")
+  doctorId        String   @map("doctor_id")
+  patientGlobalId String   @map("patient_global_id")
+  priority        Int      @default(1)
+  status          String   @default("waiting")
+  identityHash    String?  @map("identity_hash")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_entries")
+}
+
+model PatientConsent {
+  id              String   @id @default(uuid())
+  patientGlobalId String   @map("patient_global_id")
+  hospitalId      String   @map("hospital_id")
+  consentType     String?  @map("consent_type")
+  version         Int      @default(1)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("patient_consents")
+}
+
+model OverrideLog {
+  id           String   @id @default(uuid())
+  executorId   String?  @map("executor_id")
+  actionType   String   @map("action_type")
+  targetEntity String?  @map("target_entity")
+  targetId     String?  @map("target_id")
+  reason       String
+  approvedBy   String?  @map("approved_by")
+  oldState     Json?    @map("old_state")
+  newState     Json?    @map("new_state")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("override_logs")
+}
+
+>>>>>>> e2d473f (feat(schema): add PatientAddress, Wallet, WalletTransaction, PatientPrescription, PrescriptionItem models)
 enum HospitalStatus {
   PENDING
   APPROVED
