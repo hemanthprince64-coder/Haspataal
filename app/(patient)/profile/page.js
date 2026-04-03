@@ -4,15 +4,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { patientLogout, getPatientFullProfile } from "@/app/actions";
 
-const sections = [
-    { name: "Medical History", href: "/medical-history", icon: "🏥", desc: "Conditions & allergies", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-    { name: "Medications", href: "/medications", icon: "💊", desc: "Current medicines", color: "bg-violet-50 text-violet-600 border-violet-200" },
-    { name: "Vitals Tracker", href: "/vitals", icon: "❤️", desc: "BP, weight, sugar", color: "bg-red-50 text-red-600 border-red-200" },
-    { name: "My Records", href: "/records", icon: "📋", desc: "Prescriptions & reports", color: "bg-amber-50 text-amber-600 border-amber-200" },
-    { name: "Vaccinations", href: "/vaccinations", icon: "💉", desc: "Vaccine records", color: "bg-teal-50 text-teal-600 border-teal-200" },
-    { name: "Pregnancy Tracker", href: "/tracker", icon: "🤰", desc: "Maternal health", color: "bg-pink-50 text-pink-600 border-pink-200" },
-    { name: "Insurance", href: "/insurance", icon: "🛡️", desc: "Policy details", color: "bg-indigo-50 text-indigo-600 border-indigo-200" },
-    { name: "MedChat AI", href: "/medchat", icon: "🤖", desc: "AI health assistant", color: "bg-cyan-50 text-cyan-600 border-cyan-200" },
+const actionSections = [
+    { name: "Book Appointment", href: "/search", icon: "🔍", desc: "Find doctors & hospitals" },
+    { name: "My Appointments", href: "/appointments", icon: "📅", desc: "Upcoming, Past, Waitlist" },
+    { name: "Emergency Help", href: "/emergency", icon: "🚑", desc: "Ambulance & SOS" }
+];
+
+const clinicalSections = [
+    { name: "Medical History", href: "/medical-history", icon: "🏥", desc: "Conditions & allergies" },
+    { name: "Prescriptions", href: "/prescriptions", icon: "📄", desc: "Clinical & uploaded" },
+    { name: "Medications", href: "/medications", icon: "💊", desc: "Current medicines" },
+    { name: "Vitals Tracker", href: "/vitals", icon: "❤️", desc: "BP, weight, sugar" },
+    { name: "Test Reports", href: "/records", icon: "📋", desc: "Lab results & scans" },
+    { name: "Vaccinations", href: "/vaccinations", icon: "💉", desc: "Vaccine records" },
+    { name: "Pregnancy Tracker", href: "/tracker", icon: "🤰", desc: "Maternal health" },
+    { name: "Insurance", href: "/insurance", icon: "🛡️", desc: "Policy details" },
+    { name: "MedChat AI", href: "/medchat", icon: "🤖", desc: "AI health assistant" },
 ];
 
 export default function ProfilePage() {
@@ -30,9 +37,16 @@ export default function ProfilePage() {
         return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading profile...</div>;
     }
 
-    const { name, phone, nickname, profilePhotoUrl } = patient || {};
+    const { name, phone, nickname, profilePhotoUrl, wallet } = patient || {};
     const displayName = nickname || name || 'Patient';
     const displayPhone = phone || '—';
+    const walletBalance = wallet ? parseFloat(wallet.balance).toFixed(2) : '0.00';
+
+    const personalSections = [
+        { name: "Edit Profile", href: "/profile/edit", icon: "✏️", desc: "Personal & contact info" },
+        { name: "Saved Addresses", href: "/addresses", icon: "📍", desc: "Home / Work" },
+        { name: "Haspataal Wallet", href: "/wallet", icon: "💰", desc: `Balance: ₹${walletBalance}` }
+    ];
 
     return (
         <div className="py-4 space-y-8 animate-fade-in text-senior-base">
@@ -72,7 +86,63 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Section Grid — Compact Senior-Friendly Services */}
+            {/* Quick Actions (Top Priority) */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <h2 className="text-[#0D2B55] font-black uppercase tracking-widest text-xs opacity-60">
+                        Quick Actions
+                    </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {actionSections.map((s, i) => (
+                        <Link
+                            key={s.href}
+                            href={s.href}
+                            className="card-clinical card-clinical-hover p-4 flex flex-row md:flex-col items-center md:items-start gap-4 no-underline group"
+                        >
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                {s.icon}
+                            </div>
+                            <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="text-lg font-black text-[#0D2B55] group-hover:text-blue-600 transition-colors truncate">
+                                    {s.name}
+                                </div>
+                                <div className="text-xs text-slate-500 font-bold leading-tight truncate">{s.desc}</div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            {/* Personal Data */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <h2 className="text-[#0D2B55] font-black uppercase tracking-widest text-xs opacity-60">
+                        Personal Data
+                    </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {personalSections.map((s, i) => (
+                        <Link
+                            key={s.href}
+                            href={s.href}
+                            className="card-clinical card-clinical-hover p-4 flex flex-row md:flex-col items-center md:items-start gap-4 no-underline group"
+                        >
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                                {s.icon}
+                            </div>
+                            <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="text-lg font-black text-[#0D2B55] group-hover:text-blue-600 transition-colors truncate">
+                                    {s.name}
+                                </div>
+                                <div className="text-xs text-slate-500 font-bold leading-tight truncate">{s.desc}</div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            {/* Section Grid — Compact Clinical Services */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                     <h2 className="text-[#0D2B55] font-black uppercase tracking-widest text-xs opacity-60">
@@ -88,7 +158,7 @@ export default function ProfilePage() {
                     </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {sections.map((s, i) => (
+                    {clinicalSections.map((s, i) => (
                         <Link
                             key={s.href}
                             href={s.href}
