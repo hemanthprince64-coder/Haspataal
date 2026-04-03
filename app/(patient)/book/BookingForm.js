@@ -119,6 +119,14 @@ export default function BookingForm({ doctorId, hospitalId }) {
                     </div>
                 </div>
 
+                <div className="form-group border border-emerald-100 bg-emerald-50 p-4 rounded-xl">
+                    <label className="form-label flex items-center gap-3 cursor-pointer m-0">
+                        <input type="checkbox" name="payWithWallet" value="true" className="w-5 h-5 text-emerald-600 rounded" />
+                        <span className="font-bold text-emerald-800">Pay from Haspataal Wallet (₹500)</span>
+                    </label>
+                    <p className="text-xs text-emerald-600 mt-1 ml-8">Deducts ₹500 from Wallet and automatically confirms appointment.</p>
+                </div>
+
                 {state?.message && !state.success && (
                     <div className="alert alert-error">⚠️ {state.message}</div>
                 )}
