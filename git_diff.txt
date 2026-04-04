@@ -1,0 +1,2476 @@
+diff --git a/app/(agent)/agent/dashboard/page.js b/app/(agent)/agent/dashboard/page.js
+index f83f6e7..3e1189b 100644
+--- a/app/(agent)/agent/dashboard/page.js
++++ b/app/(agent)/agent/dashboard/page.js
+@@ -4,6 +4,8 @@ import { UserRole } from '@/types';
+ import Link from 'next/link';
+ import { redirect } from 'next/navigation';
+ 
++import AgentDashboardClient from "@/components/agent/AgentDashboardClient";
++
+ export default async function AgentDashboard() {
+     let user;
+     try {
+@@ -26,87 +28,5 @@ export default async function AgentDashboard() {
+         );
+     }
+ 
+-    const { hospitals, patients, stats } = await services.agent.getDashboardData(user.id);
+-
+-    return (
+-        <div className="page-enter" style={{ padding: '2rem' }}>
+-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+-                <div>
+-                    <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.25rem' }}>Partner Dashboard</h1>
+-                    <p style={{ color: 'var(--text-muted)' }}>Welcome back, {user.name}</p>
+-                </div>
+-            </div>
+-
+-            {/* Stats Grid */}
+-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+-                <div className="card">
+-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Hospitals Onboarded</div>
+-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary)' }}>{stats.totalHospitals}</div>
+-                </div>
+-                <div className="card">
+-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Approved Hospitals</div>
+-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--success)' }}>{stats.approvedHospitals}</div>
+-                </div>
+-                <div className="card">
+-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Patients Onboarded</div>
+-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--secondary)' }}>{stats.totalPatients}</div>
+-                </div>
+-            </div>
+-
+-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+-                {/* Hospitals List */}
+-                <div className="card">
+-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+-                        <h3 style={{ fontWeight: '700' }}>Onboarded Hospitals</h3>
+-                    </div>
+-
+-                    {hospitals.length === 0 ? (
+-                        <div className="empty-state" style={{ padding: '2rem 0' }}>
+-                            <div className="empty-state-icon" style={{ fontSize: '2rem' }}>🏥</div>
+-                            <p className="empty-state-text">No hospitals onboarded yet.</p>
+-                        </div>
+-                    ) : (
+-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+-                            {hospitals.map(h => (
+-                                <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px' }}>
+-                                    <div>
+-                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{h.legalName}</div>
+-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(h.createdAt).toLocaleDateString()}</div>
+-                                    </div>
+-                                    <span className={`badge badge-${h.verificationStatus === 'VERIFIED' ? 'success' : h.verificationStatus === 'REJECTED' ? 'danger' : 'warning'}`}>
+-                                        {h.verificationStatus}
+-                                    </span>
+-                                </div>
+-                            ))}
+-                        </div>
+-                    )}
+-                </div>
+-
+-                {/* Patients List */}
+-                <div className="card">
+-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+-                        <h3 style={{ fontWeight: '700' }}>Onboarded Patients</h3>
+-                    </div>
+-
+-                    {patients.length === 0 ? (
+-                        <div className="empty-state" style={{ padding: '2rem 0' }}>
+-                            <div className="empty-state-icon" style={{ fontSize: '2rem' }}>👥</div>
+-                            <p className="empty-state-text">No patients onboarded yet.</p>
+-                        </div>
+-                    ) : (
+-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+-                            {patients.map(p => (
+-                                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px' }}>
+-                                    <div>
+-                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{p.name}</div>
+-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(p.createdAt).toLocaleDateString()}</div>
+-                                    </div>
+-                                </div>
+-                            ))}
+-                        </div>
+-                    )}
+-                </div>
+-            </div>
+-        </div>
+-    );
++    return <AgentDashboardClient user={user} />;
+ }
+diff --git a/app/(hospital)/hospital/dashboard/page.js b/app/(hospital)/hospital/dashboard/page.js
+index 66c351f..4cad743 100644
+--- a/app/(hospital)/hospital/dashboard/page.js
++++ b/app/(hospital)/hospital/dashboard/page.js
+@@ -3,151 +3,11 @@ import { requireRole } from "@/lib/auth/requireRole";
+ import { UserRole } from "@/types";
+ import Link from "next/link";
+ 
++import HospitalDashboardClient from "@/components/hospital/HospitalDashboardClient";
++
+ export default async function DashboardPage() {
+     const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
+-
+-    const stats = await services.hospital.getStats(user.hospitalId);
+     const hospital = await services.platform.getHospitalById(user.hospitalId);
+ 
+-    // getVisits is now completely async and awaited.
+-    const allVisits = await services.hospital.getVisits(user.hospitalId);
+-    const recentVisits = allVisits.slice(0, 5);
+-
+-    const statCards = [
+-        { label: "Today's Visits", value: stats.todayVisits, icon: "📅", color: "#0284c7", bg: "#e0f2fe" },
+-        { label: "Total Patients", value: stats.totalPatients, icon: "👥", color: "#0d9488", bg: "#ccfbf1" },
+-        { label: "Total Doctors", value: stats.totalDoctors, icon: "👨‍⚕️", color: "#7c3aed", bg: "#ede9fe" },
+-        { label: "Scheduled", value: stats.scheduledVisits, icon: "⏰", color: "#ea580c", bg: "#fff7ed" },
+-        { label: "Total Visits", value: stats.totalVisits, icon: "📊", color: "#0369a1", bg: "#f0f9ff" },
+-        { label: "Completed", value: stats.completedVisits, icon: "✅", color: "#15803d", bg: "#f0fdf4" },
+-    ];
+-
+-    return (
+-        <div className="page-enter">
+-            <div style={{ marginBottom: "2rem" }}>
+-                <h1 style={{ fontSize: "1.75rem", fontWeight: "800", marginBottom: "0.25rem" }}>Dashboard</h1>
+-                <p style={{ color: "var(--text-muted)" }}>Welcome back, {user.name} • {hospital?.name}</p>
+-            </div>
+-
+-            {/* Stats Grid */}
+-            <div style={{
+-                display: "grid",
+-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+-                gap: "1.5rem",
+-                marginBottom: "3rem"
+-            }}>
+-                {statCards.map(s => (
+-                    <div key={s.label} className="card card-interactive" style={{
+-                        display: "flex",
+-                        alignItems: "center",
+-                        gap: "1.25rem",
+-                        padding: "1.5rem",
+-                        borderLeft: `4px solid ${s.color}`
+-                    }}>
+-                        <div style={{
+-                            width: "56px",
+-                            height: "56px",
+-                            borderRadius: "14px",
+-                            background: s.bg,
+-                            display: "flex",
+-                            alignItems: "center",
+-                            justifyContent: "center",
+-                            fontSize: "1.75rem",
+-                            flexShrink: 0,
+-                            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.05)"
+-                        }}>
+-                            {s.icon}
+-                        </div>
+-                        <div style={{ flex: 1 }}>
+-                            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
+-                                {s.label}
+-                            </div>
+-                            <div style={{ fontSize: "1.75rem", fontWeight: "800", color: "var(--text-main)", lineHeight: 1 }}>
+-                                {s.value}
+-                            </div>
+-                        </div>
+-                    </div>
+-                ))}
+-            </div>
+-
+-            {/* Quick Actions */}
+-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "2rem" }}>
+-                <Link href="/hospital/dashboard/billing" className="btn btn-primary">
+-                    ➕ New OPD Visit
+-                </Link>
+-                <Link href="/hospital/dashboard/reports" className="btn btn-outline">
+-                    📊 View Reports
+-                </Link>
+-                {user.role === 'HOSPITAL_ADMIN' && (
+-                    <Link href="/hospital/dashboard/doctors" className="btn btn-outline">
+-                        👨‍⚕️ Manage Doctors
+-                    </Link>
+-                )}
+-            </div>
+-
+-            {/* Recent Visits */}
+-            <div className="card" style={{ padding: "0", overflow: "hidden", marginBottom: "2rem" }}>
+-                <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+-                    <h3 style={{ fontWeight: "700" }}>Recent Visits</h3>
+-                    <Link href="/hospital/dashboard/reports" style={{ color: "var(--primary)", fontSize: "0.85rem", fontWeight: "600" }}>
+-                        View All →
+-                    </Link>
+-                </div>
+-                {recentVisits.length === 0 ? (
+-                    <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
+-                        <p>No visits yet. Create your first OPD visit.</p>
+-                    </div>
+-                ) : (
+-                    <div style={{ overflowX: "auto" }}>
+-                        <table className="table">
+-                            <thead>
+-                                <tr>
+-                                    <th>Date</th>
+-                                    <th>Patient</th>
+-                                    <th>Doctor</th>
+-                                    <th>Status</th>
+-                                </tr>
+-                            </thead>
+-                            <tbody>
+-                                {recentVisits.map(v => {
+-                                    return (
+-                                        <tr key={v.id}>
+-                                            <td>{new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+-                                            <td>{v.patientId}</td>
+-                                            <td>{v.doctorId}</td>
+-                                            <td>
+-                                                <span className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}>
+-                                                    {v.status}
+-                                                </span>
+-                                            </td>
+-                                        </tr>
+-                                    );
+-                                })}
+-                            </tbody>
+-                        </table>
+-                    </div>
+-                )}
+-            </div>
+-
+-            {/* Revenue Placeholder */}
+-            <div style={{ marginBottom: "3rem" }}>
+-                <h2 style={{ fontSize: "1.25rem", fontWeight: "700", marginBottom: "1rem" }}>Earnings & Revenue</h2>
+-                <div className="card" style={{
+-                    height: "300px",
+-                    display: "flex",
+-                    alignItems: "center",
+-                    justifyContent: "center",
+-                    background: "var(--bg-card)",
+-                    backgroundImage: "radial-gradient(var(--border) 1px, transparent 1px)",
+-                    backgroundSize: "20px 20px"
+-                }}>
+-                    <div style={{ textAlign: "center" }}>
+-                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>💰</div>
+-                        <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text-main)" }}>Revenue Dashboard Coming Soon</h3>
+-                        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Track OPD income, platform fees, and settlements here.</p>
+-                    </div>
+-                </div>
+-            </div>
+-        </div>
+-    );
++    return <HospitalDashboardClient user={user} initialHospital={hospital} />;
+ }
+diff --git a/app/(hospital)/lab/dashboard/page.js b/app/(hospital)/lab/dashboard/page.js
+index ae05211..5a63713 100644
+--- a/app/(hospital)/lab/dashboard/page.js
++++ b/app/(hospital)/lab/dashboard/page.js
+@@ -4,6 +4,8 @@ import { UserRole } from '@/types';
+ import Link from 'next/link';
+ import { redirect } from 'next/navigation';
+ 
++import LabDashboardClient from "@/components/hospital/LabDashboardClient";
++
+ export default async function LabDashboard() {
+     let user;
+     try {
+@@ -43,89 +45,5 @@ export default async function LabDashboard() {
+         );
+     }
+ 
+-    const catalog = await services.hospital.getDiagnosticCatalog(user.hospitalId);
+-    const orders = await services.hospital.getLabOrders(user.hospitalId);
+-
+-    return (
+-        <div className="page-enter" style={{ padding: '2rem' }}>
+-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+-                <div>
+-                    <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.25rem' }}>{hospital.legalName} Dashboard</h1>
+-                    <p style={{ color: 'var(--text-muted)' }}>Diagnostics Management Portal</p>
+-                </div>
+-            </div>
+-
+-            {/* Stats Grid */}
+-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+-                <div className="card">
+-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Lab Orders</div>
+-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary)' }}>{orders.length}</div>
+-                </div>
+-                <div className="card">
+-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Catalog Items</div>
+-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--secondary)' }}>{catalog.length}</div>
+-                </div>
+-                <div className="card">
+-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Active Patients</div>
+-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--accent)' }}>{new Set(orders.map(o => o.patientId)).size}</div>
+-                </div>
+-            </div>
+-
+-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
+-                {/* Recent Orders List */}
+-                <div className="card">
+-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+-                        <h3 style={{ fontWeight: '700' }}>Recent Test Orders</h3>
+-                    </div>
+-
+-                    {orders.length === 0 ? (
+-                        <div className="empty-state" style={{ padding: '2rem 0' }}>
+-                            <div className="empty-state-icon" style={{ fontSize: '2rem' }}>🧪</div>
+-                            <p className="empty-state-text">No test orders received yet.</p>
+-                        </div>
+-                    ) : (
+-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+-                            {orders.slice(0, 10).map(o => (
+-                                <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px' }}>
+-                                    <div>
+-                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Order #{o.id.substring(0, 8)}</div>
+-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Patient: {o.patient?.name || 'Unknown'}</div>
+-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status: {o.status} | Total: ₹{o.totalAmount}</div>
+-                                    </div>
+-                                    <button className="btn btn-sm btn-outline">View Details</button>
+-                                </div>
+-                            ))}
+-                        </div>
+-                    )}
+-                </div>
+-
+-                {/* Catalog Overview List */}
+-                <div className="card">
+-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+-                        <h3 style={{ fontWeight: '700' }}>Test Catalog Overview</h3>
+-                        <button className="btn btn-sm btn-primary">Manage</button>
+-                    </div>
+-
+-                    {catalog.length === 0 ? (
+-                        <div className="empty-state" style={{ padding: '2rem 0' }}>
+-                            <div className="empty-state-icon" style={{ fontSize: '2rem' }}>📋</div>
+-                            <p className="empty-state-text">Catalog is empty. Add tests to start receiving orders.</p>
+-                        </div>
+-                    ) : (
+-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+-                            {catalog.map(c => (
+-                                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px' }}>
+-                                    <div>
+-                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{c.category?.name || 'Test Item'}</div>
+-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Available</div>
+-                                    </div>
+-                                    <div style={{ fontWeight: '700', color: 'var(--primary)' }}>₹{c.price}</div>
+-                                </div>
+-                            ))}
+-                        </div>
+-                    )}
+-                </div>
+-            </div>
+-        </div>
+-    );
++    return <LabDashboardClient hospital={hospital} user={user} />;
+ }
+diff --git a/app/(patient)/appointments/page.js b/app/(patient)/appointments/page.js
+index 710745b..3357027 100644
+--- a/app/(patient)/appointments/page.js
++++ b/app/(patient)/appointments/page.js
+@@ -3,8 +3,11 @@
+ import { useEffect, useState } from "react";
+ import { getMyAppointmentsAction, cancelAppointmentAction } from "@/app/actions";
+ import Link from "next/link";
++import { Skeleton } from 'boneyard-js/react';
+ import { format } from "date-fns";
+ 
++import AppointmentsList from "@/components/patient/AppointmentsList";
++
+ export default function AppointmentsPage() {
+     const [appointments, setAppointments] = useState([]);
+     const [loading, setLoading] = useState(true);
+@@ -23,8 +26,6 @@ export default function AppointmentsPage() {
+         setLoading(false);
+     }
+ 
+-    if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse font-bold">Loading appointments...</div>;
+-
+     const handleCancel = async (visitId) => {
+         if (!window.confirm("Are you sure you want to cancel? (Cannot cancel within 6 hours of appointment)")) return;
+         setLoading(true);
+@@ -77,79 +78,9 @@ export default function AppointmentsPage() {
+             </div>
+ 
+             <div className="space-y-4">
+-                {displayList.length === 0 ? (
+-                    <div className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-12 text-center">
+-                        <div className="text-5xl mb-4 opacity-50">🏥</div>
+-                        <h3 className="text-xl font-black text-[#0D2B55] mb-2">No {tab} appointments found</h3>
+-                        <p className="text-slate-500 font-medium">When you book a consultation, it will appear here.</p>
+-                    </div>
+-                ) : (
+-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                        {displayList.map(visit => {
+-                            const dateObj = new Date(visit.date);
+-                            const isUpcoming = dateObj >= now;
+-                            let statusColor = "bg-slate-100 text-slate-700";
+-                            if (visit.status === 'CONFIRMED' || visit.status === 'COMPLETED') statusColor = "bg-emerald-100 text-emerald-700";
+-                            else if (visit.status === 'CANCELLED' || visit.status === 'NO_SHOW') statusColor = "bg-red-100 text-red-700";
+-                            else if (visit.status === 'AWAITING_PAYMENT') statusColor = "bg-amber-100 text-amber-700";
+-
+-                            return (
+-                                <div key={visit.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition">
+-                                    <div className="flex justify-between items-start mb-4 gap-4">
+-                                        <div className="flex-1 min-w-0">
+-                                            <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 bg-blue-50 inline-block px-2 py-0.5 rounded-full">{visit.specialization}</div>
+-                                            <div className="font-black text-xl text-[#0D2B55] leading-tight truncate">Dr. {visit.doctorName}</div>
+-                                            <div className="text-xs font-bold text-slate-500 mt-0.5">Patient: {visit.patientName}</div>
+-                                            
+-                                            <div className="mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+-                                                Booked: {visit.createdAt ? format(new Date(visit.createdAt), "dd MMM yyyy, hh:mm a") : 'N/A'}
+-                                            </div>
+-                                            
+-                                            <div className="mt-1">
+-                                                {visit.amountPaid > 0 ? (
+-                                                    <span className="text-xs font-black text-emerald-600">✓ Paid ₹{visit.amountPaid}</span>
+-                                                ) : (
+-                                                    <span className="text-xs font-black text-amber-500">Pending ₹500</span>
+-                                                )}
+-                                            </div>
+-                                        </div>
+-                                        <div className={`px-3 py-1 rounded-lg text-xs font-black tracking-widest uppercase ${statusColor}`}>
+-                                            {visit.status.replace('_', ' ')}
+-                                        </div>
+-                                    </div>
+-                                    
+-                                    <div className="grid grid-cols-2 gap-4 mb-6">
+-                                        <div className="bg-slate-50 p-4 rounded-[1.25rem] border border-slate-100">
+-                                            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Date</div>
+-                                            <div className="font-bold text-[#0D2B55]">{format(dateObj, "MMM d, yyyy")}</div>
+-                                        </div>
+-                                        <div className="bg-slate-50 p-4 rounded-[1.25rem] border border-slate-100">
+-                                            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Time</div>
+-                                            <div className="font-bold text-[#0D2B55]">
+-                                                {visit.slot ? (() => {
+-                                                    if (!visit.slot.includes(':')) return visit.slot;
+-                                                    const [hourStr, minStr] = visit.slot.split(':');
+-                                                    const hour = parseInt(hourStr);
+-                                                    if (isNaN(hour)) return visit.slot;
+-                                                    const ampm = hour >= 12 ? 'PM' : 'AM';
+-                                                    const hour12 = hour % 12 || 12;
+-                                                    return `${hour12}:${minStr} ${ampm}`;
+-                                                })() : 'TBD'}
+-                                            </div>
+-                                        </div>
+-                                    </div>
+-
+-                                    {tab === 'upcoming' && (
+-                                        <div className="flex gap-3">
+-                                            <button onClick={() => handleCancel(visit.id)} className="flex-1 text-red-600 bg-red-50 hover:bg-red-100 py-3 rounded-xl font-bold transition text-sm">Cancel</button>
+-                                            <Link href="/search" className="flex-1 text-slate-700 bg-slate-100 hover:bg-slate-200 py-3 rounded-xl font-bold transition text-sm text-center">Reschedule</Link>
+-                                        </div>
+-                                    )}
+-                                </div>
+-                            )
+-                        })}
+-                    </div>
+-                )}
++                <Skeleton name="appointments-list" loading={loading}>
++                    <AppointmentsList appointments={displayList} tab={tab} now={now} />
++                </Skeleton>
+             </div>
+         </div>
+     );
+diff --git a/app/(patient)/book/BookingForm.js b/app/(patient)/book/BookingForm.js
+index f74949a..fd6302e 100644
+--- a/app/(patient)/book/BookingForm.js
++++ b/app/(patient)/book/BookingForm.js
+@@ -16,6 +16,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
+     const [selectedDate, setSelectedDate] = useState(today);
+     const [slots, setSlots] = useState([]);
+     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
++    const [selectedSlot, setSelectedSlot] = useState('');
+ 
+     useEffect(() => {
+         let isMounted = true;
+@@ -25,7 +26,13 @@ export default function BookingForm({ doctorId, hospitalId }) {
+             setIsLoadingSlots(true);
+             try {
+                 const available = await getAvailableSlotsAction(doctorId, selectedDate);
+-                if (isMounted) setSlots(available);
++                if (isMounted) {
++                    setSlots(available);
++                    // Clear selection if the current selected slot is no longer available
++                    if (selectedSlot && !available.find(s => s.time === selectedSlot && s.available)) {
++                        setSelectedSlot('');
++                    }
++                }
+             } catch (error) {
+                 console.error('Failed to load slots', error);
+             } finally {
+@@ -54,13 +61,13 @@ export default function BookingForm({ doctorId, hospitalId }) {
+     }
+ 
+     return (
+-        <div className="card">
++        <div className="card shadow-xl border-t-4 border-blue-600">
+             <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                 <input type="hidden" name="doctorId" value={doctorId || ''} />
+                 <input type="hidden" name="hospitalId" value={hospitalId || ''} />
+ 
+                 <div className="form-group">
+-                    <label className="form-label">📅 Select Date</label>
++                    <label className="form-label font-bold text-slate-700">📅 Select Date</label>
+                     <input
+                         name="date"
+                         type="date"
+@@ -68,52 +75,70 @@ export default function BookingForm({ doctorId, hospitalId }) {
+                         min={today}
+                         value={selectedDate}
+                         onChange={(e) => setSelectedDate(e.target.value)}
+-                        className="form-input"
++                        className="form-input focus:ring-2 focus:ring-blue-500 transition-all"
+                     />
+                 </div>
+ 
+                 <div className="form-group">
+-                    <label className="form-label">
+-                        🕐 Select Time Slot
+-                        {isLoadingSlots && <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--primary)' }}>Loading...</span>}
++                    <label className="form-label font-bold text-slate-700 flex justify-between items-center">
++                        <span>🕐 Select Time Slot</span>
++                        {isLoadingSlots && <span className="text-xs text-blue-600 animate-pulse">Checking availability...</span>}
+                     </label>
+-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
++                    
++                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-2">
+                         {slots.length > 0 ? slots.map(slot => {
+                             const isAvailable = slot.available;
++                            const isSelected = selectedSlot === slot.time;
++                            
+                             return (
+-                                <label key={slot.time} style={{
+-                                    border: `1.5px solid ${isAvailable ? 'var(--border)' : '#e5e7eb'}`,
+-                                    background: isAvailable ? 'transparent' : '#f9fafb',
+-                                    padding: '0.75rem',
+-                                    borderRadius: 'var(--radius)',
+-                                    textAlign: 'center',
+-                                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+-                                    fontSize: '0.85rem',
+-                                    fontWeight: '500',
+-                                    transition: 'all 0.15s',
+-                                    opacity: isAvailable ? 1 : 0.5,
+-                                    position: 'relative'
+-                                }}>
++                                <label 
++                                    key={slot.time} 
++                                    className={`
++                                        relative flex flex-row items-baseline justify-center p-3 gap-1 rounded-2xl border-2 transition-all duration-200 cursor-pointer
++                                        ${isAvailable 
++                                            ? isSelected 
++                                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg ring-2 ring-blue-200 scale-105 z-10' 
++                                                : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:bg-blue-50'
++                                            : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed opacity-60'}
++                                    `}
++                                >
+                                     <input
+                                         type="radio"
+                                         name="slot"
+                                         value={slot.time}
+                                         required
+                                         disabled={!isAvailable}
+-                                        style={{ display: 'none' }}
++                                        checked={isSelected}
++                                        onChange={() => setSelectedSlot(slot.time)}
++                                        className="sr-only"
+                                     />
+-                                    {/* Formatting HH:mm for simple AM/PM display */}
+-                                    {parseInt(slot.time.split(':')[0]) > 12
+-                                        ? `${parseInt(slot.time.split(':')[0]) - 12}:${slot.time.split(':')[1]} PM`
+-                                        : parseInt(slot.time.split(':')[0]) === 12
+-                                            ? `12:${slot.time.split(':')[1]} PM`
+-                                            : `${parseInt(slot.time.split(':')[0])}:${slot.time.split(':')[1]} AM`
+-                                    }
++                                    
++                                    <span className="text-lg font-black leading-none">
++                                        {parseInt(slot.time.split(':')[0]) > 12
++                                            ? `${parseInt(slot.time.split(':')[0]) - 12}:${slot.time.split(':')[1]}`
++                                            : parseInt(slot.time.split(':')[0]) === 0
++                                                ? `12:${slot.time.split(':')[1]}`
++                                                : `${parseInt(slot.time.split(':')[0])}:${slot.time.split(':')[1]}`
++                                        }
++                                    </span>
++                                    <span className={`text-[10px] font-bold uppercase tracking-tighter ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
++                                        {parseInt(slot.time.split(':')[0]) >= 12 ? 'PM' : 'AM'}
++                                    </span>
++
++                                    {isSelected && (
++                                        <div className="absolute -top-1.5 -right-1.5 bg-white text-blue-600 rounded-full p-0.5 shadow-md">
++                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
++                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
++                                            </svg>
++                                        </div>
++                                    )}
+                                 </label>
+                             );
+                         }) : !isLoadingSlots && (
+-                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>
+-                                No slots available for this date.
++                            <div className="col-span-full bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center text-slate-500">
++                                <p className="text-4xl mb-2">😴</p>
++                                <p className="font-bold">No slots available</p>
++                                <p className="text-sm">Try selecting a different date.</p>
+                             </div>
+                         )}
+                     </div>
+diff --git a/app/(patient)/book/page.js b/app/(patient)/book/page.js
+index 071fd30..0556694 100644
+--- a/app/(patient)/book/page.js
++++ b/app/(patient)/book/page.js
+@@ -6,8 +6,10 @@ export default async function BookingPage({ searchParams }) {
+     const doctorId = params.doctorId;
+     const hospitalId = params.hospitalId;
+ 
+-    const doctor = doctorId ? services.platform.getDoctorById(doctorId) : null;
+-    const hospital = hospitalId ? services.platform.getHospitalById(hospitalId) : null;
++    const [doctor, hospital] = await Promise.all([
++        doctorId ? services.platform.getDoctorById(doctorId) : Promise.resolve(null),
++        hospitalId ? services.platform.getHospitalById(hospitalId) : Promise.resolve(null)
++    ]);
+ 
+     if (!doctor || !hospital) {
+         return (
+@@ -48,14 +50,18 @@ export default async function BookingPage({ searchParams }) {
+                     👨‍⚕️
+                 </div>
+                 <div style={{ flex: 1 }}>
+-                    <h3 style={{ fontWeight: "700", fontSize: "1.1rem", marginBottom: "0.25rem" }}>{doctor.name}</h3>
+-                    <span className="badge badge-primary">{doctor.speciality}</span>
++                    <h3 style={{ fontWeight: "700", fontSize: "1.1rem", marginBottom: "0.25rem" }}>
++                        {doctor.fullName || doctor.name || 'Doctor'}
++                    </h3>
++                    <span className="badge badge-primary">
++                        {doctor.affiliations?.find(a => a.hospitalId === hospitalId)?.department || 'General Physician'}
++                    </span>
+                     <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "0.5rem" }}>
+-                        🏥 {hospital.name} • 📍 {hospital.area}, {hospital.city}
++                        🏥 {hospital.legalName || hospital.displayName || 'Hospital'} • 📍 {hospital.addressLine1 || hospital.area || 'Location'}, {hospital.city}
+                     </p>
+                 </div>
+                 <div style={{ textAlign: "right" }}>
+-                    <div style={{ fontWeight: "700", fontSize: "1.3rem", color: "var(--accent)" }}>₹{doctor.fee}</div>
++                    <div style={{ fontWeight: "700", fontSize: "1.3rem", color: "var(--accent)" }}>₹{doctor.fee || hospital.consultationFee || 500}</div>
+                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>consultation</div>
+                 </div>
+             </div>
+diff --git a/app/(patient)/layout.js b/app/(patient)/layout.js
+index 1ddd106..58207cf 100644
+--- a/app/(patient)/layout.js
++++ b/app/(patient)/layout.js
+@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
+ import BottomNav from "./components/BottomNav";
+ import Sidebar from "./components/Sidebar";
+ import { getPatientFullProfile } from "@/app/actions";
++import "@/bones/registry";
+ 
+ export default function PatientLayout({ children }) {
+     const pathname = usePathname() || "";
+@@ -41,6 +42,7 @@ export default function PatientLayout({ children }) {
+                             className="text-slate-600 hover:text-blue-600 hover:bg-blue-50 p-3 rounded-2xl transition-all duration-200 focus-ring"
+                             onClick={() => setIsSidebarOpen(true)}
+                             aria-label="Open menu"
++                            suppressHydrationWarning
+                         >
+                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+diff --git a/app/(patient)/medications/page.js b/app/(patient)/medications/page.js
+index 43106be..612459d 100644
+--- a/app/(patient)/medications/page.js
++++ b/app/(patient)/medications/page.js
+@@ -4,6 +4,9 @@ import { useActionState, useEffect, useState } from 'react';
+ import { addMedicationAction, deleteMedicationAction } from '@/app/actions';
+ import Link from 'next/link';
+ 
++import { Skeleton } from 'boneyard-js/react';
++import MedicationsList from "@/components/patient/MedicationsList";
++
+ const initialState = { message: '', success: false };
+ 
+ export default function MedicationsPage() {
+@@ -21,10 +24,6 @@ export default function MedicationsPage() {
+         });
+     }, [addState]);
+ 
+-    if (loading) {
+-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading medications...</div>;
+-    }
+-
+     return (
+         <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
+             <div className="flex items-center justify-between">
+@@ -95,32 +94,12 @@ export default function MedicationsPage() {
+                 </form>
+             )}
+ 
+-            {medications.length === 0 ? (
+-                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+-                    <div className="text-4xl mb-3">💊</div>
+-                    <p className="text-slate-500 text-sm">Your medications will appear here after you add them.</p>
+-                    <p className="text-slate-400 text-xs mt-1">Click "+ Add" to record your first medication.</p>
+-                </div>
+-            ) : (
+-                <div className="space-y-3">
+-                    <h3 className="text-sm font-bold text-slate-800 px-1">Current Medications</h3>
+-                    {medications.map((med) => (
+-                        <div key={med.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
+-                            <div>
+-                                <h4 className="font-bold text-slate-800">{med.drugName}</h4>
+-                                <p className="text-sm text-slate-500">{med.dose} • {med.frequency}</p>
+-                                <p className="text-xs text-slate-400 mt-1">Start: {new Date(med.startDate).toLocaleDateString()}</p>
+-                            </div>
+-                            <form action={deleteMedicationAction}>
+-                                <input type="hidden" name="id" value={med.id} />
+-                                <button type="submit" className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors tooltip" aria-label="Delete">
+-                                    ✕
+-                                </button>
+-                            </form>
+-                        </div>
+-                    ))}
+-                </div>
+-            )}
++            <div className="space-y-3">
++                <h3 className="text-sm font-bold text-slate-800 px-1">Current Medications</h3>
++                <Skeleton name="medications-list" loading={loading}>
++                    <MedicationsList medications={medications} />
++                </Skeleton>
++            </div>
+         </div>
+     );
+ }
+diff --git a/app/(patient)/prescriptions/page.js b/app/(patient)/prescriptions/page.js
+index 276cc2f..7285bde 100644
+--- a/app/(patient)/prescriptions/page.js
++++ b/app/(patient)/prescriptions/page.js
+@@ -5,6 +5,9 @@ import { getPatientFullProfile, uploadPrescriptionAction } from "@/app/actions";
+ import Link from "next/link";
+ import { format } from "date-fns";
+ 
++import { Skeleton } from 'boneyard-js/react';
++import PrescriptionsList from "@/components/patient/PrescriptionsList";
++
+ export default function PrescriptionsPage() {
+     const [patient, setPatient] = useState(null);
+     const [loading, setLoading] = useState(true);
+@@ -28,8 +31,6 @@ export default function PrescriptionsPage() {
+         if (!file) return;
+ 
+         setIsUploading(true);
+-        // Fake upload to simulate Supabase file upload for now, then create the mock URL
+-        // In real execution, this would call uploadProfilePhoto equivalent for prescriptions
+         setTimeout(async () => {
+              const fakeUrl = `https://example.com/mock-prescription-${Date.now()}.pdf`;
+              const formData = new FormData();
+@@ -42,8 +43,6 @@ export default function PrescriptionsPage() {
+         }, 1500);
+     };
+ 
+-    if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse font-bold">Loading prescriptions...</div>;
+-
+     const prescriptions = patient?.prescriptions || [];
+ 
+     return (
+@@ -75,65 +74,9 @@ export default function PrescriptionsPage() {
+                 </div>
+             )}
+ 
+-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+-                {prescriptions.length === 0 ? (
+-                    <div className="col-span-full border-2 border-dashed border-slate-200 p-12 text-center rounded-[2rem]">
+-                        <div className="text-5xl opacity-50 mb-4 inline-block">📄</div>
+-                        <h3 className="text-xl font-black text-[#0D2B55] mb-2">No prescriptions found</h3>
+-                        <p className="text-slate-500">Upload older prescriptions or book a consultation.</p>
+-                    </div>
+-                ) : (
+-                    prescriptions.map(pres => (
+-                        <div key={pres.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 hover:shadow-md transition">
+-                            <div className="flex justify-between items-start mb-4">
+-                                <div className="flex items-center gap-3">
+-                                    <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center text-2xl ${pres.type === 'FILE' ? 'bg-amber-50' : 'bg-blue-50'} ${pres.type === 'FILE' ? 'text-amber-500' : 'text-blue-500'}`}>
+-                                        {pres.type === 'FILE' ? '📎' : '💊'}
+-                                    </div>
+-                                    <div>
+-                                        <h3 className="font-black text-[#0D2B55] text-lg">
+-                                            {pres.type === 'FILE' ? 'Uploaded Copy' : 'Clinical e-Prescription'}
+-                                        </h3>
+-                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+-                                            {format(new Date(pres.createdAt), "dd MMM yyyy")}
+-                                        </p>
+-                                    </div>
+-                                </div>
+-                                <span className={`text-[10px] uppercase font-black px-2 py-1 rounded-full ${pres.type === 'FILE' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+-                                    {pres.type}
+-                                </span>
+-                            </div>
+-
+-                            {pres.doctor && <p className="text-slate-600 font-bold text-sm mb-4 bg-slate-50 inline-block px-3 py-1.5 rounded-lg border border-slate-100">Prescribed by {pres.doctor.fullName}</p>}
+-                            {pres.notes && <p className="text-slate-600 italic text-sm p-4 bg-yellow-50 rounded-xl mb-4 border border-yellow-100">"{pres.notes}"</p>}
+-
+-                            {pres.type === 'STRUCTURED' && pres.items && pres.items.length > 0 && (
+-                                <div className="space-y-2 mt-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[#0D2B55] opacity-50 mb-2">Medications</h4>
+-                                    {pres.items.map((item, idx) => (
+-                                        <div key={idx} className="flex justify-between items-center py-2 border-b border-white last:border-0 last:pb-0">
+-                                            <div>
+-                                                <div className="font-black text-[#0D2B55]">{item.medicineName}</div>
+-                                                <div className="text-xs text-slate-500 font-medium mt-0.5">{item.instructions || 'Standard usage'}</div>
+-                                            </div>
+-                                            <div className="text-right">
+-                                                <div className="font-black text-[#0D2B55]">{item.dosage}</div>
+-                                                <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded mt-1 inline-block">{item.duration}</div>
+-                                            </div>
+-                                        </div>
+-                                    ))}
+-                                </div>
+-                            )}
+-
+-                            {pres.type === 'FILE' && pres.fileUrl && (
+-                                <a href={pres.fileUrl} target="_blank" rel="noopener noreferrer" className="block w-full text-center mt-4 bg-amber-50 hover:bg-amber-100 text-amber-700 font-black px-4 py-3 rounded-xl transition border border-amber-200">
+-                                    👀 View Original Document
+-                                </a>
+-                            )}
+-                        </div>
+-                    ))
+-                )}
+-            </div>
++            <Skeleton name="prescriptions-list" loading={loading}>
++                <PrescriptionsList prescriptions={prescriptions} />
++            </Skeleton>
+         </div>
+     );
+ }
+diff --git a/app/(patient)/profile/ProfileActions.js b/app/(patient)/profile/ProfileActions.js
+index 490d81f..04aaeb9 100644
+--- a/app/(patient)/profile/ProfileActions.js
++++ b/app/(patient)/profile/ProfileActions.js
+@@ -15,7 +15,7 @@ export default function ProfileActions({ visitId }) {
+     }
+ 
+     return (
+-        <form action={formAction}>
++        <form action={formAction} className="flex flex-col gap-1 items-end">
+             <input type="hidden" name="visitId" value={visitId} />
+             <button
+                 type="submit"
+@@ -29,6 +29,11 @@ export default function ProfileActions({ visitId }) {
+             >
+                 {isPending ? 'Cancelling...' : '✕ Cancel'}
+             </button>
++            {state?.message && !state.success && (
++                <div className="text-[10px] text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100 whitespace-nowrap">
++                    ⚠️ {state.message}
++                </div>
++            )}
+         </form>
+     );
+ }
+diff --git a/app/(patient)/profile/page.js b/app/(patient)/profile/page.js
+index afaa42b..fe8d79a 100644
+--- a/app/(patient)/profile/page.js
++++ b/app/(patient)/profile/page.js
+@@ -1,8 +1,11 @@
+ 'use client';
+ 
++import { useState, useEffect } from "react";
+ import Link from "next/link";
+-import { useEffect, useState } from "react";
+-import { patientLogout, getPatientFullProfile } from "@/app/actions";
++import { Skeleton } from 'boneyard-js/react';
++import { getPatientFullProfile, patientLogout } from "@/app/actions";
++import ProfileCard from "@/components/patient/ProfileCard";
++import ClinicalServices from "@/components/patient/ClinicalServices";
+ 
+ const actionSections = [
+     { name: "Book Appointment", href: "/search", icon: "🔍", desc: "Find doctors & hospitals" },
+@@ -10,81 +13,35 @@ const actionSections = [
+     { name: "Emergency Help", href: "/emergency", icon: "🚑", desc: "Ambulance & SOS" }
+ ];
+ 
+-const clinicalSections = [
+-    { name: "Medical History", href: "/medical-history", icon: "🏥", desc: "Conditions & allergies" },
+-    { name: "Prescriptions", href: "/prescriptions", icon: "📄", desc: "Clinical & uploaded" },
+-    { name: "Medications", href: "/medications", icon: "💊", desc: "Current medicines" },
+-    { name: "Vitals Tracker", href: "/vitals", icon: "❤️", desc: "BP, weight, sugar" },
+-    { name: "Test Reports", href: "/records", icon: "📋", desc: "Lab results & scans" },
+-    { name: "Vaccinations", href: "/vaccinations", icon: "💉", desc: "Vaccine records" },
+-    { name: "Pregnancy Tracker", href: "/tracker", icon: "🤰", desc: "Maternal health" },
+-    { name: "Insurance", href: "/insurance", icon: "🛡️", desc: "Policy details" },
+-    { name: "MedChat AI", href: "/medchat", icon: "🤖", desc: "AI health assistant" },
+-];
+-
+ export default function ProfilePage() {
+     const [patient, setPatient] = useState(null);
+     const [loading, setLoading] = useState(true);
+ 
+     useEffect(() => {
+         getPatientFullProfile().then(data => {
+-            setPatient(data);
++            if (data) setPatient(data);
++            setLoading(false);
++        }).catch(err => {
++            console.error("Profile load err:", err);
+             setLoading(false);
+         });
+     }, []);
+ 
+-    if (loading) {
+-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading profile...</div>;
+-    }
+-
+-    const { name, phone, nickname, profilePhotoUrl, wallet } = patient || {};
+-    const displayName = nickname || name || 'Patient';
+-    const displayPhone = phone || '—';
+-    const walletBalance = wallet ? parseFloat(wallet.balance).toFixed(2) : '0.00';
++    const walletBalance = patient?.wallet?.balance || 0;
++    const formattedBalance = parseFloat(walletBalance).toFixed(2);
+ 
+     const personalSections = [
+         { name: "Edit Profile", href: "/profile/edit", icon: "✏️", desc: "Personal & contact info" },
+         { name: "Saved Addresses", href: "/addresses", icon: "📍", desc: "Home / Work" },
+-        { name: "Haspataal Wallet", href: "/wallet", icon: "💰", desc: `Balance: ₹${walletBalance}` }
++        { name: "Haspataal Wallet", href: "/wallet", icon: "💰", desc: `Balance: ₹${formattedBalance}` }
+     ];
+ 
+     return (
+         <div className="py-4 space-y-8 animate-fade-in text-senior-base">
+             {/* Profile Card — Compact Clinical */}
+-            <div className="card-clinical p-6 relative overflow-hidden border-2 border-blue-50 shadow-md">
+-                <div className="relative flex flex-col md:flex-row items-center gap-8">
+-                    <div className="w-20 h-20 rounded-2xl border-2 border-blue-100 bg-white shadow-lg shrink-0 overflow-hidden">
+-                        {profilePhotoUrl ? (
+-                            <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+-                        ) : (
+-                            <div className="w-full h-full flex items-center justify-center text-3xl font-black text-blue-600 bg-blue-50">
+-                                {displayName.charAt(0).toUpperCase()}
+-                            </div>
+-                        )}
+-                    </div>
+-                    <div className="flex-1 text-center md:text-left min-w-0 space-y-1">
+-                        <p className="text-blue-600 text-xs font-black uppercase tracking-[0.2em]">
+-                            {new Date().getHours() < 12 ? '☀️ Good Morning' : new Date().getHours() < 17 ? '🌤️ Good Afternoon' : '🌙 Good Evening'}, Welcome
+-                        </p>
+-                        <h1 className="text-3xl font-black text-[#0D2B55] tracking-tight truncate">{displayName}</h1>
+-                        <p className="text-slate-500 text-lg font-bold">{displayPhone}</p>
+-                    </div>
+-                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+-                        <Link
+-                            href="/profile/edit"
+-                            className="bg-white text-blue-700 border-2 border-blue-100 px-5 py-2 rounded-xl text-sm font-bold hover:bg-blue-50 transition-all text-center"
+-                        >
+-                            ✏️ Edit Profile
+-                        </Link>
+-                        <Link
+-                            href="/profile/details"
+-                            className="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all text-center shadow-md"
+-                        >
+-                            View Dashboard
+-                        </Link>
+-                    </div>
+-                </div>
+-            </div>
++            <Skeleton name="patient-profile-card" loading={loading}>
++                <ProfileCard patient={patient} />
++            </Skeleton>
+ 
+             {/* Quick Actions (Top Priority) */}
+             <div className="space-y-4">
+@@ -121,25 +78,27 @@ export default function ProfilePage() {
+                         Personal Data
+                     </h2>
+                 </div>
+-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+-                    {personalSections.map((s, i) => (
+-                        <Link
+-                            key={s.href}
+-                            href={s.href}
+-                            className="card-clinical card-clinical-hover p-4 flex flex-row md:flex-col items-center md:items-start gap-4 no-underline group"
+-                        >
+-                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+-                                {s.icon}
+-                            </div>
+-                            <div className="space-y-0.5 min-w-0 flex-1">
+-                                <div className="text-lg font-black text-[#0D2B55] group-hover:text-blue-600 transition-colors truncate">
+-                                    {s.name}
++                <Skeleton name="personal-data-grid" loading={loading}>
++                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
++                        {personalSections.map((s, i) => (
++                            <Link
++                                key={s.href}
++                                href={s.href}
++                                className="card-clinical card-clinical-hover p-4 flex flex-row md:flex-col items-center md:items-start gap-4 no-underline group"
++                            >
++                                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
++                                    {s.icon}
+                                 </div>
+-                                <div className="text-xs text-slate-500 font-bold leading-tight truncate">{s.desc}</div>
+-                            </div>
+-                        </Link>
+-                    ))}
+-                </div>
++                                <div className="space-y-0.5 min-w-0 flex-1">
++                                    <div className="text-lg font-black text-[#0D2B55] group-hover:text-blue-600 transition-colors truncate">
++                                        {s.name}
++                                    </div>
++                                    <div className="text-xs text-slate-500 font-bold leading-tight truncate">{s.desc}</div>
++                                </div>
++                            </Link>
++                        ))}
++                    </div>
++                </Skeleton>
+             </div>
+ 
+             {/* Section Grid — Compact Clinical Services */}
+@@ -157,25 +116,9 @@ export default function ProfilePage() {
+                         PDF Report ⬇️
+                     </button>
+                 </div>
+-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+-                    {clinicalSections.map((s, i) => (
+-                        <Link
+-                            key={s.href}
+-                            href={s.href}
+-                            className="card-clinical card-clinical-hover p-4 flex flex-row md:flex-col items-center md:items-start gap-4 no-underline group"
+-                        >
+-                            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+-                                {s.icon}
+-                            </div>
+-                            <div className="space-y-0.5 min-w-0 flex-1">
+-                                <div className="text-lg font-black text-[#0D2B55] group-hover:text-blue-600 transition-colors truncate">
+-                                    {s.name}
+-                                </div>
+-                                <div className="text-xs text-slate-500 font-bold leading-tight truncate">{s.desc}</div>
+-                            </div>
+-                        </Link>
+-                    ))}
+-                </div>
++                <Skeleton name="clinical-services-grid" loading={loading}>
++                    <ClinicalServices />
++                </Skeleton>
+             </div>
+ 
+             {/* Logout — Compact Danger Action */}
+diff --git a/app/(patient)/records/page.js b/app/(patient)/records/page.js
+index e020541..94882bf 100644
+--- a/app/(patient)/records/page.js
++++ b/app/(patient)/records/page.js
+@@ -1,10 +1,18 @@
+ "use client";
+ 
+-import Link from "next/link";
+-import { useState } from "react";
++import { useState, useEffect } from "react";
++import { Skeleton } from 'boneyard-js/react';
++import RecordsList from "@/components/patient/RecordsList";
+ 
+ export default function RecordsPage() {
+     const [activeTab, setActiveTab] = useState("all");
++    const [loading, setLoading] = useState(true);
++
++    useEffect(() => {
++        // Simulating data fetch
++        const timer = setTimeout(() => setLoading(false), 800);
++        return () => clearTimeout(timer);
++    }, []);
+ 
+     const records = [
+         {
+@@ -57,23 +65,9 @@ export default function RecordsPage() {
+                     <button className={`pill ${activeTab === 'bills' ? 'pill-active' : 'pill-inactive'}`} onClick={() => setActiveTab('bills')}>Bills</button>
+                 </div>
+ 
+-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+-                    {records.map(rec => (
+-                        <div key={rec.id} className="card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+-                            <div style={{ width: '48px', height: '48px', background: 'var(--blue-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+-                                {rec.icon}
+-                            </div>
+-                            <div style={{ flex: 1 }}>
+-                                <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>{rec.type}</div>
+-                                <h4 style={{ fontSize: '15px', margin: '0 0 4px 0', fontFamily: 'var(--font-sans)', color: 'var(--navy)' }}>{rec.title || rec.doctor}</h4>
+-                                <div style={{ fontSize: '12px', color: 'var(--text3)' }}>{rec.date}</div>
+-                            </div>
+-                            <button style={{ background: 'none', border: 'none', fontSize: '20px', color: 'var(--grey3)', cursor: 'pointer' }}>
+-                                ⋮
+-                            </button>
+-                        </div>
+-                    ))}
+-                </div>
++                <Skeleton name="records-list" loading={loading}>
++                    <RecordsList records={records} />
++                </Skeleton>
+             </div>
+         </>
+     );
+diff --git a/app/(patient)/tracker/page.js b/app/(patient)/tracker/page.js
+index 491613d..c1e8a0b 100644
+--- a/app/(patient)/tracker/page.js
++++ b/app/(patient)/tracker/page.js
+@@ -7,6 +7,9 @@ import Link from "next/link";
+ 
+ const initialState = { message: '', success: false };
+ 
++import { Skeleton } from 'boneyard-js/react';
++import MaternalHealthHero from "@/components/patient/MaternalHealthHero";
++
+ export default function TrackerPage() {
+     const [state, formAction, isPending] = useActionState(savePregnancyProfileAction, initialState);
+     const [showForm, setShowForm] = useState(false);
+@@ -22,10 +25,6 @@ export default function TrackerPage() {
+         });
+     }, []);
+ 
+-    if (loading) {
+-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading pregnancy tracker...</div>;
+-    }
+-
+     return (
+         <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
+             <div className="flex items-center justify-between">
+@@ -41,15 +40,9 @@ export default function TrackerPage() {
+                 </button>
+             </div>
+ 
+-            {/* Hero Card */}
+-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-6 border border-pink-200 text-center shadow-sm">
+-                <div className="absolute -top-8 -right-8 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl" />
+-                <div className="relative">
+-                    <div className="text-5xl mb-3" style={{ animation: 'float 3s ease-in-out infinite' }}>👶</div>
+-                    <h2 className="text-lg font-bold text-slate-800 mb-1">Maternal Health Tracker</h2>
+-                    <p className="text-sm text-slate-500">Track your pregnancy journey with Haspataal</p>
+-                </div>
+-            </div>
++            <Skeleton name="maternal-health-hero" loading={loading}>
++                <MaternalHealthHero />
++            </Skeleton>
+ 
+             {state?.success && (
+                 <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm">
+diff --git a/app/(patient)/vaccinations/page.js b/app/(patient)/vaccinations/page.js
+index 8e2adfe..fa23655 100644
+--- a/app/(patient)/vaccinations/page.js
++++ b/app/(patient)/vaccinations/page.js
+@@ -4,6 +4,9 @@ import { useActionState, useEffect, useState } from 'react';
+ import { addVaccinationAction } from '@/app/actions';
+ import Link from 'next/link';
+ 
++import { Skeleton } from 'boneyard-js/react';
++import VaccinationsList from "@/components/patient/VaccinationsList";
++
+ const initialState = { message: '', success: false };
+ 
+ export default function VaccinationsPage() {
+@@ -21,10 +24,6 @@ export default function VaccinationsPage() {
+         });
+     }, [state]);
+ 
+-    if (loading) {
+-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading vaccinations...</div>;
+-    }
+-
+     return (
+         <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
+             <div className="flex items-center justify-between">
+@@ -84,28 +83,12 @@ export default function VaccinationsPage() {
+                 </form>
+             )}
+ 
+-            {vaccinations.length === 0 ? (
+-                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+-                    <div className="text-4xl mb-3">💉</div>
+-                    <p className="text-slate-500 text-sm">Your vaccination records will appear here.</p>
+-                    <p className="text-slate-400 text-xs mt-1">Click "+ Add" to record a vaccination.</p>
+-                </div>
+-            ) : (
+-                <div className="space-y-3">
+-                    <h3 className="text-sm font-bold text-slate-800 px-1">Vaccination History</h3>
+-                    {vaccinations.map((vaccine) => (
+-                        <div key={vaccine.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
+-                            <div>
+-                                <h4 className="font-bold text-slate-800">{vaccine.vaccineName}</h4>
+-                                <p className="text-sm text-slate-500">Date Given: {new Date(vaccine.dateGiven).toLocaleDateString()}</p>
+-                                {vaccine.nextDueDate && (
+-                                    <p className="text-xs text-teal-600 font-semibold mt-1">Next Due: {new Date(vaccine.nextDueDate).toLocaleDateString()}</p>
+-                                )}
+-                            </div>
+-                        </div>
+-                    ))}
+-                </div>
+-            )}
++            <div className="space-y-3">
++                <h3 className="text-sm font-bold text-slate-800 px-1">Vaccination History</h3>
++                <Skeleton name="vaccinations-list" loading={loading}>
++                    <VaccinationsList vaccinations={vaccinations} />
++                </Skeleton>
++            </div>
+         </div>
+     );
+ }
+diff --git a/app/(patient)/vitals/page.js b/app/(patient)/vitals/page.js
+index 178c573..d063db9 100644
+--- a/app/(patient)/vitals/page.js
++++ b/app/(patient)/vitals/page.js
+@@ -4,6 +4,10 @@ import { useActionState, useEffect, useState } from 'react';
+ import { addVitalAction } from '@/app/actions';
+ import Link from 'next/link';
+ 
++import { Skeleton } from 'boneyard-js/react';
++import VitalsQuickStats from "@/components/patient/VitalsQuickStats";
++import VitalsHistory from "@/components/patient/VitalsHistory";
++
+ const initialState = { message: '', success: false };
+ 
+ export default function VitalsPage() {
+@@ -21,10 +25,6 @@ export default function VitalsPage() {
+         });
+     }, [state]);
+ 
+-    if (loading) {
+-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading vitals...</div>;
+-    }
+-
+     const latestVital = vitals.length > 0 ? vitals[vitals.length - 1] : {};
+ 
+     return (
+@@ -110,50 +110,16 @@ export default function VitalsPage() {
+                 </form>
+             )}
+ 
+-            {/* Quick Stats Cards */}
+-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+-                {[
+-                    { label: 'Weight', value: latestVital.weight || '—', unit: 'kg', icon: '⚖️', color: 'bg-blue-50 border-blue-200 text-blue-600' },
+-                    { label: 'BP', value: latestVital.bloodPressure || '—', unit: '', icon: '🫀', color: 'bg-red-50 border-red-200 text-red-600' },
+-                    { label: 'Sugar', value: latestVital.bloodSugar || '—', unit: 'mg/dL', icon: '🩸', color: 'bg-amber-50 border-amber-200 text-amber-600' },
+-                    { label: 'SpO₂', value: latestVital.spo2 || '—', unit: '%', icon: '🫁', color: 'bg-teal-50 border-teal-200 text-teal-600' },
+-                ].map(card => (
+-                    <div key={card.label} className={`rounded-xl p-3 border text-center ${card.color}`}>
+-                        <div className="text-xl mb-1">{card.icon}</div>
+-                        <div className="text-lg font-bold">{card.value}</div>
+-                        <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{card.label} {card.unit && `(${card.unit})`}</div>
+-                    </div>
+-                ))}
+-            </div>
++            <Skeleton name="vitals-quick-stats" loading={loading}>
++                <VitalsQuickStats latestVital={latestVital} />
++            </Skeleton>
+ 
+-            {vitals.length === 0 ? (
+-                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+-                    <div className="text-4xl mb-3">📊</div>
+-                    <p className="text-slate-500 text-sm">Your vitals history will appear here after you record entries.</p>
+-                    <p className="text-slate-400 text-xs mt-1">Click "+ Record" to log your first vitals reading.</p>
+-                </div>
+-            ) : (
+-                <div className="space-y-3 mt-6">
+-                    <h3 className="text-sm font-bold text-slate-800 px-1">Vitals History</h3>
+-                    <div className="space-y-3">
+-                        {vitals.slice().reverse().map((vital) => (
+-                            <div key={vital.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-2">
+-                                <span className="text-xs font-semibold text-slate-400 border-b pb-2 mb-1">{new Date(vital.recordedAt).toLocaleString()}</span>
+-                                <div className="grid grid-cols-3 gap-2 text-sm text-slate-700">
+-                                    {vital.weight && <div><b>Wt:</b> {vital.weight} kg</div>}
+-                                    {vital.height && <div><b>Ht:</b> {vital.height} cm</div>}
+-                                    {vital.bmi && <div><b>BMI:</b> {vital.bmi}</div>}
+-                                    {vital.bloodPressure && <div><b>BP:</b> {vital.bloodPressure}</div>}
+-                                    {vital.pulse && <div><b>Pulse:</b> {vital.pulse}</div>}
+-                                    {vital.bloodSugar && <div><b>Sugar:</b> {vital.bloodSugar}</div>}
+-                                    {vital.spo2 && <div><b>SpO₂:</b> {vital.spo2}%</div>}
+-                                    {vital.temperature && <div><b>Temp:</b> {vital.temperature}°F</div>}
+-                                </div>
+-                            </div>
+-                        ))}
+-                    </div>
+-                </div>
+-            )}
++            <div className="space-y-3 mt-6">
++                <h3 className="text-sm font-bold text-slate-800 px-1">Vitals History</h3>
++                <Skeleton name="vitals-history" loading={loading}>
++                    <VitalsHistory vitals={vitals} />
++                </Skeleton>
++            </div>
+         </div>
+     );
+ }
+diff --git a/app/(patient)/wallet/page.js b/app/(patient)/wallet/page.js
+index f4a0789..00927eb 100644
+--- a/app/(patient)/wallet/page.js
++++ b/app/(patient)/wallet/page.js
+@@ -1,9 +1,11 @@
+ 'use client';
+ 
+-import { useEffect, useState } from "react";
+-import { getPatientFullProfile, addWalletTransactionAction } from "@/app/actions";
++import { useState, useEffect } from "react";
+ import Link from "next/link";
+-import { format } from "date-fns";
++import { Skeleton } from 'boneyard-js/react';
++import { getPatientFullProfile, addWalletTransactionAction } from "@/app/actions";
++import WalletHeader from "@/components/patient/WalletHeader";
++import TransactionHistory from "@/components/patient/TransactionHistory";
+ 
+ export default function WalletPage() {
+     const [patient, setPatient] = useState(null);
+@@ -34,8 +36,6 @@ export default function WalletPage() {
+         loadData();
+     };
+ 
+-    if (loading) return <div className="p-8 text-center text-slate-500 animate-pulse font-bold">Loading wallet...</div>;
+-
+     const wallet = patient?.wallet || { balance: '0.00', transactions: [] };
+     const balance = parseFloat(wallet.balance).toFixed(2);
+     const transactions = wallet.transactions || [];
+@@ -44,21 +44,12 @@ export default function WalletPage() {
+         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+             <Link href="/profile" className="text-blue-600 font-bold mb-2 inline-block">← Back to Profile</Link>
+             
+-            <div className="bg-gradient-to-br from-[#0D2B55] to-blue-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl">
+-                <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+-                
+-                <h1 className="text-sm font-black uppercase tracking-[0.2em] opacity-70 mb-2">Haspataal Wallet</h1>
+-                <div className="text-5xl font-black tracking-tight mb-8">₹{balance}</div>
+-                
+-                <div className="flex gap-4">
+-                    <button 
+-                        onClick={() => setShowTopUpOptions(!showTopUpOptions)}
+-                        className="bg-white text-blue-800 px-6 py-3 rounded-xl font-black shadow-lg hover:shadow-xl transition-all"
+-                    >
+-                        + Top Up Wallet
+-                    </button>
+-                </div>
+-            </div>
++            <Skeleton name="wallet-header" loading={loading}>
++                <WalletHeader 
++                    balance={balance} 
++                    onTopUp={() => setShowTopUpOptions(!showTopUpOptions)} 
++                />
++            </Skeleton>
+ 
+             {showTopUpOptions && (
+                 <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm animate-fade-in">
+@@ -85,33 +76,9 @@ export default function WalletPage() {
+             <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                 <h2 className="font-black tracking-[0.1em] text-[#0D2B55] text-lg mb-6 uppercase">Transaction History</h2>
+                 
+-                {transactions.length === 0 ? (
+-                    <div className="text-center py-8 text-slate-500 font-medium">No transactions yet.</div>
+-                ) : (
+-                    <div className="space-y-4">
+-                        {transactions.map(txn => {
+-                            const isCredit = txn.type === 'CREDIT';
+-                            const amntStr = parseFloat(txn.amount).toFixed(2);
+-                            return (
+-                                <div key={txn.id} className="flex justify-between items-center p-4 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100">
+-                                    <div className="flex items-center gap-4">
+-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shrink-0 ${isCredit ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+-                                            {isCredit ? '↓' : '↑'}
+-                                        </div>
+-                                        <div>
+-                                            <div className="font-black text-[#0D2B55] text-lg">{txn.source}</div>
+-                                            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">{format(new Date(txn.createdAt), "MMM d, yyyy - hh:mm a")}</div>
+-                                            {txn.description && <div className="text-sm text-slate-600 mt-0.5">{txn.description}</div>}
+-                                        </div>
+-                                    </div>
+-                                    <div className={`text-xl font-black ${isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
+-                                        {isCredit ? '+' : '-'}₹{amntStr}
+-                                    </div>
+-                                </div>
+-                            )
+-                        })}
+-                    </div>
+-                )}
++                <Skeleton name="transaction-history" loading={loading}>
++                    <TransactionHistory transactions={transactions} />
++                </Skeleton>
+             </div>
+         </div>
+     );
+diff --git a/app/actions.js b/app/actions.js
+index d17e497..e4ea08f 100644
+--- a/app/actions.js
++++ b/app/actions.js
+@@ -168,6 +168,35 @@ export async function approveDoctorAffiliationAction(prevState, formData) {
+     return { success: true, message: 'Doctor approved successfully.' };
+ }
+ 
++export async function getHospitalDashboardData(hospitalId) {
++    try {
++        const [stats, allVisits] = await Promise.all([
++            services.hospital.getStats(hospitalId),
++            services.hospital.getVisits(hospitalId)
++        ]);
++        return {
++            stats,
++            recentVisits: allVisits.slice(0, 5)
++        };
++    } catch (e) {
++        console.error("Error fetching hospital dashboard data:", e);
++        return { stats: { todayVisits: 0, totalPatients: 0, totalDoctors: 0, scheduledVisits: 0, totalVisits: 0, completedVisits: 0 }, recentVisits: [] };
++    }
++}
++
++export async function getLabDashboardData(hospitalId) {
++    try {
++        const [catalog, orders] = await Promise.all([
++            services.hospital.getDiagnosticCatalog(hospitalId),
++            services.hospital.getLabOrders(hospitalId)
++        ]);
++        return { catalog, orders };
++    } catch (e) {
++        console.error("Error fetching lab dashboard data:", e);
++        return { catalog: [], orders: [] };
++    }
++}
++
+ export async function rejectDoctorAffiliationAction(prevState, formData) {
+     let user;
+     try {
+@@ -181,6 +210,28 @@ export async function rejectDoctorAffiliationAction(prevState, formData) {
+     return { success: true, message: 'Doctor rejected successfully.' };
+ }
+ 
++export async function getAdminDashboardData() {
++    try {
++        await requireRole(UserRole.ADMIN, 'session_admin');
++        const stats = await services.admin.getPlatformStats();
++        return { stats };
++    } catch (e) {
++        console.error("Error fetching admin dashboard data:", e);
++        return { stats: { totalHospitals: 0, activeHospitals: 0, pendingHospitals: 0, totalDoctors: 0, totalPatients: 0, totalVisits: 0, cities: 0 } };
++    }
++}
++
++export async function getAgentDashboardData(agentId) {
++    try {
++        await requireRole(UserRole.AGENT, 'session_agent');
++        const data = await services.agent.getDashboardData(agentId);
++        return data;
++    } catch (e) {
++        console.error("Error fetching agent dashboard data:", e);
++        return { hospitals: [], patients: [], stats: { totalHospitals: 0, approvedHospitals: 0, totalPatients: 0 } };
++    }
++}
++
+ export async function registerDoctor(prevState, formData) {
+     try {
+         const data = {
+@@ -314,7 +365,8 @@ export async function requestOtpAction(prevState, formData) {
+         await services.patient.requestOtp(mobile);
+         return { success: true, message: 'OTP sent successfully!' };
+     } catch (e) {
+-        return { success: false, message: 'Failed to send OTP. Please try again.' };
++        logger.error({ action: 'otp_request_failed', mobile, error: e.message, stack: e.stack }, 'Failed to send OTP');
++        return { success: false, message: `Failed to send OTP: ${e.message}` };
+     }
+ }
+ 
+@@ -352,18 +404,7 @@ export async function getPatientFullProfile() {
+         if (!patientData) return null;
+ 
+         // Fetch all related health details
+-        const [
+-            familyMembers,
+-            medicalHistory,
+-            medications,
+-            vitals,
+-            vaccinations,
+-            pregnancyProfile,
+-            insurance,
+-            addresses,
+-            wallet,
+-            prescriptions
+-        ] = await Promise.all([
++        const results = await Promise.allSettled([
+             services.patient.getFamilyMembers(patientCookie.id),
+             services.patient.getMedicalHistory(patientCookie.id),
+             services.patient.getMedications(patientCookie.id),
+@@ -376,20 +417,31 @@ export async function getPatientFullProfile() {
+             services.patient.getPrescriptions(patientCookie.id)
+         ]);
+ 
++        const [
++            familyMembers, medicalHistory, medications, vitals,
++            vaccinations, pregnancyProfile, insurance, addresses,
++            wallet, prescriptions
++        ] = results.map((r, i) => {
++            if (r.status === 'fulfilled') return r.value;
++            logger.error({ action: 'profile_subfetch_failed', index: i, error: r.reason?.message }, 'Sub-fetch during profile load failed');
++            return null; // Graceful fallback per sub-section
++        });
++
+         return {
+             ...patientData,
+-            familyMembers,
+-            medicalHistory,
+-            medications,
+-            vitals,
+-            vaccinations,
+-            pregnancyProfile,
+-            insurance,
+-            addresses,
+-            wallet,
+-            prescriptions
++            familyMembers: familyMembers || [],
++            medicalHistory: medicalHistory || null,
++            medications: medications || [],
++            vitals: vitals || [],
++            vaccinations: vaccinations || [],
++            pregnancyProfile: pregnancyProfile || null,
++            insurance: insurance || [],
++            addresses: addresses || [],
++            wallet: wallet || { balance: 0, transactions: [] },
++            prescriptions: prescriptions || []
+         };
+     } catch (e) {
++        logger.error({ action: 'get_patient_profile_failed', error: e.message }, 'Failed to fetch full patient profile');
+         return null;
+     }
+ }
+@@ -687,19 +739,6 @@ export async function getMyAppointmentsAction() {
+     return { success: true, data: visits };
+ }
+ 
+-export async function cancelAppointmentAction(prevState, formData) {
+-    try {
+-        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
+-        const visitId = formData.get('visitId');
+-        if (!visitId) throw new Error('Visit ID required');
+-
+-        await services.patient.cancelVisit(patient.id, visitId);
+-        return { success: true, message: 'Appointment cancelled successfully.' };
+-    } catch (e) {
+-        return { success: false, message: e.message || 'Failed to cancel appointment.' };
+-    }
+-}
+-
+ // ==================== ADDRESS ACTIONS ====================
+ 
+ export async function addAddressAction(prevState, formData) {
+@@ -860,20 +899,17 @@ export async function cancelAppointmentPatient(prevState, formData) {
+     let patient;
+     try {
+         patient = await requireRole(UserRole.PATIENT, 'session_patient');
++        const visitId = formData.get('visitId');
++        await services.patient.cancelVisit(patient.id, visitId);
++        return { success: true, message: 'Appointment cancelled and refund processed.' };
+     } catch (e) {
+-        return { message: 'Please login first.' };
++        logger.error({ action: 'cancel_appointment_failed', error: e.message }, 'Cancellation failed');
++        return { success: false, message: e.message || 'Cannot cancel this appointment.' };
+     }
+-
+-    const visitId = formData.get('visitId');
+-    const result = await services.patient.cancelVisit(patient.id, visitId);
+-
+-    if (!result) {
+-        return { success: false, message: 'Cannot cancel this appointment.' };
+-    }
+-
+-    return { success: true, message: 'Appointment cancelled.' };
+ }
+ 
++export const cancelAppointmentAction = cancelAppointmentPatient;
++
+ export async function addReview(prevState, formData) {
+     return { success: true, message: 'Reviews are temporarily disabled during upgrade' };
+ }
+diff --git a/app/admin/dashboard/page.js b/app/admin/dashboard/page.js
+index ddf6743..89969cd 100644
+--- a/app/admin/dashboard/page.js
++++ b/app/admin/dashboard/page.js
+@@ -1,91 +1,7 @@
+ import { services } from "@/lib/services";
+ 
+-export default async function AdminDashboard() {
+-    const stats = services.admin.getPlatformStats();
+-    const pendingCount = stats.pendingHospitals;
+-
+-    const statCards = [
+-        { label: "Total Hospitals", value: stats.totalHospitals, icon: "🏥", color: "#0284c7", bg: "#e0f2fe" },
+-        { label: "Active", value: stats.activeHospitals, icon: "✅", color: "#15803d", bg: "#f0fdf4" },
+-        { label: "Pending Approval", value: pendingCount, icon: "⏳", color: "#ea580c", bg: "#fff7ed" },
+-        { label: "Total Doctors", value: stats.totalDoctors, icon: "👨‍⚕️", color: "#7c3aed", bg: "#ede9fe" },
+-        { label: "Total Patients", value: stats.totalPatients, icon: "👥", color: "#0d9488", bg: "#ccfbf1" },
+-        { label: "Total Visits", value: stats.totalVisits, icon: "📊", color: "#0369a1", bg: "#f0f9ff" },
+-        { label: "Cities Covered", value: stats.cities, icon: "📍", color: "#dc2626", bg: "#fef2f2" },
+-    ];
+-
+-    return (
+-        <div className="page-enter">
+-            <h1 style={{ fontSize: "1.75rem", fontWeight: "800", marginBottom: "0.5rem" }}>Platform Overview</h1>
+-            <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>Haspataal admin control panel</p>
++import AdminDashboardClient from "@/components/admin/AdminDashboardClient";
+ 
+-            {/* Stats Grid */}
+-            <div style={{
+-                display: "grid",
+-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+-                gap: "1.5rem",
+-                marginBottom: "3rem"
+-            }}>
+-                {statCards.map(s => (
+-                    <div key={s.label} className="card card-interactive" style={{
+-                        display: "flex",
+-                        alignItems: "center",
+-                        gap: "1.25rem",
+-                        padding: "1.5rem",
+-                        borderLeft: `4px solid ${s.color}`
+-                    }}>
+-                        <div style={{
+-                            width: "56px",
+-                            height: "56px",
+-                            borderRadius: "14px",
+-                            background: s.bg,
+-                            display: "flex",
+-                            alignItems: "center",
+-                            justifyContent: "center",
+-                            fontSize: "1.75rem",
+-                            flexShrink: 0,
+-                            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.05)"
+-                        }}>
+-                            {s.icon}
+-                        </div>
+-                        <div style={{ flex: 1 }}>
+-                            <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
+-                                {s.label}
+-                            </div>
+-                            <div style={{ fontSize: "1.75rem", fontWeight: "800", color: "var(--text-main)", lineHeight: 1 }}>
+-                                {s.value}
+-                            </div>
+-                        </div>
+-                    </div>
+-                ))}
+-            </div>
+-
+-            {/* Revenue Placeholder */}
+-            <div style={{ marginBottom: "3rem" }}>
+-                <h2 style={{ fontSize: "1.25rem", fontWeight: "700", marginBottom: "1rem" }}>Platform Revenue & Growth</h2>
+-                <div className="card" style={{
+-                    height: "300px",
+-                    display: "flex",
+-                    alignItems: "center",
+-                    justifyContent: "center",
+-                    background: "var(--bg-card)",
+-                    backgroundImage: "radial-gradient(var(--border) 1px, transparent 1px)",
+-                    backgroundSize: "20px 20px"
+-                }}>
+-                    <div style={{ textAlign: "center" }}>
+-                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📈</div>
+-                        <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text-main)" }}>Analytics Engine Coming Soon</h3>
+-                        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>Revenue split operations and investor dashboards will populate here.</p>
+-                    </div>
+-                </div>
+-            </div>
+-
+-            {pendingCount > 0 && (
+-                <div className="alert alert-warning" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+-                    <span>⚠️ {pendingCount} hospital(s) pending approval</span>
+-                    <a href="/admin/dashboard/hospitals" style={{ color: "var(--primary)", fontWeight: "600" }}>Review →</a>
+-                </div>
+-            )}
+-        </div>
+-    );
++export default async function AdminDashboard() {
++    return <AdminDashboardClient />;
+ }
+diff --git a/app/globals.css b/app/globals.css
+index 37b4fba..9ffe651 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -180,6 +180,11 @@
+   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
++
++  /* Boneyard Skeleton Theme - Medical Soft */
++  --boneyard-base: #F0F4F8;
++  --boneyard-highlight: #FFFFFF;
++  --boneyard-speed: 1.8s;
+ }
+ 
+ * {
+diff --git a/build_log.txt b/build_log.txt
+deleted file mode 100644
+index 22651ee..0000000
+--- a/build_log.txt
++++ /dev/null
+@@ -1,21 +0,0 @@
+-Γû▓ Next.js 16.1.6 (Turbopack)
+-- Environments: .env.local, .env
+-
+-  Creating an optimized production build ...
+-Γ£ô Compiled successfully in 4.2s
+-  Running TypeScript ...
+-Failed to compile.
+-
+-./doctor-portal/src/app/layout.tsx:55:11
+-Type error: Type 'React.ReactNode' is not assignable to type 'import("C:/Users/heman/.gemini/antigravity/scratch/haspataal/doctor-portal/node_modules/@types/react/index").ReactNode'.
+-  Type 'ReactElement<unknown, string | JSXElementConstructor<any>>' is not assignable to type 'ReactNode'.
+-    Property 'children' is missing in type 'ReactElement<unknown, string | JSXElementConstructor<any>>' but required in type 'ReactPortal'.
+-
+-  53 |         {/* Main Content Area */}
+-  54 |         <main className="flex-1 p-8 overflow-y-auto">
+-> 55 |           {children}
+-     |           ^
+-  56 |         </main>
+-  57 |       </body>
+-  58 |     </html>
+-Next.js build worker exited with code: 1 and signal: null
+diff --git a/build_log_final.txt b/build_log_final.txt
+deleted file mode 100644
+index b98070b..0000000
+--- a/build_log_final.txt
++++ /dev/null
+@@ -1,69 +0,0 @@
+-Γû▓ Next.js 16.1.6 (Turbopack)
+-- Environments: .env.local, .env
+-
+-  Creating an optimized production build ...
+-Γ£ô Compiled successfully in 4.1s
+-  Running TypeScript ...
+-  Collecting page data using 15 workers ...
+-  Generating static pages using 15 workers (0/45) ...
+-  Generating static pages using 15 workers (11/45) 
+-  Generating static pages using 15 workers (22/45) 
+-  Generating static pages using 15 workers (33/45) 
+-Γ£ô Generating static pages using 15 workers (45/45) in 6.4s
+-  Finalizing page optimization ...
+-
+-Route (app)
+-Γöî Γùï /
+-Γö£ Γùï /_not-found
+-Γö£ ╞Æ /[city]/[specialty]
+-Γö£ Γùï /addresses
+-Γö£ Γùï /admin
+-Γö£ ╞Æ /admin/dashboard
+-Γö£ ╞Æ /admin/dashboard/hospitals
+-Γö£ ╞Æ /agent/dashboard
+-Γö£ Γùï /agent/login
+-Γö£ Γùï /agent/register
+-Γö£ Γùï /appointments
+-Γö£ ╞Æ /book
+-Γö£ ╞Æ /book/[id]
+-Γö£ ╞Æ /doctor/[id]
+-Γö£ Γùï /doctor/register
+-Γö£ Γùï /emergency
+-Γö£ Γùï /home
+-Γö£ Γùï /hospital
+-Γö£ ╞Æ /hospital/dashboard
+-Γö£ ╞Æ /hospital/dashboard/billing
+-Γö£ ╞Æ /hospital/dashboard/doctors
+-Γö£ ╞Æ /hospital/dashboard/reports
+-Γö£ Γùï /hospital/login
+-Γö£ Γùï /hospital/register
+-Γö£ ╞Æ /hospitals
+-Γö£ ╞Æ /hospitals/[id]
+-Γö£ Γùï /insurance
+-Γö£ Γùï /lab-tests
+-Γö£ ╞Æ /lab/dashboard
+-Γö£ Γùï /lab/register
+-Γö£ Γùï /login
+-Γö£ Γùï /medchat
+-Γö£ Γùï /medical-history
+-Γö£ Γùï /medications
+-Γö£ Γùï /pharmacy
+-Γö£ Γùï /prescriptions
+-Γö£ Γùï /profile
+-Γö£ Γùï /profile/details
+-Γö£ Γùï /profile/edit
+-Γö£ Γùï /records
+-Γö£ Γùï /robots.txt
+-Γö£ ╞Æ /search
+-Γö£ Γùï /sitemap.xml
+-Γö£ Γùï /tracker
+-Γö£ Γùï /vaccinations
+-Γö£ Γùï /vitals
+-Γöö Γùï /wallet
+-
+-
+-╞Æ Proxy (Middleware)
+-
+-Γùï  (Static)   prerendered as static content
+-╞Æ  (Dynamic)  server-rendered on demand
+-
+diff --git a/lib/infrastructure/no-show-service.ts b/lib/infrastructure/no-show-service.ts
+index bccd9dd..1db5f6d 100644
+--- a/lib/infrastructure/no-show-service.ts
++++ b/lib/infrastructure/no-show-service.ts
+@@ -23,7 +23,7 @@ export async function recoverNoShows() {
+       // 1. Mark as No-Show
+       await tx.appointment.update({
+         where: { id: appointment.id },
+-        data: { status: 'NO_SHOW' }
++        data: { status: 'NO_SHOW' as any }
+       });
+ 
+       // 2. Log for Audit
+diff --git a/lib/infrastructure/slot-engine.ts b/lib/infrastructure/slot-engine.ts
+index 3ca3d8d..820d178 100644
+--- a/lib/infrastructure/slot-engine.ts
++++ b/lib/infrastructure/slot-engine.ts
+@@ -1,3 +1,4 @@
++import { Prisma } from '@prisma/client';
+ import { prisma } from '../util/prisma-singleton';
+ import { acquireDistributedLock } from './redlock';
+ import { withRetry } from '../util/safe-transaction';
+@@ -30,7 +31,7 @@ export async function bookSmartSlot(data: {
+   try {
+     // 2. SERIALIZABLE transaction with automatic retry on conflict
+     return await withRetry(async () => {
+-      return await prisma.$transaction(async (tx) => {
++      return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+ 
+         // A. Idempotency check — prevents duplicate bookings from client retries
+         const existing = await tx.appointment.findUnique({
+@@ -102,7 +103,6 @@ export async function bookSmartSlot(data: {
+           data: {
+             userId: patientGlobalId,
+             action: 'CREATE_APPOINTMENT',
+-            actionType: 'WRITE',
+             entity: 'appointment',
+             entityId: appointment.id,
+           }
+diff --git a/lib/services.ts b/lib/services.ts
+index f2c3155..d68d4b4 100644
+--- a/lib/services.ts
++++ b/lib/services.ts
+@@ -257,6 +257,9 @@ export const services = {
+             const targetDate = new Date(date);
+             targetDate.setHours(0, 0, 0, 0);
+ 
++            const now = new Date();
++            const isToday = targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
++
+             // Fetch existing bookings for this doctor on this date
+             const existingBookings = await prisma.appointment.findMany({
+                 where: {
+@@ -276,10 +279,25 @@ export const services = {
+                 '15:00', '15:30', '16:00', '16:30'
+             ];
+ 
+-            return allSlots.map(time => ({
+-                time,
+-                available: !bookedSlots.has(time)
+-            }));
++            return allSlots.map(time => {
++                let available = !bookedSlots.has(time);
++
++                if (isToday) {
++                    const [hours, minutes] = time.split(':').map(Number);
++                    const slotDateTime = new Date(targetDate);
++                    slotDateTime.setHours(hours, minutes, 0, 0);
++
++                    // If slot is in the past (using 15 min buffer for convenience)
++                    if (slotDateTime.getTime() <= now.getTime()) {
++                        available = false;
++                    }
++                }
++
++                return {
++                    time,
++                    available
++                };
++            });
+         },
+ 
+         createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; slot?: string; status?: any; }) => {
+@@ -384,8 +402,14 @@ export const services = {
+             if (visit.patientId !== patientId) throw new Error('Unauthorized');
+ 
+             const hrLimit = 6 * 60 * 60 * 1000;
+-            if (visit.date.getTime() - Date.now() < hrLimit) {
+-                throw new Error('Appointments cannot be cancelled within 6 hours of the scheduled time');
++            
++            // Construct full Date by combining visit.date (Y-M-D) and visit.slot (H:m)
++            const [hours, minutes] = (visit.slot || "09:00").split(':').map(Number);
++            const appointmentTime = new Date(visit.date);
++            appointmentTime.setHours(hours, minutes, 0, 0);
++
++            if (appointmentTime.getTime() - Date.now() < hrLimit) {
++                throw new Error(`Appointments cannot be cancelled within 6 hours of the scheduled time (${visit.slot})`);
+             }
+ 
+             // If the user previously paid for this appointment, process a refund
+diff --git a/package-lock.json b/package-lock.json
+index 5694f3d..b2d3074 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -13,12 +13,17 @@
+         "@supabase/supabase-js": "^2.98.0",
+         "@toon-format/toon": "^2.1.0",
+         "bcryptjs": "^3.0.3",
++        "boneyard-js": "1.6.0",
++        "bullmq": "5.73.0",
++        "date-fns": "4.1.0",
++        "ioredis": "5.10.1",
+         "jose": "^6.1.3",
+         "next": "16.1.6",
+         "pino": "^10.3.1",
+         "pino-pretty": "^13.1.3",
+         "react": "19.2.3",
+         "react-dom": "19.2.3",
++        "redlock": "5.0.0-beta.2",
+         "zod": "^4.3.6"
+       },
+       "devDependencies": {
+@@ -289,6 +294,13 @@
+         "node": ">=6.9.0"
+       }
+     },
++    "node_modules/@chenglou/pretext": {
++      "version": "0.0.3",
++      "resolved": "https://registry.npmjs.org/@chenglou/pretext/-/pretext-0.0.3.tgz",
++      "integrity": "sha512-RQmqMqUAPRCyv4R3LlRi/ao6KbNWYclqLA+V1HS7sWgyUUbjn3JmmlfXZSY/BjM4rbmIaMSyIVisYocYGYftiQ==",
++      "license": "MIT",
++      "optional": true
++    },
+     "node_modules/@emnapi/core": {
+       "version": "1.8.1",
+       "resolved": "https://registry.npmjs.org/@emnapi/core/-/core-1.8.1.tgz",
+@@ -993,6 +1005,12 @@
+         "url": "https://opencollective.com/libvips"
+       }
+     },
++    "node_modules/@ioredis/commands": {
++      "version": "1.5.1",
++      "resolved": "https://registry.npmjs.org/@ioredis/commands/-/commands-1.5.1.tgz",
++      "integrity": "sha512-JH8ZL/ywcJyR9MmJ5BNqZllXNZQqQbnVZOqpPQqE1vHiFgAw4NHbvE0FOduNU8IX9babitBT46571OnPTT0Zcw==",
++      "license": "MIT"
++    },
+     "node_modules/@jridgewell/gen-mapping": {
+       "version": "0.3.13",
+       "resolved": "https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz",
+@@ -1043,6 +1061,84 @@
+         "@jridgewell/sourcemap-codec": "^1.4.14"
+       }
+     },
++    "node_modules/@msgpackr-extract/msgpackr-extract-darwin-arm64": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-darwin-arm64/-/msgpackr-extract-darwin-arm64-3.0.3.tgz",
++      "integrity": "sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ]
++    },
++    "node_modules/@msgpackr-extract/msgpackr-extract-darwin-x64": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-darwin-x64/-/msgpackr-extract-darwin-x64-3.0.3.tgz",
++      "integrity": "sha512-mdzd3AVzYKuUmiWOQ8GNhl64/IoFGol569zNRdkLReh6LRLHOXxU4U8eq0JwaD8iFHdVGqSy4IjFL4reoWCDFw==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ]
++    },
++    "node_modules/@msgpackr-extract/msgpackr-extract-linux-arm": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-linux-arm/-/msgpackr-extract-linux-arm-3.0.3.tgz",
++      "integrity": "sha512-fg0uy/dG/nZEXfYilKoRe7yALaNmHoYeIoJuJ7KJ+YyU2bvY8vPv27f7UKhGRpY6euFYqEVhxCFZgAUNQBM3nw==",
++      "cpu": [
++        "arm"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@msgpackr-extract/msgpackr-extract-linux-arm64": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-linux-arm64/-/msgpackr-extract-linux-arm64-3.0.3.tgz",
++      "integrity": "sha512-YxQL+ax0XqBJDZiKimS2XQaf+2wDGVa1enVRGzEvLLVFeqa5kx2bWbtcSXgsxjQB7nRqqIGFIcLteF/sHeVtQg==",
++      "cpu": [
++        "arm64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@msgpackr-extract/msgpackr-extract-linux-x64": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-linux-x64/-/msgpackr-extract-linux-x64-3.0.3.tgz",
++      "integrity": "sha512-cvwNfbP07pKUfq1uH+S6KJ7dT9K8WOE4ZiAcsrSes+UY55E/0jLYc+vq+DO7jlmqRb5zAggExKm0H7O/CBaesg==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@msgpackr-extract/msgpackr-extract-win32-x64": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/@msgpackr-extract/msgpackr-extract-win32-x64/-/msgpackr-extract-win32-x64-3.0.3.tgz",
++      "integrity": "sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==",
++      "cpu": [
++        "x64"
++      ],
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ]
++    },
+     "node_modules/@napi-rs/wasm-runtime": {
+       "version": "0.2.12",
+       "resolved": "https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz",
+@@ -2456,6 +2552,29 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
++    "node_modules/boneyard-js": {
++      "version": "1.6.0",
++      "resolved": "https://registry.npmjs.org/boneyard-js/-/boneyard-js-1.6.0.tgz",
++      "integrity": "sha512-sL4vCggO6THLPnHhY1TpgVDgCx3/+bN7a6UGX6S8IRV1iKZXRyeuz4zsdGXuqx3HikAyOVPAqcCcc722CdWGJw==",
++      "license": "MIT",
++      "dependencies": {
++        "playwright": "^1.58.2"
++      },
++      "bin": {
++        "boneyard-js": "bin/cli.js"
++      },
++      "optionalDependencies": {
++        "@chenglou/pretext": "^0.0.3"
++      },
++      "peerDependencies": {
++        "react": ">=18"
++      },
++      "peerDependenciesMeta": {
++        "react": {
++          "optional": true
++        }
++      }
++    },
+     "node_modules/brace-expansion": {
+       "version": "1.1.12",
+       "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.12.tgz",
+@@ -2514,6 +2633,33 @@
+         "node": "^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7"
+       }
+     },
++    "node_modules/bullmq": {
++      "version": "5.73.0",
++      "resolved": "https://registry.npmjs.org/bullmq/-/bullmq-5.73.0.tgz",
++      "integrity": "sha512-uX8RbQaBbzk0H9JYXKGrNxpDqFcDBQFFKCyKarMjtfYHuct5X48M2LUq3Q9FXt/P2kWzPrqYlNnNqsico7ty5A==",
++      "license": "MIT",
++      "dependencies": {
++        "cron-parser": "4.9.0",
++        "ioredis": "5.10.1",
++        "msgpackr": "1.11.5",
++        "node-abort-controller": "3.1.1",
++        "semver": "7.7.4",
++        "tslib": "2.8.1",
++        "uuid": "11.1.0"
++      }
++    },
++    "node_modules/bullmq/node_modules/semver": {
++      "version": "7.7.4",
++      "resolved": "https://registry.npmjs.org/semver/-/semver-7.7.4.tgz",
++      "integrity": "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==",
++      "license": "ISC",
++      "bin": {
++        "semver": "bin/semver.js"
++      },
++      "engines": {
++        "node": ">=10"
++      }
++    },
+     "node_modules/call-bind": {
+       "version": "1.0.8",
+       "resolved": "https://registry.npmjs.org/call-bind/-/call-bind-1.0.8.tgz",
+@@ -2665,6 +2811,15 @@
+       "integrity": "sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==",
+       "license": "MIT"
+     },
++    "node_modules/cluster-key-slot": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz",
++      "integrity": "sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==",
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
+     "node_modules/color-convert": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz",
+@@ -2715,6 +2870,18 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/cron-parser": {
++      "version": "4.9.0",
++      "resolved": "https://registry.npmjs.org/cron-parser/-/cron-parser-4.9.0.tgz",
++      "integrity": "sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==",
++      "license": "MIT",
++      "dependencies": {
++        "luxon": "^3.2.1"
++      },
++      "engines": {
++        "node": ">=12.0.0"
++      }
++    },
+     "node_modules/cross-spawn": {
+       "version": "7.0.6",
+       "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
+@@ -2811,6 +2978,16 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/date-fns": {
++      "version": "4.1.0",
++      "resolved": "https://registry.npmjs.org/date-fns/-/date-fns-4.1.0.tgz",
++      "integrity": "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==",
++      "license": "MIT",
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/kossnocorp"
++      }
++    },
+     "node_modules/dateformat": {
+       "version": "4.6.3",
+       "resolved": "https://registry.npmjs.org/dateformat/-/dateformat-4.6.3.tgz",
+@@ -2824,7 +3001,6 @@
+       "version": "4.4.3",
+       "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
+       "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
+-      "dev": true,
+       "license": "MIT",
+       "dependencies": {
+         "ms": "^2.1.3"
+@@ -2881,6 +3057,15 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/denque": {
++      "version": "2.1.0",
++      "resolved": "https://registry.npmjs.org/denque/-/denque-2.1.0.tgz",
++      "integrity": "sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==",
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=0.10"
++      }
++    },
+     "node_modules/detect-libc": {
+       "version": "2.1.2",
+       "resolved": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.1.2.tgz",
+@@ -4140,6 +4325,30 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/ioredis": {
++      "version": "5.10.1",
++      "resolved": "https://registry.npmjs.org/ioredis/-/ioredis-5.10.1.tgz",
++      "integrity": "sha512-HuEDBTI70aYdx1v6U97SbNx9F1+svQKBDo30o0b9fw055LMepzpOOd0Ccg9Q6tbqmBSJaMuY0fB7yw9/vjBYCA==",
++      "license": "MIT",
++      "dependencies": {
++        "@ioredis/commands": "1.5.1",
++        "cluster-key-slot": "^1.1.0",
++        "debug": "^4.3.4",
++        "denque": "^2.1.0",
++        "lodash.defaults": "^4.2.0",
++        "lodash.isarguments": "^3.1.0",
++        "redis-errors": "^1.2.0",
++        "redis-parser": "^3.0.0",
++        "standard-as-callback": "^2.1.0"
++      },
++      "engines": {
++        "node": ">=12.22.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/ioredis"
++      }
++    },
+     "node_modules/is-array-buffer": {
+       "version": "3.0.5",
+       "resolved": "https://registry.npmjs.org/is-array-buffer/-/is-array-buffer-3.0.5.tgz",
+@@ -4781,6 +4990,18 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
++    "node_modules/lodash.defaults": {
++      "version": "4.2.0",
++      "resolved": "https://registry.npmjs.org/lodash.defaults/-/lodash.defaults-4.2.0.tgz",
++      "integrity": "sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==",
++      "license": "MIT"
++    },
++    "node_modules/lodash.isarguments": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/lodash.isarguments/-/lodash.isarguments-3.1.0.tgz",
++      "integrity": "sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==",
++      "license": "MIT"
++    },
+     "node_modules/lodash.merge": {
+       "version": "4.6.2",
+       "resolved": "https://registry.npmjs.org/lodash.merge/-/lodash.merge-4.6.2.tgz",
+@@ -4811,6 +5032,15 @@
+         "yallist": "^3.0.2"
+       }
+     },
++    "node_modules/luxon": {
++      "version": "3.7.2",
++      "resolved": "https://registry.npmjs.org/luxon/-/luxon-3.7.2.tgz",
++      "integrity": "sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      }
++    },
+     "node_modules/math-intrinsics": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+@@ -4871,9 +5101,39 @@
+       "version": "2.1.3",
+       "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+       "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+-      "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/msgpackr": {
++      "version": "1.11.5",
++      "resolved": "https://registry.npmjs.org/msgpackr/-/msgpackr-1.11.5.tgz",
++      "integrity": "sha512-UjkUHN0yqp9RWKy0Lplhh+wlpdt9oQBYgULZOiFhV3VclSF1JnSQWZ5r9gORQlNYaUKQoR8itv7g7z1xDDuACA==",
++      "license": "MIT",
++      "optionalDependencies": {
++        "msgpackr-extract": "^3.0.2"
++      }
++    },
++    "node_modules/msgpackr-extract": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/msgpackr-extract/-/msgpackr-extract-3.0.3.tgz",
++      "integrity": "sha512-P0efT1C9jIdVRefqjzOQ9Xml57zpOXnIuS+csaB4MdZbTdmGDLo8XhzBG1N7aO11gKDDkJvBLULeFTo46wwreA==",
++      "hasInstallScript": true,
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "node-gyp-build-optional-packages": "5.2.2"
++      },
++      "bin": {
++        "download-msgpackr-prebuilds": "bin/download-prebuilds.js"
++      },
++      "optionalDependencies": {
++        "@msgpackr-extract/msgpackr-extract-darwin-arm64": "3.0.3",
++        "@msgpackr-extract/msgpackr-extract-darwin-x64": "3.0.3",
++        "@msgpackr-extract/msgpackr-extract-linux-arm": "3.0.3",
++        "@msgpackr-extract/msgpackr-extract-linux-arm64": "3.0.3",
++        "@msgpackr-extract/msgpackr-extract-linux-x64": "3.0.3",
++        "@msgpackr-extract/msgpackr-extract-win32-x64": "3.0.3"
++      }
++    },
+     "node_modules/mz": {
+       "version": "2.7.0",
+       "resolved": "https://registry.npmjs.org/mz/-/mz-2.7.0.tgz",
+@@ -5008,6 +5268,27 @@
+         "node": "^10 || ^12 || >=14"
+       }
+     },
++    "node_modules/node-abort-controller": {
++      "version": "3.1.1",
++      "resolved": "https://registry.npmjs.org/node-abort-controller/-/node-abort-controller-3.1.1.tgz",
++      "integrity": "sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==",
++      "license": "MIT"
++    },
++    "node_modules/node-gyp-build-optional-packages": {
++      "version": "5.2.2",
++      "resolved": "https://registry.npmjs.org/node-gyp-build-optional-packages/-/node-gyp-build-optional-packages-5.2.2.tgz",
++      "integrity": "sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "detect-libc": "^2.0.1"
++      },
++      "bin": {
++        "node-gyp-build-optional-packages": "bin.js",
++        "node-gyp-build-optional-packages-optional": "optional.js",
++        "node-gyp-build-optional-packages-test": "build-test.js"
++      }
++    },
+     "node_modules/node-releases": {
+       "version": "2.0.27",
+       "resolved": "https://registry.npmjs.org/node-releases/-/node-releases-2.0.27.tgz",
+@@ -5396,6 +5677,50 @@
+         "node": ">= 6"
+       }
+     },
++    "node_modules/playwright": {
++      "version": "1.59.1",
++      "resolved": "https://registry.npmjs.org/playwright/-/playwright-1.59.1.tgz",
++      "integrity": "sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw==",
++      "license": "Apache-2.0",
++      "dependencies": {
++        "playwright-core": "1.59.1"
++      },
++      "bin": {
++        "playwright": "cli.js"
++      },
++      "engines": {
++        "node": ">=18"
++      },
++      "optionalDependencies": {
++        "fsevents": "2.3.2"
++      }
++    },
++    "node_modules/playwright-core": {
++      "version": "1.59.1",
++      "resolved": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.59.1.tgz",
++      "integrity": "sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg==",
++      "license": "Apache-2.0",
++      "bin": {
++        "playwright-core": "cli.js"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/playwright/node_modules/fsevents": {
++      "version": "2.3.2",
++      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
++      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
++      "hasInstallScript": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
++      }
++    },
+     "node_modules/possible-typed-array-names": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/possible-typed-array-names/-/possible-typed-array-names-1.1.0.tgz",
+@@ -5731,6 +6056,39 @@
+         "node": ">= 12.13.0"
+       }
+     },
++    "node_modules/redis-errors": {
++      "version": "1.2.0",
++      "resolved": "https://registry.npmjs.org/redis-errors/-/redis-errors-1.2.0.tgz",
++      "integrity": "sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=4"
++      }
++    },
++    "node_modules/redis-parser": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/redis-parser/-/redis-parser-3.0.0.tgz",
++      "integrity": "sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==",
++      "license": "MIT",
++      "dependencies": {
++        "redis-errors": "^1.0.0"
++      },
++      "engines": {
++        "node": ">=4"
++      }
++    },
++    "node_modules/redlock": {
++      "version": "5.0.0-beta.2",
++      "resolved": "https://registry.npmjs.org/redlock/-/redlock-5.0.0-beta.2.tgz",
++      "integrity": "sha512-2RDWXg5jgRptDrB1w9O/JgSZC0j7y4SlaXnor93H/UJm/QyDiFgBKNtrh0TI6oCXqYSaSoXxFh6Sd3VtYfhRXw==",
++      "license": "MIT",
++      "dependencies": {
++        "node-abort-controller": "^3.0.1"
++      },
++      "engines": {
++        "node": ">=12"
++      }
++    },
+     "node_modules/reflect.getprototypeof": {
+       "version": "1.0.10",
+       "resolved": "https://registry.npmjs.org/reflect.getprototypeof/-/reflect.getprototypeof-1.0.10.tgz",
+@@ -6187,6 +6545,12 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/standard-as-callback": {
++      "version": "2.1.0",
++      "resolved": "https://registry.npmjs.org/standard-as-callback/-/standard-as-callback-2.1.0.tgz",
++      "integrity": "sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==",
++      "license": "MIT"
++    },
+     "node_modules/stop-iteration-iterator": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/stop-iteration-iterator/-/stop-iteration-iterator-1.1.0.tgz",
+@@ -6872,6 +7236,19 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/uuid": {
++      "version": "11.1.0",
++      "resolved": "https://registry.npmjs.org/uuid/-/uuid-11.1.0.tgz",
++      "integrity": "sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==",
++      "funding": [
++        "https://github.com/sponsors/broofa",
++        "https://github.com/sponsors/ctavan"
++      ],
++      "license": "MIT",
++      "bin": {
++        "uuid": "dist/esm/bin/uuid"
++      }
++    },
+     "node_modules/which": {
+       "version": "2.0.2",
+       "resolved": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
+diff --git a/package.json b/package.json
+index 8c2fbca..ac2e40a 100644
+--- a/package.json
++++ b/package.json
+@@ -14,12 +14,17 @@
+     "@supabase/supabase-js": "^2.98.0",
+     "@toon-format/toon": "^2.1.0",
+     "bcryptjs": "^3.0.3",
++    "boneyard-js": "1.6.0",
++    "bullmq": "5.73.0",
++    "date-fns": "4.1.0",
++    "ioredis": "5.10.1",
+     "jose": "^6.1.3",
+     "next": "16.1.6",
+     "pino": "^10.3.1",
+     "pino-pretty": "^13.1.3",
+     "react": "19.2.3",
+     "react-dom": "19.2.3",
++    "redlock": "5.0.0-beta.2",
+     "zod": "^4.3.6"
+   },
+   "devDependencies": {
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 49bf646..779677b 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -844,8 +844,6 @@ model OtpCode {
+   @@map("otp_codes")
+ }
+ 
+-<<<<<<< HEAD
+-=======
+ // ============================================================
+ // INFRASTRUCTURE MODELS (Smart Slot Engine + Operational Layer)
+ // ============================================================
+@@ -953,8 +951,6 @@ model OverrideLog {
+ 
+   @@map("override_logs")
+ }
+-
+->>>>>>> e2d473f (feat(schema): add PatientAddress, Wallet, WalletTransaction, PatientPrescription, PrescriptionItem models)
+ enum HospitalStatus {
+   PENDING
+   APPROVED
+@@ -967,6 +963,7 @@ enum AppointmentStatus {
+   CONFIRMED
+   COMPLETED
+   CANCELLED
++  NO_SHOW
+ }
+ 
+ enum PaymentStatus {

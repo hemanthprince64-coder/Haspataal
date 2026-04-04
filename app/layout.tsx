@@ -1,3 +1,4 @@
+import React, { ReactNode } from "react";
 import { Merriweather, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
@@ -22,7 +23,11 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({ children }) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className={`${merriweather.variable} ${sourceSans.variable}`} suppressHydrationWarning>
       <body className={sourceSans.className} suppressHydrationWarning>{children}</body>

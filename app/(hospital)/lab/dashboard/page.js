@@ -4,6 +4,8 @@ import { UserRole } from '@/types';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import LabDashboardClient from "@/components/hospital/LabDashboardClient";
+
 export default async function LabDashboard() {
     let user;
     try {
@@ -43,89 +45,5 @@ export default async function LabDashboard() {
         );
     }
 
-    const catalog = await services.hospital.getDiagnosticCatalog(user.hospitalId);
-    const orders = await services.hospital.getLabOrders(user.hospitalId);
-
-    return (
-        <div className="page-enter" style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.25rem' }}>{hospital.legalName} Dashboard</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Diagnostics Management Portal</p>
-                </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                <div className="card">
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Total Lab Orders</div>
-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary)' }}>{orders.length}</div>
-                </div>
-                <div className="card">
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Catalog Items</div>
-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--secondary)' }}>{catalog.length}</div>
-                </div>
-                <div className="card">
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Active Patients</div>
-                    <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--accent)' }}>{new Set(orders.map(o => o.patientId)).size}</div>
-                </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
-                {/* Recent Orders List */}
-                <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontWeight: '700' }}>Recent Test Orders</h3>
-                    </div>
-
-                    {orders.length === 0 ? (
-                        <div className="empty-state" style={{ padding: '2rem 0' }}>
-                            <div className="empty-state-icon" style={{ fontSize: '2rem' }}>🧪</div>
-                            <p className="empty-state-text">No test orders received yet.</p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {orders.slice(0, 10).map(o => (
-                                <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px' }}>
-                                    <div>
-                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Order #{o.id.substring(0, 8)}</div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Patient: {o.patient?.name || 'Unknown'}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status: {o.status} | Total: ₹{o.totalAmount}</div>
-                                    </div>
-                                    <button className="btn btn-sm btn-outline">View Details</button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Catalog Overview List */}
-                <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontWeight: '700' }}>Test Catalog Overview</h3>
-                        <button className="btn btn-sm btn-primary">Manage</button>
-                    </div>
-
-                    {catalog.length === 0 ? (
-                        <div className="empty-state" style={{ padding: '2rem 0' }}>
-                            <div className="empty-state-icon" style={{ fontSize: '2rem' }}>📋</div>
-                            <p className="empty-state-text">Catalog is empty. Add tests to start receiving orders.</p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {catalog.map(c => (
-                                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'var(--bg-main)', borderRadius: '12px' }}>
-                                    <div>
-                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{c.category?.name || 'Test Item'}</div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Available</div>
-                                    </div>
-                                    <div style={{ fontWeight: '700', color: 'var(--primary)' }}>₹{c.price}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
+    return <LabDashboardClient hospital={hospital} user={user} />;
 }

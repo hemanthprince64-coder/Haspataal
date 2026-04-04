@@ -6,8 +6,10 @@ export default async function BookingPage({ searchParams }) {
     const doctorId = params.doctorId;
     const hospitalId = params.hospitalId;
 
-    const doctor = doctorId ? services.platform.getDoctorById(doctorId) : null;
-    const hospital = hospitalId ? services.platform.getHospitalById(hospitalId) : null;
+    const [doctor, hospital] = await Promise.all([
+        doctorId ? services.platform.getDoctorById(doctorId) : Promise.resolve(null),
+        hospitalId ? services.platform.getHospitalById(hospitalId) : Promise.resolve(null)
+    ]);
 
     if (!doctor || !hospital) {
         return (
@@ -48,14 +50,18 @@ export default async function BookingPage({ searchParams }) {
                     👨‍⚕️
                 </div>
                 <div style={{ flex: 1 }}>
-                    <h3 style={{ fontWeight: "700", fontSize: "1.1rem", marginBottom: "0.25rem" }}>{doctor.name}</h3>
-                    <span className="badge badge-primary">{doctor.speciality}</span>
+                    <h3 style={{ fontWeight: "700", fontSize: "1.1rem", marginBottom: "0.25rem" }}>
+                        {doctor.fullName || doctor.name || 'Doctor'}
+                    </h3>
+                    <span className="badge badge-primary">
+                        {doctor.affiliations?.find(a => a.hospitalId === hospitalId)?.department || 'General Physician'}
+                    </span>
                     <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "0.5rem" }}>
-                        🏥 {hospital.name} • 📍 {hospital.area}, {hospital.city}
+                        🏥 {hospital.legalName || hospital.displayName || 'Hospital'} • 📍 {hospital.addressLine1 || hospital.area || 'Location'}, {hospital.city}
                     </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: "700", fontSize: "1.3rem", color: "var(--accent)" }}>₹{doctor.fee}</div>
+                    <div style={{ fontWeight: "700", fontSize: "1.3rem", color: "var(--accent)" }}>₹{doctor.fee || hospital.consultationFee || 500}</div>
                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>consultation</div>
                 </div>
             </div>

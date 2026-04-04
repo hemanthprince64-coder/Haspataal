@@ -15,7 +15,7 @@ export default function ProfileActions({ visitId }) {
     }
 
     return (
-        <form action={formAction}>
+        <form action={formAction} className="flex flex-col gap-1 items-end">
             <input type="hidden" name="visitId" value={visitId} />
             <button
                 type="submit"
@@ -29,6 +29,11 @@ export default function ProfileActions({ visitId }) {
             >
                 {isPending ? 'Cancelling...' : '✕ Cancel'}
             </button>
+            {state?.message && !state.success && (
+                <div className="text-[10px] text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100 whitespace-nowrap">
+                    ⚠️ {state.message}
+                </div>
+            )}
         </form>
     );
 }

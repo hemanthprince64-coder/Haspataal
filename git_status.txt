@@ -1,0 +1,63 @@
+ M app/(agent)/agent/dashboard/page.js
+ M app/(hospital)/hospital/dashboard/page.js
+ M app/(hospital)/lab/dashboard/page.js
+ M app/(patient)/appointments/page.js
+ M app/(patient)/book/BookingForm.js
+ M app/(patient)/book/page.js
+ M app/(patient)/layout.js
+ M app/(patient)/medications/page.js
+ M app/(patient)/prescriptions/page.js
+ M app/(patient)/profile/ProfileActions.js
+ M app/(patient)/profile/page.js
+ M app/(patient)/records/page.js
+ M app/(patient)/tracker/page.js
+ M app/(patient)/vaccinations/page.js
+ M app/(patient)/vitals/page.js
+ M app/(patient)/wallet/page.js
+ M app/actions.js
+ M app/admin/dashboard/page.js
+ M app/globals.css
+ D build_log.txt
+ D build_log_final.txt
+A  lib/infrastructure/__tests__/slot-engine.spec.ts
+A  lib/infrastructure/circuit-breaker.ts
+A  lib/infrastructure/cleanup-service.ts
+A  lib/infrastructure/integrity-checker.ts
+AM lib/infrastructure/no-show-service.ts
+A  lib/infrastructure/outbox-worker.ts
+A  lib/infrastructure/queues.ts
+A  lib/infrastructure/redis-lock.ts
+AM lib/infrastructure/redlock.ts
+A  lib/infrastructure/runbooks.md
+A  lib/infrastructure/secrets.md
+AM lib/infrastructure/slot-engine.ts
+A  lib/infrastructure/slot-generator.ts
+A  lib/infrastructure/waitlist-service.ts
+ M lib/services.ts
+AM lib/util/prisma-singleton.ts
+AM lib/util/safe-transaction.ts
+AM lib/util/worker-lifecycle.ts
+ M package-lock.json
+ M package.json
+ M prisma/schema.prisma
+A  scripts/demo-smart-engine.ts
+A  scripts/drop_user_profiles.cjs
+AM scripts/drop_user_profiles.ts
+A  scripts/migrations/01_init_rbac.sql
+A  scripts/migrations/02_init_two_layer_model.sql
+A  scripts/migrations/03_init_slots_and_outbox.sql
+A  scripts/migrations/04_init_consent_and_audit_read.sql
+A  scripts/migrations/05_init_doctor_schedules.sql
+A  scripts/migrations/06_init_advanced_slots.sql
+A  scripts/migrations/07_init_enterprise_audit_and_doctor_map.sql
+A  scripts/migrations/08_init_waitlist_and_compliance.sql
+A  scripts/migrations/09_init_launch_safety.sql
+A  scripts/verify-env-fix.js
+?? app/boneyard-stage/
+?? bones/
+?? components/
+?? git_status.txt
+?? production_build_final_v4.txt
+?? production_build_final_v5.txt
+?? production_build_final_v6.txt
+?? production_build_final_v7.txt

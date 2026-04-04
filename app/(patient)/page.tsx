@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 
 export default function PatientHome() {
@@ -132,7 +133,7 @@ export default function PatientHome() {
                                     background: "transparent",
                                     boxShadow: 'none',
                                     padding: '0.5rem 0'
-                                }}
+                                } as React.CSSProperties}
                             />
                         </div>
                         <button type="submit" suppressHydrationWarning className="btn btn-primary" style={{ borderRadius: "9999px", padding: "0.875rem 2rem", fontSize: "1rem" }}>
@@ -150,7 +151,7 @@ export default function PatientHome() {
                         color: "var(--text-muted)",
                         fontWeight: "600",
                         fontSize: "0.9rem"
-                    }}>
+                    } as React.CSSProperties}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>✅ Verified Doctors</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>🔒 Secure Booking</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>🚑 24/7 Support</span>
@@ -167,7 +168,7 @@ export default function PatientHome() {
                 marginTop: "0",
                 position: "relative",
                 zIndex: 2
-            }}>
+            } as React.CSSProperties}>
                 <div className="container" style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(4, 1fr)",
@@ -175,7 +176,7 @@ export default function PatientHome() {
                     borderRadius: "var(--radius-lg)",
                     boxShadow: "var(--shadow-xl)",
                     overflow: "hidden"
-                }}>
+                } as React.CSSProperties}>
                     {[
                         { num: "12+", label: "Hospitals", color: "#0284c7" },
                         { num: "21+", label: "Doctors", color: "#0d9488" },
@@ -186,7 +187,7 @@ export default function PatientHome() {
                             padding: "1.5rem 1rem",
                             textAlign: "center",
                             borderRight: i < 3 ? "1px solid var(--border)" : "none"
-                        }}>
+                        } as React.CSSProperties}>
                             <div style={{ fontSize: "1.75rem", fontWeight: "800", color: stat.color }}>{stat.num}</div>
                             <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: "500" }}>{stat.label}</div>
                         </div>
@@ -214,7 +215,7 @@ export default function PatientHome() {
                             cursor: "pointer",
                             position: "relative",
                             overflow: "hidden"
-                        }}>
+                        } as React.CSSProperties}>
                             <div style={{
                                 width: "70px",
                                 height: "70px",
@@ -225,7 +226,7 @@ export default function PatientHome() {
                                 justifyContent: "center",
                                 fontSize: "2rem",
                                 margin: "0 auto 1.25rem",
-                            }}>
+                            } as React.CSSProperties}>
                                 {service.icon}
                             </div>
                             <h3 style={{ color: "var(--text-main)", marginBottom: "0.75rem", fontSize: "1.15rem", fontWeight: "700" }}>
@@ -255,7 +256,7 @@ export default function PatientHome() {
                             padding: "1.5rem 1rem",
                             textAlign: "center",
                             textDecoration: "none",
-                        }}>
+                        } as React.CSSProperties}>
                             <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>{spec.icon}</div>
                             <div style={{
                                 fontWeight: "600",
@@ -297,7 +298,7 @@ export default function PatientHome() {
                                     margin: "0 auto 1.25rem",
                                     boxShadow: "var(--shadow-lg)",
                                     border: `3px solid ${value.color}20`,
-                                }}>
+                                } as React.CSSProperties}>
                                     {value.icon}
                                 </div>
                                 <h3 style={{ color: value.color, marginBottom: "0.5rem", fontSize: "1.15rem", fontWeight: "700" }}>
@@ -320,7 +321,7 @@ export default function PatientHome() {
                 textAlign: "center",
                 position: "relative",
                 overflow: "hidden"
-            }}>
+            } as React.CSSProperties}>
                 <div style={{
                     position: "absolute",
                     top: "0",
@@ -329,7 +330,7 @@ export default function PatientHome() {
                     height: "300px",
                     background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
                     borderRadius: "50%",
-                }} />
+                } as React.CSSProperties} />
                 <div className="container" style={{ position: "relative" }}>
                     <h2 style={{ fontSize: "2.25rem", fontWeight: "800", marginBottom: "1rem" }}>
                         Your Guide to Better Healthcare
@@ -342,7 +343,7 @@ export default function PatientHome() {
                         color: "#0284c7",
                         fontWeight: "700",
                         boxShadow: "0 4px 15px rgba(0,0,0,0.2)"
-                    }}>
+                    } as React.CSSProperties}>
                         ✨ Get Assistance Now
                     </Link>
                 </div>

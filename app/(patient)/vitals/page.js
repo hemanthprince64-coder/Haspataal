@@ -4,6 +4,10 @@ import { useActionState, useEffect, useState } from 'react';
 import { addVitalAction } from '@/app/actions';
 import Link from 'next/link';
 
+import { Skeleton } from 'boneyard-js/react';
+import VitalsQuickStats from "@/components/patient/VitalsQuickStats";
+import VitalsHistory from "@/components/patient/VitalsHistory";
+
 const initialState = { message: '', success: false };
 
 export default function VitalsPage() {
@@ -20,10 +24,6 @@ export default function VitalsPage() {
             });
         });
     }, [state]);
-
-    if (loading) {
-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading vitals...</div>;
-    }
 
     const latestVital = vitals.length > 0 ? vitals[vitals.length - 1] : {};
 
@@ -110,50 +110,16 @@ export default function VitalsPage() {
                 </form>
             )}
 
-            {/* Quick Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                    { label: 'Weight', value: latestVital.weight || '—', unit: 'kg', icon: '⚖️', color: 'bg-blue-50 border-blue-200 text-blue-600' },
-                    { label: 'BP', value: latestVital.bloodPressure || '—', unit: '', icon: '🫀', color: 'bg-red-50 border-red-200 text-red-600' },
-                    { label: 'Sugar', value: latestVital.bloodSugar || '—', unit: 'mg/dL', icon: '🩸', color: 'bg-amber-50 border-amber-200 text-amber-600' },
-                    { label: 'SpO₂', value: latestVital.spo2 || '—', unit: '%', icon: '🫁', color: 'bg-teal-50 border-teal-200 text-teal-600' },
-                ].map(card => (
-                    <div key={card.label} className={`rounded-xl p-3 border text-center ${card.color}`}>
-                        <div className="text-xl mb-1">{card.icon}</div>
-                        <div className="text-lg font-bold">{card.value}</div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{card.label} {card.unit && `(${card.unit})`}</div>
-                    </div>
-                ))}
-            </div>
+            <Skeleton name="vitals-quick-stats" loading={loading}>
+                <VitalsQuickStats latestVital={latestVital} />
+            </Skeleton>
 
-            {vitals.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
-                    <div className="text-4xl mb-3">📊</div>
-                    <p className="text-slate-500 text-sm">Your vitals history will appear here after you record entries.</p>
-                    <p className="text-slate-400 text-xs mt-1">Click "+ Record" to log your first vitals reading.</p>
-                </div>
-            ) : (
-                <div className="space-y-3 mt-6">
-                    <h3 className="text-sm font-bold text-slate-800 px-1">Vitals History</h3>
-                    <div className="space-y-3">
-                        {vitals.slice().reverse().map((vital) => (
-                            <div key={vital.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col gap-2">
-                                <span className="text-xs font-semibold text-slate-400 border-b pb-2 mb-1">{new Date(vital.recordedAt).toLocaleString()}</span>
-                                <div className="grid grid-cols-3 gap-2 text-sm text-slate-700">
-                                    {vital.weight && <div><b>Wt:</b> {vital.weight} kg</div>}
-                                    {vital.height && <div><b>Ht:</b> {vital.height} cm</div>}
-                                    {vital.bmi && <div><b>BMI:</b> {vital.bmi}</div>}
-                                    {vital.bloodPressure && <div><b>BP:</b> {vital.bloodPressure}</div>}
-                                    {vital.pulse && <div><b>Pulse:</b> {vital.pulse}</div>}
-                                    {vital.bloodSugar && <div><b>Sugar:</b> {vital.bloodSugar}</div>}
-                                    {vital.spo2 && <div><b>SpO₂:</b> {vital.spo2}%</div>}
-                                    {vital.temperature && <div><b>Temp:</b> {vital.temperature}°F</div>}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            <div className="space-y-3 mt-6">
+                <h3 className="text-sm font-bold text-slate-800 px-1">Vitals History</h3>
+                <Skeleton name="vitals-history" loading={loading}>
+                    <VitalsHistory vitals={vitals} />
+                </Skeleton>
+            </div>
         </div>
     );
 }

@@ -272,7 +272,8 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **WAR ROOM Audit — Admin Panel path:** `haspataal-admin` uses the non-src Next.js 13+ layout (`app/` not `src/app/`). Always check the pattern per project before assuming `src/` structure.
 - **WAR ROOM Audit — NEXTAUTH_SECRET:** The `.env` file had `NEXTAUTH_SECRET` commented out. Must be active for JWT signing in auth-service. Run `node scripts/platform-health-check.js` to verify env vars before deployment.
 - **WAR ROOM Audit — create-next-app conflict:** `create-next-app` refuses to scaffold into a pre-existing directory even if it only has a few files (e.g., `.env.local`, `src/`). Workaround: Copy scaffold files (package.json, tsconfig, next.config.mjs) manually from a working portal.
-- **WAR ROOM Platform Health Check:** `scripts/platform-health-check.js` is the single-command audit covering all 5 WAR ROOM steps. Run after every major change.
+- **WAR ROOM Health Check — layout.tsx:** The platform health check specifically looks for `layout.tsx` in portal root directories (e.g., `./app/layout.tsx`). If the file is named `.js`, the check fails. Always migrate root layouts to `.tsx` for strict compliance. *(Fixed in conversation d643a053)*
+- **Infrastructure Staging:** When adding complex infrastructure (e.g., `lib/infrastructure/`), ensure all new files are staged and verified via `platform-health-check.js` to avoid broken production builds.
 
 
 ---

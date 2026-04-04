@@ -4,6 +4,9 @@ import { useActionState, useEffect, useState } from 'react';
 import { addVaccinationAction } from '@/app/actions';
 import Link from 'next/link';
 
+import { Skeleton } from 'boneyard-js/react';
+import VaccinationsList from "@/components/patient/VaccinationsList";
+
 const initialState = { message: '', success: false };
 
 export default function VaccinationsPage() {
@@ -20,10 +23,6 @@ export default function VaccinationsPage() {
             });
         });
     }, [state]);
-
-    if (loading) {
-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading vaccinations...</div>;
-    }
 
     return (
         <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
@@ -84,28 +83,12 @@ export default function VaccinationsPage() {
                 </form>
             )}
 
-            {vaccinations.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
-                    <div className="text-4xl mb-3">💉</div>
-                    <p className="text-slate-500 text-sm">Your vaccination records will appear here.</p>
-                    <p className="text-slate-400 text-xs mt-1">Click "+ Add" to record a vaccination.</p>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    <h3 className="text-sm font-bold text-slate-800 px-1">Vaccination History</h3>
-                    {vaccinations.map((vaccine) => (
-                        <div key={vaccine.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
-                            <div>
-                                <h4 className="font-bold text-slate-800">{vaccine.vaccineName}</h4>
-                                <p className="text-sm text-slate-500">Date Given: {new Date(vaccine.dateGiven).toLocaleDateString()}</p>
-                                {vaccine.nextDueDate && (
-                                    <p className="text-xs text-teal-600 font-semibold mt-1">Next Due: {new Date(vaccine.nextDueDate).toLocaleDateString()}</p>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-800 px-1">Vaccination History</h3>
+                <Skeleton name="vaccinations-list" loading={loading}>
+                    <VaccinationsList vaccinations={vaccinations} />
+                </Skeleton>
+            </div>
         </div>
     );
 }

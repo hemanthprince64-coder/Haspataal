@@ -168,6 +168,35 @@ export async function approveDoctorAffiliationAction(prevState, formData) {
     return { success: true, message: 'Doctor approved successfully.' };
 }
 
+export async function getHospitalDashboardData(hospitalId) {
+    try {
+        const [stats, allVisits] = await Promise.all([
+            services.hospital.getStats(hospitalId),
+            services.hospital.getVisits(hospitalId)
+        ]);
+        return {
+            stats,
+            recentVisits: allVisits.slice(0, 5)
+        };
+    } catch (e) {
+        console.error("Error fetching hospital dashboard data:", e);
+        return { stats: { todayVisits: 0, totalPatients: 0, totalDoctors: 0, scheduledVisits: 0, totalVisits: 0, completedVisits: 0 }, recentVisits: [] };
+    }
+}
+
+export async function getLabDashboardData(hospitalId) {
+    try {
+        const [catalog, orders] = await Promise.all([
+            services.hospital.getDiagnosticCatalog(hospitalId),
+            services.hospital.getLabOrders(hospitalId)
+        ]);
+        return { catalog, orders };
+    } catch (e) {
+        console.error("Error fetching lab dashboard data:", e);
+        return { catalog: [], orders: [] };
+    }
+}
+
 export async function rejectDoctorAffiliationAction(prevState, formData) {
     let user;
     try {
@@ -179,6 +208,28 @@ export async function rejectDoctorAffiliationAction(prevState, formData) {
     const doctorId = formData.get('doctorId');
     await services.hospital.rejectDoctorAffiliation(user.hospitalId, doctorId);
     return { success: true, message: 'Doctor rejected successfully.' };
+}
+
+export async function getAdminDashboardData() {
+    try {
+        await requireRole(UserRole.ADMIN, 'session_admin');
+        const stats = await services.admin.getPlatformStats();
+        return { stats };
+    } catch (e) {
+        console.error("Error fetching admin dashboard data:", e);
+        return { stats: { totalHospitals: 0, activeHospitals: 0, pendingHospitals: 0, totalDoctors: 0, totalPatients: 0, totalVisits: 0, cities: 0 } };
+    }
+}
+
+export async function getAgentDashboardData(agentId) {
+    try {
+        await requireRole(UserRole.AGENT, 'session_agent');
+        const data = await services.agent.getDashboardData(agentId);
+        return data;
+    } catch (e) {
+        console.error("Error fetching agent dashboard data:", e);
+        return { hospitals: [], patients: [], stats: { totalHospitals: 0, approvedHospitals: 0, totalPatients: 0 } };
+    }
 }
 
 export async function registerDoctor(prevState, formData) {
@@ -314,7 +365,8 @@ export async function requestOtpAction(prevState, formData) {
         await services.patient.requestOtp(mobile);
         return { success: true, message: 'OTP sent successfully!' };
     } catch (e) {
-        return { success: false, message: 'Failed to send OTP. Please try again.' };
+        logger.error({ action: 'otp_request_failed', mobile, error: e.message, stack: e.stack }, 'Failed to send OTP');
+        return { success: false, message: `Failed to send OTP: ${e.message}` };
     }
 }
 
@@ -352,18 +404,7 @@ export async function getPatientFullProfile() {
         if (!patientData) return null;
 
         // Fetch all related health details
-        const [
-            familyMembers,
-            medicalHistory,
-            medications,
-            vitals,
-            vaccinations,
-            pregnancyProfile,
-            insurance,
-            addresses,
-            wallet,
-            prescriptions
-        ] = await Promise.all([
+        const results = await Promise.allSettled([
             services.patient.getFamilyMembers(patientCookie.id),
             services.patient.getMedicalHistory(patientCookie.id),
             services.patient.getMedications(patientCookie.id),
@@ -376,20 +417,31 @@ export async function getPatientFullProfile() {
             services.patient.getPrescriptions(patientCookie.id)
         ]);
 
+        const [
+            familyMembers, medicalHistory, medications, vitals,
+            vaccinations, pregnancyProfile, insurance, addresses,
+            wallet, prescriptions
+        ] = results.map((r, i) => {
+            if (r.status === 'fulfilled') return r.value;
+            logger.error({ action: 'profile_subfetch_failed', index: i, error: r.reason?.message }, 'Sub-fetch during profile load failed');
+            return null; // Graceful fallback per sub-section
+        });
+
         return {
             ...patientData,
-            familyMembers,
-            medicalHistory,
-            medications,
-            vitals,
-            vaccinations,
-            pregnancyProfile,
-            insurance,
-            addresses,
-            wallet,
-            prescriptions
+            familyMembers: familyMembers || [],
+            medicalHistory: medicalHistory || null,
+            medications: medications || [],
+            vitals: vitals || [],
+            vaccinations: vaccinations || [],
+            pregnancyProfile: pregnancyProfile || null,
+            insurance: insurance || [],
+            addresses: addresses || [],
+            wallet: wallet || { balance: 0, transactions: [] },
+            prescriptions: prescriptions || []
         };
     } catch (e) {
+        logger.error({ action: 'get_patient_profile_failed', error: e.message }, 'Failed to fetch full patient profile');
         return null;
     }
 }
@@ -687,19 +739,6 @@ export async function getMyAppointmentsAction() {
     return { success: true, data: visits };
 }
 
-export async function cancelAppointmentAction(prevState, formData) {
-    try {
-        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
-        const visitId = formData.get('visitId');
-        if (!visitId) throw new Error('Visit ID required');
-
-        await services.patient.cancelVisit(patient.id, visitId);
-        return { success: true, message: 'Appointment cancelled successfully.' };
-    } catch (e) {
-        return { success: false, message: e.message || 'Failed to cancel appointment.' };
-    }
-}
-
 // ==================== ADDRESS ACTIONS ====================
 
 export async function addAddressAction(prevState, formData) {
@@ -860,19 +899,16 @@ export async function cancelAppointmentPatient(prevState, formData) {
     let patient;
     try {
         patient = await requireRole(UserRole.PATIENT, 'session_patient');
+        const visitId = formData.get('visitId');
+        await services.patient.cancelVisit(patient.id, visitId);
+        return { success: true, message: 'Appointment cancelled and refund processed.' };
     } catch (e) {
-        return { message: 'Please login first.' };
+        logger.error({ action: 'cancel_appointment_failed', error: e.message }, 'Cancellation failed');
+        return { success: false, message: e.message || 'Cannot cancel this appointment.' };
     }
-
-    const visitId = formData.get('visitId');
-    const result = await services.patient.cancelVisit(patient.id, visitId);
-
-    if (!result) {
-        return { success: false, message: 'Cannot cancel this appointment.' };
-    }
-
-    return { success: true, message: 'Appointment cancelled.' };
 }
+
+export const cancelAppointmentAction = cancelAppointmentPatient;
 
 export async function addReview(prevState, formData) {
     return { success: true, message: 'Reviews are temporarily disabled during upgrade' };

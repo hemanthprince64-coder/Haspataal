@@ -4,6 +4,9 @@ import { useActionState, useEffect, useState } from 'react';
 import { addMedicationAction, deleteMedicationAction } from '@/app/actions';
 import Link from 'next/link';
 
+import { Skeleton } from 'boneyard-js/react';
+import MedicationsList from "@/components/patient/MedicationsList";
+
 const initialState = { message: '', success: false };
 
 export default function MedicationsPage() {
@@ -20,10 +23,6 @@ export default function MedicationsPage() {
             });
         });
     }, [addState]);
-
-    if (loading) {
-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading medications...</div>;
-    }
 
     return (
         <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
@@ -95,32 +94,12 @@ export default function MedicationsPage() {
                 </form>
             )}
 
-            {medications.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
-                    <div className="text-4xl mb-3">💊</div>
-                    <p className="text-slate-500 text-sm">Your medications will appear here after you add them.</p>
-                    <p className="text-slate-400 text-xs mt-1">Click "+ Add" to record your first medication.</p>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    <h3 className="text-sm font-bold text-slate-800 px-1">Current Medications</h3>
-                    {medications.map((med) => (
-                        <div key={med.id} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between">
-                            <div>
-                                <h4 className="font-bold text-slate-800">{med.drugName}</h4>
-                                <p className="text-sm text-slate-500">{med.dose} • {med.frequency}</p>
-                                <p className="text-xs text-slate-400 mt-1">Start: {new Date(med.startDate).toLocaleDateString()}</p>
-                            </div>
-                            <form action={deleteMedicationAction}>
-                                <input type="hidden" name="id" value={med.id} />
-                                <button type="submit" className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors tooltip" aria-label="Delete">
-                                    ✕
-                                </button>
-                            </form>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-800 px-1">Current Medications</h3>
+                <Skeleton name="medications-list" loading={loading}>
+                    <MedicationsList medications={medications} />
+                </Skeleton>
+            </div>
         </div>
     );
 }

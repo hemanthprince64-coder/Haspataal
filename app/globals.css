@@ -180,6 +180,11 @@
   --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Boneyard Skeleton Theme - Medical Soft */
+  --boneyard-base: #F0F4F8;
+  --boneyard-highlight: #FFFFFF;
+  --boneyard-speed: 1.8s;
 }
 
 * {

@@ -1,18 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BottomNav from "./components/BottomNav";
 import Sidebar from "./components/Sidebar";
 import { getPatientFullProfile } from "@/app/actions";
+import "@/bones/registry";
 
-export default function PatientLayout({ children }) {
+interface PatientLayoutProps {
+    children: ReactNode;
+}
+
+export default function PatientLayout({ children }: PatientLayoutProps) {
     const pathname = usePathname() || "";
     const isAuthPage = pathname === "/login" || pathname === "/register";
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [patient, setPatient] = useState(null);
+    const [patient, setPatient] = useState<any>(null);
 
     useEffect(() => {
         if (!isAuthPage) {
@@ -41,6 +46,7 @@ export default function PatientLayout({ children }) {
                             className="text-slate-600 hover:text-blue-600 hover:bg-blue-50 p-3 rounded-2xl transition-all duration-200 focus-ring"
                             onClick={() => setIsSidebarOpen(true)}
                             aria-label="Open menu"
+                            suppressHydrationWarning
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />

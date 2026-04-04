@@ -1,0 +1,100 @@
+[dotenv@17.3.1] injecting env (4) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+
+[1m[35m════════════════════════════════════════════════════════════
+  STEP 1 · DevOps Agent — Infrastructure Health
+════════════════════════════════════════════════════════════[0m
+[32m✅ PASS[0m  ENV: DATABASE_URL — present
+[31m❌ FAIL[0m  ENV: NEXTAUTH_SECRET — MISSING — check .env file
+[32m✅ PASS[0m  ENV: NEXT_PUBLIC_SUPABASE_URL — present
+[32m✅ PASS[0m  ENV: NEXT_PUBLIC_SUPABASE_ANON_KEY — present
+[32m✅ PASS[0m  FILE: ./nginx.conf
+[32m✅ PASS[0m  FILE: ./docker-compose.yml
+[32m✅ PASS[0m  FILE: ./.github/workflows/deploy.yml
+[32m✅ PASS[0m  FILE: ./.claude/PRODUCTION_CHECKLIST.md
+[32m✅ PASS[0m  FILE: ./.claude/WAR_ROOM_MASTER_PLAN.md
+[32m✅ PASS[0m  FILE: ./api-gateway/index.js
+[32m✅ PASS[0m  FILE: ./auth-service/index.js
+[32m✅ PASS[0m  FILE: ./doctor-portal/src/app/layout.tsx
+[32m✅ PASS[0m  FILE: ./hospital-hms/src/app/layout.tsx
+[32m✅ PASS[0m  FILE: ./scripts/phase4_security_rls.sql
+[32m✅ PASS[0m  Docker Compose services — 13 services defined
+
+[1m[35m════════════════════════════════════════════════════════════
+  STEP 2 · Backend Agent — API Validation
+════════════════════════════════════════════════════════════[0m
+[32m✅ PASS[0m  Auth Service: /oauth/token route present
+[32m✅ PASS[0m  Auth Service: /health route present
+[32m✅ PASS[0m  Auth Service: JWT signing logic present
+[32m✅ PASS[0m  API Gateway: /v1/search/doctors
+[32m✅ PASS[0m  API Gateway: /v1/appointments
+[32m✅ PASS[0m  API Gateway: /v1/hospitals
+[32m✅ PASS[0m  API Gateway: Auth middleware applied
+[32m✅ PASS[0m  RBAC: requireRole function present
+[32m✅ PASS[0m  RBAC: requireHospitalTenant (multi-tenant guard) present
+
+[1m[35m════════════════════════════════════════════════════════════
+  STEP 3 · Database Agent — Schema Validation
+════════════════════════════════════════════════════════════[0m
+[32m✅ PASS[0m  Prisma Schema: model Patient exists
+[32m✅ PASS[0m  Prisma Schema: model Doctor exists
+[32m✅ PASS[0m  Prisma Schema: model Appointment exists
+[33m⚠️  WARN[0m  Prisma Schema: model HospitalsMaster NOT FOUND
+[32m✅ PASS[0m  Prisma Schema: updatedAt field present
+[32m✅ PASS[0m  RLS SQL: "ENABLE ROW LEVEL SECURITY" present
+[32m✅ PASS[0m  RLS SQL: "audit_logs" present
+[32m✅ PASS[0m  RLS SQL: "log_audit_event" present
+[33m⚠️  WARN[0m  RLS SQL: "hospital_id isolation" not found
+[32m✅ PASS[0m  RLS Migration: ./supabase_rls_audit_day11.sql
+[32m✅ PASS[0m  RLS Migration: ./enable_rls_health_modules.sql
+
+[1m[35m════════════════════════════════════════════════════════════
+  STEP 4 · Frontend Agent — Dashboard Validation
+════════════════════════════════════════════════════════════[0m
+[32m✅ PASS[0m  Patient Portal: directory present at ./app
+[31m❌ FAIL[0m  Patient Portal: layout.tsx MISSING
+[33m⚠️  WARN[0m  Patient Portal: page.tsx not yet created
+[32m✅ PASS[0m  Doctor Portal: directory present at ./doctor-portal/src/app
+[32m✅ PASS[0m  Doctor Portal: layout.tsx present
+[32m✅ PASS[0m  Doctor Portal: page.tsx present
+[32m✅ PASS[0m  Hospital HMS: directory present at ./hospital-hms/src/app
+[32m✅ PASS[0m  Hospital HMS: layout.tsx present
+[32m✅ PASS[0m  Hospital HMS: page.tsx present
+[32m✅ PASS[0m  Admin Panel: directory present at ./haspataal-admin/app
+[32m✅ PASS[0m  Admin Panel: layout.tsx present
+[32m✅ PASS[0m  Admin Panel: page.tsx present
+[32m✅ PASS[0m  API Client: ./doctor-portal/src/lib/api.ts correctly uses env var
+[32m✅ PASS[0m  API Client: ./hospital-hms/src/lib/api.ts correctly uses env var
+
+[1m[35m════════════════════════════════════════════════════════════
+  STEP 5 · Security Agent — Security Audit
+════════════════════════════════════════════════════════════[0m
+[32m✅ PASS[0m  Security: JWT verification via jwt.verify
+[32m✅ PASS[0m  Security: Missing token returns 401
+[32m✅ PASS[0m  Security: Wrong role returns 403
+[32m✅ PASS[0m  Security: Cross-tenant access denied
+[32m✅ PASS[0m  Security: Admin bypass allowed
+[32m✅ PASS[0m  Security: No hardcoded passwords in ./auth-service/index.js
+[32m✅ PASS[0m  Security: Env-var usage in ./auth-service/index.js
+[32m✅ PASS[0m  Security: No hardcoded passwords in ./api-gateway/index.js
+[32m✅ PASS[0m  Security: Env-var usage in ./api-gateway/index.js
+[32m✅ PASS[0m  Nginx security header: X-Frame-Options
+[32m✅ PASS[0m  Nginx security header: Strict-Transport-Security
+[32m✅ PASS[0m  Nginx security header: X-Content-Type-Options
+[32m✅ PASS[0m  Nginx: TLS 1.3 enabled
+[32m✅ PASS[0m  SEO: Sitemap uses correct domain
+[32m✅ PASS[0m  SEO: Sitemap has multiple cities
+
+[1m[35m════════════════════════════════════════════════════════════
+  FINAL HEALTH REPORT — WAR ROOM AUDIT
+════════════════════════════════════════════════════════════[0m
+
+  Total Checks : 64
+  [32m✅ PASS[0m  PASS         : 59
+  [33m⚠️  WARN[0m  WARN         : 3
+  [31m❌ FAIL[0m  FAIL         : 2
+
+[33m[1m  ⚠️   PLATFORM STATUS: DEGRADED — Minor issues detected[0m
+
+  Issues to Fix:
+   • ENV: NEXTAUTH_SECRET: MISSING — check .env file
+   • Patient Portal: layout.tsx MISSING: 

@@ -1,0 +1,30 @@
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 49bf646..779677b 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -844,8 +844,6 @@ model OtpCode {
+   @@map("otp_codes")
+ }
+ 
+-<<<<<<< HEAD
+-=======
+ // ============================================================
+ // INFRASTRUCTURE MODELS (Smart Slot Engine + Operational Layer)
+ // ============================================================
+@@ -953,8 +951,6 @@ model OverrideLog {
+ 
+   @@map("override_logs")
+ }
+-
+->>>>>>> e2d473f (feat(schema): add PatientAddress, Wallet, WalletTransaction, PatientPrescription, PrescriptionItem models)
+ enum HospitalStatus {
+   PENDING
+   APPROVED
+@@ -967,6 +963,7 @@ enum AppointmentStatus {
+   CONFIRMED
+   COMPLETED
+   CANCELLED
++  NO_SHOW
+ }
+ 
+ enum PaymentStatus {

@@ -257,6 +257,9 @@ export const services = {
             const targetDate = new Date(date);
             targetDate.setHours(0, 0, 0, 0);
 
+            const now = new Date();
+            const isToday = targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
             // Fetch existing bookings for this doctor on this date
             const existingBookings = await prisma.appointment.findMany({
                 where: {
@@ -276,10 +279,25 @@ export const services = {
                 '15:00', '15:30', '16:00', '16:30'
             ];
 
-            return allSlots.map(time => ({
-                time,
-                available: !bookedSlots.has(time)
-            }));
+            return allSlots.map(time => {
+                let available = !bookedSlots.has(time);
+
+                if (isToday) {
+                    const [hours, minutes] = time.split(':').map(Number);
+                    const slotDateTime = new Date(targetDate);
+                    slotDateTime.setHours(hours, minutes, 0, 0);
+
+                    // If slot is in the past (using 15 min buffer for convenience)
+                    if (slotDateTime.getTime() <= now.getTime()) {
+                        available = false;
+                    }
+                }
+
+                return {
+                    time,
+                    available
+                };
+            });
         },
 
         createVisit: async (hospitalId: string, data: { patientMobile: string; patientName: string; doctorId: string; date: string; slot?: string; status?: any; }) => {
@@ -384,8 +402,14 @@ export const services = {
             if (visit.patientId !== patientId) throw new Error('Unauthorized');
 
             const hrLimit = 6 * 60 * 60 * 1000;
-            if (visit.date.getTime() - Date.now() < hrLimit) {
-                throw new Error('Appointments cannot be cancelled within 6 hours of the scheduled time');
+            
+            // Construct full Date by combining visit.date (Y-M-D) and visit.slot (H:m)
+            const [hours, minutes] = (visit.slot || "09:00").split(':').map(Number);
+            const appointmentTime = new Date(visit.date);
+            appointmentTime.setHours(hours, minutes, 0, 0);
+
+            if (appointmentTime.getTime() - Date.now() < hrLimit) {
+                throw new Error(`Appointments cannot be cancelled within 6 hours of the scheduled time (${visit.slot})`);
             }
 
             // If the user previously paid for this appointment, process a refund

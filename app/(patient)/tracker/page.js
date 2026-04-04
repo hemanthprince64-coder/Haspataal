@@ -7,6 +7,9 @@ import Link from "next/link";
 
 const initialState = { message: '', success: false };
 
+import { Skeleton } from 'boneyard-js/react';
+import MaternalHealthHero from "@/components/patient/MaternalHealthHero";
+
 export default function TrackerPage() {
     const [state, formAction, isPending] = useActionState(savePregnancyProfileAction, initialState);
     const [showForm, setShowForm] = useState(false);
@@ -21,10 +24,6 @@ export default function TrackerPage() {
             });
         });
     }, []);
-
-    if (loading) {
-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading pregnancy tracker...</div>;
-    }
 
     return (
         <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
@@ -41,15 +40,9 @@ export default function TrackerPage() {
                 </button>
             </div>
 
-            {/* Hero Card */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 via-rose-50 to-white p-6 border border-pink-200 text-center shadow-sm">
-                <div className="absolute -top-8 -right-8 w-32 h-32 bg-pink-200/30 rounded-full blur-2xl" />
-                <div className="relative">
-                    <div className="text-5xl mb-3" style={{ animation: 'float 3s ease-in-out infinite' }}>👶</div>
-                    <h2 className="text-lg font-bold text-slate-800 mb-1">Maternal Health Tracker</h2>
-                    <p className="text-sm text-slate-500">Track your pregnancy journey with Haspataal</p>
-                </div>
-            </div>
+            <Skeleton name="maternal-health-hero" loading={loading}>
+                <MaternalHealthHero />
+            </Skeleton>
 
             {state?.success && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm">
