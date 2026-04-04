@@ -278,7 +278,8 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **WAR ROOM Health Check — HospitalsMaster:** The platform health check explicitly looks for `HospitalsMaster` in `prisma/schema.prisma`. If the model is named `Hospital`, the check issues a warning. Always use the master naming convention for core entities.
 - **Phase 5 SEO Engine (WAR ROOM):** Implemented dynamic, data-driven Hub routing for `/city/[specialty]` pages. Integrated Prisma-backed discovery logic in `lib/services.ts` and automated sitemap generation in `app/sitemap.ts`. *(Implemented in conversation d643a053)*
 - **Prisma RLS Session Hardening (SECURITY):** Implemented `prisma.withAuth` helper in `lib/prisma.ts`. This pattern uses a transaction to set `request.jwt.claims` for the current thread, ensuring that even Node.js superuser database connections respect tenant-level RLS policies. Always use `withAuth` for hospital-scoped clinical data queries. *(Implemented in conversation d643a053)*
-- **WAR ROOM Session Status (2026-04-04):** Successfully completed **Phase 4 (Security)** and **Phase 5 (SEO Engine)**. The platform now features absolute database-level tenant isolation, dynamic landing pages, and a data-driven sitemap. All 64/64 health checks remain **PASS**. Environment is ready for Stage 6 / Production deployment.
+- **Next.js Duplicate Page Migration:** Route resolution fails if both `.js` and `.tsx` versions of a page exist. Always delete redundant `.js` files after migrating to TypeScript to avoid `Duplicate page detected` warnings. *(Fixed in conversation d643a053)*
+- **WAR ROOM Session Status (2026-04-04):** Successfully completed **Phase 4 (Security)** and **Phase 5 (SEO Engine)**. Resolved duplicate Next.js page warnings. All 64/64 health checks remain **PASS**. Environment is ready for Stage 6 / Production deployment.
 
 
 ---
