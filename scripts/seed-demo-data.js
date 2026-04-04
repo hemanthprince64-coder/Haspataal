@@ -28,7 +28,7 @@ async function seedData() {
         console.log("🏥 Seeding 20 Hospitals...");
         const hospitals = [];
         for (let i = 1; i <= 20; i++) {
-            const h = await prisma.hospital.create({
+            const h = await prisma.hospitalsMaster.create({
                 data: {
                     legalName: `Demo Hospital ${i} Pvt Ltd`,
                     displayName: `Haspataal Care ${i}`,
@@ -141,7 +141,7 @@ async function seedData() {
 
         // Output final counts
         const stats = {
-            hospitals: await prisma.hospital.count(),
+            hospitals: await prisma.hospitalsMaster.count(),
             doctors: await prisma.doctorMaster.count(),
             patients: await prisma.patient.count(),
             appointments: await prisma.appointment.count()

@@ -13,7 +13,7 @@ export enum BookingStatus {
     CANCELLED = 'CANCELLED'
 }
 
-export interface Hospital {
+export interface HospitalsMaster {
     id: string;
     legalName: string;
     displayName?: string | null;
@@ -34,6 +34,7 @@ export interface Hospital {
     doctorCount?: number;
     reviews?: any[];
 }
+export type Hospital = HospitalsMaster;
 
 export interface HospitalFacilities {
     icuAvailable: boolean;
@@ -58,6 +59,8 @@ export interface Doctor {
     fee?: number;
     experience?: number;
     hospital?: any;
+    affiliations?: any[];
+    reviews?: any[];
 }
 
 export interface Appointment {

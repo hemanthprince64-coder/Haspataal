@@ -17,7 +17,7 @@ async function runConcurrencyTest() {
     try {
         // 1. Setup Test Data - Satisfy Foreign Keys!
         logger.info('Creating mock Doctor and Hospital to satisfy FK constraints...');
-        await prisma.hospital.create({
+        await prisma.hospitalsMaster.create({
             data: {
                 id: hospitalId,
                 legalName: 'Test Concurrency Hospital',
@@ -92,7 +92,7 @@ async function runConcurrencyTest() {
         try {
             await prisma.appointment.deleteMany({ where: { doctorId } });
             await prisma.doctorMaster.deleteMany({ where: { id: doctorId } });
-            await prisma.hospital.deleteMany({ where: { id: hospitalId } });
+            await prisma.hospitalsMaster.deleteMany({ where: { id: hospitalId } });
         } catch (cleanupErr) {
             logger.warn('Cleanup warning (safe to ignore if cascaded): ' + cleanupErr.message);
         }

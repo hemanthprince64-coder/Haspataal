@@ -6,7 +6,7 @@ async function main() {
     try {
         let results = {};
 
-        results.Hospital = await prisma.hospital.count().catch(e => "Error or Not Found");
+        results.HospitalsMaster = await prisma.hospitalsMaster.count().catch(e => "Error or Not Found");
         results.DoctorMaster = await prisma.doctorMaster.count().catch(e => "Error or Not Found");
         results.Patient = await prisma.patient.count().catch(e => "Error or Not Found");
         results.Appointment = await prisma.appointment.count().catch(e => "Error or Not Found");

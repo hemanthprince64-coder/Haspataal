@@ -40,7 +40,7 @@ export const services = {
             if (city) {
                 where.city = { equals: city, mode: 'insensitive' };
             }
-            const data = stripSensitiveArray(await prisma.hospital.findMany({ where }));
+            const data = stripSensitiveArray(await prisma.hospitalsMaster.findMany({ where }));
 
             // Runtime validation layer
             if (!Array.isArray(data)) throw new Error('getHospitals must return an array');
@@ -49,7 +49,7 @@ export const services = {
         },
 
         getHospitalsByCity: async (city: string): Promise<Hospital[]> => {
-            const data = stripSensitiveArray(await prisma.hospital.findMany({
+            const data = stripSensitiveArray(await prisma.hospitalsMaster.findMany({
                 where: {
                     city: { equals: city, mode: 'insensitive' },
                     accountStatus: 'active'
@@ -63,7 +63,7 @@ export const services = {
         searchDoctors: async (city?: string, speciality?: string, query?: string): Promise<Doctor[]> => {
             let hospitalIds: string[] = [];
             if (city) {
-                const hospitals = await prisma.hospital.findMany({
+                const hospitals = await prisma.hospitalsMaster.findMany({
                     where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
                     select: { id: true }
                 });
@@ -76,6 +76,16 @@ export const services = {
                     some: {
                         hospitalId: { in: hospitalIds },
                         isCurrent: true
+                    }
+                };
+            }
+
+            if (speciality) {
+                where.affiliations = {
+                    ...where.affiliations,
+                    some: {
+                        ...where.affiliations?.some,
+                        department: { equals: speciality, mode: 'insensitive' }
                     }
                 };
             }
@@ -97,6 +107,75 @@ export const services = {
             return DoctorArraySchema.parse(data) as Doctor[];
         },
 
+        getDoctorsByHub: async (city: string, speciality: string): Promise<Doctor[]> => {
+            const hospitals = await prisma.hospitalsMaster.findMany({
+                where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
+                select: { id: true }
+            });
+            const hospitalIds = hospitals.map(h => h.id);
+
+            const data = await prisma.doctorMaster.findMany({
+                where: {
+                    accountStatus: 'ACTIVE',
+                    affiliations: {
+                        some: {
+                            hospitalId: { in: hospitalIds },
+                            department: { equals: speciality, mode: 'insensitive' },
+                            isCurrent: true
+                        }
+                    }
+                },
+                include: {
+                    affiliations: {
+                        include: { hospital: true }
+                    }
+                }
+            });
+
+            return DoctorArraySchema.parse(data) as Doctor[];
+        },
+
+        getHubStats: async (city: string, speciality: string) => {
+            const hospitals = await prisma.hospitalsMaster.findMany({
+                where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
+                select: { id: true }
+            });
+            const hospitalIds = hospitals.map(h => h.id);
+
+            const count = await prisma.doctorMaster.count({
+                where: {
+                    accountStatus: 'ACTIVE',
+                    affiliations: {
+                        some: {
+                            hospitalId: { in: hospitalIds },
+                            department: { equals: speciality, mode: 'insensitive' },
+                            isCurrent: true
+                        }
+                    }
+                }
+            });
+            return { count };
+        },
+
+        getHubMetadata: async () => {
+            const cities = await prisma.hospitalsMaster.findMany({
+                where: { accountStatus: 'active' },
+                select: { city: true },
+                distinct: ['city']
+            });
+            
+            const specialties = await prisma.doctorHospitalAffiliation.findMany({
+                where: { isCurrent: true, hospital: { accountStatus: 'active' } },
+                select: { department: true },
+                distinct: ['department']
+            });
+
+            return {
+                cities: cities.map(c => c.city).filter(Boolean) as string[],
+                specialties: specialties.map(s => s.department).filter(Boolean) as string[]
+            };
+        },
+
         getDoctorById: async (id: string): Promise<Doctor | null> => {
             const doc = await prisma.doctorMaster.findUnique({
                 where: { id },
@@ -109,7 +188,7 @@ export const services = {
         },
 
         getHospitalById: async (id: string): Promise<Hospital | null> => {
-            const hospital = await prisma.hospital.findUnique({
+            const hospital = await prisma.hospitalsMaster.findUnique({
                 where: { id },
                 include: {
                     facilities: true,
@@ -887,7 +966,7 @@ export const services = {
 
         login: async (mobile: string, password?: string) => {
             if (!password) throw new Error("PASSWORD_REQUIRED");
-            const hospital = await prisma.hospital.findFirst({
+            const hospital = await prisma.hospitalsMaster.findFirst({
                 where: { contactNumber: mobile }
             });
             // legacy plain text password check for hospital login prototype
@@ -916,7 +995,7 @@ export const services = {
                 const regNumber = data.registrationNumber || `REG-${Date.now()}`;
 
                 // 1. Create Hospital
-                const hospital = await tx.hospital.create({
+                const hospital = await tx.hospitalsMaster.create({
                     data: {
                         legalName: data.hospitalName,
                         registrationNumber: regNumber,
@@ -952,7 +1031,7 @@ export const services = {
             return await prisma.$transaction(async (tx) => {
                 const regNumber = data.registrationNumber || `LAB-${Date.now()}`;
 
-                const lab = await tx.hospital.create({
+                const lab = await tx.hospitalsMaster.create({
                     data: {
                         legalName: data.labName,
                         registrationNumber: regNumber,
@@ -1085,8 +1164,8 @@ export const services = {
     admin: {
         getPlatformStats: async () => {
             return {
-                totalHospitals: await prisma.hospital.count(),
-                verifiedHospitals: await prisma.hospital.count({ where: { verificationStatus: 'verified' } }),
+                totalHospitals: await prisma.hospitalsMaster.count(),
+                verifiedHospitals: await prisma.hospitalsMaster.count({ where: { verificationStatus: 'verified' } }),
                 totalDoctors: await prisma.doctorMaster.count(),
                 totalPatients: await prisma.patient.count()
             };
@@ -1110,20 +1189,20 @@ export const services = {
         },
 
         getPendingHospitals: async (): Promise<Hospital[]> => {
-            const data = await prisma.hospital.findMany({ where: { verificationStatus: 'pending' } });
+            const data = await prisma.hospitalsMaster.findMany({ where: { verificationStatus: 'pending' } });
             if (!Array.isArray(data)) throw new Error('getPendingHospitals must return an array');
             return HospitalArraySchema.parse(data) as Hospital[];
         },
 
         getAllHospitals: async (): Promise<Hospital[]> => {
-            const data = await prisma.hospital.findMany();
+            const data = await prisma.hospitalsMaster.findMany();
             if (!Array.isArray(data)) throw new Error('getAllHospitals must return an array');
             return HospitalArraySchema.parse(data) as Hospital[];
         },
 
         approveHospital: async (id: string) => {
             logger.info({ action: 'approve_hospital', hospitalId: id }, 'Admin approving hospital');
-            return await prisma.hospital.update({
+            return await prisma.hospitalsMaster.update({
                 where: { id },
                 data: { verificationStatus: 'verified', accountStatus: 'active' }
             });
@@ -1131,7 +1210,7 @@ export const services = {
 
         rejectHospital: async (id: string) => {
             logger.info({ action: 'reject_hospital', hospitalId: id }, 'Admin rejecting hospital');
-            return await prisma.hospital.update({
+            return await prisma.hospitalsMaster.update({
                 where: { id },
                 data: { verificationStatus: 'rejected', accountStatus: 'inactive' }
             });
@@ -1139,7 +1218,7 @@ export const services = {
 
         suspendHospital: async (id: string) => {
             logger.info({ action: 'suspend_hospital', hospitalId: id }, 'Admin suspending hospital');
-            return await prisma.hospital.update({
+            return await prisma.hospitalsMaster.update({
                 where: { id },
                 data: { accountStatus: 'suspended' }
             });
@@ -1201,7 +1280,7 @@ export const services = {
         },
 
         getDashboardData: async (agentId: string) => {
-            const hospitals = await prisma.hospital.findMany({
+            const hospitals = await prisma.hospitalsMaster.findMany({
                 where: { agentId },
                 select: {
                     id: true,

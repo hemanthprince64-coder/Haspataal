@@ -1,20 +1,11 @@
 import { MetadataRoute } from 'next';
+import { services } from '@/lib/services';
 
-// Covers the major Indian cities and common specialties for SEO
-const CITIES = [
-    'delhi', 'mumbai', 'bangalore', 'hyderabad', 'chennai',
-    'kolkata', 'pune', 'ahmedabad', 'jaipur', 'lucknow', 'bhopal'
-];
-
-const SPECIALTIES = [
-    'cardiologist', 'dermatologist', 'pediatrician', 'gynecologist',
-    'orthopedic', 'neurologist', 'psychiatrist', 'ophthalmologist',
-    'dentist', 'endocrinologist', 'gastroenterologist', 'urologist',
-    'general-physician', 'pulmonologist', 'nephrologist'
-];
-
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const now = new Date();
+    
+    // Fetch real cities and specialties from the database for dynamic SEO indexing
+    const { cities, specialties } = await services.platform.getHubMetadata();
 
     const staticRoutes: MetadataRoute.Sitemap = [
         { url: 'https://haspataal.com', lastModified: now, changeFrequency: 'daily', priority: 1 },
@@ -23,10 +14,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { url: 'https://haspataal.com/login', lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     ];
 
-    // Generate all [city]/[specialty] routes — Practo-style SEO pages
-    const dynamicRoutes: MetadataRoute.Sitemap = CITIES.flatMap((city) =>
-        SPECIALTIES.map((specialty) => ({
-            url: `https://haspataal.com/${city}/${specialty}`,
+    // Generate all [city]/[specialty] routes from live data — Practo-style SEO coverage
+    const dynamicRoutes: MetadataRoute.Sitemap = cities.flatMap((city) =>
+        specialties.map((specialty) => ({
+            url: `https://haspataal.com/${city.toLowerCase()}/${specialty.toLowerCase().replace(/\s+/g, '-')}`,
             lastModified: now,
             changeFrequency: 'weekly' as const,
             priority: 0.7,

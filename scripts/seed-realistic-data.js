@@ -56,7 +56,7 @@ async function seed() {
     let totalHospitals = 0, totalDoctors = 0, totalSlots = 0, totalPatients = 0;
 
     // Check existing hospitals to skip already-seeded ones
-    const existing = await withRetry(() => prisma.hospital.findMany({
+    const existing = await withRetry(() => prisma.hospitalsMaster.findMany({
         where: { registrationNumber: { startsWith: 'REG-SEED-' } },
         select: { legalName: true }
     }), 'check existing');
@@ -79,7 +79,7 @@ async function seed() {
 
             const adminPhone = randomPhone();
 
-            const hospital = await withRetry(() => prisma.hospital.create({
+            const hospital = await withRetry(() => prisma.hospitalsMaster.create({
                 data: {
                     legalName: hospitalName,
                     registrationNumber: `REG-SEED-${i + 1}-${Date.now()}`,

@@ -65,7 +65,7 @@ async function runSecurityTests() {
 
     // 3. Hospital Admin token to Admin Dashboard
     const prisma = new PrismaClient();
-    const firstHospital = await prisma.hospital.findFirst();
+    const firstHospital = await prisma.hospitalsMaster.findFirst();
     const realHospitalId = firstHospital ? firstHospital.id : '123';
     await prisma.$disconnect();
 

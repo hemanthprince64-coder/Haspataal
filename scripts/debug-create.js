@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 async function debug() {
     try {
-        const h = await prisma.hospital.create({
+        const h = await prisma.hospitalsMaster.create({
             data: {
                 legalName: 'Debug Test Hospital',
                 registrationNumber: `DBG-${Date.now()}`,
@@ -16,7 +16,7 @@ async function debug() {
             }
         });
         console.log('Hospital OK:', h.id);
-        await prisma.hospital.delete({ where: { id: h.id } });
+        await prisma.hospitalsMaster.delete({ where: { id: h.id } });
     } catch (e) {
         console.log('Hospital ERR:', e.message);
     }

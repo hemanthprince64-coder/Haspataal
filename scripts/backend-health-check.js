@@ -38,7 +38,7 @@ async function run() {
 
     // 3. Core Table Counts
     const tableChecks = [
-        { name: 'hospitals_master (Hospital)', fn: () => prisma.hospital.count() },
+        { name: 'hospitals_master (Hospital)', fn: () => prisma.hospitalsMaster.count() },
         { name: 'doctors_master (DoctorMaster)', fn: () => prisma.doctorMaster.count() },
         { name: 'patients (Patient)', fn: () => prisma.patient.count() },
         { name: 'visits (Visit)', fn: () => prisma.visit.count() },
@@ -61,7 +61,7 @@ async function run() {
     let testHospitalId;
     try {
         const hospital = await prisma.$transaction(async (tx) => {
-            const h = await tx.hospital.create({
+            const h = await tx.hospitalsMaster.create({
                 data: {
                     legalName: 'Health Check Test Hospital',
                     registrationNumber: `HCK-${Date.now()}`,
@@ -94,7 +94,7 @@ async function run() {
     // 5. Hospital Approval Flow
     if (testHospitalId) {
         try {
-            await prisma.hospital.update({
+            await prisma.hospitalsMaster.update({
                 where: { id: testHospitalId },
                 data: { verificationStatus: 'verified', accountStatus: 'active' }
             });
@@ -105,7 +105,7 @@ async function run() {
 
         // 6. Hospital Login
         try {
-            const h = await prisma.hospital.findUnique({ where: { id: testHospitalId } });
+            const h = await prisma.hospitalsMaster.findUnique({ where: { id: testHospitalId } });
             if (h && h.password === 'test123') {
                 log('Hospital Login (password check)', 'PASS');
             } else {
@@ -232,7 +232,7 @@ async function run() {
         if (testHospitalId) {
             await prisma.doctorHospitalAffiliation.deleteMany({ where: { hospitalId: testHospitalId } });
             await prisma.hospitalAdmin.deleteMany({ where: { hospitalId: testHospitalId } });
-            await prisma.hospital.delete({ where: { id: testHospitalId } });
+            await prisma.hospitalsMaster.delete({ where: { id: testHospitalId } });
         }
         if (testDoctorId) {
             await prisma.doctorMaster.delete({ where: { id: testDoctorId } });

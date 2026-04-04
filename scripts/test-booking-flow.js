@@ -15,7 +15,7 @@ async function simulateBookingFlow() {
         // 1. Create a Hospital
         console.log("🏥 Creating Test Hospital...");
         const dateGen = Date.now();
-        const hospital = await prisma.hospital.create({
+        const hospital = await prisma.hospitalsMaster.create({
             data: {
                 legalName: 'Apollo Spectra Pvt Ltd',
                 displayName: 'Apollo Spectra WarMode',

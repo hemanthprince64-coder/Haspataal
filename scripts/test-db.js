@@ -16,7 +16,7 @@ async function main() {
     try {
         await prisma.$connect();
         console.log('Connected successfully!');
-        const count = await prisma.hospital.count();
+        const count = await prisma.hospitalsMaster.count();
         console.log('Hospital count:', count);
     } catch (e) {
         console.error('Connection failed:', e);

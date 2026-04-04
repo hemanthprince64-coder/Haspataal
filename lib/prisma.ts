@@ -12,6 +12,23 @@ const SOFT_DELETE_MODELS = [
 const prismaClientSingleton = () => {
     const client = new PrismaClient();
 
+    // RLS Session Helper: ensures absolute database-level isolation
+    // Use this wrapper for any query requiring multi-tenant security
+    client.withAuth = async (session, callback) => {
+        return client.$transaction(async (tx) => {
+            if (session && session.user) {
+                const claims = JSON.stringify({
+                    role: session.user.role,
+                    id: session.user.id,
+                    hospitalId: session.user.hospitalId || null
+                });
+                // Set the session context for Postgres RLS policies
+                await tx.$executeRawUnsafe(`SET LOCAL request.jwt.claims = '${claims.replace(/'/g, "''")}'`);
+            }
+            return callback(tx);
+        });
+    };
+
     // Middleware: intercept delete → soft-delete
     client.$use(async (params, next) => {
         if (SOFT_DELETE_MODELS.includes(params.model)) {

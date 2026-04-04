@@ -70,7 +70,7 @@ model DoctorRegistration {
   @@map("doctor_registration")
 }
 
-model Hospital {
+model HospitalsMaster {
   id                 String   @id @default(uuid())
   legalName          String   @map("legal_name")
   displayName        String?  @map("display_name")
@@ -131,7 +131,7 @@ model HospitalFacilities {
   pharmacyAvailable  Boolean  @default(false) @map("pharmacy_available")
   labAvailable       Boolean  @default(false) @map("lab_available")
   createdAt          DateTime @default(now()) @map("created_at")
-  hospital           Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("hospital_facilities")
 }
@@ -147,7 +147,7 @@ model HospitalAdmin {
   verificationStatus String   @default("pending") @map("verification_status")
   isPrimary          Boolean  @default(true) @map("is_primary")
   createdAt          DateTime @default(now()) @map("created_at")
-  hospital           Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([email])
@@ -159,7 +159,7 @@ model HospitalDepartment {
   hospitalId     String   @map("hospital_id")
   departmentName String   @map("department_name")
   createdAt      DateTime @default(now()) @map("created_at")
-  hospital       Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("hospital_departments")
 }
@@ -170,7 +170,7 @@ model HospitalService {
   serviceName String   @map("service_name")
   basePrice   Decimal  @map("base_price")
   createdAt   DateTime @default(now()) @map("created_at")
-  hospital    Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("hospital_services")
 }
@@ -185,7 +185,7 @@ model HospitalBillingProfile {
   commissionPercentage Decimal? @map("commission_percentage")
   payoutCycle          String?  @map("payout_cycle")
   createdAt            DateTime @default(now()) @map("created_at")
-  hospital             Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital             HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("hospital_billing_profile")
 }
@@ -196,7 +196,7 @@ model HospitalRole {
   roleName    String   @map("role_name")
   permissions Json?
   createdAt   DateTime @default(now()) @map("created_at")
-  hospital    Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("hospital_roles")
 }
@@ -208,7 +208,7 @@ model HospitalVerificationLog {
   verificationNotes  String?   @map("verification_notes")
   verificationStatus String?   @map("verification_status")
   verifiedAt         DateTime? @map("verified_at")
-  hospital           Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital           HospitalsMaster  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("hospital_verification_logs")
 }
@@ -228,7 +228,7 @@ model DoctorHospitalAffiliation {
   createdAt          DateTime           @default(now()) @map("created_at")
   schedule           String?
   doctor             DoctorMaster       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  hospital           Hospital           @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital           HospitalsMaster    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, hospitalId])
   @@index([hospitalId])
@@ -257,7 +257,7 @@ model DoctorRole {
   permissions Json?
   createdAt   DateTime     @default(now()) @map("created_at")
   doctor      DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  hospital    Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital    HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, hospitalId])
   @@map("doctor_roles")
@@ -283,7 +283,7 @@ model Staff {
   password   String
   role       Role     @default(RECEPTIONIST)
   createdAt  DateTime @default(now()) @map("created_at")
-  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital   HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([role])
@@ -434,7 +434,7 @@ model Review {
   comment    String?
   createdAt  DateTime      @default(now()) @map("created_at")
   doctor     DoctorMaster? @relation(fields: [doctorId], references: [id])
-  hospital   Hospital?     @relation(fields: [hospitalId], references: [id])
+  hospital   HospitalsMaster?     @relation(fields: [hospitalId], references: [id])
   patient    Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
@@ -562,7 +562,7 @@ model HospitalDiagnosticPricing {
   isAvailable      Boolean              @default(true) @map("is_available")
   tatOverrideHours Int?                 @map("tat_override_hours")
   createdAt        DateTime             @default(now()) @map("created_at")
-  hospital         Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital         HospitalsMaster             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   test             DiagnosticMasterTest @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@unique([hospitalId, testId])
@@ -575,7 +575,7 @@ model HospitalPanelPricing {
   panelId     String          @map("panel_id")
   panelPrice  Decimal         @map("panel_price")
   isAvailable Boolean         @default(true) @map("is_available")
-  hospital    Hospital        @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital    HospitalsMaster        @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   panel       DiagnosticPanel @relation(fields: [panelId], references: [id], onDelete: Cascade)
 
   @@unique([hospitalId, panelId])
@@ -593,7 +593,7 @@ model DiagnosticOrder {
   deletedAt   DateTime?             @map("deleted_at")
   items       DiagnosticOrderItem[]
   doctor      DoctorMaster?         @relation(fields: [doctorId], references: [id])
-  hospital    Hospital              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital    HospitalsMaster              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient     Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
@@ -639,7 +639,7 @@ model LabQualityControl {
   controlResult String?              @map("control_result")
   qcStatus      String?              @map("qc_status")
   recordedAt    DateTime             @default(now()) @map("recorded_at")
-  hospital      Hospital             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital      HospitalsMaster             @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   test          DiagnosticMasterTest @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@map("lab_quality_controls")
@@ -656,7 +656,7 @@ model Visit {
   createdAt     DateTime     @default(now()) @map("created_at")
   deletedAt     DateTime?    @map("deleted_at")
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
-  hospital      Hospital     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  hospital      HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([appointmentId])
@@ -721,7 +721,7 @@ model Agent {
   commissionRate Float?        @map("commission_rate")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
-  hospitals      Hospital[]
+  hospitals      HospitalsMaster[]
   patients       Patient[]
 
   @@map("agents")
