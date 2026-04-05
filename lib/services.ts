@@ -3,6 +3,8 @@ import logger from './logger';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { Hospital, Doctor, Appointment, Review, UserRole, BookingStatus } from '../types';
+import { PostVisitPipeline } from './ai/post-visit';
+import { ConsultationAiEngine } from './ai/engine';
 
 // Zod schemas for runtime validation
 const HospitalArraySchema = z.array(z.any());
@@ -874,8 +876,27 @@ export const services = {
         getVisits: async (hospitalId: string) => {
             return await prisma.visit.findMany({
                 where: { hospitalId },
+                include: { 
+                    aiSummary: true,
+                    appointment: { include: { doctor: true, patient: true } }
+                },
                 orderBy: { createdAt: 'desc' }
             });
+        },
+
+        completeVisit: async (hospitalId: string, visitId: string, notes: string) => {
+            logger.info({ action: 'hospital_complete_visit', hospitalId, visitId }, 'Completing visit with AI processing');
+            
+            // 1. Update visit with initial notes (stored in diagnosis for now)
+            const visit = await prisma.visit.update({
+                where: { id: visitId, hospitalId },
+                data: { diagnosis: notes }
+            });
+
+            // 2. Trigger Post-Visit AI Pipeline
+            await services.ai.processVisit(visitId, notes);
+
+            return visit;
         },
 
         getPatients: async (hospitalId: string) => {
@@ -1310,6 +1331,62 @@ export const services = {
                     totalPatients: patients.length
                 }
             };
+        }
+    },
+
+    // --- AI Services ---
+    ai: {
+        processVisit: async (visitId: string, notes: string, imageData?: { mimeType: string; data: string }) => {
+            logger.info({ action: 'process_visit_advanced_ai', visitId }, 'Starting advanced post-consultation AI processing');
+            
+            // 1. Get visit & patient context
+            const visit = await prisma.visit.findUnique({
+                where: { id: visitId },
+                include: { 
+                    appointment: { include: { patient: true, doctor: true } }
+                }
+            });
+
+            if (!visit) throw new Error('Visit not found');
+
+            const patient = visit.appointment?.patient;
+            const patientAge = patient ? (new Date().getFullYear() - (patient.dob ? new Date(patient.dob).getFullYear() : 30)) : undefined;
+
+            // 2. Trigger Advanced AI Engine
+            const careJourney = await ConsultationAiEngine.process({
+                visitId,
+                clinicalNotes: notes,
+                prescriptionImage: imageData,
+                patientProfile: {
+                    age: patientAge,
+                    language: "English/Hindi" // Default for now
+                }
+            });
+
+            // 3. Save raw notes for audit
+            await prisma.visitNote.create({
+                data: { visitId, content: notes, type: imageData ? 'OCR+NOTE' : 'CLINICAL_NOTE' }
+            });
+
+            logger.info({ action: 'process_visit_ai_complete', visitId }, 'Advanced Care Journey generated');
+            return careJourney;
+        },
+
+        getVisitAnalysis: async (visitId: string) => {
+            return await prisma.careJourney.findUnique({
+                where: { visitId },
+                include: { 
+                    visit: { 
+                        include: { 
+                            observations: true ,
+                            appointment: { include: { doctor: true } }
+                        } 
+                    },
+                    medications: true,
+                    followUp: true,
+                    redFlags: true
+                }
+            });
         }
     }
 };

@@ -657,10 +657,145 @@ model Visit {
   deletedAt     DateTime?    @map("deleted_at")
   appointment   Appointment? @relation(fields: [appointmentId], references: [id])
   hospital      HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  careJourney   CareJourney?
+  notes         VisitNote[]
+  observations  ClinicalObservation[]
 
   @@index([hospitalId])
   @@index([appointmentId])
   @@map("visits")
+}
+
+model VisitNote {
+  id        String   @id @default(uuid())
+  visitId   String   @map("visit_id")
+  content   String   @db.Text
+  type      String   @default("CLINICAL_NOTE") // TRANSCRIPT, NOTE, OCR
+  createdAt DateTime @default(now()) @map("created_at")
+  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@map("visit_notes")
+}
+
+model CareJourney {
+  id              String   @id @default(uuid())
+  visitId         String   @unique @map("visit_id")
+  conditionSimple String   @db.Text @map("condition_simple")
+  explanation     String   @db.Text
+  seriousness     String
+  timeline        String?
+  language        String   @default("en")
+  pediatricMode   Boolean  @default(false) @map("pediatric_mode")
+  safetyCheck     Boolean  @default(false) @map("safety_check")
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  visit           Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  medications     MedicationPlan[]
+  followUp        FollowUpPlan?
+  redFlags        CareRedFlag[]
+  recoverySteps   RecoveryStep[]
+  engagements     EngagementLog[]
+  checkIns        CareCheckIn[]
+  nudges          NudgeSchedule[]
+
+  @@map("care_journeys")
+}
+
+model RecoveryStep {
+  id              String      @id @default(uuid())
+  careJourneyId   String      @map("care_journey_id")
+  dayNumber       Int         @map("day_number")
+  expectedSymptoms String     @db.Text @map("expected_symptoms")
+  markers         String      @db.Text
+  guidance        String      @db.Text
+  careJourney     CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("recovery_steps")
+}
+
+model EngagementLog {
+  id              String      @id @default(uuid())
+  careJourneyId   String      @map("care_journey_id")
+  type            String      // MED_TAKEN, SYMPTOM_LOG
+  metadata        Json?
+  timestamp       DateTime    @default(now())
+  careJourney     CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("engagement_logs")
+}
+
+model CareCheckIn {
+  id              String      @id @default(uuid())
+  careJourneyId   String      @map("care_journey_id")
+  dayNumber       Int         @map("day_number")
+  status          String      // BETTER, SAME, WORSE
+  analysis        String?     @db.Text
+  createdAt       DateTime    @default(now()) @map("created_at")
+  careJourney     CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("care_check_ins")
+}
+
+model NudgeSchedule {
+  id              String      @id @default(uuid())
+  careJourneyId   String      @map("care_journey_id")
+  scheduledAt     DateTime    @map("scheduled_at")
+  messageType     String      @map("message_type") // MORNING_MEDS, EVENING_CHECK, DAY_CHECKIN
+  isTriggered     Boolean     @default(false) @map("is_triggered")
+  careJourney     CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("nudge_schedules")
+}
+
+model MedicationPlan {
+  id             String      @id @default(uuid())
+  careJourneyId  String      @map("care_journey_id")
+  medName        String      @map("med_name")
+  dosage         String
+  duration       String
+  instructions   String?
+  morning        Boolean     @default(false)
+  afternoon      Boolean     @default(false)
+  night          Boolean     @default(false)
+  beforeFood     Boolean     @default(false) @map("before_food")
+  careJourney    CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("medication_plans")
+}
+
+model FollowUpPlan {
+  id              String      @id @default(uuid())
+  careJourneyId   String      @unique @map("care_journey_id")
+  recommendedDays Int         @map("recommended_days")
+  reason          String      @db.Text
+  bookingStatus   String      @default("PENDING") @map("booking_status")
+  ctaTriggered    Boolean     @default(false) @map("cta_triggered")
+  careJourney     CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("follow_up_plans")
+}
+
+model CareRedFlag {
+  id             String      @id @default(uuid())
+  careJourneyId  String      @map("care_journey_id")
+  symptom        String      @db.Text
+  action         String      @default("CONTACT_HOSPITAL")
+  careJourney    CareJourney @relation(fields: [careJourneyId], references: [id], onDelete: Cascade)
+
+  @@map("care_red_flags")
+}
+
+model ClinicalObservation {
+  id        String   @id @default(uuid())
+  visitId   String   @map("visit_id")
+  type      String // BP, PULSE, SPO2, TEMP, FINDING
+  value     String
+  unit      String?
+  severity  String   @default("NORMAL") // NORMAL, ABNORMAL, CRITICAL
+  createdAt DateTime @default(now()) @map("created_at")
+  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@map("clinical_observations")
 }
 
 model MedicalRecord {

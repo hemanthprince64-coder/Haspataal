@@ -1,6 +1,7 @@
 'use server'
 
 import { services } from '@/lib/services';
+import { CareLifecycleService } from '@/lib/services/care-lifecycle';
 import { z } from 'zod';
 import logger from '@/lib/logger';
 
@@ -111,7 +112,31 @@ export async function completeVisitHospital(prevState, formData) {
         return { success: false, message: 'Unauthorized' };
     }
 
-    return { success: true, message: 'Visit marked as completed.' };
+    const visitId = formData.get('visitId');
+    const notes = formData.get('notes');
+    const imageFile = formData.get('prescriptionImage');
+
+    if (!visitId || !notes) {
+        return { success: false, message: 'Visit ID and Clinical Notes are required for AI analysis.' };
+    }
+
+    let imageData = null;
+    if (imageFile && imageFile.size > 0) {
+        // Convert File to Base64 for processing
+        const bytes = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        imageData = {
+            mimeType: imageFile.type || 'image/jpeg',
+            data: buffer.toString('base64')
+        };
+    }
+
+    try {
+        await services.ai.processVisit(visitId, notes, imageData);
+        return { success: true, message: 'Visit completed and AI care journey generated!' };
+    } catch (e) {
+        return { success: false, message: `Failed to complete visit: ${e.message}` };
+    }
 }
 
 export async function addDoctorAction(prevState, formData) {
@@ -1041,5 +1066,58 @@ export async function getTopDoctorsBySpeciality(speciality, city) {
     } catch (e) {
         logger.error({ action: 'get_top_doctors_failed', error: e.message });
         return [];
+    }
+}
+// ==================== AI & VISIT ANALYSIS ====================
+
+export async function getVisitAnalysisAction(visitId) {
+    try {
+        await requireRole(UserRole.PATIENT, 'session_patient');
+        return await services.ai.getVisitAnalysis(visitId);
+    } catch (e) {
+        logger.error({ action: 'get_visit_analysis_failed', visitId, error: e.message }, 'Failed to fetch visit analysis');
+        return null;
+    }
+}
+
+export async function processVisitAiAction(visitId, notes) {
+    try {
+        await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
+        return await services.ai.processVisit(visitId, notes);
+    } catch (e) {
+        logger.error({ action: 'process_visit_ai_failed', visitId, error: e.message }, 'Failed to process visit AI');
+        throw e;
+    }
+}
+
+// --- Continuous Care Actions ---
+
+export async function getCareTimelineAction(visitId) {
+    try {
+        await requireRole(UserRole.PATIENT, 'session_patient');
+        return await CareLifecycleService.getRecoveryState(visitId);
+    } catch (e) {
+        logger.error({ action: 'get_care_timeline_failed', visitId, error: e.message });
+        return null;
+    }
+}
+
+export async function logMedicationAction(careJourneyId, medName, schedule) {
+    try {
+        await requireRole(UserRole.PATIENT, 'session_patient');
+        return await CareLifecycleService.logMedication(careJourneyId, medName, schedule);
+    } catch (e) {
+        logger.error({ action: 'log_medication_failed', careJourneyId, error: e.message });
+        throw e;
+    }
+}
+
+export async function submitCheckInAction(careJourneyId, dayNumber, status) {
+    try {
+        await requireRole(UserRole.PATIENT, 'session_patient');
+        return await CareLifecycleService.submitCheckIn(careJourneyId, dayNumber, status);
+    } catch (e) {
+        logger.error({ action: 'submit_checkin_failed', careJourneyId, error: e.message });
+        throw e;
     }
 }

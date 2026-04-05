@@ -10,11 +10,22 @@ const DoctorCard = dynamic(() => import("../components/DoctorCard"), {
     loading: () => <div className="h-32 w-full bg-slate-100 animate-pulse rounded-2xl"></div>
 });
 
+import ContinuousCareHub from "@/app/components/ContinuousCareHub";
+import { getCareTimelineAction } from "@/app/actions";
+
 export default function PatientHome() {
     const [patient, setPatient] = useState(null);
+    const [recentAnalysis, setRecentAnalysis] = useState(null);
 
     useEffect(() => {
-        getPatientFullProfile().then(setPatient);
+        getPatientFullProfile().then(p => {
+            setPatient(p);
+            // Fetch continuous care timeline for the most recent visit if available
+            const lastVisit = p?.visits?.[0] || p?.appointments?.[0]?.visit;
+            if (lastVisit?.id) {
+                getCareTimelineAction(lastVisit.id).then(setRecentAnalysis);
+            }
+        });
     }, []);
 
     const displayName = patient?.nickname || patient?.name;
@@ -100,6 +111,13 @@ export default function PatientHome() {
                     <span className="text-xs font-semibold text-slate-700">Lab Tests</span>
                 </Link>
             </section>
+
+            {/* ── CONTINUOUS CARE LIFECYCLE (The Active Recovery Engine) ── */}
+            {recentAnalysis && (
+                <section className="animate-slide-up space-y-2">
+                    <ContinuousCareHub data={recentAnalysis} />
+                </section>
+            )}
 
             {/* ── TOP DOCTORS ── */}
             <section>
