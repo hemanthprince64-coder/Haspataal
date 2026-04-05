@@ -78,6 +78,8 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 - Doctor booking & slot management
 - Hospital discovery with city-based filtering
 - **MedChat AI** — Hybrid triage (deterministic rules + Gemini 2.0)
+- **Post-Consultation AI Engine** — Multimodal Rx parsing (OCR/Vision) + 14-day guided recovery lifecycle
+- **Continuous Care Hub** — Automated adherence tracking, day-wise recovery roadmaps, and symptom check-ins
 - Digital health records
 - Multilingual support (Hindi/English)
 
@@ -280,6 +282,8 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **Prisma RLS Session Hardening (SECURITY):** Implemented `prisma.withAuth` helper in `lib/prisma.ts`. This pattern uses a transaction to set `request.jwt.claims` for the current thread, ensuring that even Node.js superuser database connections respect tenant-level RLS policies. Always use `withAuth` for hospital-scoped clinical data queries. *(Implemented in conversation d643a053)*
 - **Next.js Duplicate Page Migration:** Route resolution fails if both `.js` and `.tsx` versions of a page exist. Always delete redundant `.js` files after migrating to TypeScript to avoid `Duplicate page detected` warnings. *(Fixed in conversation d643a053)*
 - **WAR ROOM Session Status (2026-04-04):** Successfully completed **Phase 4 (Security)** and **Phase 5 (SEO Engine)**. Resolved duplicate Next.js page warnings. All 64/64 health checks remain **PASS**. Environment is ready for Stage 6 / Production deployment.
+- **Continuous Care AI Engine (2026-04-05):** Architected and deployed a 14-day recovery lifecycle engine. Replaced static summaries with a dynamic "Recovery Roadmap" that predicts day-wise symptoms and improvement markers. Integrated multimodal vision (Gemini 1.5 Flash) for Rx OCR and added an interactive "Medication Checklist" and "Symptom Check-in" system to the patient home page to drive adherence and re-consultation conversion.
+- **Service Layer Design (Care Lifecycle):** Created `CareLifecycleService` and `ContinuousCareHub` component. Used the database as a "Virtual Job Queue" for scheduling 14-day recovery nudges without external Redis dependencies.
 
 
 ---
