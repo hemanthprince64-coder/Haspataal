@@ -28,6 +28,12 @@ interface ContinuousCareHubProps {
         medications: Medication[];
         engagements: any[];
         checkIns: any[];
+        drift?: {
+            drifted: boolean;
+            reason?: string;
+            urgency?: 'MEDIUM' | 'HIGH';
+            action?: string;
+        };
     };
 }
 
@@ -98,6 +104,35 @@ const ContinuousCareHub: React.FC<ContinuousCareHubProps> = ({ data }) => {
                     </div>
                 </div>
             </div>
+
+            {/* ── HIGH URGENCY ESCALATION BANNER ── */}
+            {data.drift?.drifted && (
+                <div className={`p-6 rounded-[2.5rem] border-2 animate-pulse-subtle shadow-lg ${
+                    data.drift.urgency === 'HIGH' 
+                    ? 'bg-rose-50 border-rose-100 text-rose-900' 
+                    : 'bg-amber-50 border-amber-100 text-amber-900'
+                }`}>
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className={`w-16 h-16 rounded-3xl flex items-center justify-center text-3xl shadow-md ${
+                            data.drift.urgency === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'
+                        }`}>
+                            🚨
+                        </div>
+                        <div className="flex-1 text-center sm:text-left space-y-1">
+                            <h3 className="text-xl font-black tracking-tight leading-tight">AI Health Alert: {data.drift.reason === 'NEGATIVE_TREND' ? 'Negative Trend Detected' : 'Recovery Stagnation'}</h3>
+                            <p className="text-sm font-medium opacity-80 leading-relaxed uppercase tracking-widest text-[10px]">
+                                Our Care Engine has detected that your symptoms are not improving as expected for Day {data.currentDay}. 
+                                <strong className="ml-1"> {data.drift.action?.replace(/_/g, ' ')}</strong> is highly advised to ensure safe recovery.
+                            </p>
+                        </div>
+                        <button className={`px-8 py-4 rounded-2xl font-black text-sm shadow-xl transition-all hover:scale-105 active:scale-95 whitespace-nowrap ${
+                            data.drift.urgency === 'HIGH' ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'
+                        }`}>
+                            📞 Book Re-Consultation
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ── 14-DAY ROADMAP (Horizontal Scroll) ── */}
             <section className="space-y-4">

@@ -7,30 +7,33 @@ export default function BottomNav() {
     const pathname = usePathname();
 
     const navItems = [
-        { name: "Home", href: "/", icon: "🏠" },
+        { name: "Home", href: "/home", icon: "🏠" },
         { name: "Search", href: "/search", icon: "🔍" },
         { name: "MedChat", href: "/medchat", icon: "🤖" },
+        { name: "Recovery", href: "/recovery", icon: "🧬" },
         { name: "Records", href: "/records", icon: "📋" },
         { name: "Profile", href: "/profile", icon: "👤" },
     ];
 
     return (
-        <nav className="sticky bottom-0 bg-white border-t border-slate-200 w-full z-[100] pt-2 pb-1.5 flex justify-around shadow-[0_-1px_3px_rgba(15,23,42,0.04)]">
+        <nav className="fixed bottom-0 left-0 w-full h-[72px] bg-white border-t border-slate-200 flex justify-between items-center px-1 shadow-[0_-10px_40px_rgba(0,0,0,0.12)] z-[9999] md:px-6">
             {navItems.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
                     <Link
                         key={item.name}
                         href={item.href}
-                        className={`flex flex-col items-center gap-0.5 font-sans text-[11px] font-medium no-underline transition-colors duration-200 py-1 px-3 rounded-lg ${isActive
-                            ? "text-medical-600"
+                        className={`flex flex-col items-center justify-center flex-1 min-w-[60px] gap-1 transition-all duration-300 py-1 rounded-xl ${isActive
+                            ? "text-blue-600 bg-blue-50/80 scale-105"
                             : "text-slate-400 hover:text-slate-600"
                             }`}
                     >
-                        <span className={`text-xl transition-transform duration-200 ${isActive ? "scale-110" : "scale-100 grayscale opacity-60"}`}>
+                        <span className={`text-xl transition-transform duration-300 ${isActive ? "scale-110" : "scale-100 grayscale opacity-70"}`}>
                             {item.icon}
                         </span>
-                        <span className={isActive ? "font-semibold" : ""}>{item.name}</span>
+                        <span className={`text-[10px] ${isActive ? "font-black tracking-tight" : "font-bold opacity-80"}`}>
+                            {item.name}
+                        </span>
                     </Link>
                 );
             })}

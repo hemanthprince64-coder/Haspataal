@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BottomNav from "./components/BottomNav";
 import Sidebar from "./components/Sidebar";
+import Avatar from "@/app/components/Avatar";
 import { getPatientFullProfile } from "@/app/actions";
 import "@/bones/registry";
 
@@ -70,15 +71,12 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
                             🚑 <span className="hidden md:inline uppercase">Emergency</span>
                         </Link>
                         {!isAuthPage && (
-                            <Link
-                                href="/profile"
-                                className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 font-black border-2 border-blue-100 hover:border-blue-300 transition-all overflow-hidden shadow-sm"
-                            >
-                                {patient?.profilePhotoUrl ? (
-                                    <img src={patient.profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    (patient?.name || 'R').charAt(0).toUpperCase()
-                                )}
+                            <Link href="/profile">
+                                <Avatar 
+                                    size="md" 
+                                    imageUrl={patient?.profilePhotoUrl} 
+                                    name={patient?.name || patient?.nickname} 
+                                />
                             </Link>
                         )}
                     </div>
@@ -99,12 +97,8 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
                 </main>
             </div>
 
-            {/* ── BOTTOM NAV (Mobile Only) ── */}
-            {!isAuthPage && (
-                <div className="md:hidden">
-                    <BottomNav />
-                </div>
-            )}
+            {/* ── BOTTOM NAV (FORCE VISIBLE FOR DEBUG) ── */}
+            <BottomNav />
         </div>
     );
 }

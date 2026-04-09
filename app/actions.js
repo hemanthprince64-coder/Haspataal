@@ -1095,7 +1095,10 @@ export async function processVisitAiAction(visitId, notes) {
 export async function getCareTimelineAction(visitId) {
     try {
         await requireRole(UserRole.PATIENT, 'session_patient');
-        return await CareLifecycleService.getRecoveryState(visitId);
+        const state = await CareLifecycleService.getRecoveryState(visitId);
+        if (!state) return null;
+        const drift = await CareLifecycleService.analyzeRecoveryDrift(state.journeyId);
+        return { ...state, drift };
     } catch (e) {
         logger.error({ action: 'get_care_timeline_failed', visitId, error: e.message });
         return null;
