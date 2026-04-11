@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react';
 import { updatePatientProfile, addFamilyMemberAction, deleteFamilyMemberAction, getPatientFullProfile } from '@/app/actions';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const initialState = { message: '', success: false };
 
@@ -134,7 +135,7 @@ export default function EditProfile() {
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
                                     {p.profilePhotoUrl ? (
-                                        <img src={p.profilePhotoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                        <Image src={p.profilePhotoUrl} alt="Avatar" width={64} height={64} className="w-full h-full object-cover" />
                                     ) : (
                                         "👤"
                                     )}

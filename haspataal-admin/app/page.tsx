@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function AdminDashboard() {
     const stats = [
         { label: 'Total Hospitals', value: '42', icon: '🏥', color: 'from-violet-500 to-purple-700' },
@@ -34,7 +36,7 @@ export default function AdminDashboard() {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="font-semibold text-white">Pending Hospital Approvals</h3>
-                    <a href="/hospitals" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Manage All →</a>
+                    <Link href="/hospitals" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Manage All →</Link>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">

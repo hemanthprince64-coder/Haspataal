@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getPatientFullProfile } from "@/app/actions";
 
 export default function PatientDetailsPage() {
@@ -43,7 +44,7 @@ export default function PatientDetailsPage() {
                 <div className="relative">
                     <div className="w-32 h-32 rounded-3xl border-4 border-blue-50 bg-white overflow-hidden shadow-xl shrink-0">
                         {profilePhotoUrl ? (
-                            <img src={profilePhotoUrl} alt={name} className="w-full h-full object-cover" />
+                            <Image src={profilePhotoUrl} alt={name || 'Profile'} width={128} height={128} className="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-4xl font-black text-blue-600 bg-blue-50">
                                 {(name || 'P').charAt(0)}

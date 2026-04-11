@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import Link from 'next/link';
 
-const inter = Inter({ subsets: ['latin'] });
+// Use system font stack to avoid network-dependent Google font fetches during CI builds.
+// This guarantees the build never fails due to font CDN timeouts.
+const interClassName = 'font-sans';
 
 export const metadata: Metadata = {
     title: 'Haspataal — Admin Control Panel',
@@ -13,7 +15,7 @@ export default function AdminLayout({
 }: Readonly<{ children: React.ReactNode }>) {
     return (
         <html lang="en">
-            <body className={`${inter.className} bg-slate-950 text-white min-h-screen flex`}>
+            <body className={`${interClassName} bg-slate-950 text-white min-h-screen flex`}>
                 {/* Admin Sidebar */}
                 <aside className="w-64 bg-gray-950 border-r border-gray-800 flex flex-col p-6 shrink-0">
                     <div className="mb-8">
@@ -21,27 +23,27 @@ export default function AdminLayout({
                         <p className="text-xs text-gray-500 mt-1">admin.haspataal.com</p>
                     </div>
                     <nav className="flex flex-col gap-2 flex-1">
-                        <a href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-violet-500/10 text-violet-400 font-medium text-sm">
+                        <Link href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-violet-500/10 text-violet-400 font-medium text-sm">
                             <span>🛡️</span> Admin Dashboard
-                        </a>
-                        <a href="/hospitals" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/hospitals" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
                             <span>🏥</span> Hospital Onboarding
-                        </a>
-                        <a href="/doctors" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/doctors" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
                             <span>👨‍⚕️</span> Doctor Verification
-                        </a>
-                        <a href="/commissions" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/commissions" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
                             <span>💰</span> Commissions
-                        </a>
-                        <a href="/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
                             <span>📊</span> Platform Analytics
-                        </a>
-                        <a href="/users" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/users" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
                             <span>👥</span> User Management
-                        </a>
-                        <a href="/audit" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/audit" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
                             <span>📋</span> Audit Logs
-                        </a>
+                        </Link>
                     </nav>
                     <div className="mt-auto">
                         <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 rounded-xl">
@@ -58,3 +60,4 @@ export default function AdminLayout({
         </html>
     );
 }
+

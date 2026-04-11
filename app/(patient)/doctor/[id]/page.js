@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 
 export default function DoctorProfile() {
@@ -30,7 +31,7 @@ export default function DoctorProfile() {
 
             <div className="section" style={{ marginTop: '-40px', position: 'relative', zIndex: 10 }}>
                 <div className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                    <img src={doctor.image} alt={doctor.name} style={{ width: '100px', height: '100px', borderRadius: '24px', objectFit: 'cover', marginBottom: '16px', boxShadow: 'var(--shadow-md)' }} />
+                    <Image src={doctor.image} alt={doctor.name} width={100} height={100} style={{ borderRadius: '24px', objectFit: 'cover', marginBottom: '16px', boxShadow: 'var(--shadow-md)' }} />
                     <h2 style={{ fontSize: '20px', margin: '0 0 4px 0' }}>{doctor.name}</h2>
                     <p style={{ color: 'var(--blue)', fontWeight: '600', margin: '0 0 8px 0', fontSize: '14px' }}>{doctor.speciality}</p>
                     <p style={{ color: 'var(--text3)', margin: '0 0 16px 0', fontSize: '13px' }}>{doctor.hospital}</p>

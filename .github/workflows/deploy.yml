@@ -48,6 +48,18 @@ jobs:
         run: npx tsc --noEmit
         working-directory: ./hospital-hms
 
+      - name: Install haspataal-admin deps
+        run: npm ci
+        working-directory: ./haspataal-admin
+
+      - name: Lint (haspataal-admin)
+        run: npm run lint
+        working-directory: ./haspataal-admin
+
+      - name: TypeScript check (haspataal-admin)
+        run: npm run typecheck
+        working-directory: ./haspataal-admin
+
       - name: Run Backend Health Check
         run: node scripts/backend-health-check.js
         env:

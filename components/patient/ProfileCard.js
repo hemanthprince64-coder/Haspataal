@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function ProfileCard({ patient, loading }) {
     const { name, phone, nickname, profilePhotoUrl } = patient || {};
@@ -10,7 +11,7 @@ export default function ProfileCard({ patient, loading }) {
             <div className="relative flex flex-col md:flex-row items-center gap-8">
                 <div className="w-20 h-20 rounded-2xl border-2 border-blue-100 bg-white shadow-lg shrink-0 overflow-hidden">
                     {profilePhotoUrl ? (
-                        <img src={profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                        <Image src={profilePhotoUrl} alt="Profile" width={80} height={80} className="w-full h-full object-cover" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-3xl font-black text-blue-600 bg-blue-50">
                             {displayName.charAt(0).toUpperCase()}

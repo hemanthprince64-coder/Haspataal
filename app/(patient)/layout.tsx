@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import BottomNav from "./components/BottomNav";
 import Sidebar from "./components/Sidebar";
@@ -56,7 +57,7 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
 
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2 no-underline group scale-110">
-                            <img src="/logo.svg" alt="Haspataal" className="w-8 h-10 object-contain group-hover:scale-110 transition-transform" />
+                            <Image src="/logo.svg" alt="Haspataal" width={32} height={40} className="group-hover:scale-110 transition-transform" />
                             <span className="text-2xl font-black text-[#0D2B55] tracking-tight">Haspataal</span>
                             <span className="text-2xl font-black text-blue-600 -ml-1">.</span>
                         </Link>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState, useEffect } from 'react';
+import { useActionState, useState, useEffect, useRef } from 'react';
 import { bookAppointment, getAvailableSlotsAction } from '@/app/actions';
 import Link from 'next/link';
 
@@ -18,6 +18,11 @@ export default function BookingForm({ doctorId, hospitalId }) {
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState('');
 
+    // Ref to access selectedSlot inside useEffect without adding it as a dependency
+    // (adding it would cause re-fetches every time the user picks a slot)
+    const selectedSlotRef = useRef(selectedSlot);
+    selectedSlotRef.current = selectedSlot;
+
     useEffect(() => {
         let isMounted = true;
 
@@ -29,7 +34,8 @@ export default function BookingForm({ doctorId, hospitalId }) {
                 if (isMounted) {
                     setSlots(available);
                     // Clear selection if the current selected slot is no longer available
-                    if (selectedSlot && !available.find(s => s.time === selectedSlot && s.available)) {
+                    const currentSlot = selectedSlotRef.current;
+                    if (currentSlot && !available.find(s => s.time === currentSlot && s.available)) {
                         setSelectedSlot('');
                     }
                 }

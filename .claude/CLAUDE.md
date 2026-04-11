@@ -288,6 +288,14 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **React Hydration Mismatch (Browser Extensions):** Password managers (like Bitwarden) aggressively inject `fdprocessedid` into Server Rendered form fields before client hydration, causing strict mode crashes. Add `suppressHydrationWarning` specifically to `<form>`, `<input>`, and `<button>` components impacted by third-party extensions.
 - **Routing & Render Purity Constraints:** Standardized 6+ internal portals to properly utilize the Next.js `<Link>` component instead of raw `<a>` tags. Also secured render cycle purity by ensuring unpredictable APIs like `Math.random()` or `Date.now()` are strictly constrained to `useEffect` hooks and not run on SSR/initial hydration cycles.
 
+### Key Process Improvements & Hacks
+*   **Dev Database Tunnel:** Migrations run on default pooler `6543`, but Next.js local dev MUST use the standard direct connection `5432` to bypass Next.js 16/Turbopack connection exhaustion causing "`Can't reach database server`" errors.
+*   **React 19 Render Purity:** Solved systemic hydration mismatches by eliminating side-effects (`Math.random()`, `Date.now()`) from component render phases. Refactored ID generation into deterministic UUID structures passed down from server.
+*   **SSR Hydration Robustness:** Hardcoded `suppressHydrationWarning` on login inputs to gracefully handle Chrome extension injections (`fdprocessedid`, password manager wrappers).
+*   **Routing Standardization:** Enforced strictly Next.js `<Link>` elements over primitive `<a>` tags globally to maintain router state context and eliminate silent reload bugs.
+*   **React Hook Dependency Flow:** Patched stale closures in complex stateful components (like `BookingForm`) applying `useRef` as a dependency bailout instead of triggering infinite re-fetch loops.
+*   **Haspataal Admin Stability:** Fixed Turbopack inference bugs where the root `proxy.js` middleware incorrectly injected dependencies into the Admin dashboard build context, resolved via tailored `lib/session` aliasing. Swapped `next/font/google` builds to pure system font stacks to eliminate CI network lockouts. 
+*   **UI Asset Modernization:** Systematically stripped raw `<img>` tags in favor of Edge-optimized `<Image />` components across portals.
 
 ---
 

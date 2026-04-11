@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -76,7 +77,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                     <Link href="/" className="flex items-center gap-2 no-underline" onClick={onClose}>
-                        <img src="/logo.svg" alt="Haspataal" className="w-7 h-9 object-contain" />
+                        <Image src="/logo.svg" alt="Haspataal" width={28} height={36} />
                         <span className="text-lg font-extrabold text-slate-900 tracking-tight">Haspataal</span>
                         <span className="text-lg font-extrabold text-medical-600 -ml-1">.</span>
                     </Link>
