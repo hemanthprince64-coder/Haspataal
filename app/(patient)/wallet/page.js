@@ -12,17 +12,24 @@ export default function WalletPage() {
     const [loading, setLoading] = useState(true);
     const [showTopUpOptions, setShowTopUpOptions] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = () => {
         setLoading(true);
         getPatientFullProfile().then(data => {
             setPatient(data);
             setLoading(false);
         });
-    }
+    };
+
+    useEffect(() => {
+        let active = true;
+        getPatientFullProfile().then(data => {
+            if (active) {
+                setPatient(data);
+                setLoading(false);
+            }
+        });
+        return () => { active = false; };
+    }, []);
 
     const handleTopUp = async (amount) => {
         const formData = new FormData();

@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Link from 'next/link';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,24 +22,24 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <p className="text-xs text-gray-500 mt-1">doctor.haspataal.com</p>
           </div>
           <nav className="flex flex-col gap-2 flex-1">
-            <a href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 font-medium text-sm">
+            <Link href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-cyan-500/10 text-cyan-400 font-medium text-sm">
               <span>🏠</span> Dashboard
-            </a>
-            <a href="/appointments" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link href="/appointments" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
               <span>📅</span> Appointments
-            </a>
-            <a href="/patients" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link href="/patients" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
               <span>👥</span> My Patients
-            </a>
-            <a href="/prescriptions" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link href="/prescriptions" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
               <span>💊</span> Prescriptions
-            </a>
-            <a href="/telemedicine" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link href="/telemedicine" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
               <span>📹</span> Telemedicine
-            </a>
-            <a href="/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
+            </Link>
+            <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white text-sm transition-colors">
               <span>📊</span> Analytics
-            </a>
+            </Link>
           </nav>
           <div className="mt-auto">
             <div className="flex items-center gap-3 px-4 py-3 bg-gray-800 rounded-xl">

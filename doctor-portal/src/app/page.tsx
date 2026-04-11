@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function DoctorDashboard() {
   const stats = [
     { label: "Today's Appointments", value: '12', icon: '📅', color: 'from-cyan-500 to-blue-600' },
@@ -19,7 +21,7 @@ export default function DoctorDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-white">Good morning, Dr. 👋</h2>
-        <p className="text-gray-400 mt-1 text-sm">Here's what's happening in your practice today.</p>
+        <p className="text-gray-400 mt-1 text-sm">Here&apos;s what&apos;s happening in your practice today.</p>
       </div>
 
       {/* Stats Grid */}
@@ -38,8 +40,8 @@ export default function DoctorDashboard() {
       {/* Appointments Table */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-semibold text-white">Today's Schedule</h3>
-          <a href="/appointments" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">View All →</a>
+          <h3 className="font-semibold text-white">Today&apos;s Schedule</h3>
+          <Link href="/appointments" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">View All →</Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

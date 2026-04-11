@@ -34,7 +34,7 @@ export default function PrescriptionsList({ prescriptions }) {
                     </div>
 
                     {pres.doctor && <p className="text-slate-600 font-bold text-sm mb-4 bg-slate-50 inline-block px-3 py-1.5 rounded-lg border border-slate-100">Prescribed by {pres.doctor.fullName}</p>}
-                    {pres.notes && <p className="text-slate-600 italic text-sm p-4 bg-yellow-50 rounded-xl mb-4 border border-yellow-100">"{pres.notes}"</p>}
+                    {pres.notes && <p className="text-slate-600 italic text-sm p-4 bg-yellow-50 rounded-xl mb-4 border border-yellow-100">&quot;{pres.notes}&quot;</p>}
 
                     {pres.type === 'STRUCTURED' && pres.items && pres.items.length > 0 && (
                         <div className="space-y-2 mt-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">

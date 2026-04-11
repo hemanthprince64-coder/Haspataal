@@ -58,7 +58,7 @@ export default function PatientDetailsPage() {
                 <div className="flex-1 text-center md:text-left space-y-2">
                     <h1 className="text-senior-h1">{name || nickname}</h1>
                     <p className="text-2xl font-bold text-slate-500">
-                        Patient ID: <span className="text-[#0D2B55]">HP-{Math.floor(100000 + Math.random() * 900000)}</span>
+                        Patient ID: <span className="text-[#0D2B55]">HP-{patient?.id ? patient.id.slice(-6).toUpperCase() : '------'}</span>
                     </p>
                     <div className="pt-4 flex flex-wrap justify-center md:justify-start gap-3">
                         <span className="px-5 py-2 rounded-xl bg-emerald-50 border-2 border-emerald-100 text-sm font-black text-emerald-700 uppercase tracking-widest">

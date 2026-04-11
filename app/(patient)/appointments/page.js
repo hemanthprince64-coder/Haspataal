@@ -13,10 +13,6 @@ export default function AppointmentsPage() {
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState('upcoming'); // 'upcoming', 'past'
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         setLoading(true);
         const res = await getMyAppointmentsAction();
@@ -24,7 +20,20 @@ export default function AppointmentsPage() {
             setAppointments(res.data);
         }
         setLoading(false);
-    }
+    };
+
+    useEffect(() => {
+        let active = true;
+        getMyAppointmentsAction().then(res => {
+            if (active) {
+                if (res.success) {
+                    setAppointments(res.data);
+                }
+                setLoading(false);
+            }
+        });
+        return () => { active = false; };
+    }, []);
 
     const handleCancel = async (visitId) => {
         if (!window.confirm("Are you sure you want to cancel? (Cannot cancel within 6 hours of appointment)")) return;

@@ -60,6 +60,7 @@ export default function PatientLogin() {
                         <div className="form-group">
                             <label className="form-label">📱 Mobile Number</label>
                             <input
+                                suppressHydrationWarning
                                 name="mobile"
                                 type="tel"
                                 placeholder="10-digit mobile number"
@@ -75,7 +76,7 @@ export default function PatientLogin() {
                             <div className="alert alert-error">⚠️ {otpMessage}</div>
                         )}
 
-                        <button type="submit" disabled={isRequesting} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                        <button suppressHydrationWarning type="submit" disabled={isRequesting} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
                             {isRequesting ? '⏳ Sending OTP...' : 'Get OTP'}
                         </button>
                     </form>
@@ -83,12 +84,12 @@ export default function PatientLogin() {
                     <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div className="form-group">
                             <label className="form-label">📱 Mobile Number</label>
-                            <input name="mobile" type="tel" readOnly value={mobile} className="form-input" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-muted)' }} />
+                            <input suppressHydrationWarning name="mobile" type="tel" readOnly value={mobile} className="form-input" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-muted)' }} />
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">🔑 OTP</label>
-                            <input name="otp" type="text" placeholder="Enter 4-digit OTP" required className="form-input" maxLength="4" autoFocus />
+                            <input suppressHydrationWarning name="otp" type="text" placeholder="Enter 4-digit OTP" required className="form-input" maxLength="4" autoFocus />
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
                                 💡 Check console logs for the demo OTP code
                             </p>
@@ -98,7 +99,7 @@ export default function PatientLogin() {
                             <div className="alert alert-error">⚠️ {state.message}</div>
                         )}
 
-                        <button type="submit" disabled={isPending} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                        <button suppressHydrationWarning type="submit" disabled={isPending} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
                             {isPending ? '⏳ Verifying...' : '→ Login'}
                         </button>
 

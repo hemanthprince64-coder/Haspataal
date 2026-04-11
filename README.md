@@ -60,5 +60,4 @@ Haspataal is a comprehensive B2B2C platform connecting hospitals, doctors, and p
 -   **Analytics**: Admin and Hospital dashboards powerd by Recharts and PostHog.
 
 ## 📚 Documentation
--   [Deployment Guide](./DEPLOYMENT.md)
--   [ABDM Guide](./ABDM_GUIDE.md)
+-   [ABDM Integration Guide](./haspataal-in/ABDM_GUIDE.md)

@@ -1,4 +1,5 @@
 import { services } from "@/lib/services";
+import Link from "next/link";
 import BookingForm from "./BookingForm";
 
 export default async function BookingPage({ searchParams }) {
@@ -18,9 +19,9 @@ export default async function BookingPage({ searchParams }) {
                     <div className="empty-state-icon">⚠️</div>
                     <p className="empty-state-title">No doctor selected</p>
                     <p className="empty-state-text">Please go back to the search page and select a doctor to book.</p>
-                    <a href="/search" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>
+                    <Link href="/search" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>
                         ← Find Doctors
-                    </a>
+                    </Link>
                 </div>
             </div>
         );
@@ -28,9 +29,9 @@ export default async function BookingPage({ searchParams }) {
 
     return (
         <div className="container page-enter" style={{ padding: "2rem 1rem", maxWidth: "700px" }}>
-            <a href="/search" style={{ color: "var(--primary)", fontSize: "0.9rem", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.25rem", marginBottom: "1.5rem" }}>
+            <Link href="/search" style={{ color: "var(--primary)", fontSize: "0.9rem", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.25rem", marginBottom: "1.5rem" }}>
                 ← Back to Search
-            </a>
+            </Link>
 
             <h1 style={{ fontSize: "1.75rem", fontWeight: "800", marginBottom: "1.5rem" }}>Book Appointment</h1>
 

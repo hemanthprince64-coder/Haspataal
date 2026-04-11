@@ -14,17 +14,24 @@ export default function PrescriptionsPage() {
     const [showUploadMsg, setShowUploadMsg] = useState('');
     const [isUploading, setIsUploading] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = () => {
         setLoading(true);
         getPatientFullProfile().then(data => {
             setPatient(data);
             setLoading(false);
         });
-    }
+    };
+
+    useEffect(() => {
+        let active = true;
+        getPatientFullProfile().then(data => {
+            if (active) {
+                setPatient(data);
+                setLoading(false);
+            }
+        });
+        return () => { active = false; };
+    }, []);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];

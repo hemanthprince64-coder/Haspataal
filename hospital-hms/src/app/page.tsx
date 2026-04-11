@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function HospitalDashboard() {
     const stats = [
         { label: "Today's OPD Patients", value: '87', icon: '🏥', color: 'from-emerald-500 to-teal-600' },
@@ -39,7 +41,7 @@ export default function HospitalDashboard() {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="font-semibold text-white">Recent IPD Patients</h3>
-                    <a href="/ipd" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">Manage Wards →</a>
+                    <Link href="/ipd" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">Manage Wards →</Link>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">

@@ -92,7 +92,7 @@ export default function InsurancePage() {
                 <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
                     <div className="text-4xl mb-3">🛡️</div>
                     <p className="text-slate-500 text-sm">Your insurance policies will appear here.</p>
-                    <p className="text-slate-400 text-xs mt-1">Click "+ Add" to add an insurance policy.</p>
+                    <p className="text-slate-400 text-xs mt-1">Click &quot;+ Add&quot; to add an insurance policy.</p>
                 </div>
             ) : (
                 <div className="space-y-3">

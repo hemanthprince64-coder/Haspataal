@@ -99,7 +99,7 @@ export default async function DoctorDiscoveryPage({ params }: DoctorPageProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-400 text-sm leading-relaxed">
                     <p>
                         Searching for the best {specialty} in {city}? Haspataal simplifies your search by providing 
-                        a curated list of top-rated and verified specialists. Whether you're looking for a 
+                        a curated list of top-rated and verified specialists. Whether you&apos;re looking for a 
                         routine check-up or specialized care, our platform ensures you connect with the 
                         right healthcare professional instantly.
                     </p>

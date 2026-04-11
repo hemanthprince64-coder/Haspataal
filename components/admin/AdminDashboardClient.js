@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Skeleton } from 'boneyard-js/react';
 import AdminStatsGrid from "@/components/admin/AdminStatsGrid";
 import PlatformGrowthCard from "@/components/admin/PlatformGrowthCard";
@@ -45,7 +46,7 @@ export default function AdminDashboardClient() {
             {stats.pendingHospitals > 0 && !loading && (
                 <div className="alert alert-warning" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span>⚠️ {stats.pendingHospitals} hospital(s) pending approval</span>
-                    <a href="/admin/dashboard/hospitals" style={{ color: "var(--primary)", fontWeight: "600" }}>Review →</a>
+                    <Link href="/admin/dashboard/hospitals" style={{ color: "var(--primary)", fontWeight: "600" }}>Review →</Link>
                 </div>
             )}
         </div>

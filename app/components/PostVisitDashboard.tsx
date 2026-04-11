@@ -144,7 +144,7 @@ const PostVisitDashboard: React.FC<PostVisitDashboardProps> = ({ journey }) => {
                                     {med.instructions && (
                                         <div className="mt-4 pt-4 border-t border-slate-200/50">
                                             <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">PRO-TIP</p>
-                                            <p className="text-xs text-slate-600 italic">"{med.instructions}"</p>
+                                            <p className="text-xs text-slate-600 italic">&quot;{med.instructions}&quot;</p>
                                         </div>
                                     )}
                                 </div>

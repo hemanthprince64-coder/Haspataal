@@ -10,17 +10,24 @@ export default function AddressesPage() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [message, setMessage] = useState('');
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = () => {
         setLoading(true);
         getPatientFullProfile().then(data => {
             setPatient(data);
             setLoading(false);
         });
-    }
+    };
+
+    useEffect(() => {
+        let active = true;
+        getPatientFullProfile().then(data => {
+            if (active) {
+                setPatient(data);
+                setLoading(false);
+            }
+        });
+        return () => { active = false; };
+    }, []);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();

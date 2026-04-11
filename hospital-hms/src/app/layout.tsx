@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Link from 'next/link';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,27 +26,27 @@ export default function RootLayout({
                         <p className="text-xs text-slate-500 mt-1">hospital.haspataal.com</p>
                     </div>
                     <nav className="flex flex-col gap-2 flex-1">
-                        <a href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 font-medium text-sm">
+                        <Link href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 font-medium text-sm">
                             <span>🏥</span> HMS Overview
-                        </a>
-                        <a href="/doctors" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/doctors" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
                             <span>👨‍⚕️</span> Doctors
-                        </a>
-                        <a href="/opd" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/opd" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
                             <span>📋</span> OPD Management
-                        </a>
-                        <a href="/ipd" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/ipd" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
                             <span>🛏️</span> IPD / Wards
-                        </a>
-                        <a href="/billing" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/billing" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
                             <span>💰</span> Billing
-                        </a>
-                        <a href="/diagnostics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/diagnostics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
                             <span>🧪</span> Diagnostics
-                        </a>
-                        <a href="/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
+                        </Link>
+                        <Link href="/analytics" className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white text-sm transition-colors">
                             <span>📊</span> Analytics
-                        </a>
+                        </Link>
                     </nav>
                     <div className="mt-auto">
                         <div className="flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-xl">

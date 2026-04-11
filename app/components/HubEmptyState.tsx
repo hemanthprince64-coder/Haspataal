@@ -16,7 +16,7 @@ export default function HubEmptyState({ city, specialty }: HubEmptyStateProps) {
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">No {specialty} found in {city}</h3>
             <p className="text-gray-400 max-w-md mx-auto mb-8 leading-relaxed">
-                We couldn't find any verified specialists matching your criteria in this location. 
+                We couldn&apos;t find any verified specialists matching your criteria in this location. 
                 Our team is working on onboarding more partners in {city} soon.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
