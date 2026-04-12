@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 const config = {
+    darkMode: ["class"],
     content: [
         "./app/**/*.{js,ts,jsx,tsx,mdx}",
         "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,6 +9,39 @@ const config = {
     theme: {
         extend: {
             colors: {
+                border: "hsl(var(--border))",
+                input: "hsl(var(--input))",
+                ring: "hsl(var(--ring))",
+                background: "hsl(var(--background))",
+                foreground: "hsl(var(--foreground))",
+                primary: {
+                    DEFAULT: "hsl(var(--primary))",
+                    foreground: "hsl(var(--primary-foreground))",
+                },
+                secondary: {
+                    DEFAULT: "hsl(var(--secondary))",
+                    foreground: "hsl(var(--secondary-foreground))",
+                },
+                destructive: {
+                    DEFAULT: "hsl(var(--destructive))",
+                    foreground: "hsl(var(--destructive-foreground))",
+                },
+                muted: {
+                    DEFAULT: "hsl(var(--muted))",
+                    foreground: "hsl(var(--muted-foreground))",
+                },
+                accent: {
+                    DEFAULT: "hsl(var(--accent))",
+                    foreground: "hsl(var(--accent-foreground))",
+                },
+                popover: {
+                    DEFAULT: "hsl(var(--popover))",
+                    foreground: "hsl(var(--popover-foreground))",
+                },
+                card: {
+                    DEFAULT: "hsl(var(--card))",
+                    foreground: "hsl(var(--card-foreground))",
+                },
                 medical: {
                     50: '#F0F7FF',
                     100: '#E0EFFF',
@@ -27,17 +61,7 @@ const config = {
                     input: '#F1F5F9',      // Input fields
                     hover: '#F1F5F9',      // Hover state
                 },
-                border: {
-                    DEFAULT: '#E2E8F0',
-                    light: '#F1F5F9',
-                    focus: '#0B63BF',
-                },
-                accent: {
-                    teal: '#0D9488',
-                    'teal-light': '#F0FDFA',
-                    emerald: '#059669',
-                    'emerald-light': '#ECFDF5',
-                },
+                // clinical colors kept for compatibility
                 clinical: {
                     red: '#B91C1C',
                     'red-light': '#FEF2F2',
@@ -57,6 +81,9 @@ const config = {
             },
 
             borderRadius: {
+                lg: "var(--radius)",
+                md: "calc(var(--radius) - 2px)",
+                sm: "calc(var(--radius) - 4px)",
                 'xl': '0.75rem',    // 12px
                 '2xl': '1rem',      // 16px
                 '3xl': '1.25rem',   // 20px
@@ -80,15 +107,25 @@ const config = {
                     '0%, 100%': { backgroundPosition: '0% 50%' },
                     '50%': { backgroundPosition: '100% 50%' },
                 },
+                "accordion-down": {
+                    from: { height: "0" },
+                    to: { height: "var(--radix-accordion-content-height)" },
+                },
+                "accordion-up": {
+                    from: { height: "var(--radix-accordion-content-height)" },
+                    to: { height: "0" },
+                },
             },
 
             animation: {
                 'fade-in': 'fade-in 0.4s ease-out',
                 'subtle-shift': 'subtle-shift 15s ease infinite',
+                "accordion-down": "accordion-down 0.2s ease-out",
+                "accordion-up": "accordion-up 0.2s ease-out",
             },
         },
     },
-    plugins: [],
+    plugins: [require("tailwindcss-animate")],
 };
 
 export default config;
