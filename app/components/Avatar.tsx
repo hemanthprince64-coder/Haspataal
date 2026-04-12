@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface AvatarProps {
   imageUrl?: string | null;
@@ -18,6 +19,12 @@ const Avatar: React.FC<AvatarProps> = ({ imageUrl, name, size = 'md', className 
     lg: 'w-12 h-12 text-base',
     xl: 'w-24 h-24 text-2xl',
   };
+  const sizePixels = {
+    sm: 32,
+    md: 40,
+    lg: 48,
+    xl: 96,
+  };
 
   const initial = name ? name.charAt(0).toUpperCase() : '?';
 
@@ -25,9 +32,11 @@ const Avatar: React.FC<AvatarProps> = ({ imageUrl, name, size = 'md', className 
   if (imageUrl && !error) {
     return (
       <div className={`${sizeClasses[size]} rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 ${className}`}>
-        <img
+        <Image
           src={imageUrl}
           alt={name || "Profile"}
+          width={sizePixels[size]}
+          height={sizePixels[size]}
           className="w-full h-full object-cover"
           onError={() => setError(true)}
         />

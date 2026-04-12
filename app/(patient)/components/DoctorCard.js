@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function DoctorCard({ doctor }) {
     const { id, name, speciality, hospital, distance, fees, matches, stars, image } = doctor;
@@ -11,9 +12,11 @@ export default function DoctorCard({ doctor }) {
             <div className="flex gap-3.5 mb-4">
                 {/* Avatar */}
                 <div className="relative flex-shrink-0">
-                    <img
+                    <Image
                         src={image}
                         alt={name}
+                        width={72}
+                        height={72}
                         className="w-[72px] h-[72px] rounded-2xl object-cover bg-slate-100"
                     />
                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold py-0.5 px-2 rounded-full border-2 border-white whitespace-nowrap">
