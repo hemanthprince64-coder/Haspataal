@@ -5,6 +5,8 @@ require('dotenv').config({ path: '../.env' });
 // Real RBAC middleware (Phase 4 — wired in health check auto-fix)
 const { requireAuth, requireRole, requireHospitalTenant } = require('./middleware/auth');
 
+const { apiLimiter, strictLimiter } = require('./middleware/rate-limit');
+
 const app = express();
 app.use(express.json());
 app.use(cors({
@@ -20,6 +22,9 @@ app.use(cors({
     ],
     credentials: true
 }));
+
+// Apply general rate limiter to all requests
+app.use(apiLimiter);
 
 const PORT = process.env.API_GATEWAY_PORT || 4002;
 
@@ -38,19 +43,31 @@ app.get('/health', (req, res) => {
     });
 });
 
+const { cacheAside } = require('./lib/cache');
+
 // ============================================================
 // DOCTOR DISCOVERY (Public — SEO powered)
 // ============================================================
-app.get('/v1/search/doctors', async (req, res) => {
+app.get('/v1/search/doctors', strictLimiter, async (req, res) => {
     const { city, specialty, cursor, limit = '20' } = req.query;
-    const take = Math.min(parseInt(limit), 100);
+    const cacheKey = `search:doctors:${city || 'all'}:${specialty || 'all'}:${cursor || 'start'}:${limit}`;
 
-    // TODO: Wire to Prisma — prisma.doctorMaster.findMany({ where: { city, specialty }, take })
-    res.json({
-        success: true,
-        data: [],
-        meta: { cursor: null, hasMore: false, query: { city, specialty } }
-    });
+    try {
+        const results = await cacheAside(cacheKey, async () => {
+            // TODO: Wire to Prisma — prisma.doctorMaster.findMany({ where: { city, specialty }, take })
+            return {
+                data: [],
+                meta: { cursor: null, hasMore: false, query: { city, specialty } }
+            };
+        }, 300); // Cache for 5 minutes
+
+        res.json({
+            success: true,
+            ...results
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch doctors' });
+    }
 });
 
 // ============================================================

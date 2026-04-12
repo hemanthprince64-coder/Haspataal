@@ -296,6 +296,12 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 *   **React Hook Dependency Flow:** Patched stale closures in complex stateful components (like `BookingForm`) applying `useRef` as a dependency bailout instead of triggering infinite re-fetch loops.
 *   **Haspataal Admin Stability:** Fixed Turbopack inference bugs where the root `proxy.js` middleware incorrectly injected dependencies into the Admin dashboard build context, resolved via tailored `lib/session` aliasing. Swapped `next/font/google` builds to pure system font stacks to eliminate CI network lockouts. 
 *   **UI Asset Modernization:** Systematically stripped raw `<img>` tags in favor of Edge-optimized `<Image />` components across portals.
+- **Shadcn UI Integration (2026-04-12):** Successfully integrated Shadcn UI locally in the root project. Components use a custom "Medical" theme merged into the Shadcn Slate base. Path aliases are configured as `@/components/ui` and `@/lib/utils`.
+- **Architectural Hardening — Auth (2026-04-12):** Centralized `auth-service` now connects to Prisma for real database validation against Patient, Doctor, and HospitalAdmin models. Implemented `bcryptjs` for secure password hashing.
+- **API Resilience & Rate Limiting (2026-04-12):** Implemented Redis-backed rate limiting in `api-gateway` using `express-rate-limit` and `rate-limit-redis`. Defined a two-tier strategy: a general `apiLimiter` (100 req/15 min) and a `strictLimiter` (5 req/min) for sensitive discovery endpoints.
+- **Cache Aside Pattern (2026-04-12):** Deployed a Redis caching layer in `api-gateway` using the "Cache Aside" pattern. Significantly reduces DB load for frequent READ operations like doctor discovery and hospital metadata lookups.
+- **Infrastructure Health Checks (2026-04-12):** Updated `nginx.conf` upstreams with `max_fails` and `fail_timeout` parameters. Added `healthcheck` protocols to `docker-compose.yml` for automated service monitoring and failover.
+- **Fail-Fast Environment Validation (2026-04-12):** Created a Zod-based environment schema (`lib/env-schema.ts`) to validate all critical credentials (DATABASE_URL, JWT secrets, Redis URL) at startup, preventing partial or insecure deployments.
 
 ---
 

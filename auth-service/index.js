@@ -7,11 +7,13 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const bcrypt = require('bcryptjs');
+
 const PORT = process.env.AUTH_SERVICE_PORT || 4001;
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback_secret_for_dev_only';
 
-// Mock DB logic (In Phase 2, this will connect to the Prisma client in root)
-// We are establishing the microservice routing structure first.
 app.get('/health', (req, res) => {
     res.json({ status: 'healthy', service: 'auth-service' });
 });
@@ -19,29 +21,77 @@ app.get('/health', (req, res) => {
 app.post('/oauth/token', async (req, res) => {
     const { email, password } = req.body;
 
-    // TODO: Connect to Prisma Patient/Doctor/Admin models
-    // For scaffolding, we validate a mock login to distribute the JWT structure
-
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Mock Payload matching Haspataal schema expectations
-    const payload = {
-        userId: '123e4567-e89b-12d3-a456-426614174000',
-        email: email,
-        role: email.includes('admin') ? 'super_admin' : (email.includes('doctor') ? 'doctor' : 'patient'),
-        hospitalId: email.includes('hospital') ? 'hospital-uuid-1234' : null
-    };
+    try {
+        let user = null;
+        let role = null;
+        let hospitalId = null;
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+        // 1. Try Patient
+        user = await prisma.patient.findUnique({ where: { email } });
+        if (user) role = 'patient';
 
-    res.json({
-        access_token: token,
-        token_type: 'Bearer',
-        expires_in: 86400,
-        user: payload
-    });
+        // 2. Try Doctor
+        if (!user) {
+            user = await prisma.doctorMaster.findUnique({ where: { email } });
+            if (user) role = 'doctor';
+        }
+
+        // 3. Try Hospital Admin
+        if (!user) {
+            user = await prisma.hospitalAdmin.findUnique({ where: { email } });
+            if (user) {
+                role = 'hospital_admin';
+                hospitalId = user.hospitalId;
+            }
+        }
+
+        // 4. Try Staff
+        if (!user) {
+            user = await prisma.staff.findUnique({ where: { mobile: email } }); // Staff uses mobile as identifier in schema
+            if (user) {
+                role = 'staff';
+                hospitalId = user.hospitalId;
+            }
+        }
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Validate Password
+        const isValid = await bcrypt.compare(password, user.password);
+        if (!isValid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // JWT Payload
+        const payload = {
+            userId: user.id,
+            email: user.email || user.mobile,
+            role: role,
+            hospitalId: hospitalId
+        };
+
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+
+        res.json({
+            access_token: token,
+            token_type: 'Bearer',
+            expires_in: 86400,
+            user: {
+                id: user.id,
+                name: user.name || user.fullName,
+                role: role
+            }
+        });
+    } catch (error) {
+        console.error('[Auth Error]', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 app.listen(PORT, () => {
