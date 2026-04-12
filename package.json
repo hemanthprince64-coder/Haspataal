@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.27",
@@ -39,6 +39,7 @@
     "postcss": "^8.5.8",
     "prisma": "5.10.2",
     "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
   }
 }

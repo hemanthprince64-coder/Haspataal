@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 // Models that use soft-delete (medical records — never hard-delete)
 const SOFT_DELETE_MODELS = [
@@ -9,8 +9,16 @@ const SOFT_DELETE_MODELS = [
     'PatientRecord',
 ];
 
-const prismaClientSingleton = () => {
-    const client = new PrismaClient();
+// Extend PrismaClient type with custom helpers
+export interface ExtendedPrismaClient extends PrismaClient {
+    withAuth: (
+        session: any,
+        callback: (tx: Prisma.TransactionClient) => Promise<any>
+    ) => Promise<any>;
+}
+
+const prismaClientSingleton = (): ExtendedPrismaClient => {
+    const client = new PrismaClient() as unknown as ExtendedPrismaClient;
 
     // RLS Session Helper: ensures absolute database-level isolation
     // Use this wrapper for any query requiring multi-tenant security
@@ -30,7 +38,7 @@ const prismaClientSingleton = () => {
     };
 
     // Middleware: intercept delete → soft-delete
-    client.$use(async (params, next) => {
+    (client as any).$use(async (params: any, next: (params: any) => Promise<any>) => {
         if (SOFT_DELETE_MODELS.includes(params.model)) {
             // Convert delete to update with deletedAt
             if (params.action === 'delete') {
@@ -64,10 +72,12 @@ const prismaClientSingleton = () => {
     return client;
 }
 
-const globalForPrisma = globalThis
+declare global {
+    var _prisma: ExtendedPrismaClient | undefined;
+}
 
-const prisma = globalForPrisma.prisma || prismaClientSingleton()
+const prisma = globalThis._prisma || prismaClientSingleton()
 
 export default prisma
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== 'production') globalThis._prisma = prisma

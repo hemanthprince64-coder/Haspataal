@@ -877,7 +877,7 @@ export const services = {
             return await prisma.visit.findMany({
                 where: { hospitalId },
                 include: { 
-                    aiSummary: true,
+                    careJourney: true,
                     appointment: { include: { doctor: true, patient: true } }
                 },
                 orderBy: { createdAt: 'desc' }

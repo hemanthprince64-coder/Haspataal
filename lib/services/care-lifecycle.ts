@@ -89,7 +89,7 @@ export class CareLifecycleService {
                 isTriggered: false,
                 scheduledAt: { lte: now }
             },
-            include: { careJourney: { include: { visit: { include: { patient: true } } } } }
+            include: { careJourney: { include: { visit: true } } }
         });
 
         logger.info({ count: pending.length }, 'Processing pending nudges');

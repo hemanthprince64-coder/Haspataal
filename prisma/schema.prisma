@@ -687,6 +687,7 @@ model CareJourney {
   language        String   @default("en")
   pediatricMode   Boolean  @default(false) @map("pediatric_mode")
   safetyCheck     Boolean  @default(false) @map("safety_check")
+  status          String   @default("ACTIVE")
   createdAt       DateTime @default(now()) @map("created_at")
   
   visit           Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
