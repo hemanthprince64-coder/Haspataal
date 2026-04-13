@@ -1,40 +1,42 @@
-# Haspataal Platform: AI Agent Guide
+# 🩺 CLAUDE.md - Project Haspataal
 
-This document describes the Haspataal healthcare platform, its architecture, and the commands for AI models and coding agents working in this codebase.
+## 🎯 High-Level Mission
+Haspataal is a healthcare application for patient management, appointment booking, and hospital discovery.
+Reliability, data privacy, and clean UI are non-negotiable.
+
+## ⚠️ Session Protocol (MANDATORY)
+1. **READ FIRST:** At the start of every session or conversation, **always read this `CLAUDE.md` file before doing any work.** No exceptions.
+2. **UPDATE AFTER EVERY BUG FIX:** After fixing any bug, immediately add an entry to the **Knowledge Base** section below with the root cause and fix.
+3. **NEVER REPEAT MISTAKES:** Before writing code, check the Knowledge Base for known pitfalls. If a past lesson applies, follow it.
+4. **Accountability:** If a bug recurs that is already documented in the Knowledge Base, treat it as a critical failure and flag it.
 
 ---
 
-## Platform Overview
-
-Haspataal is a multi-tenant healthcare platform with separate portals for Patients, Doctors, Hospitals, and Admins. It is built on a Next.js monorepo with a Node.js microservice backend.
+## 🏗️ Architecture
 
 **Live Domains:**
-- `haspataal.com` → Patient Portal (`:3000`)
-- `doctor.haspataal.com` → Doctor Portal (`:3001`)
-- `hospital.haspataal.com` → Hospital HMS (`:3002`)
-- `admin.haspataal.com` → Admin Panel (`:3003`)
-- `api.haspataal.com` → API Gateway (`:4002`)
-- `auth.haspataal.com` → Auth Service (`:4001`)
-
----
-
-## Architecture
+- `haspataal.com` → Patient Portal (`:3000`) — `haspataal-com/`
+- `doctor.haspataal.com` → Doctor Portal (`:3001`) — `haspataal-in/`
+- `hospital.haspataal.com` → Hospital HMS (`:3002`) — `hospital-hms/`
+- `admin.haspataal.com` → Admin Panel (`:3003`) — `haspataal-admin/`
+- `api.haspataal.com` → API Gateway (`:4002`) — `api-gateway/`
+- `auth.haspataal.com` → Auth Service (`:4001`) — `auth-service/`
 
 ```
 Nginx (Load Balancer / Reverse Proxy)
 │
-├── Patient Portal    (Next.js, port 3000) → haspataal-com/
-├── Doctor Portal     (Next.js, port 3001) → haspataal-in/
-├── Hospital HMS      (Next.js, port 3002) → hospital-hms/
-├── Admin Panel       (Next.js, port 3003) → haspataal-admin/
+├── Patient Portal    (Next.js, port 3000)
+├── Doctor Portal     (Next.js, port 3001)
+├── Hospital HMS      (Next.js, port 3002)
+├── Admin Panel       (Next.js, port 3003)
 │
-├── API Gateway       (Express.js, port 4002) → api-gateway/
+├── API Gateway       (Express.js, port 4002)
 │   ├── Rate limiting via Redis
 │   ├── JWT RBAC middleware (requireAuth, requireRole, requireHospitalTenant)
 │   ├── Redis Token Blacklist (for logout revocation)
 │   └── Redlock for atomic appointment slot reservation
 │
-├── Auth Service      (Express.js, port 4001) → auth-service/
+├── Auth Service      (Express.js, port 4001)
 │   ├── /oauth/token  — Multi-role JWT issuance (patient, doctor, hospital_admin, staff)
 │   └── /auth/logout  — Token blacklisting via Redis TTL
 │
@@ -44,26 +46,47 @@ Nginx (Load Balancer / Reverse Proxy)
 
 ---
 
-## Technology Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS |
-| Backend | Express.js (API Gateway + Auth Service) |
-| Database | Supabase PostgreSQL via Prisma ORM 5.10 |
-| Auth | Custom JWT via `jsonwebtoken`, Redis blacklisting |
-| Caching | Redis (`ioredis`), cache-aside pattern |
-| Locking | Redlock for distributed mutexes |
-| Queue | BullMQ (Redis-backed) |
-| Containerisation | Docker Compose + Nginx |
-| AI/LLM | Google Generative AI SDK |
-| DB Tooling | Google MCP Toolbox for Databases (`toolbox.exe`) |
+## 🛠 Tech Stack & Environment
+- **Framework:** Next.js 16 (App Router) with React 19
+- **Styling:** Tailwind CSS 3.4
+- **ORM/DB:** Prisma 5 → Supabase (PostgreSQL)
+- **Auth:** Custom JWT (`jsonwebtoken`) + Redis blacklisting + `bcryptjs`
+- **Validation:** Zod 4
+- **Logging:** Pino + pino-pretty
+- **Caching:** Redis (`ioredis`), cache-aside pattern
+- **Locking:** Redlock for distributed mutexes (appointment booking)
+- **Queue:** BullMQ (Redis-backed)
+- **Containerisation:** Docker Compose + Nginx
+- **AI/LLM:** Google Generative AI SDK (`@google/generative-ai`)
+- **DB Tooling:** Google MCP Toolbox for Databases (`toolbox.exe`)
+- **Environment:** AntiGravity Agentic IDE
+- **Package Manager:** npm
 
 ---
 
-## Common Commands
+## 🧠 Recursive Memory & Learning (CRITICAL)
+- **Self-Correction:** After every bug fix, identify the root cause. If it's a project-specific pattern, update this `CLAUDE.md` under the "Knowledge Base" section immediately.
+- **Onboarding:** When I ask "What's the status?", review recent PRs and your internal history to provide a concise summary.
 
-### Root (Next.js Patient Portal)
+---
+
+## 🚀 AntiGravity Workflow
+- **Implementation Plan:** For any change involving >2 files, provide a bulleted "Implementation Plan" and wait for my "Go" before editing.
+- **Verification:** Do not mark a task as "Done" until the change has been validated (lint, build, or browser test).
+
+---
+
+## 📋 Coding Standards
+- **Naming:** `PascalCase` for Components, `camelCase` for variables, `kebab-case` for folder names.
+- **Safety:** Treat all patient-related data objects as immutable. Never expose PII in logs.
+- **Imports:** Use absolute paths (e.g., `@/components/...`) instead of relative paths.
+- **Multi-Tenancy:** All hospital-scoped queries MUST filter by `hospitalId`. Never fetch cross-tenant data.
+
+---
+
+## 🛠 Commands
+
+### Root (Patient Portal)
 ```bash
 npm run dev       # Start patient portal on :3000
 npm run build     # Production build
@@ -72,30 +95,25 @@ npm run lint      # ESLint
 
 ### Auth Service
 ```bash
-cd auth-service
-node index.js     # Start auth service on :4001
+cd auth-service && node index.js     # Start on :4001
 ```
 
 ### API Gateway
 ```bash
-cd api-gateway
-node index.js     # Start gateway on :4002
+cd api-gateway && node index.js      # Start on :4002
 ```
 
 ### Database
 ```bash
-# Generate Prisma client after schema changes
-npx prisma generate
+npx prisma generate       # Regenerate Prisma client after schema changes
+npx prisma db push        # Push schema to Supabase
+npx prisma studio         # Visual DB explorer
+```
 
-# Push schema to database
-npx prisma db push
-
-# Explore database visually
-npx prisma studio
-
-# Run MCP Toolbox for AI-driven SQL queries
-.\toolbox.exe --config tools.yaml --stdio
-.\toolbox.exe --config tools.yaml --ui     # Visual UI on :5000
+### MCP Toolbox (AI Database Queries)
+```bash
+.\toolbox.exe --config tools.yaml --stdio   # MCP server mode
+.\toolbox.exe --config tools.yaml --ui      # Visual UI on :5000
 ```
 
 ### Audit Scripts
@@ -103,79 +121,56 @@ npx prisma studio
 node scripts/audit.js             # Doctor KYC audit
 node scripts/audit_isolation.js   # Multi-tenant isolation audit
 node scripts/validate-env.js      # Environment variable validation
+node scripts/fix_audit.js         # Remediate KYC inconsistencies
 ```
 
 ---
 
-## Key Design Patterns
+## 🔑 Key Design Patterns
 
 ### JWT RBAC
-All protected routes use middleware chain:
+Middleware chain on protected routes:
 ```js
 requireAuth → requireRole('hospital_admin') → requireHospitalTenant → handler
 ```
 Roles: `patient`, `doctor`, `hospital_admin`, `staff`, `super_admin`
 
-### Multi-Tenancy
-Hospital data is scoped by `hospitalId` at every query level. `requireHospitalTenant` middleware enforces that `req.user.hospitalId === req.params.id`.
+### Token Revocation (Logout)
+On logout, JWT is stored in Redis until its natural expiry:
+```
+blacklist:{token} → 1  (with TTL = remaining exp seconds)
+```
 
 ### Distributed Slot Locking
-Appointment booking uses Redlock:
+Appointment booking uses Redlock to prevent race conditions:
 ```
-lock:slot:{doctorId}:{scheduledAt}:{slot}
+lock:slot:{doctorId}:{scheduledAt}:{slot}  (TTL: 10s)
 ```
-Lock TTL is 10 seconds. Prevents race conditions on concurrent bookings.
-
-### Token Revocation
-On logout, the JWT is stored in Redis with TTL = remaining `exp` time:
-```
-blacklist:{token} → 1
-```
-Every request checks redis before verifying the JWT signature.
 
 ### Environment Validation
-`scripts/validate-env.js` uses Zod schema validation. Both `auth-service` and `api-gateway` call `validateEnv()` on startup and exit with a descriptive error if variables are missing.
+`scripts/validate-env.js` uses Zod. Both services call `validateEnv()` on startup.
+
+### MCP Toolbox
+`tools.yaml` configures two tools:
+- `list-tables` — Schema discovery
+- `execute-query` — Arbitrary SQL against the Supabase DB
 
 ---
 
-## MCP Toolbox Configuration
+## 📚 Knowledge Base (Lessons Learned)
+> **Claude: You MUST update this section after every bug fix. Never skip this step.**
 
-The MCP Toolbox (`toolbox.exe`) is pre-configured in `tools.yaml` to connect to the Supabase PostgreSQL database.
-
-Available tools:
-- `list-tables` — Lists all tables in the `public` schema
-- `execute-query` — Execute arbitrary SQL (read/write)
-
-To integrate with an IDE or AI client, add to your MCP config:
-```json
-{
-  "mcpServers": {
-    "haspataal-db": {
-      "command": "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\toolbox.exe",
-      "args": ["--config", "tools.yaml", "--stdio"]
-    }
-  }
-}
-```
+- **Prisma select/include conflict:** Never mix `select` and `include` on the same relation field in Prisma queries — use one or the other. *(Fixed in conversation 842dbe37)*
+- **Logout flow:** Patient logout requires a dedicated server action that clears the JWT cookie; client-side only clearing is insufficient. *(Fixed in conversation 4c8aae98)*
+- **Supabase RLS:** Row-Level Security policies must be audited when adding new tables or modifying access patterns — see `supabase_rls_audit_day11.sql` for reference.
+- **AccountStatus enum:** The valid values in the Prisma schema are `ACTIVE`, `SUSPENDED`, `INACTIVE` — NOT `DEACTIVATED`. Using an invalid enum value throws a `PrismaClientValidationError`. *(Fixed in conversation 3ecc8175)*
+- **Auth middleware async:** `requireAuth` middleware must be declared `async` if it uses `await` inside (e.g., Redis blacklist check). Without `async`, the `await` throws a SyntaxError at load time. *(Fixed in conversation 3ecc8175)*
+- **Prisma scripts need dotenv:** Standalone Node scripts that use Prisma directly must call `require('dotenv').config()` before instantiating `PrismaClient`, otherwise `DATABASE_URL` is not found. *(Fixed in conversation 3ecc8175)*
+- **DoctorMaster KYC/AccountStatus mismatch:** Doctors can end up with `kycStatus: PENDING` but `accountStatus: ACTIVE` — run `scripts/audit.js` and `scripts/fix_audit.js` periodically to detect and remediate. *(Discovered in conversation 3ecc8175)*
 
 ---
 
-## Prisma Schema Highlights
-
-Key models in `prisma/schema.prisma`:
-- `Patient` — Patient accounts, profiles, care journeys
-- `DoctorMaster` — Doctor registration, KYC, professional history
-- `HospitalsMaster` — Hospital registration, verification
-- `DoctorHospitalAffiliation` — Many-to-many doctor ↔ hospital
-- `Appointment` — Bookings with Redis-protected slot uniqueness
-- `CareJourney` — Continuous care engine, recovery tracking
-- `NudgeSchedule` — Automated patient nudges
-
----
-
-## Security Notes
-
-- **KYC Enforcement**: Doctors with `kycStatus: PENDING` and `accountStatus: ACTIVE` are automatically flagged and suspended by `scripts/fix_audit.js`
-- **Password Policy**: All new passwords must satisfy `common/validation.js` rules (8+ chars, upper, lower, number, special)
-- **CORS**: Origins are strictly allowlisted in `api-gateway/index.js`
-- **Rate Limits**: API Gateway applies 100 req/15min general limit, 5 req/min on sensitive endpoints
+## 🤖 Agent Personality
+- Be concise.
+- Use "we" (e.g., "We should update the hook...").
+- If a request is ambiguous, ask for clarification before guessing.
