@@ -1,16 +1,28 @@
-"use client";
+'use client';
 
 import { useActionState, useState, startTransition, useEffect, useMemo } from "react";
 import { medchatTriageAction, getTopDoctorsBySpeciality } from "@/app/actions";
 import NextLink from "next/link";
-import styles from "./medchat.module.css";
 import { detectSpecialities } from "@/lib/medchat/triage-engine";
 import { TRANSLATIONS } from "@/lib/medchat/translations";
+import { 
+    Bot, User, Activity, AlertTriangle, ChevronRight, ChevronLeft, 
+    RefreshCcw, Calendar, MapPin, Star, ShieldAlert, Sparkles, 
+    CheckCircle2, Info, Loader2, Languages, ArrowRight, Ambulance, ShieldCheck
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const STEPS = (t) => [
-    { label: t.step1Title, icon: "👤" },
-    { label: t.step2Title, icon: "🩺" },
-    { label: t.step3Title, icon: "⚠️" },
+    { label: t.step1Title, icon: <User className="w-4 h-4" /> },
+    { label: t.step2Title, icon: <Activity className="w-4 h-4" /> },
+    { label: t.step3Title, icon: <AlertTriangle className="w-4 h-4" /> },
 ];
 
 const DURATIONS = [
@@ -50,7 +62,6 @@ export default function MedChatPage() {
         const result = await medchatTriageAction(prev, fd);
         if (result?.success) {
             setShowResult(true);
-            // Fetch top doctors for the recommended speciality
             loadDoctors(result.result.recommended_speciality, formData.city);
         }
         return result;
@@ -70,8 +81,6 @@ export default function MedChatPage() {
 
     const updateField = (key, value) => {
         setFormData((prev) => ({ ...prev, [key]: value }));
-
-        // Real-time detection for symptoms
         if (key === "symptoms") {
             const specs = detectSpecialities(value);
             setRealtimeSpecs(specs);
@@ -110,6 +119,8 @@ export default function MedChatPage() {
         setTopDoctors([]);
     };
 
+    const progress = ((step + 1) / 3) * 100;
+
     // ── RESULT VIEW ───────────────────────────────────────
     if (showResult && state?.success && state.result) {
         const r = state.result;
@@ -117,421 +128,470 @@ export default function MedChatPage() {
         const isUrgent = r.urgency_level === "URGENT";
 
         return (
-            <div className={styles.pageWrapper}>
-                <div className={styles.resultWrapper}>
-                    {/* Emergency Banner */}
+            <main className="container max-w-4xl mx-auto px-6 py-12 animate-fade-in text-slate-900">
+                <div className="space-y-8">
                     {isEmergency && (
-                        <div className={styles.emergencyBanner}>
-                            <span className={styles.emergencyIcon}>🚨</span>
-                            <div className={styles.emergencyText}>
-                                <h3>{t.emergencyTitle}</h3>
-                                <p>{t.emergencyDesc}</p>
-                            </div>
-                        </div>
+                        <Card className="border-none bg-red-600 text-white shadow-2xl shadow-red-500/30 overflow-hidden relative group">
+                            <CardContent className="p-8 flex flex-col md:flex-row items-center gap-6 relative z-10">
+                                <div className="w-20 h-20 bg-white/20 rounded-[2.5rem] flex items-center justify-center animate-pulse shrink-0">
+                                    <Ambulance className="w-10 h-10 text-white" />
+                                </div>
+                                <div className="text-center md:text-left">
+                                    <h3 className="text-3xl font-black tracking-tight mb-2 underline decoration-white/30 underline-offset-8 decoration-4">{t.emergencyTitle}</h3>
+                                    <p className="text-red-50 text-lg font-bold tracking-tight opacity-90">{t.emergencyDesc}</p>
+                                </div>
+                            </CardContent>
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        </Card>
                     )}
 
-                    {/* Result Header */}
-                    <div className={styles.resultHeader}>
-                        <span
-                            className={`${styles.urgencyBadge} ${isEmergency ? styles.badgeEmergency : isUrgent ? styles.badgeUrgent : styles.badgeRoutine
-                                }`}
-                        >
-                            {isEmergency ? "🔴" : isUrgent ? "🟡" : "🟢"} {r.urgency_level}
-                        </span>
-                        <span className={styles.specialityTag}>
-                            🏥 {r.recommended_speciality}
-                        </span>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                           <Badge className={`${isEmergency ? 'bg-red-500 hover:bg-red-500' : isUrgent ? 'bg-amber-500 hover:bg-amber-500' : 'bg-emerald-500 hover:bg-emerald-500'} text-white font-black text-xs uppercase tracking-widest px-4 py-1.5 rounded-xl border-none shadow-lg shadow-black/5`}>
+                                {isEmergency ? "🚨 " : isUrgent ? "⚠️ " : "✅ "} {r.urgency_level}
+                           </Badge>
+                           <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 font-black text-xs uppercase tracking-widest px-4 py-1.5 rounded-xl">
+                               🏥 {r.recommended_speciality}
+                           </Badge>
+                        </div>
                         {r.is_ai_powered && (
-                            <span className={styles.aiBadge}>
-                                ✨ {t.aiPowered}
-                            </span>
+                            <Badge className="bg-slate-900 text-white hover:bg-slate-900 font-black text-[10px] uppercase tracking-[0.2em] px-3 py-1.5 rounded-xl flex items-center gap-2">
+                                <Sparkles className="w-3.5 h-3.5 text-blue-400" /> {t.aiPowered}
+                            </Badge>
                         )}
                     </div>
 
-                    {/* Red Flag Alert */}
                     {r.red_flag_detected && (
-                        <div className={styles.resultCard} style={{ borderColor: "#FECACA", background: "#FEF2F2" }}>
-                            <div className={styles.resultCardTitle}>
-                                <span>⚠️</span> Red Flag Alert
-                            </div>
-                            <div className={styles.resultCardBody} style={{ color: "#B91C1C" }}>
-                                One or more clinical red flags have been identified. This requires immediate professional medical evaluation.
-                            </div>
-                        </div>
+                        <Card className="border-rose-200 bg-rose-50 shadow-xl shadow-rose-500/5">
+                            <CardContent className="p-6 flex items-center gap-5">
+                                <div className="w-12 h-12 rounded-2xl bg-rose-200 flex items-center justify-center shrink-0">
+                                    <ShieldAlert className="w-6 h-6 text-rose-700" />
+                                </div>
+                                <div className="space-y-1">
+                                    <h4 className="font-black text-rose-900 uppercase tracking-widest text-xs">Clinical Red Flag Identified</h4>
+                                    <p className="text-rose-700 font-bold tracking-tight leading-relaxed">
+                                        Immediate professional evaluation is required for your safety.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
                     )}
 
-                    {/* Integrated Doctor Recommendations */}
                     {!isEmergency && (
-                        <div className={styles.doctorsSection}>
-                            <div className={styles.doctorsTitle}>📅 Top Refuted {r.recommended_speciality} Specialists in {formData.city}</div>
+                        <section className="space-y-6">
+                            <div className="flex items-center justify-between px-2">
+                               <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-3">
+                                   <Calendar className="w-5 h-5 text-blue-600" /> Recommended Specialists in {formData.city}
+                               </h3>
+                            </div>
                             {loadingDoctors ? (
-                                <div className={styles.doctorGrid}>
-                                    <div className={styles.skeleton} />
-                                    <div className={styles.skeleton} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Skeleton className="h-32 rounded-3xl bg-slate-100" />
+                                    <Skeleton className="h-32 rounded-3xl bg-slate-100" />
                                 </div>
                             ) : topDoctors.length > 0 ? (
-                                <div className={styles.doctorGrid}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {topDoctors.map((doc) => (
-                                        <NextLink key={doc.id} href={`/doctor/${doc.id}`} className={styles.miniDocCard}>
-                                            <div className={styles.docInfo}>
-                                                <h4>{doc.name || doc.fullName}</h4>
-                                                <p>{doc.speciality} • {doc.hospital}</p>
-                                            </div>
-                                            <div className={styles.docMeta}>
-                                                <div className={styles.docRating}>⭐ {doc.stars || 4.5}</div>
-                                                <div className={styles.docDist}>{doc.distance || "Near you"}</div>
-                                            </div>
+                                        <NextLink key={doc.id} href={`/doctor/${doc.id}`} className="block group">
+                                            <Card className="rounded-3xl border-slate-100 shadow-xl shadow-slate-200/5 overflow-hidden group-hover:border-blue-300 transition-all group-hover:-translate-y-1">
+                                                <CardContent className="p-6">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="space-y-1">
+                                                            <h4 className="font-black text-lg tracking-tight group-hover:text-blue-600 transition-colors uppercase">{doc.name || doc.fullName}</h4>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{doc.speciality} • {doc.hospital}</p>
+                                                        </div>
+                                                        <div className="flex flex-col items-end">
+                                                            <div className="text-amber-500 font-black text-sm flex items-center gap-1">
+                                                                <Star className="w-3.5 h-3.5 fill-amber-500" /> {doc.stars || 4.5}
+                                                            </div>
+                                                            <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1 italic">{doc.distance || "Near you"}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-end text-blue-600 font-black text-[10px] uppercase tracking-widest gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                        Book Appointment <ArrowRight className="w-3 h-3" />
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
                                         </NextLink>
                                     ))}
                                 </div>
                             ) : (
-                                <div className={styles.resultCardBody}>Finding best matches for you...</div>
+                                <div className="p-8 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                                    <p className="text-slate-400 font-bold">Scanning for available specialists...</p>
+                                </div>
                             )}
-                        </div>
+                        </section>
                     )}
 
-                    {/* Clinical Summary */}
-                    <div className={styles.resultCard}>
-                        <div className={styles.resultCardTitle}>
-                            <span>📝</span> {t.summaryTitle}
-                        </div>
-                        <div className={styles.resultCardBody}>{r.clinical_summary_for_doctor}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <Card className="rounded-[2.5rem] bg-slate-50 border-slate-100 shadow-xl shadow-slate-200/5 h-full">
+                            <CardContent className="p-8 space-y-4">
+                                <div className="flex items-center gap-3 text-blue-600 mb-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center">
+                                        <Activity className="w-5 h-5" />
+                                    </div>
+                                    <h4 className="font-black text-slate-800 uppercase tracking-widest text-xs">{t.summaryTitle}</h4>
+                                </div>
+                                <p className="text-slate-600 font-bold leading-relaxed">{r.clinical_summary_for_doctor}</p>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="rounded-[2.5rem] bg-indigo-50 border-indigo-100 shadow-xl shadow-indigo-500/5 h-full">
+                            <CardContent className="p-8 space-y-4">
+                                <div className="flex items-center gap-3 text-indigo-600 mb-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-indigo-100 flex items-center justify-center">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <h4 className="font-black text-slate-800 uppercase tracking-widest text-xs">{t.aiReasoning}</h4>
+                                </div>
+                                <p className="text-slate-600 font-bold leading-relaxed italic">&quot;{r.ai_reasoning || r.patient_advice}&quot;</p>
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    {/* AI Reasoning */}
-                    {r.is_ai_powered && r.ai_reasoning && (
-                        <div className={styles.aiReasoningCard}>
-                            <div className={styles.aiReasoningTitle}>
-                                <span>✨</span> {t.aiReasoning}
+                    <Card className="rounded-[2.5rem] bg-white border-slate-200 shadow-md">
+                        <CardContent className="p-8">
+                            <div className="flex items-center justify-between mb-8">
+                                {isEmergency ? (
+                                    <Button asChild size="lg" className="h-16 px-10 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-red-500/20 active:scale-95 transition-all">
+                                        <NextLink href="/emergency">
+                                            🚑 {t.emergencyTitle}
+                                        </NextLink>
+                                    </Button>
+                                ) : (
+                                    <Button asChild size="lg" className="h-16 px-10 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
+                                        <NextLink href={`/search?speciality=${encodeURIComponent(r.recommended_speciality)}&city=${encodeURIComponent(formData.city)}`}>
+                                            <Calendar className="w-6 h-6 mr-3" /> {t.bookBtn}
+                                        </NextLink>
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    onClick={resetForm}
+                                    className="h-16 px-8 rounded-2xl border-slate-200 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+                                >
+                                    <RefreshCcw className="w-4 h-4 mr-3" /> {t.startOverBtn}
+                                </Button>
                             </div>
-                            <div className={styles.aiReasoningBody}>{r.ai_reasoning}</div>
-                        </div>
-                    )}
 
-                    {/* Patient Advice */}
-                    <div className={styles.resultCard}>
-                        <div className={styles.resultCardTitle}>
-                            <span>💡</span> {t.adviceTitle}
-                        </div>
-                        <div className={styles.resultCardBody}>{r.patient_advice}</div>
-                    </div>
-
-                    {/* CTA Buttons */}
-                    <div className={styles.resultActions}>
-                        {isEmergency ? (
-                            <NextLink href="/emergency" className={`${styles.ctaBook} ${styles.ctaEmergency}`}>
-                                🚑 Find Emergency Care
-                            </NextLink>
-                        ) : (
-                            <NextLink
-                                href={`/search?speciality=${encodeURIComponent(r.recommended_speciality)}&city=${encodeURIComponent(formData.city)}`}
-                                className={`${styles.ctaBook} ${styles.ctaBookPrimary}`}
-                            >
-                                📅 {t.bookBtn}
-                            </NextLink>
-                        )}
-                        <button
-                            type="button"
-                            onClick={resetForm}
-                            className={`${styles.ctaBook} ${styles.ctaOutline}`}
-                        >
-                            🔄 {t.startOverBtn}
-                        </button>
-                    </div>
-
-                    {/* Disclaimer */}
-                    <div className={styles.disclaimer}>
-                        <div className={styles.disclaimerTitle}>
-                            <span>ℹ️</span> {t.disclaimerTitle}
-                        </div>
-                        <p className={styles.disclaimerText}>{r.disclaimer}</p>
-                    </div>
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                <div className="flex items-center gap-3 mb-3 text-slate-400">
+                                    <Info className="w-5 h-5" />
+                                    <h4 className="font-black uppercase tracking-widest text-[10px]">{t.disclaimerTitle}</h4>
+                                </div>
+                                <p className="text-slate-400 text-xs font-bold leading-relaxed uppercase tracking-tight opacity-70 italic">{r.disclaimer}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-            </div>
+            </main>
         );
     }
 
     return (
-        <div className={styles.pageWrapper}>
-            {/* Language Switcher */}
-            <div className={styles.langSwitchWrapper}>
-                <button
-                    className={`${styles.langBtn} ${lang === 'en' ? styles.langBtnActive : ''}`}
-                    onClick={() => setLang('en')}
-                    suppressHydrationWarning
-                >
-                    EN
-                </button>
-                <button
-                    className={`${styles.langBtn} ${lang === 'hi' ? styles.langBtnActive : ''} ml-2`}
-                    onClick={() => setLang('hi')}
-                    suppressHydrationWarning
-                >
-                    हिन्दी
-                </button>
-            </div>
-
-            {/* Hero Header */}
-            <div className={styles.heroHeader}>
-                <div className={styles.heroContent}>
-                    <div className={styles.heroIcon}>🤖</div>
-                    <h1 className={styles.heroTitle} dangerouslySetInnerHTML={{ __html: t.heroTitle }} />
-                    <p className={styles.heroSubtitle}>
-                        {t.heroSubtitle}
-                    </p>
-                    <div className={styles.trustBar}>
-                        <span className={styles.trustTag}>🔒 {t.trustNoData}</span>
-                        <span className={styles.trustTag}>🩺 {t.trustClinically}</span>
-                        <span className={styles.trustTag}>⚡ {t.trustInstant}</span>
-                    </div>
+        <main className="container max-w-4xl mx-auto px-6 py-8 animate-fade-in text-slate-900" suppressHydrationWarning transition-all duration-500>
+            {/* Header Area */}
+            <div className="flex items-center justify-between mb-8">
+                <Button variant="ghost" asChild className="text-slate-500 hover:text-blue-600 -ml-4 font-bold">
+                    <NextLink href="/"><ChevronLeft className="w-5 h-5 mr-1" /> Portal</NextLink>
+                </Button>
+                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200/50">
+                    <Button
+                        variant={lang === 'en' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => setLang('en')}
+                        className={`h-8 rounded-lg font-black text-[10px] uppercase tracking-widest ${lang === 'en' ? 'bg-white shadow-sm' : 'text-slate-400'}`}
+                    >
+                        English
+                    </Button>
+                    <Button
+                        variant={lang === 'hi' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => setLang('hi')}
+                        className={`h-8 rounded-lg font-black text-[10px] uppercase tracking-widest ${lang === 'hi' ? 'bg-white shadow-sm' : 'text-slate-400'}`}
+                    >
+                        हिन्दी
+                    </Button>
                 </div>
             </div>
 
-            {/* Step Progress */}
-            <div className={styles.progressBar}>
-                {STEPS(t).map((s, i) => (
-                    <div key={i} className={styles.progressStep}>
-                        <div
-                            className={`${styles.stepCircle} ${i === step ? styles.stepCircleActive : i < step ? styles.stepCircleDone : ""
-                                }`}
-                        >
-                            {i < step ? "✓" : i + 1}
-                        </div>
-                        {i < STEPS(t).length - 1 && (
-                            <div className={`${styles.stepLine} ${i < step ? styles.stepLineDone : ""}`} />
-                        )}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                <div>
+                   <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="secondary" className="text-blue-700 bg-blue-100/50 hover:bg-blue-100 border-blue-200 px-3 py-1 font-bold text-[10px] uppercase tracking-[0.2em] backdrop-blur-sm">
+                            <Bot className="w-3.5 h-3.5 mr-2" /> AI Hub
+                        </Badge>
+                        <Badge variant="outline" className="border-indigo-100 text-indigo-500 font-bold text-[9px] uppercase tracking-widest">v2.4 Live</Badge>
                     </div>
-                ))}
+                    <h1 className="text-3xl font-black tracking-tight mb-1 uppercase" dangerouslySetInnerHTML={{ __html: t.heroTitle }} />
+                    <p className="text-slate-500 text-base font-medium tracking-tight leading-relaxed">{t.heroSubtitle}</p>
+                </div>
             </div>
 
-            {/* Step 1: Patient Info */}
-            {step === 0 && (
-                <div className={styles.formCard} key="step0">
-                    <div className={styles.stepTitle}>👤 {t.step1Title}</div>
-                    <div className={styles.stepDesc}>
-                        {t.step1Desc}
-                    </div>
-
-                    <div className={styles.fieldRow}>
-                        <div className={styles.field}>
-                            <label htmlFor="medchat-age" className={styles.label}>{t.ageLabel}</label>
-                            <input
-                                id="medchat-age"
-                                type="number"
-                                className={`${styles.input}`}
-                                placeholder="e.g. 28"
-                                min="0"
-                                max="150"
-                                value={formData.age}
-                                onChange={(e) => updateField("age", e.target.value)}
-                                suppressHydrationWarning
-                            />
-                        </div>
-                        <div className={styles.field}>
-                            <label htmlFor="medchat-gender" className={styles.label}>{t.genderLabel}</label>
-                            <select
-                                id="medchat-gender"
-                                className={`${styles.input} ${styles.select}`}
-                                value={formData.gender}
-                                onChange={(e) => updateField("gender", e.target.value)}
-                                suppressHydrationWarning
-                            >
-                                {GENDERS.map((g) => (
-                                    <option key={g} value={g}>{g}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className={styles.field}>
-                        <label htmlFor="medchat-city" className={styles.label}>{t.cityLabel}</label>
-                        <input
-                            id="medchat-city"
-                            type="text"
-                            className={styles.input}
-                            placeholder="e.g. Hyderabad"
-                            value={formData.city}
-                            onChange={(e) => updateField("city", e.target.value)}
-                            suppressHydrationWarning
-                        />
-                    </div>
-
-                    <div className={styles.buttonRow}>
-                        <button
-                            type="button"
-                            className={styles.btnPrimary}
-                            disabled={!canAdvance()}
-                            onClick={() => setStep(1)}
-                        >
-                            {t.continueBtn}
-                        </button>
-                    </div>
+            {/* Progress Bar */}
+            <div className="space-y-4 mb-10 px-1">
+                <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Clinical Triage Progress</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Step {step + 1} of 3</span>
                 </div>
-            )}
-
-            {/* Step 2: Symptoms */}
-            {step === 1 && (
-                <div className={styles.formCard} key="step1">
-                    <div className={styles.stepTitle}>🩺 {t.step2Title}</div>
-                    <div className={styles.stepDesc}>
-                        {t.step2Desc}
-                    </div>
-
-                    <div className={styles.field}>
-                        <label htmlFor="medchat-symptoms" className={styles.label}>{t.symptomsLabel}</label>
-                        <textarea
-                            id="medchat-symptoms"
-                            className={`${styles.input} ${styles.textarea}`}
-                            placeholder="e.g. I have a severe headache on the right side with nausea for the last 2 days..."
-                            value={formData.symptoms}
-                            onChange={(e) => updateField("symptoms", e.target.value)}
-                            maxLength={2000}
-                            suppressHydrationWarning
-                        />
-                        {/* Real-time feedback pills */}
-                        <div className={styles.realtimePills}>
-                            {realtimeSpecs.map((spec) => (
-                                <span key={spec} className={styles.realtimePill}>
-                                    ✨ Matching {spec}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className={styles.field}>
-                        <label htmlFor="medchat-duration" className={styles.label}>{t.durationLabel}</label>
-                        <select
-                            id="medchat-duration"
-                            className={`${styles.input} ${styles.select}`}
-                            value={formData.duration}
-                            onChange={(e) => updateField("duration", e.target.value)}
-                            suppressHydrationWarning
-                        >
-                            {DURATIONS.map((d) => (
-                                <option key={d} value={d}>{d}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className={styles.buttonRow}>
-                        <button type="button" className={styles.btnSecondary} onClick={() => setStep(0)}>
-                            {t.backBtn}
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.btnPrimary}
-                            disabled={!canAdvance()}
-                            onClick={() => setStep(2)}
-                        >
-                            {t.continueBtn}
-                        </button>
-                    </div>
+                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
+                    <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full shadow-lg shadow-blue-500/20 transition-all duration-700 ease-out" 
+                        style={{ width: `${progress}%` }} 
+                    />
                 </div>
-            )}
-
-            {/* Step 3: Safety Check */}
-            {step === 2 && (
-                <div className={styles.formCard} key="step2">
-                    <div className={styles.stepTitle}>⚠️ {t.step3Title}</div>
-                    <div className={styles.stepDesc}>
-                        {t.step3Desc}
-                    </div>
-
-                    <div className={styles.toggleGroup}>
-                        {/* Fever */}
-                        <div className={styles.toggleCard} onClick={() => toggleFlag("fever")}>
-                            <span className={styles.toggleLabel}>
-                                <span className={styles.toggleLabelIcon}>🌡️</span> {t.feverLabel}
-                            </span>
-                            <div className={`${styles.toggleSwitch} ${formData.fever === "yes" ? styles.toggleSwitchActive : ""}`}>
-                                <div className={`${styles.toggleDot} ${formData.fever === "yes" ? styles.toggleDotActive : ""}`} />
+                <div className="flex items-center gap-6 justify-center">
+                    {STEPS(t).map((s, i) => (
+                        <div key={i} className={`flex items-center gap-2 transition-all duration-500 ${step === i ? 'opacity-100 scale-100' : 'opacity-30 scale-90'}`}>
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${step >= i ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                {step > i ? '✓' : s.icon}
                             </div>
+                            <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest whitespace-nowrap hidden sm:block">{s.label}</span>
                         </div>
+                    ))}
+                </div>
+            </div>
 
-                        {/* Breathing Difficulty */}
-                        <div
-                            className={`${styles.toggleCard} ${styles.toggleCardDanger}`}
-                            onClick={() => toggleFlag("breathingDifficulty")}
-                        >
-                            <span className={styles.toggleLabel}>
-                                <span className={styles.toggleLabelIcon}>😮‍💨</span> {t.breathingLabel}
-                            </span>
-                            <div
-                                className={`${styles.toggleSwitch} ${formData.breathingDifficulty === "yes" ? styles.toggleSwitchDanger : ""
-                                    }`}
-                            >
-                                <div
-                                    className={`${styles.toggleDot} ${formData.breathingDifficulty === "yes" ? styles.toggleDotActive : ""
-                                        }`}
+            {/* Step Content Container */}
+            <div className="relative min-h-[400px]">
+                {/* Step 1 */}
+                {step === 0 && (
+                    <Card className="rounded-[3rem] border-slate-100 shadow-2xl shadow-slate-200/40 bg-white p-8 md:p-12 animate-in slide-in-from-right-10 duration-500 ease-out">
+                        <CardHeader className="p-0 mb-10">
+                            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                                <User className="w-8 h-8 text-blue-600" /> {t.step1Title}
+                            </CardTitle>
+                            <CardDescription className="text-slate-500 text-lg font-medium tracking-tight mt-2">{t.step1Desc}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0 space-y-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.ageLabel}</Label>
+                                    <Input
+                                        type="number"
+                                        placeholder="e.g. 28"
+                                        value={formData.age}
+                                        onChange={(e) => updateField("age", e.target.value)}
+                                        className="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus-visible:ring-blue-500/20 focus-visible:ring-4 font-black text-xl transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-3">
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.genderLabel}</Label>
+                                    <Select value={formData.gender} onValueChange={(val) => updateField("gender", val)}>
+                                        <SelectTrigger className="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus-visible:ring-blue-500/20 focus-visible:ring-4 font-black text-xl transition-all">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-2xl border-slate-100 shadow-xl overflow-hidden">
+                                            {GENDERS.map(g => (
+                                                <SelectItem key={g} value={g} className="font-bold py-4 rounded-xl">{g}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.cityLabel}</Label>
+                                <Input
+                                    placeholder="Your current city"
+                                    value={formData.city}
+                                    onChange={(e) => updateField("city", e.target.value)}
+                                    className="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus-visible:ring-blue-500/20 focus-visible:ring-4 font-black transition-all"
                                 />
                             </div>
-                        </div>
-
-                        {/* Seizure */}
-                        <div
-                            className={`${styles.toggleCard} ${styles.toggleCardDanger}`}
-                            onClick={() => toggleFlag("seizure")}
-                        >
-                            <span className={styles.toggleLabel}>
-                                <span className={styles.toggleLabelIcon}>⚡</span> {t.seizureLabel}
-                            </span>
-                            <div
-                                className={`${styles.toggleSwitch} ${formData.seizure === "yes" ? styles.toggleSwitchDanger : ""
-                                    }`}
+                        </CardContent>
+                        <CardFooter className="p-0 mt-12">
+                            <Button
+                                size="lg"
+                                disabled={!canAdvance()}
+                                onClick={() => setStep(1)}
+                                className="w-full h-16 rounded-2xl bg-slate-900 border-2 border-slate-900 hover:bg-slate-800 text-white font-black text-lg shadow-xl shadow-slate-900/20 transition-all active:scale-95 group"
                             >
-                                <div className={`${styles.toggleDot} ${formData.seizure === "yes" ? styles.toggleDotActive : ""}`} />
-                            </div>
-                        </div>
+                                {t.continueBtn} <ChevronRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )}
 
-                        {/* Consciousness */}
-                        <div
-                            className={`${styles.toggleCard} ${styles.toggleCardDanger}`}
-                            onClick={() => toggleFlag("consciousnessNormal")}
-                        >
-                            <span className={styles.toggleLabel}>
-                                <span className={styles.toggleLabelIcon}>🧠</span>{" "}
-                                {formData.consciousnessNormal === "yes" ? t.consciousnessLabel : `${t.consciousnessLabel} Altered ⚠️`}
-                            </span>
-                            <div
-                                className={`${styles.toggleSwitch} ${formData.consciousnessNormal === "yes" ? styles.toggleSwitchActive : styles.toggleSwitchDanger
-                                    }`}
-                            >
-                                <div
-                                    className={`${styles.toggleDot} ${formData.consciousnessNormal === "yes" ? styles.toggleDotActive : ""
-                                        }`}
+                {/* Step 2 */}
+                {step === 1 && (
+                    <Card className="rounded-[3rem] border-slate-100 shadow-2xl shadow-slate-200/40 bg-white p-8 md:p-12 animate-in slide-in-from-right-10 duration-500 ease-out">
+                         <CardHeader className="p-0 mb-10">
+                            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                                <Activity className="w-8 h-8 text-indigo-600" /> {t.step2Title}
+                            </CardTitle>
+                            <CardDescription className="text-slate-500 text-lg font-medium tracking-tight mt-2">{t.step2Desc}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0 space-y-10">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between ml-1">
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.symptomsLabel}</Label>
+                                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Min 3 characters</span>
+                                </div>
+                                <Textarea
+                                    placeholder={lang === 'en' ? "Describe your health concerns in detail..." : "अपनी स्वास्थ्य समस्याओं के बारे में विस्तार से बताएं..."}
+                                    value={formData.symptoms}
+                                    onChange={(e) => updateField("symptoms", e.target.value)}
+                                    className="min-h-[160px] rounded-2xl border-slate-200 bg-slate-50/50 focus-visible:ring-indigo-500/20 focus-visible:ring-4 font-bold text-lg transition-all p-6 shadow-inner"
                                 />
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {realtimeSpecs.map((spec) => (
+                                        <Badge key={spec} variant="outline" className="animate-in zoom-in-50 bg-indigo-50 border-indigo-100 text-indigo-600 font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[9px] flex items-center gap-2">
+                                            <Sparkles className="w-3.5 h-3.5" /> High Match: {spec}
+                                        </Badge>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.durationLabel}</Label>
+                                <Select value={formData.duration} onValueChange={(val) => updateField("duration", val)}>
+                                    <SelectTrigger className="h-16 rounded-2xl border-slate-200 bg-slate-50/50 focus-visible:ring-indigo-500/20 focus-visible:ring-4 font-black transition-all">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-slate-100 shadow-xl overflow-hidden">
+                                        {DURATIONS.map(d => (
+                                            <SelectItem key={d} value={d} className="font-bold py-4 rounded-xl">{d}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardContent>
+                        <CardFooter className="p-0 mt-12 gap-4">
+                             <Button
+                                variant="outline"
+                                onClick={() => setStep(0)}
+                                className="flex-1 h-16 rounded-2xl border-slate-200 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+                            >
+                                <ChevronLeft className="w-5 h-5 mr-3" /> {t.backBtn}
+                            </Button>
+                            <Button
+                                disabled={!canAdvance()}
+                                onClick={() => setStep(2)}
+                                className="flex-[2] h-16 rounded-2xl bg-indigo-600 border-2 border-indigo-600 hover:bg-indigo-700 text-white font-black text-lg shadow-xl shadow-indigo-500/20 transition-all active:scale-95 group"
+                            >
+                                {t.continueBtn} <ChevronRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )}
 
-                    {/* Error */}
-                    {state && !state.success && state.message && (
-                        <div className={styles.errorMsg}>⚠️ {state.message}</div>
-                    )}
+                {/* Step 3 */}
+                {step === 2 && (
+                    <Card className="rounded-[3rem] border-slate-100 shadow-2xl shadow-slate-200/40 bg-white p-8 md:p-12 animate-in slide-in-from-right-10 duration-500 ease-out">
+                        <CardHeader className="p-0 mb-10">
+                            <CardTitle className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-4">
+                                <AlertTriangle className="w-8 h-8 text-rose-600" /> {t.step3Title}
+                            </CardTitle>
+                            <CardDescription className="text-slate-500 text-lg font-medium tracking-tight mt-2">{t.step3Desc}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Fever */}
+                                <div 
+                                    onClick={() => toggleFlag("fever")}
+                                    className={`p-6 rounded-3xl border cursor-pointer transition-all duration-300 flex items-center justify-between group ${formData.fever === 'yes' ? 'bg-amber-50 border-amber-300 shadow-lg shadow-amber-500/5' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${formData.fever === 'yes' ? 'bg-amber-200 text-amber-700' : 'bg-white text-slate-400'}`}>
+                                            <Activity className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-black text-slate-700 tracking-tight">{t.feverLabel}</span>
+                                    </div>
+                                    <div className={`h-6 w-6 rounded-full border-4 transition-all ${formData.fever === 'yes' ? 'bg-amber-500 border-amber-200 scale-110' : 'bg-white border-slate-200'}`} />
+                                </div>
 
-                    <div className={styles.buttonRow}>
-                        <button type="button" className={styles.btnSecondary} onClick={() => setStep(1)} suppressHydrationWarning>
-                            {t.backBtn}
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.btnPrimary}
-                            disabled={isPending}
-                            onClick={handleSubmit}
-                            suppressHydrationWarning
-                        >
-                            {isPending ? (
-                                <>
-                                    <span className={styles.spinner} /> {t.analyzing}
-                                </>
-                            ) : (
-                                <>🩺 {t.analyzeBtn}</>
+                                {/* Breathing */}
+                                <div 
+                                    onClick={() => toggleFlag("breathingDifficulty")}
+                                    className={`p-6 rounded-3xl border cursor-pointer transition-all duration-300 flex items-center justify-between group ${formData.breathingDifficulty === 'yes' ? 'bg-rose-50 border-rose-300 shadow-lg shadow-rose-500/5 pulse-red' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${formData.breathingDifficulty === 'yes' ? 'bg-rose-200 text-rose-700' : 'bg-white text-slate-400'}`}>
+                                            <ShieldAlert className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-black text-slate-700 tracking-tight">{t.breathingLabel}</span>
+                                    </div>
+                                    <div className={`h-6 w-6 rounded-full border-4 transition-all ${formData.breathingDifficulty === 'yes' ? 'bg-rose-500 border-rose-200 scale-110' : 'bg-white border-slate-200'}`} />
+                                </div>
+
+                                {/* Seizure */}
+                                <div 
+                                    onClick={() => toggleFlag("seizure")}
+                                    className={`p-6 rounded-3xl border cursor-pointer transition-all duration-300 flex items-center justify-between group ${formData.seizure === 'yes' ? 'bg-rose-50 border-rose-300 shadow-lg shadow-rose-500/5 pulse-red' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${formData.seizure === 'yes' ? 'bg-rose-200 text-rose-700' : 'bg-white text-slate-400'}`}>
+                                            <Zap className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-black text-slate-700 tracking-tight">{t.seizureLabel}</span>
+                                    </div>
+                                    <div className={`h-6 w-6 rounded-full border-4 transition-all ${formData.seizure === 'yes' ? 'bg-rose-500 border-rose-200 scale-110' : 'bg-white border-slate-200'}`} />
+                                </div>
+
+                                 {/* Consciousness */}
+                                <div 
+                                    onClick={() => toggleFlag("consciousnessNormal")}
+                                    className={`p-6 rounded-3xl border cursor-pointer transition-all duration-300 flex items-center justify-between group ${formData.consciousnessNormal === 'no' ? 'bg-rose-50 border-rose-300 shadow-lg shadow-rose-500/5 pulse-red' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${formData.consciousnessNormal === 'no' ? 'bg-rose-200 text-rose-700' : 'bg-white text-slate-400'}`}>
+                                            <ShieldAlert className="w-6 h-6" />
+                                        </div>
+                                        <span className="font-black text-slate-700 tracking-tight">{t.consciousnessLabel}</span>
+                                    </div>
+                                    <div className={`h-6 w-6 rounded-full border-4 transition-all ${formData.consciousnessNormal === 'no' ? 'bg-rose-500 border-rose-200 scale-110' : 'bg-white border-slate-200'}`} />
+                                </div>
+                            </div>
+
+                            {state && !state.success && state.message && (
+                                <div className="p-6 bg-red-50 text-red-600 rounded-2xl border border-red-100 font-bold text-sm tracking-tight animate-shake">
+                                   ⚠️ {state.message}
+                                </div>
                             )}
-                        </button>
-                    </div>
+
+                        </CardContent>
+                        <CardFooter className="p-0 mt-12 gap-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep(1)}
+                                className="flex-1 h-16 rounded-2xl border-slate-200 font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+                            >
+                                <ChevronLeft className="w-5 h-5 mr-3" /> {t.backBtn}
+                            </Button>
+                            <Button
+                                disabled={isPending}
+                                onClick={handleSubmit}
+                                className="flex-[2] h-16 rounded-2xl bg-rose-600 border-2 border-rose-600 hover:bg-rose-700 text-white font-black text-lg shadow-xl shadow-rose-500/20 transition-all active:scale-95 group"
+                            >
+                                {isPending ? (
+                                    <><Loader2 className="w-6 h-6 mr-3 animate-spin" /> {t.analyzing}</>
+                                ) : (
+                                    <><CheckCircle2 className="w-6 h-6 mr-3" /> {t.analyzeBtn}</>
+                                )}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                )}
+            </div>
+
+            <style jsx global>{`
+                @keyframes pulse-red {
+                    0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+                }
+                .pulse-red { animation: pulse-red 2s infinite; }
+            `}</style>
+
+            <div className="mt-16 text-center space-y-4">
+                 <p className="text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2">
+                    <ShieldAlert className="w-4 h-4" /> AI triage is not a definitive diagnosis
+                </p>
+                <div className="flex items-center justify-center gap-8 opacity-40">
+                    <ShieldCheck className="w-8 h-8 text-slate-400" />
+                    <Info className="w-8 h-8 text-slate-400" />
+                    <Activity className="w-8 h-8 text-slate-400" />
                 </div>
-            )}
-        </div>
+            </div>
+        </main>
     );
 }
-

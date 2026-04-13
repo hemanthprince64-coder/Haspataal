@@ -167,6 +167,9 @@ lock:slot:{doctorId}:{scheduledAt}:{slot}  (TTL: 10s)
 - **Auth middleware async:** `requireAuth` middleware must be declared `async` if it uses `await` inside (e.g., Redis blacklist check). Without `async`, the `await` throws a SyntaxError at load time. *(Fixed in conversation 3ecc8175)*
 - **Prisma scripts need dotenv:** Standalone Node scripts that use Prisma directly must call `require('dotenv').config()` before instantiating `PrismaClient`, otherwise `DATABASE_URL` is not found. *(Fixed in conversation 3ecc8175)*
 - **DoctorMaster KYC/AccountStatus mismatch:** Doctors can end up with `kycStatus: PENDING` but `accountStatus: ACTIVE` — run `scripts/audit.js` and `scripts/fix_audit.js` periodically to detect and remediate. *(Discovered in conversation 3ecc8175)*
+- **Prisma MaxClientsInSessionMode:** Parallel sub-queries in mapping functions can exhaust connection pools. Always use Prisma's `include`, `_count`, and `batching` features to consolidate queries into single database trips. *(Fixed in conversation 3ecc8175)*
+- **Supabase Connectivity Fallback:** If the connection pooler (port 6543) is unreachable, bypass it by using the direct connection host on port 5432 with the standard `postgres` user. *(Configured in conversation 3ecc8175)*
+- **UI Compaction Strategy:** Standardizing on a compact, information-dense clinic aesthetic (smaller avatars, tighter typography, horizontal slots) significantly improves accessibility and platform professionalism. *(Implemented in conversation 3ecc8175)*
 
 ---
 

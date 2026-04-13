@@ -3,8 +3,13 @@
 import { useActionState, useEffect, useState } from 'react';
 import { addVitalAction } from '@/app/actions';
 import Link from 'next/link';
-
-import { Skeleton } from 'boneyard-js/react';
+import { Heart, Plus, ChevronLeft, ShieldCheck, Activity, Thermometer, Droplets, Ruler, Weight, Clock, AlertCircle, Loader2, Sparkles, ActivitySquare, Monitor } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import VitalsQuickStats from "@/components/patient/VitalsQuickStats";
 import VitalsHistory from "@/components/patient/VitalsHistory";
 
@@ -28,98 +33,146 @@ export default function VitalsPage() {
     const latestVital = vitals.length > 0 ? vitals[vitals.length - 1] : {};
 
     return (
-        <div className="py-6 max-w-2xl mx-auto space-y-5 animate-fade-in-up">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Link href="/profile" className="text-medical-600 hover:text-medical-700 font-medium text-sm no-underline">← Back</Link>
-                    <h1 className="text-xl font-extrabold text-slate-900">Vitals Tracker</h1>
+        <main className="container max-w-4xl mx-auto px-6 py-10 animate-fade-in">
+            <Button asChild variant="ghost" className="mb-8 text-slate-500 hover:text-blue-600 -ml-4 font-bold">
+                <Link href="/profile" className="flex items-center gap-2">
+                    <ChevronLeft className="w-5 h-5" /> Back to Profile
+                </Link>
+            </Button>
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="secondary" className="text-rose-700 bg-rose-100/50 hover:bg-rose-100 border-rose-200 px-3 py-1 font-bold text-[10px] uppercase tracking-[0.2em] backdrop-blur-sm">
+                            <Monitor className="w-3.5 h-3.5 mr-2" /> Vitals Monitor
+                        </Badge>
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tight mb-2">Health Stats</h1>
+                    <p className="text-slate-500 text-lg font-medium tracking-tight">Track your core metrics and monitor recovery trends.</p>
                 </div>
-                <button
+                <Button 
                     onClick={() => setShowForm(!showForm)}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 py-2 px-3.5 rounded-xl border border-red-200 transition-all cursor-pointer"
+                    size="lg" 
+                    className={`${showForm ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-rose-600 hover:bg-rose-700 text-white'} h-16 px-8 rounded-2xl font-black text-lg shadow-xl shadow-rose-500/10 transition-all active:scale-95`}
                 >
-                    {showForm ? '✕ Close' : '+ Record'}
-                </button>
+                    {showForm ? 'Cancel Entry' : <><Plus className="w-6 h-6 mr-3" /> Record Vitals</>}
+                </Button>
             </div>
 
-            <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 flex items-center gap-3">
-                <span className="text-2xl">❤️</span>
-                <p className="text-sm text-red-700">Record your vitals regularly. Each entry is timestamped so you can track trends over time.</p>
-            </div>
-
-            {state?.success && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm">
-                    ✅ {state.message}
-                </div>
-            )}
-
-            {showForm && (
-                <form action={formAction} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Weight (kg)</label>
-                            <input name="weight" type="number" step="0.1" placeholder="72.5" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Height (cm)</label>
-                            <input name="height" type="number" step="0.1" placeholder="170" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
-                        </div>
+            <div className="grid gap-8">
+                {/* Dashboard Quick View */}
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <ActivitySquare className="w-4 h-4" /> Latest Biometrics
+                        </h3>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Blood Pressure</label>
-                            <input name="bloodPressure" placeholder="e.g. 120/80" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
+                    {loading ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-3xl bg-slate-100" />)}
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pulse (bpm)</label>
-                            <input name="pulse" type="number" placeholder="72" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Blood Sugar (mg/dL)</label>
-                            <input name="bloodSugar" type="number" step="0.1" placeholder="110" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">SpO₂ (%)</label>
-                            <input name="spo2" type="number" step="0.1" placeholder="98" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Temp (°F)</label>
-                            <input name="temperature" type="number" step="0.1" placeholder="98.6" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none" />
-                        </div>
-                    </div>
-
-                    <p className="text-xs text-slate-400">BMI will be auto-calculated from weight and height.</p>
-
-                    {state?.message && !state.success && (
-                        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
-                            ⚠️ {state.message}
-                        </div>
+                    ) : (
+                        <VitalsQuickStats latestVital={latestVital} />
                     )}
+                </div>
 
-                    <button
-                        type="submit"
-                        disabled={isPending}
-                        className="w-full py-3 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-md cursor-pointer"
-                    >
-                        {isPending ? '⏳ Recording...' : '❤️ Record Vitals'}
-                    </button>
-                </form>
-            )}
+                {showForm && (
+                    <Card className="rounded-[2.5rem] border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden animate-in zoom-in-95 duration-500">
+                        <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-8">
+                            <CardTitle className="text-2xl font-black text-slate-900 tracking-tight">New Health Log</CardTitle>
+                            <CardDescription className="text-slate-500 font-medium tracking-tight">Capture your current vitals for Clinical history.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-8">
+                            <form action={formAction} className="space-y-10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                            <Weight className="w-3.5 h-3.5" /> Body Composition
+                                        </Label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="relative">
+                                                <Input name="weight" type="number" step="0.1" placeholder="Weight (kg)" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                                <span className="absolute right-4 top-4 text-[10px] font-black text-slate-300">KG</span>
+                                            </div>
+                                            <div className="relative">
+                                                <Input name="height" type="number" step="0.1" placeholder="Height (cm)" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                                <span className="absolute right-4 top-4 text-[10px] font-black text-slate-300">CM</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                            <Heart className="w-3.5 h-3.5" /> Cardiovascular
+                                        </Label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="relative">
+                                                <Input name="bloodPressure" placeholder="BP (e.g. 120/80)" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                            </div>
+                                            <div className="relative">
+                                                <Input name="pulse" type="number" placeholder="Pulse (bpm)" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                                <span className="absolute right-4 top-4 text-[10px] font-black text-slate-300">BPM</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-            <Skeleton name="vitals-quick-stats" loading={loading}>
-                <VitalsQuickStats latestVital={latestVital} />
-            </Skeleton>
+                                <div className="space-y-4">
+                                    <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                        <Activity className="w-3.5 h-3.5" /> Vital Biomarkers
+                                    </Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="relative">
+                                            <Input name="bloodSugar" type="number" step="0.1" placeholder="Glucose" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                            <span className="absolute right-4 top-4 text-[10px] font-black text-slate-300">MG/DL</span>
+                                        </div>
+                                        <div className="relative">
+                                            <Input name="spo2" type="number" step="0.1" placeholder="SpO₂" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                            <span className="absolute right-4 top-4 text-[10px] font-black text-slate-300">%</span>
+                                        </div>
+                                        <div className="relative">
+                                            <Input name="temperature" type="number" step="0.1" placeholder="Temp" className="h-14 rounded-2xl border-slate-200 bg-slate-50/30 focus-visible:ring-rose-500/20 focus-visible:ring-4 font-bold" />
+                                            <span className="absolute right-4 top-4 text-[10px] font-black text-slate-300">°F</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-            <div className="space-y-3 mt-6">
-                <h3 className="text-sm font-bold text-slate-800 px-1">Vitals History</h3>
-                <Skeleton name="vitals-history" loading={loading}>
-                    <VitalsHistory vitals={vitals} />
-                </Skeleton>
+                                {state?.message && !state.success && (
+                                    <div className="flex items-center gap-3 p-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl">
+                                        <AlertCircle className="w-6 h-6 flex-shrink-0" />
+                                        <p className="font-bold text-sm tracking-tight">{state.message}</p>
+                                    </div>
+                                )}
+
+                                <Button
+                                    type="submit"
+                                    disabled={isPending}
+                                    className="w-full h-16 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-lg shadow-xl shadow-slate-900/20 transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {isPending ? <><Loader2 className="w-5 h-5 mr-3 animate-spin" /> Syncing Metrics...</> : 'Save Health Data'}
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                )}
+
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <Clock className="w-4 h-4" /> Timeline History
+                        </h3>
+                        <Badge variant="outline" className="border-slate-200 text-slate-400 font-bold tracking-tight px-3">
+                            {vitals.length} Logs
+                        </Badge>
+                    </div>
+                    {loading ? (
+                        <div className="space-y-4">
+                            {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 rounded-[2rem] bg-slate-100" />)}
+                        </div>
+                    ) : (
+                        <VitalsHistory vitals={vitals} />
+                    )}
+                </div>
             </div>
-        </div>
+        </main>
     );
 }

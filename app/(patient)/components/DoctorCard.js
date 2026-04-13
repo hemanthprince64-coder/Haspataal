@@ -1,59 +1,87 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Star, MapPin, Building2, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export default function DoctorCard({ doctor }) {
-    const { id, name, speciality, hospital, distance, fees, matches, stars, image } = doctor;
+export default function DoctorCard({ doctor, className }) {
+    const { id, name, speciality, hospital, distance, fees, matches, stars, image, gender } = doctor;
+
+    // Fallback images based on gender
+    const fallbackImage = gender === "female" 
+        ? "https://images.unsplash.com/photo-1594824436998-38290fbb6948?q=80&w=250&auto=format&fit=crop"
+        : "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=250&auto=format&fit=crop";
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-card transition-all duration-200 hover:shadow-hover hover:border-slate-300 mb-3">
-            {/* Doctor Info Row */}
-            <div className="flex gap-3.5 mb-4">
-                {/* Avatar */}
+        <div className={cn(
+            "group bg-white border border-slate-100 rounded-xl p-2.5 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300",
+            className
+        )}>
+            {/* Top Row: Info & Avatar */}
+            <div className="flex gap-3 mb-2.5">
+                {/* Avatar with Match Badge */}
                 <div className="relative flex-shrink-0">
-                    <Image
-                        src={image}
-                        alt={name}
-                        width={72}
-                        height={72}
-                        className="w-[72px] h-[72px] rounded-2xl object-cover bg-slate-100"
-                    />
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold py-0.5 px-2 rounded-full border-2 border-white whitespace-nowrap">
-                        {matches}% Match
-                    </div>
+                    <Avatar className="w-14 h-14 rounded-xl border-2 border-white shadow-sm group-hover:scale-105 transition-transform duration-500">
+                        <AvatarImage src={image || fallbackImage} alt={name} className="object-cover" />
+                        <AvatarFallback className="bg-blue-50 text-blue-600">
+                            <User className="w-6 h-6 opacity-20" />
+                        </AvatarFallback>
+                    </Avatar>
+                    {matches && (
+                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full border border-white whitespace-nowrap shadow-sm">
+                            {matches}%
+                        </div>
+                    )}
                 </div>
 
-                {/* Details */}
+                {/* Details Section */}
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-[15px] font-semibold text-slate-900 mb-0.5 truncate">{name}</h3>
-                    <p className="text-xs font-medium text-medical-600 mb-1.5 m-0">{speciality}</p>
-                    <div className="flex items-center gap-1.5 text-[12px] text-slate-500 mb-1.5">
-                        <span className="font-medium truncate">{hospital}</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="whitespace-nowrap">📍 {distance}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                        <h3 className="text-[13px] font-black text-slate-900 truncate leading-tight tracking-tight uppercase">
+                            {name}
+                        </h3>
+                        <div className="flex items-center gap-0.5 bg-amber-50 px-1 py-0.5 rounded border border-amber-100">
+                            <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                            <span className="text-[9px] font-black text-amber-700">{stars || "4.5"}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-semibold text-amber-600">⭐ {stars}</span>
-                        <span className="text-[13px] font-bold text-emerald-600 bg-emerald-50 py-0.5 px-2 rounded-md">₹{fees}</span>
+                    
+                    <div className="text-[9px] font-black text-blue-600 uppercase tracking-[0.15em] mb-1.5 truncate">
+                        {speciality}
+                    </div>
+
+                    <div className="space-y-0.5 mb-1.5">
+                        <div className="flex items-center gap-1 text-slate-500">
+                            <Building2 className="w-2.5 h-2.5 text-slate-400" />
+                            <span className="text-[9px] font-black truncate tracking-wide text-slate-600 uppercase">{hospital}</span>
+                        </div>
+                        {distance && (
+                            <div className="flex items-center gap-1 text-slate-500">
+                                <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                                <span className="text-[9px] font-bold text-slate-400">{distance}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="text-[11px] font-black text-slate-900 tabular-nums">
+                        Fee: ₹{fees || "500"}
                     </div>
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2.5">
-                <Link
-                    href={`/doctor/${id}`}
-                    className="flex-1 py-2.5 text-center rounded-xl text-[13px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-all duration-200 no-underline focus-ring"
-                >
-                    View Profile
-                </Link>
-                <Link
-                    href={`/book/${id}`}
-                    className="flex-1 py-2.5 text-center rounded-xl text-[13px] font-semibold text-white bg-medical-600 hover:bg-medical-700 shadow-soft hover:shadow-hover transition-all duration-200 no-underline focus-ring"
-                >
-                    Book Consult
-                </Link>
+            {/* Bottom Row: Actions */}
+            <div className="grid grid-cols-2 gap-1.5 mt-2.5 pt-2.5 border-t border-slate-50">
+                <Button asChild variant="ghost" className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200">
+                    <Link href={`/doctor/${id}`}>Profile</Link>
+                </Button>
+                <Button asChild className="h-8 text-[9px] font-black uppercase tracking-widest rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all active:scale-95">
+                    <Link href={`/book?doctorId=${id}${doctor.hospitalId ? `&hospitalId=${doctor.hospitalId}` : ''}`}>
+                        Book now
+                    </Link>
+                </Button>
             </div>
         </div>
     );

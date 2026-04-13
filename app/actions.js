@@ -12,6 +12,30 @@ import { createSession, deleteSession, decrypt } from '@/lib/session';
 import { requireRole } from '../lib/auth/requireRole';
 import { UserRole } from '../types';
 
+// ==================== PLATFORM ACTIONS ====================
+
+export async function searchDoctorsAction(city, speciality, query) {
+    try {
+        return await services.platform.searchDoctors(city, speciality, query);
+    } catch (e) {
+        logger.error({ action: 'search_doctors_failed', city, speciality, query, error: e.message });
+        return [];
+    }
+}
+
+export async function getCitiesAction() {
+    return services.platform.getCities();
+}
+
+export async function getAllSpecialitiesAction() {
+    try {
+        return await services.platform.getAllSpecialities();
+    } catch (e) {
+        logger.error({ action: 'get_specialities_failed', error: e.message });
+        return [];
+    }
+}
+
 // ==================== HOSPITAL ACTIONS ====================
 
 export async function loginHospital(prevState, formData) {

@@ -4,25 +4,30 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { 
+    Home, Search, Bot, Building2, Microscope, FileText, 
+    User, Stethoscope, Pill, HeartPulse, Syringe, 
+    Baby, ShieldCheck, AlertTriangle, X 
+} from "lucide-react";
 
 const Sidebar = ({ isOpen, onClose }) => {
     const pathname = usePathname() || "";
     const sidebarRef = useRef(null);
 
     const navLinks = [
-        { name: "Home", href: "/", icon: "🏠" },
-        { name: "MedChat AI", href: "/medchat", icon: "🤖" },
-        { name: "Find Doctors", href: "/search", icon: "🔍" },
-        { name: "Hospitals", href: "/hospitals", icon: "🏥" },
-        { name: "Lab Tests", href: "/lab-tests", icon: "🔬" },
-        { name: "My Records", href: "/records", icon: "📋" },
-        { name: "My Profile", href: "/profile", icon: "👤" },
-        { name: "Medical History", href: "/medical-history", icon: "🩺" },
-        { name: "Medications", href: "/medications", icon: "💊" },
-        { name: "Vitals", href: "/vitals", icon: "❤️" },
-        { name: "Vaccinations", href: "/vaccinations", icon: "💉" },
-        { name: "Pregnancy", href: "/tracker", icon: "🤰" },
-        { name: "Insurance", href: "/insurance", icon: "🛡️" },
+        { name: "Home", href: "/", icon: Home },
+        { name: "MedChat AI", href: "/medchat", icon: Bot },
+        { name: "Find Doctors", href: "/search", icon: Search },
+        { name: "Hospitals", href: "/hospitals", icon: Building2 },
+        { name: "Lab Tests", href: "/lab-tests", icon: Microscope },
+        { name: "My Records", href: "/records", icon: FileText },
+        { name: "My Profile", href: "/profile", icon: User },
+        { name: "Medical History", href: "/medical-history", icon: Stethoscope },
+        { name: "Medications", href: "/medications", icon: Pill },
+        { name: "Vitals", href: "/vitals", icon: HeartPulse },
+        { name: "Vaccinations", href: "/vaccinations", icon: Syringe },
+        { name: "Pregnancy", href: "/tracker", icon: Baby },
+        { name: "Insurance", href: "/insurance", icon: ShieldCheck },
     ];
 
     useEffect(() => {
@@ -87,9 +92,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         aria-label="Close menu"
                         suppressHydrationWarning
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -105,6 +108,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                             const isActive = pathname.startsWith(link.href) && link.href !== '/';
                             const isExactActive = pathname === link.href;
                             const active = isActive || isExactActive;
+                            const Icon = link.icon;
                             return (
                                 <li key={link.href}>
                                     <Link
@@ -115,7 +119,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                                             }`}
                                         onClick={onClose}
                                     >
-                                        <span className={`text-lg w-6 text-center ${active ? "" : "grayscale opacity-70"}`}>{link.icon}</span>
+                                        <Icon className={`w-5 h-5 ${active ? "text-medical-600" : "text-slate-400"}`} />
                                         <span>{link.name}</span>
                                     </Link>
                                 </li>
@@ -134,7 +138,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold py-2.5 rounded-xl transition-all duration-200 no-underline text-sm focus-ring"
                         onClick={onClose}
                     >
-                        <span>🚑</span>
+                        <AlertTriangle className="w-5 h-5" />
                         <span>Emergency SOS</span>
                     </Link>
                 </div>

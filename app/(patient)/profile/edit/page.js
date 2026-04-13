@@ -1,66 +1,60 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { updatePatientProfile, addFamilyMemberAction, deleteFamilyMemberAction, getPatientFullProfile } from '@/app/actions';
 import Link from 'next/link';
 import Image from 'next/image';
+import { 
+    User, Home, PhoneCall, ShieldCheck, Heart, 
+    Plus, Trash2, ChevronLeft, Save, Loader2,
+    Users, Calendar, Droplets, Baby, UserPlus, X,
+    Sparkles
+} from 'lucide-react';
+import { 
+    updatePatientProfile, 
+    addFamilyMemberAction, 
+    deleteFamilyMemberAction, 
+    getPatientFullProfile 
+} from '@/app/actions';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { SimpleAccordion as Accordion } from "@/components/ui/accordion";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const initialState = { message: '', success: false };
 
-function SectionHeader({ icon, title, open, onToggle }) {
-    return (
-        <button
-            type="button"
-            onClick={onToggle}
-            className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all duration-200 border border-slate-200 group"
-        >
-            <div className="flex items-center gap-3">
-                <span className="text-lg">{icon}</span>
-                <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">{title}</span>
-            </div>
-            <svg
-                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-            >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-        </button>
-    );
-}
-
 function FormField({ label, name, type = 'text', defaultValue, required, placeholder, options }) {
-    if (options) {
-        return (
-            <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
-                <select name={name} defaultValue={defaultValue || ''} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-medical-500 focus:border-transparent transition-all outline-none">
-                    <option value="">Select</option>
-                    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-            </div>
-        );
-    }
-    // format date for date inputs if needed
-    let formattedDefault = defaultValue;
-    if (type === 'date' && defaultValue) {
-        try {
-            formattedDefault = new Date(defaultValue).toISOString().split('T')[0];
-        } catch (e) { }
-    }
-
     return (
-        <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}{required && ' *'}</label>
-            <input
-                name={name}
-                type={type}
-                defaultValue={formattedDefault || ''}
-                required={required}
-                placeholder={placeholder}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-medical-500 focus:border-transparent transition-all outline-none"
-            />
+        <div className="space-y-2">
+            <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                {label}{required && <span className="text-rose-500 ml-1">*</span>}
+            </Label>
+            {options ? (
+                <div className="relative group">
+                    <select 
+                        name={name} 
+                        defaultValue={defaultValue || ''} 
+                        className="flex h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-all hover:border-blue-200"
+                    >
+                        <option value="">Select Option</option>
+                        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-blue-500 transition-colors">
+                        <Heart className="w-4 h-4" />
+                    </div>
+                </div>
+            ) : (
+                <Input
+                    name={name}
+                    type={type}
+                    defaultValue={type === 'date' && defaultValue ? new Date(defaultValue).toISOString().split('T')[0] : (defaultValue || '')}
+                    required={required}
+                    placeholder={placeholder}
+                    className="h-12 rounded-xl border-slate-200 focus:ring-blue-600 transition-all hover:border-blue-200 font-medium"
+                />
+            )}
         </div>
     );
 }
@@ -84,29 +78,39 @@ export default function EditProfile() {
     };
 
     if (loading) {
-        return <div className="py-12 text-center text-slate-500 animate-pulse font-medium">Loading profile data...</div>;
+        return (
+            <div className="container max-w-2xl mx-auto px-4 py-20 text-center space-y-4">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto" />
+                <p className="text-slate-400 font-medium animate-pulse">Syncing your medical data...</p>
+            </div>
+        );
     }
 
     const p = patient || {};
 
     if (state?.success) {
         return (
-            <div className="py-12 max-w-lg mx-auto animate-fade-in-up">
-                <div className="text-center bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-4">
-                    <div className="w-16 h-16 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-3xl">✅</div>
-                    <h2 className="text-xl font-bold text-emerald-600">Profile Updated!</h2>
-                    <p className="text-slate-500 text-sm">{state.message}</p>
-                    <Link href="/profile" className="inline-flex items-center gap-2 bg-medical-600 text-white font-semibold py-2.5 px-5 rounded-xl hover:bg-medical-700 transition-all no-underline text-sm">
-                        ← Back to Profile
-                    </Link>
-                </div>
+            <div className="container max-w-lg mx-auto px-4 py-12 animate-fade-in text-center">
+                <Card className="border-emerald-100 shadow-2xl shadow-emerald-500/10 rounded-[2.5rem] bg-white p-10 space-y-6">
+                    <div className="w-20 h-20 mx-auto bg-emerald-50 rounded-full flex items-center justify-center relative">
+                        <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20" />
+                        <ShieldCheck className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-black text-slate-900">Information Verified</h2>
+                        <p className="text-slate-500 font-medium">{state.message}</p>
+                    </div>
+                    <Button asChild className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold shadow-lg shadow-emerald-500/20">
+                        <Link href="/profile">
+                            <ChevronLeft className="w-4 h-4 mr-2" /> Back to Records
+                        </Link>
+                    </Button>
+                </Card>
             </div>
         );
     }
 
-    const genderOptions = [
-        { value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }, { value: 'O', label: 'Other' }
-    ];
+    const genderOptions = [{ value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }, { value: 'O', label: 'Other' }];
     const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ value: v, label: v }));
     const maritalOptions = [
         { value: 'Single', label: 'Single' }, { value: 'Married', label: 'Married' },
@@ -114,125 +118,119 @@ export default function EditProfile() {
     ];
 
     return (
-        <div className="py-6 max-w-2xl mx-auto space-y-4 animate-fade-in-up">
-            <div className="flex items-center gap-3 mb-2">
-                <Link href="/profile" className="text-medical-600 hover:text-medical-700 font-medium text-sm no-underline flex items-center gap-1">
-                    ← Back
-                </Link>
-                <h1 className="text-xl font-extrabold text-slate-900">Advanced Details</h1>
+        <div className="container max-w-2xl mx-auto px-4 py-8 animate-fade-in space-y-8 pb-32">
+            <div className="flex items-center justify-between">
+                <Button asChild variant="ghost" className="text-slate-500 hover:text-blue-600 font-bold px-0 gap-2">
+                    <Link href="/profile">
+                        <ChevronLeft className="w-5 h-5" /> All Details
+                    </Link>
+                </Button>
+                <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-500 animate-pulse" />
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Modify Profile</h1>
+                </div>
             </div>
 
-            <form action={formAction} className="space-y-3">
-                {/* Section A: Basic Identity */}
-                <SectionHeader icon="👤" title="Basic Identity" open={openSections.identity} onToggle={() => toggleSection('identity')} />
-                {openSections.identity && (
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                        <FormField label="Full Name" name="name" defaultValue={p.name} required placeholder="Enter full name" />
-                        <FormField label="Nickname" name="nickname" defaultValue={p.nickname} placeholder="What should we call you?" />
-                        {/* Profile Photo Upload */}
-                        <div className="space-y-1.5 pt-2">
-                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Profile Photo</label>
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-slate-400">
-                                    {p.profilePhotoUrl ? (
-                                        <Image src={p.profilePhotoUrl} alt="Avatar" width={64} height={64} className="w-full h-full object-cover" />
-                                    ) : (
-                                        "👤"
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <input
-                                        type="file"
-                                        name="profilePhotoFile"
-                                        accept="image/*"
-                                        className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-medical-50 file:text-medical-700 hover:file:bg-medical-100 transition-all cursor-pointer"
-                                    />
-                                    <p className="text-xs text-slate-400 mt-1.5">Max size 5MB. Jpeg or Png.</p>
-                                </div>
+            <form action={formAction} className="space-y-4">
+                <Accordion title="Identity & Biometrics" icon={<User className="w-4 h-4" />} isOpen={openSections.identity} onToggle={() => toggleSection('identity')}>
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-6 pb-2">
+                            <Avatar className="w-20 h-20 rounded-3xl border-4 border-slate-50 shadow-md ring-1 ring-slate-100">
+                                <AvatarImage src={p.profilePhotoUrl} className="object-cover" />
+                                <AvatarFallback className="text-2xl font-black text-blue-600 bg-blue-50">
+                                    {(p.name || 'P').charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-2">
+                                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update Photo</Label>
+                                <Input type="file" name="profilePhotoFile" accept="image/*" className="h-10 text-xs p-1.5 cursor-pointer file:font-black file:text-[10px] file:uppercase file:bg-blue-50 file:rounded-lg file:border-0 hover:file:bg-blue-100" />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Date of Birth" name="dob" type="date" defaultValue={p.dob} />
-                            <FormField label="Gender" name="gender" defaultValue={p.gender} options={genderOptions} />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField label="Full Legal Name" name="name" defaultValue={p.name} required placeholder="John Doe" />
+                            <FormField label="Preferred Name" name="nickname" defaultValue={p.nickname} placeholder="Nickname" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField label="Date of Birth" name="dob" type="date" defaultValue={p.dob} required />
+                            <FormField label="Assign Gender" name="gender" defaultValue={p.gender} options={genderOptions} />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField label="Blood Group" name="bloodGroup" defaultValue={p.bloodGroup} options={bloodGroupOptions} />
-                            <FormField label="Email" name="email" type="email" defaultValue={p.email} placeholder="your@email.com" />
+                            <FormField label="Safe Email" name="email" type="email" defaultValue={p.email} placeholder="your@health.com" />
                         </div>
                     </div>
-                )}
+                </Accordion>
 
-                {/* Section B: Demographics */}
-                <SectionHeader icon="🏠" title="Demographic Details" open={openSections.demographics} onToggle={() => toggleSection('demographics')} />
-                {openSections.demographics && (
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                        <FormField label="Address" name="address" defaultValue={p.address} placeholder="Street address" />
-                        <div className="grid grid-cols-2 gap-3">
+                <Accordion title="Demographics & Address" icon={<Home className="w-4 h-4" />} isOpen={openSections.demographics} onToggle={() => toggleSection('demographics')}>
+                    <div className="space-y-6">
+                        <FormField label="Residential Address" name="address" defaultValue={p.address} placeholder="Street, Landmark" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField label="City" name="city" defaultValue={p.city} placeholder="City" />
                             <FormField label="State" name="state" defaultValue={p.state} placeholder="State" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Country" name="country" defaultValue={p.country} placeholder="Country" />
-                            <FormField label="PIN Code" name="pincode" defaultValue={p.pincode} placeholder="Postal code" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Occupation" name="occupation" defaultValue={p.occupation} placeholder="Your occupation" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField label="PIN Code" name="pincode" defaultValue={p.pincode} placeholder="110001" />
                             <FormField label="Marital Status" name="maritalStatus" defaultValue={p.maritalStatus} options={maritalOptions} />
                         </div>
                     </div>
-                )}
+                </Accordion>
 
-                {/* Section C: Emergency Contact */}
-                <SectionHeader icon="🚨" title="Emergency Contact" open={openSections.emergency} onToggle={() => toggleSection('emergency')} />
-                {openSections.emergency && (
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Contact Name" name="emergencyContactName" defaultValue={p.emergencyContactName} placeholder="Emergency contact" />
-                            <FormField label="Relationship" name="emergencyContactRelation" defaultValue={p.emergencyContactRelation} placeholder="e.g. Spouse, Parent" />
+                <Accordion title="Emergency Network" icon={<PhoneCall className="w-4 h-4" />} isOpen={openSections.emergency} onToggle={() => toggleSection('emergency')}>
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField label="Contact Person" name="emergencyContactName" defaultValue={p.emergencyContactName} placeholder="Guardian Name" />
+                            <FormField label="Relationship" name="emergencyContactRelation" defaultValue={p.emergencyContactRelation} placeholder="e.g. Spouse" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Phone Number" name="emergencyContactPhone" defaultValue={p.emergencyContactPhone} placeholder="+91..." />
-                            <FormField label="Alt Phone" name="emergencyContactAltPhone" defaultValue={p.emergencyContactAltPhone} placeholder="Alternate number" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField label="Emergency Phone" name="emergencyContactPhone" defaultValue={p.emergencyContactPhone} placeholder="+91..." />
+                            <FormField label="Secondary Phone" name="emergencyContactAltPhone" defaultValue={p.emergencyContactAltPhone} />
                         </div>
                     </div>
-                )}
+                </Accordion>
 
-                {/* Section D: Preferences */}
-                <SectionHeader icon="⭐" title="Preferred Hospital / Doctor" open={openSections.preferences} onToggle={() => toggleSection('preferences')} />
-                {openSections.preferences && (
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                        <FormField label="Preferred Hospital" name="preferredHospital" defaultValue={p.preferredHospital} placeholder="e.g. Apollo Hospitals" />
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Preferred Speciality" name="preferredSpeciality" defaultValue={p.preferredSpeciality} placeholder="e.g. Pediatrics" />
-                            <FormField label="Preferred Doctor" name="preferredDoctor" defaultValue={p.preferredDoctor} placeholder="e.g. Dr. X" />
+                <Accordion title="Care Preferences" icon={<ShieldCheck className="w-4 h-4" />} isOpen={openSections.preferences} onToggle={() => toggleSection('preferences')}>
+                    <div className="space-y-6">
+                        <FormField label="Preferred Medical Facility" name="preferredHospital" defaultValue={p.preferredHospital} placeholder="e.g. AIIMS" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField label="Care Speciality" name="preferredSpeciality" defaultValue={p.preferredSpeciality} placeholder="e.g. Cardiology" />
+                            <FormField label="Regular Consultant" name="preferredDoctor" defaultValue={p.preferredDoctor} placeholder="Dr. Name" />
                         </div>
                     </div>
-                )}
+                </Accordion>
 
                 {state?.message && !state.success && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
-                        ⚠️ {state.message}
+                    <div className="flex items-center gap-2 p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-sm font-bold animate-in zoom-in-95">
+                        <ShieldCheck className="w-5 h-5 shrink-0" /> {state.message}
                     </div>
                 )}
 
-                <button
-                    type="submit"
-                    disabled={isPending}
-                    className="w-full py-3 rounded-xl text-sm font-bold bg-medical-600 text-white hover:bg-medical-700 disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
-                >
-                    {isPending ? '⏳ Saving...' : '✓ Save Profile'}
-                </button>
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 z-10 md:static md:bg-transparent md:border-0 md:p-0 pt-6">
+                    <Button
+                        type="submit"
+                        disabled={isPending}
+                        className="w-full h-14 md:h-12 rounded-[1.25rem] md:rounded-xl font-bold bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20 gap-3 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                    >
+                        {isPending ? <><Loader2 className="w-5 h-5 animate-spin" /> Digitizing Changes...</> : <><Save className="w-5 h-5" /> Secure & Update Profile</>}
+                    </Button>
+                </div>
             </form>
 
-            {/* Family Members Section - separate forms */}
-            <div className="pt-4 border-t border-slate-200">
-                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    👨‍👩‍👧‍👦 Family Members
-                </h2>
-                <p className="text-xs text-slate-400 mb-4">Manage family health profiles linked to your account.</p>
+            <section className="pt-8 border-t border-slate-100 space-y-6 pb-20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                            <Users className="w-4 h-4" />
+                        </div>
+                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-widest text-xs">Family Network</h2>
+                    </div>
+                    <p className="text-xs text-slate-400 font-medium">Link family members to your master ID for unified care.</p>
+                </div>
 
                 <FamilyMemberForm members={p.familyMembers || []} />
-            </div>
+            </section>
         </div>
     );
 }
@@ -242,74 +240,82 @@ function FamilyMemberForm({ members }) {
     const [showForm, setShowForm] = useState(false);
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {members?.length > 0 && (
-                <div className="space-y-2 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {members.map(m => (
-                        <div key={m.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
-                            <div>
-                                <h4 className="font-bold text-sm text-slate-800">{m.name}</h4>
-                                <p className="text-xs text-slate-500">{m.relation} • {m.gender} • {m.bloodGroup}</p>
-                            </div>
-                            <form action={deleteFamilyMemberAction}>
-                                <input type="hidden" name="id" value={m.id} />
-                                <button type="submit" className="text-red-500 hover:text-red-700 text-xs font-semibold px-2 py-1 bg-red-50 rounded-md">Remove</button>
-                            </form>
-                        </div>
+                        <Card key={m.id} className="border-slate-100 shadow-sm rounded-2xl overflow-hidden group hover:border-blue-200 transition-all">
+                            <CardContent className="p-4 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold shrink-0">
+                                        {m.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-sm text-slate-900 truncate">{m.name}</h4>
+                                        <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest border-slate-100 text-slate-400 px-1.5 py-0 h-4">
+                                            {m.relation}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <form action={deleteFamilyMemberAction}>
+                                    <input type="hidden" name="id" value={m.id} />
+                                    <Button type="submit" variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg shrink-0">
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
             )}
+
             {addState?.success && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm">
-                    ✅ {addState.message}
-                </div>
-            )}
-            {addState?.message && !addState.success && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
-                    ⚠️ {addState.message}
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold animate-in slide-in-from-top-2">
+                    ✓ {addState.message}
                 </div>
             )}
 
             {showForm ? (
-                <form action={addAction} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-sm">
-                    <div className="grid grid-cols-2 gap-3">
-                        <FormField label="Name" name="name" required placeholder="Member name" />
-                        <FormField label="Relation" name="relation" required placeholder="e.g. Son, Mother" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                        <FormField label="Date of Birth" name="dob" type="date" />
-                        <FormField label="Gender" name="gender" options={[
-                            { value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }, { value: 'O', label: 'Other' }
-                        ]} />
-                        <FormField label="Blood Group" name="bloodGroup" options={
-                            ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ value: v, label: v }))
-                        } />
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            type="submit"
-                            disabled={isAdding}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-all cursor-pointer"
-                        >
-                            {isAdding ? '⏳ Adding...' : '+ Add Member'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setShowForm(false)}
-                            className="py-2.5 px-4 rounded-xl text-sm font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all cursor-pointer"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </form>
+                <Card className="border-blue-100 shadow-lg shadow-blue-500/5 rounded-[1.5rem] bg-white overflow-hidden animate-in zoom-in-95">
+                    <CardHeader className="p-6 pb-0 flex flex-row items-center justify-between">
+                        <CardTitle className="text-sm font-black text-slate-900 uppercase tracking-widest">New Member Profile</CardTitle>
+                        <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="h-8 w-8 rounded-full">
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                        <form action={addAction} className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField label="Slave Name" name="name" required placeholder="Legal Name" />
+                                <FormField label="Relationship" name="relation" required placeholder="e.g. Daughter" />
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <FormField label="DOB" name="dob" type="date" />
+                                <FormField label="Sex" name="gender" options={[{ value: 'M', label: 'Male' }, { value: 'F', label: 'Female' }, { value: 'O', label: 'Other' }]} />
+                                <FormField label="Blood" name="bloodGroup" options={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(v => ({ value: v, label: v }))} />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    type="submit"
+                                    disabled={isAdding}
+                                    className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold gap-2 active:scale-95"
+                                >
+                                    {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />} Link Member
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
             ) : (
-                <button
+                <Button
                     onClick={() => setShowForm(true)}
-                    className="w-full py-3 rounded-xl text-sm font-semibold border-2 border-dashed border-slate-300 text-slate-500 hover:border-medical-400 hover:text-medical-600 transition-all cursor-pointer bg-transparent"
+                    variant="outline"
+                    className="w-full h-14 rounded-2xl border-2 border-dashed border-slate-200 text-slate-400 hover:border-blue-400 hover:text-blue-600 transition-all font-bold gap-3 bg-slate-50/50"
                 >
-                    + Add Family Member
-                </button>
+                    <Plus className="w-5 h-5" /> Add Family Connection
+                </Button>
             )}
         </div>
     );
 }
+
