@@ -1,0 +1,36 @@
+# MCP Toolbox Configuration for Haspataal
+kind: source
+name: haspataal-db
+type: postgres
+host: aws-1-ap-south-1.pooler.supabase.com
+port: 5432
+database: postgres
+user: postgres.deqcehtgwbpmwlajsore
+password: Haspataal2026
+
+---
+kind: tool
+name: list-tables
+type: postgres-sql
+source: haspataal-db
+description: List all tables in the database.
+statement: SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+
+---
+kind: tool
+name: execute-query
+type: postgres-sql
+source: haspataal-db
+description: Execute a custom SQL query.
+parameters:
+  - name: sql
+    type: string
+    description: The SQL query to execute.
+statement: "{{.sql}}"
+
+---
+kind: toolset
+name: database-toolset
+tools:
+  - list-tables
+  - execute-query

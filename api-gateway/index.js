@@ -4,6 +4,8 @@ require('dotenv').config({ path: '../.env' });
 
 // Real RBAC middleware (Phase 4 — wired in health check auto-fix)
 const { requireAuth, requireRole, requireHospitalTenant } = require('./middleware/auth');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 const { apiLimiter, strictLimiter } = require('./middleware/rate-limit');
 
@@ -43,7 +45,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-const { cacheAside } = require('./lib/cache');
+const { cacheAside, redlock } = require('./lib/cache');
 
 // ============================================================
 // DOCTOR DISCOVERY (Public — SEO powered)
@@ -54,10 +56,29 @@ app.get('/v1/search/doctors', strictLimiter, async (req, res) => {
 
     try {
         const results = await cacheAside(cacheKey, async () => {
-            // TODO: Wire to Prisma — prisma.doctorMaster.findMany({ where: { city, specialty }, take })
+            const take = Math.min(parseInt(limit), 100);
+            
+            const where = {};
+            if (city) where.city = city;
+            // Note: In schema, specialty might be part of DoctorProfessionalHistory or a separate relation.
+            // For now, filtering by city in DoctorMaster.
+            
+            const doctors = await prisma.doctorMaster.findMany({
+                where,
+                take,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    registration: true
+                }
+            });
+
             return {
-                data: [],
-                meta: { cursor: null, hasMore: false, query: { city, specialty } }
+                data: doctors,
+                meta: { 
+                    cursor: doctors.length > 0 ? doctors[doctors.length - 1].id : null, 
+                    hasMore: doctors.length === take,
+                    query: { city, specialty } 
+                }
             };
         }, 300); // Cache for 5 minutes
 
@@ -74,27 +95,69 @@ app.get('/v1/search/doctors', strictLimiter, async (req, res) => {
 // APPOINTMENTS (Auth Required)
 // ============================================================
 app.post('/v1/appointments', requireAuth, async (req, res) => {
-    const { doctorId, hospitalId, scheduledAt, notes } = req.body;
+    const { doctorId, hospitalId, scheduledAt, notes, slot } = req.body;
 
-    if (!doctorId || !hospitalId || !scheduledAt) {
+    if (!doctorId || !scheduledAt || !slot) {
         return res.status(400).json({
             success: false,
-            error: 'doctorId, hospitalId, and scheduledAt are required',
+            error: 'doctorId, scheduledAt, and slot are required',
             code: 'VALIDATION_ERROR'
         });
     }
 
-    // TODO: Redis slot locking → Prisma transaction
-    res.status(201).json({
-        success: true,
-        data: {
-            id: 'mock-uuid-' + Date.now(),
-            doctorId,
-            hospitalId,
-            scheduledAt,
-            status: 'BOOKED'
+    const lockKey = `lock:slot:${doctorId}:${scheduledAt}:${slot}`;
+    let lock;
+
+    try {
+        // Attempt to acquire distributed lock for 10 seconds
+        lock = await redlock.acquire([lockKey], 10000);
+
+        // Check if appointment already exists in DB
+        const existing = await prisma.appointment.findUnique({
+            where: {
+                doctorId_date_slot: {
+                    doctorId,
+                    date: new Date(scheduledAt),
+                    slot
+                }
+            }
+        });
+
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                error: 'Slot already booked',
+                code: 'SLOT_UNAVAILABLE'
+            });
         }
-    });
+
+        // Create appointment
+        const appointment = await prisma.appointment.create({
+            data: {
+                patientId: req.user.userId,
+                doctorId,
+                hospitalId,
+                date: new Date(scheduledAt),
+                slot,
+                notes,
+                status: 'BOOKED'
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            data: appointment
+        });
+    } catch (error) {
+        console.error('[Booking Error]', error);
+        res.status(error.name === 'ExecutionError' ? 409 : 500).json({
+            success: false,
+            error: error.name === 'ExecutionError' ? 'Another booking is in progress for this slot' : 'Failed to book appointment',
+            code: error.name === 'ExecutionError' ? 'CONCURRENCY_ERROR' : 'INTERNAL_ERROR'
+        });
+    } finally {
+        if (lock) await lock.release();
+    }
 });
 
 app.patch('/v1/appointments/:id/status', requireAuth, async (req, res) => {
@@ -107,8 +170,16 @@ app.patch('/v1/appointments/:id/status', requireAuth, async (req, res) => {
             code: 'VALIDATION_ERROR'
         });
     }
-    // TODO: Prisma update
-    res.json({ success: true, data: { id: req.params.id, status } });
+
+    try {
+        const appointment = await prisma.appointment.update({
+            where: { id: req.params.id },
+            data: { status }
+        });
+        res.json({ success: true, data: appointment });
+    } catch (error) {
+        res.status(404).json({ success: false, error: 'Appointment not found' });
+    }
 });
 
 // ============================================================
@@ -122,12 +193,29 @@ app.get('/v1/hospitals/:id/patients',
         const { cursor, limit = '20' } = req.query;
         const take = Math.min(parseInt(limit), 100);
 
-        // TODO: Prisma with hospital_id scoping + cursor pagination
-        res.json({
-            success: true,
-            data: [],
-            meta: { cursor: null, hasMore: false }
-        });
+        try {
+            // Fetch appointments/patients scoped to this hospital
+            const patients = await prisma.appointment.findMany({
+                where: { hospitalId: req.params.id },
+                distinct: ['patientId'],
+                take,
+                orderBy: { date: 'desc' },
+                include: {
+                    patient: true
+                }
+            });
+
+            res.json({
+                success: true,
+                data: patients.map(p => p.patient),
+                meta: { 
+                    cursor: patients.length > 0 ? patients[patients.length - 1].id : null, 
+                    hasMore: patients.length === take 
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, error: 'Failed to fetch patients' });
+        }
     }
 );
 
@@ -136,8 +224,17 @@ app.get('/v1/hospitals/:id/doctors',
     requireRole('hospital_admin', 'doctor', 'super_admin'),
     requireHospitalTenant,
     async (req, res) => {
-        // TODO: Prisma - doctorHospitalAffiliation where hospitalId = req.params.id
-        res.json({ success: true, data: [] });
+        try {
+            const affiliations = await prisma.doctorHospitalAffiliation.findMany({
+                where: { hospitalId: req.params.id },
+                include: {
+                    doctor: true
+                }
+            });
+            res.json({ success: true, data: affiliations.map(a => a.doctor) });
+        } catch (error) {
+            res.status(500).json({ success: false, error: 'Failed to fetch doctors' });
+        }
     }
 );
 

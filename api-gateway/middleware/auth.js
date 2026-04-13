@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
+const { redis } = require('../lib/cache');
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback_secret_for_dev_only';
 
 /**
  * RBAC Middleware — verifies JWT and injects user context
  * Enforces: role, hospitalId, and userId into req.user
  */
-const requireAuth = (req, res, next) => {
+const requireAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Unauthorized: Missing Bearer token' });
@@ -13,6 +14,13 @@ const requireAuth = (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
     try {
+        // 1. Check Redis Blacklist
+        const isBlacklisted = await redis.get(`blacklist:${token}`);
+        if (isBlacklisted) {
+            return res.status(401).json({ error: 'Unauthorized: Token has been revoked' });
+        }
+
+        // 2. Verify JWT
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();

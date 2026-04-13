@@ -1,6 +1,14 @@
 const Redis = require('ioredis');
+const Redlock = require('redlock').default;
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 const redis = new Redis(REDIS_URL);
+
+const redlock = new Redlock([redis], {
+    driftFactor: 0.01,
+    retryCount: 10,
+    retryDelay: 200,
+    retryJitter: 200,
+});
 
 /**
  * Cache Aside Pattern Implementation
@@ -30,4 +38,4 @@ async function cacheAside(key, fetchFn, ttl = 3600) {
     }
 }
 
-module.exports = { cacheAside, redis };
+module.exports = { cacheAside, redis, redlock };
