@@ -1,32 +1,48 @@
 import { NextResponse } from 'next/server';
 import { decrypt } from '@/lib/session';
 
-// Very basic in-memory rate limiting (per Edge isolate instance)
-const ratelimit = new Map();
+import redis from '@/lib/redis';
+
+// Redis-backed rate limiting constants
 const WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 100; // 100 requests per minute per IP
 
 export async function proxy(request) {
     const { pathname } = request.nextUrl;
 
-    // ── AUDIT LOGGING & RATE LIMITING ────────────────────────────
+    // ── AUDIT LOGGING & RATE LIMITING (Redis Backed) ──────────────
     const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
     const now = Date.now();
+    const windowKey = Math.floor(now / WINDOW_MS);
+    const redisKey = `ratelimit:${ip}:${windowKey}`;
+
+    let isBlocked = false;
+    let currentCount = 0;
 
     if (ip !== 'unknown') {
-        const record = ratelimit.get(ip) || { count: 0, startTime: now };
-        if (now - record.startTime > WINDOW_MS) {
-            record.count = 1;
-            record.startTime = now;
-        } else {
-            record.count += 1;
-        }
-        ratelimit.set(ip, record);
+        try {
+            // Atomic increment and expire
+            const multi = redis.multi();
+            multi.incr(redisKey);
+            multi.expire(redisKey, 65); // Slightly longer than window for stability
+            
+            const results = await multi.exec();
+            if (results && results[0]) {
+                currentCount = results[0][1] as number;
+            }
 
-        if (record.count > MAX_REQUESTS) {
-            console.warn(`[SECURITY AUDIT] Rate limit exceeded for IP: ${ip} on path: ${pathname}`);
-            return new NextResponse('Too Many Requests', { status: 429 });
+            if (currentCount > MAX_REQUESTS) {
+                console.warn(`[SECURITY AUDIT] Redis-backed Rate limit exceeded for IP: ${ip} on path: ${pathname} (Count: ${currentCount})`);
+                isBlocked = true;
+            }
+        } catch (error) {
+            console.error('[REDIS RATE LIMIT ERROR]', error);
+            // Fail open: don't block user if Redis is down, but log it
         }
+    }
+
+    if (isBlocked) {
+        return new NextResponse('Too Many Requests', { status: 429 });
     }
 
     // Basic Request Audit Log
@@ -67,7 +83,15 @@ export async function proxy(request) {
     if (pathname.startsWith('/agent/dashboard')) {
         const session = request.cookies.get('session_agent')?.value;
         if (!session) return NextResponse.redirect(new URL('/agent/login', request.url));
-        // role check optional, relying on session existence for agent
+        try {
+            const payload = await decrypt(session);
+            const role = payload?.user?.role;
+            if (role !== 'AGENT') {
+                return NextResponse.redirect(new URL('/agent/login', request.url));
+            }
+        } catch (e) {
+            return NextResponse.redirect(new URL('/agent/login', request.url));
+        }
     }
 
     // Patient Protection

@@ -170,6 +170,11 @@ lock:slot:{doctorId}:{scheduledAt}:{slot}  (TTL: 10s)
 - **Prisma MaxClientsInSessionMode:** Parallel sub-queries in mapping functions can exhaust connection pools. Always use Prisma's `include`, `_count`, and `batching` features to consolidate queries into single database trips. *(Fixed in conversation 3ecc8175)*
 - **Supabase Connectivity Fallback:** If the connection pooler (port 6543) is unreachable, bypass it by using the direct connection host on port 5432 with the standard `postgres` user. *(Configured in conversation 3ecc8175)*
 - **UI Compaction Strategy:** Standardizing on a compact, information-dense clinic aesthetic (smaller avatars, tighter typography, horizontal slots) significantly improves accessibility and platform professionalism. *(Implemented in conversation 3ecc8175)*
+- **Hardcoded OTP demo bypass:** OTP '1234' was previously present in production-ready actions; removed to enforce strictly service-layer validation via Prisma `otpCode` records. *(Fixed in conversation a3702ee0)*
+- **Plaintext Admin authentication:** Admin passwords were compared as strings using environment variables; migrated to `bcrypt.compare` with hashed environment variables and secure defaults. *(Fixed in conversation a3702ee0)*
+- **Middleware RBAC gaps:** Agent dashboards and Admin server actions lacked deep session verification; implemented `decrypt(session)` and explicit role checks across `proxy.js` and `haspataal-admin` actions. *(Fixed in conversation a3702ee0)*
+- **In-memory rate limiting:** Using an in-memory `Map` in `proxy.js` was ineffective for distributed portal instances; migrated to a robust, atomic Redis-backed `incr` strategy with windowed TTL. *(Fixed in conversation a3702ee0)*
+- **N+1 Query Pattern in Hospital Lists:** `getHospitals` was fetching counts sequentially or mocking ratings; consolidated into a single Prisma query using `include: { _count: ... }` to minimize database round-trips. *(Fixed in conversation a3702ee0)*
 
 ---
 

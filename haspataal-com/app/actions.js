@@ -18,13 +18,16 @@ export async function patientLogin(prevState, formData) {
         return { message: 'Please enter mobile number and OTP.' };
     }
 
-    if (otp !== '1234') {
-        return { message: 'Invalid OTP. Use 1234 for demo.' };
-    }
+    // REMOVED HARDCODED OTP '1234'
+    // Authentication flow now strictly follows service-layer OTP validation
 
-    const patient = await services.patient.login(mobile, otp);
-    await createSession('session_patient', patient);
-    redirect('/');
+    try {
+        const patient = await services.patient.login(mobile, otp);
+        await createSession('session_patient', patient);
+        redirect('/');
+    } catch (e: any) {
+        return { message: e.message || 'Login failed. Please check your mobile and OTP.' };
+    }
 }
 
 export async function patientRegister(prevState, formData) {
@@ -95,6 +98,16 @@ export async function bookAppointment(prevState, formData) {
     }
 
     try {
+        // Validate Doctor and Hospital existence
+        const [doctor, hospital] = await Promise.all([
+            services.platform.getDoctorById(doctorId as string),
+            services.platform.getHospitalById(hospitalId as string)
+        ]);
+
+        if (!doctor || !hospital) {
+            return { success: false, message: 'Invalid Doctor or Hospital details.' };
+        }
+
         const visitData = {
             doctorId,
             patientName: patient.name || patient.mobile,
