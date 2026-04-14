@@ -3,7 +3,8 @@
 import { services } from '@/lib/services';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { createSession, deleteSession, decrypt } from '@/lib/session';
+import { createSession, deleteSession } from '@/lib/session';
+import { requireRole } from '@/lib/auth';
 
 // ==================== ADMIN ACTIONS ====================
 
@@ -30,12 +31,10 @@ export async function logoutAdmin() {
 }
 
 export async function approveHospitalAction(prevState, formData) {
-    const adminCookie = (await cookies()).get('session_admin');
-    if (!adminCookie) return { message: 'Unauthorized' };
-
-    const payload = await decrypt(adminCookie.value);
-    if (!payload || payload.user?.role !== 'PLATFORM_ADMIN') {
-        return { message: 'Unauthorized: Invalid session or insufficient permissions' };
+    try {
+        await requireRole('PLATFORM_ADMIN', 'session_admin');
+    } catch (e) {
+        return { message: e.message };
     }
 
     const hospitalId = formData.get('hospitalId');
@@ -49,12 +48,10 @@ export async function approveHospitalAction(prevState, formData) {
 }
 
 export async function rejectHospitalAction(prevState, formData) {
-    const adminCookie = (await cookies()).get('session_admin');
-    if (!adminCookie) return { message: 'Unauthorized' };
-
-    const payload = await decrypt(adminCookie.value);
-    if (!payload || payload.user?.role !== 'PLATFORM_ADMIN') {
-        return { message: 'Unauthorized: Invalid session or insufficient permissions' };
+    try {
+        await requireRole('PLATFORM_ADMIN', 'session_admin');
+    } catch (e) {
+        return { message: e.message };
     }
 
     const hospitalId = formData.get('hospitalId');
@@ -68,12 +65,10 @@ export async function rejectHospitalAction(prevState, formData) {
 }
 
 export async function suspendHospitalAction(prevState, formData) {
-    const adminCookie = (await cookies()).get('session_admin');
-    if (!adminCookie) return { message: 'Unauthorized' };
-
-    const payload = await decrypt(adminCookie.value);
-    if (!payload || payload.user?.role !== 'PLATFORM_ADMIN') {
-        return { message: 'Unauthorized: Invalid session or insufficient permissions' };
+    try {
+        await requireRole('PLATFORM_ADMIN', 'session_admin');
+    } catch (e) {
+        return { message: e.message };
     }
 
     const hospitalId = formData.get('hospitalId');

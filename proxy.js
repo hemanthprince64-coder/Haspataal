@@ -28,7 +28,7 @@ export async function proxy(request) {
             
             const results = await multi.exec();
             if (results && results[0]) {
-                currentCount = results[0][1] as number;
+                currentCount = results[0][1];
             }
 
             if (currentCount > MAX_REQUESTS) {

@@ -5,6 +5,7 @@ import { services } from '@/lib/services';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
+import { z } from 'zod';
 
 // ==================== PATIENT ACTIONS ====================
 
@@ -25,7 +26,7 @@ export async function patientLogin(prevState, formData) {
         const patient = await services.patient.login(mobile, otp);
         await createSession('session_patient', patient);
         redirect('/');
-    } catch (e: any) {
+    } catch (e) {
         return { message: e.message || 'Login failed. Please check your mobile and OTP.' };
     }
 }
@@ -41,14 +42,24 @@ export async function patientRegister(prevState, formData) {
         email: formData.get('email'),
     };
 
-    if (!data.mobile || !data.name) {
-        return { message: 'Mobile number and name are required.' };
+    const PatientRegisterSchema = z.object({
+        mobile: z.string().regex(/^\d{10}$/, 'Mobile must be 10 digits'),
+        name: z.string().min(1, 'Name is required').max(100),
+        age: z.string().optional().refine(a => !a || (parseInt(a) >= 0 && parseInt(a) <= 150), 'Invalid age'),
+        email: z.string().email().optional().or(z.literal('')),
+        gender: z.string().optional(),
+        bloodGroup: z.string().optional(),
+        city: z.string().optional(),
+    });
+
+    try {
+        const validatedData = PatientRegisterSchema.parse(data);
+        const patient = await services.patient.register(validatedData);
+        await createSession('session_patient', patient);
+        return { success: true, message: 'Profile saved successfully!' };
+    } catch (e) {
+        return { message: e.errors ? e.errors[0].message : (e.message || 'Registration failed.') };
     }
-
-    const patient = await services.patient.register(data);
-    await createSession('session_patient', patient);
-
-    return { success: true, message: 'Profile saved successfully!' };
 }
 
 export async function updatePatientProfile(prevState, formData) {
@@ -98,10 +109,14 @@ export async function bookAppointment(prevState, formData) {
     }
 
     try {
+        // Validate formats
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { success: false, message: 'Invalid date format' };
+        if (!/^\d{2}:\d{2}$/.test(slot)) return { success: false, message: 'Invalid slot format' };
+
         // Validate Doctor and Hospital existence
         const [doctor, hospital] = await Promise.all([
-            services.platform.getDoctorById(doctorId as string),
-            services.platform.getHospitalById(hospitalId as string)
+            services.platform.getDoctorById(doctorId),
+            services.platform.getHospitalById(hospitalId)
         ]);
 
         if (!doctor || !hospital) {
