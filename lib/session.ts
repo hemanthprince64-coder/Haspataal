@@ -4,10 +4,11 @@ import { cookies } from 'next/headers'
 import { UserRole } from '../types'
 
 const secretKey = process.env.NEXTAUTH_SECRET
-if (!secretKey) {
+// In production, we require the secret. During build (NEXT_PHASE) or CI, we can skip or use a dummy.
+if (!secretKey && process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
     throw new Error('NEXTAUTH_SECRET is required for session signing')
 }
-const key = new TextEncoder().encode(secretKey)
+const key = new TextEncoder().encode(secretKey || 'dummy-secret-for-build-purposes-only')
 
 interface SessionPayload {
     user: {

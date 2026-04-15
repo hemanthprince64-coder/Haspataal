@@ -18,19 +18,24 @@ const Avatar = React.forwardRef<
 ))
 Avatar.displayName = "Avatar"
 
+import Image from "next/image"
+
 const AvatarImage = React.forwardRef<
   HTMLImageElement,
-  React.ImgHTMLAttributes<HTMLImageElement>
->(({ className, alt = "", ...props }, ref) => (
-  // eslint-disable-next-line @next/next/no-img-element
-  <img
-    ref={ref}
+  React.ComponentPropsWithoutRef<typeof Image>
+>(({ className, alt = "", src, ...props }, ref) => (
+  <Image
+    ref={ref as any}
+    src={src || ""}
     alt={alt}
-    className={cn("aspect-square h-full w-full", className)}
+    fill
+    unoptimized // Often necessary for external avatar providers like Gravatar/Google
+    className={cn("aspect-square h-full w-full object-cover", className)}
     {...props}
   />
 ))
 AvatarImage.displayName = "AvatarImage"
+
 
 const AvatarFallback = React.forwardRef<
   HTMLDivElement,
