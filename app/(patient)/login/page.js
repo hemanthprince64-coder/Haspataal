@@ -94,6 +94,7 @@ export default function PatientLogin() {
                         </form>
                     ) : (
                         <form action={formAction} className="space-y-8">
+                            <input type="hidden" name="mobile" value={mobile} />
                             <div className="space-y-3">
                                 <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">📱 Mobile Number</Label>
                                 <Input 

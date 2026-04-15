@@ -261,7 +261,7 @@ export async function rejectDoctorAffiliationAction(prevState, formData) {
 
 export async function getAdminDashboardData() {
     try {
-        await requireRole(UserRole.ADMIN, 'session_admin');
+        await requireRole(UserRole.PLATFORM_ADMIN, 'session_admin');
         const stats = await services.admin.getPlatformStats();
         return { stats };
     } catch (e) {
@@ -272,8 +272,8 @@ export async function getAdminDashboardData() {
 
 export async function getAgentDashboardData(agentId) {
     try {
-        await requireRole(UserRole.AGENT, 'session_agent');
-        const data = await services.agent.getDashboardData(agentId);
+        const user = await requireRole(UserRole.AGENT, 'session_agent');
+        const data = await services.agent.getDashboardData(user.id);
         return data;
     } catch (e) {
         console.error("Error fetching agent dashboard data:", e);
@@ -463,13 +463,14 @@ export async function getPatientFullProfile() {
             services.patient.getInsurance(patientCookie.id),
             services.patient.getAddresses(patientCookie.id),
             services.patient.getWallet(patientCookie.id),
-            services.patient.getPrescriptions(patientCookie.id)
+            services.patient.getPrescriptions(patientCookie.id),
+            services.patient.getVisits(patientCookie.id)
         ]);
 
         const [
             familyMembers, medicalHistory, medications, vitals,
             vaccinations, pregnancyProfile, insurance, addresses,
-            wallet, prescriptions
+            wallet, prescriptions, visits
         ] = results.map((r, i) => {
             if (r.status === 'fulfilled') return r.value;
             logger.error({ action: 'profile_subfetch_failed', index: i, error: r.reason?.message }, 'Sub-fetch during profile load failed');
@@ -487,7 +488,9 @@ export async function getPatientFullProfile() {
             insurance: insurance || [],
             addresses: addresses || [],
             wallet: wallet || { balance: 0, transactions: [] },
-            prescriptions: prescriptions || []
+            prescriptions: prescriptions || [],
+            visits: visits || [],
+            appointments: visits || []
         };
     } catch (e) {
         logger.error({ action: 'get_patient_profile_failed', error: e.message }, 'Failed to fetch full patient profile');
@@ -1096,8 +1099,8 @@ export async function getTopDoctorsBySpeciality(speciality, city) {
 
 export async function getVisitAnalysisAction(visitId) {
     try {
-        await requireRole(UserRole.PATIENT, 'session_patient');
-        return await services.ai.getVisitAnalysis(visitId);
+        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
+        return await services.ai.getVisitAnalysisForPatient(patient.id, visitId);
     } catch (e) {
         logger.error({ action: 'get_visit_analysis_failed', visitId, error: e.message }, 'Failed to fetch visit analysis');
         return null;
@@ -1118,8 +1121,8 @@ export async function processVisitAiAction(visitId, notes) {
 
 export async function getCareTimelineAction(visitId) {
     try {
-        await requireRole(UserRole.PATIENT, 'session_patient');
-        const state = await CareLifecycleService.getRecoveryState(visitId);
+        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
+        const state = await CareLifecycleService.getRecoveryStateForPatient(patient.id, visitId);
         if (!state) return null;
         const drift = await CareLifecycleService.analyzeRecoveryDrift(state.journeyId);
         return { ...state, drift };
@@ -1131,8 +1134,8 @@ export async function getCareTimelineAction(visitId) {
 
 export async function logMedicationAction(careJourneyId, medName, schedule) {
     try {
-        await requireRole(UserRole.PATIENT, 'session_patient');
-        return await CareLifecycleService.logMedication(careJourneyId, medName, schedule);
+        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
+        return await CareLifecycleService.logMedicationForPatient(patient.id, careJourneyId, medName, schedule);
     } catch (e) {
         logger.error({ action: 'log_medication_failed', careJourneyId, error: e.message });
         throw e;
@@ -1141,8 +1144,8 @@ export async function logMedicationAction(careJourneyId, medName, schedule) {
 
 export async function submitCheckInAction(careJourneyId, dayNumber, status) {
     try {
-        await requireRole(UserRole.PATIENT, 'session_patient');
-        return await CareLifecycleService.submitCheckIn(careJourneyId, dayNumber, status);
+        const patient = await requireRole(UserRole.PATIENT, 'session_patient');
+        return await CareLifecycleService.submitCheckInForPatient(patient.id, careJourneyId, dayNumber, status);
     } catch (e) {
         logger.error({ action: 'submit_checkin_failed', careJourneyId, error: e.message });
         throw e;

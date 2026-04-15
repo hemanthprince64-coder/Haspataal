@@ -27,8 +27,8 @@ WORKDIR /app
 # Copy built application from builder
 COPY --from=builder /app .
 
-# Expose port 3002
-EXPOSE 3002
+# Expose port 3000
+EXPOSE 3000
 
 # Start the application
 CMD ["npm", "start"]

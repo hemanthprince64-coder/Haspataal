@@ -47,7 +47,7 @@ const AccordionTrigger = React.forwardRef<
   React.ButtonHTMLAttributes<HTMLButtonElement>
 >(({ className, children, ...props }, ref) => {
   const context = React.useContext(AccordionContext)
-  const itemValue = (props as any).value || (props.parentElement as any)?.getAttribute("data-value")
+  const itemValue = (props as any).value || (props as any).parentElement?.getAttribute("data-value")
   
   // Note: In this pure React impl, we need the value to be passed or inferred.
   // For simplicity in the usage below, I'll adjust the usage in the page.

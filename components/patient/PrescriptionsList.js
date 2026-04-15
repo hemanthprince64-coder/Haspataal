@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { FileText, Pill, FileDown, Eye, User, Calendar, ExternalLink, ShieldCheck, FileSearch, NotebookTabs, Download } from "lucide-react";
+import { FileText, Pill, FileDown, Eye, User, Calendar, ExternalLink, ShieldCheck, FileSearch, NotebookTabs, Download, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -70,7 +70,7 @@ export default function PrescriptionsList({ prescriptions }) {
                                 <div className="mb-6 relative">
                                     <div className="absolute top-2 left-[-8px] bottom-2 w-1 bg-amber-200 rounded-full" />
                                     <p className="text-sm text-slate-600 italic font-medium leading-relaxed pl-4 bg-amber-50/30 p-4 rounded-xl border border-amber-100/50">
-                                        "{pres.notes}"
+                                        &quot;{pres.notes}&quot;
                                     </p>
                                 </div>
                             )}

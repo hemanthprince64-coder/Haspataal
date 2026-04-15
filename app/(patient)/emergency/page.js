@@ -18,7 +18,7 @@ export default function EmergencyPage() {
                 setSeconds(s => s + 1);
             }, 1000);
         } else {
-            setSeconds(0);
+            setTimeout(() => setSeconds(0), 0);
         }
         return () => clearInterval(interval);
     }, [calling]);

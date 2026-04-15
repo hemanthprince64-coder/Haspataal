@@ -254,7 +254,7 @@ export default function PatientHome() {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {topDoctors.map(doc => (
-                        <DoctorCard key={doc.id} doctor={doc} />
+                        <DoctorCard key={doc.id} doctor={doc} className="" />
                     ))}
                 </div>
                 <Button asChild variant="outline" className="w-full mt-6 text-blue-600 border-blue-200 hover:bg-blue-50 font-semibold h-12 rounded-xl sm:hidden">

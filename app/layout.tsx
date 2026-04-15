@@ -1,18 +1,5 @@
 import React, { ReactNode } from "react";
-import { Merriweather, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
-
-const merriweather = Merriweather({
-  weight: ['400', '700', '900'],
-  subsets: ["latin"],
-  variable: '--font-merriweather',
-});
-
-const sourceSans = Source_Sans_3({
-  weight: ['300', '400', '500', '600', '700'],
-  subsets: ["latin"],
-  variable: '--font-source-sans',
-});
 
 export const metadata = {
   title: "Haspataal — Healthcare Assistance Platform",
@@ -29,8 +16,8 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" className={`${merriweather.variable} ${sourceSans.variable}`} suppressHydrationWarning>
-      <body className={sourceSans.className} suppressHydrationWarning>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

@@ -741,14 +741,20 @@ export const services = {
         },
         saveInsurance: async (patientId: string, data: { id?: string; company: string; policyNumber?: string; coverageAmount?: number; expiryDate?: string }) => {
             if (data.id) {
-                return await prisma.insuranceDetail.update({
-                    where: { id: data.id },
+                const updated = await prisma.insuranceDetail.updateMany({
+                    where: { id: data.id, patientId },
                     data: {
                         company: data.company,
                         policyNumber: data.policyNumber || null,
                         coverageAmount: data.coverageAmount ?? null,
                         expiryDate: data.expiryDate ? new Date(data.expiryDate) : null
                     }
+                });
+                if (updated.count === 0) {
+                    throw new Error('Insurance policy not found');
+                }
+                return await prisma.insuranceDetail.findFirst({
+                    where: { id: data.id, patientId }
                 });
             }
             return await prisma.insuranceDetail.create({
@@ -1435,6 +1441,37 @@ export const services = {
                     redFlags: true
                 }
             });
+        },
+
+        getVisitAnalysisForPatient: async (patientId: string, visitId: string) => {
+            const analysis = await prisma.careJourney.findUnique({
+                where: { visitId },
+                include: {
+                    visit: {
+                        include: {
+                            observations: true,
+                            appointment: {
+                                include: {
+                                    doctor: true
+                                }
+                            }
+                        }
+                    },
+                    medications: true,
+                    followUp: true,
+                    redFlags: true
+                }
+            });
+
+            if (!analysis) {
+                return null;
+            }
+
+            if (analysis.visit?.appointment?.patientId !== patientId) {
+                throw new Error('Unauthorized');
+            }
+
+            return analysis;
         }
     }
 };

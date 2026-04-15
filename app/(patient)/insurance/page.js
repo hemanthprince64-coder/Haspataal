@@ -28,7 +28,10 @@ export default function InsurancePage() {
     };
 
     useEffect(() => {
-        loadData();
+        const timer = setTimeout(() => {
+            loadData();
+        }, 0);
+        return () => clearTimeout(timer);
     }, [state]);
 
     return (
@@ -198,7 +201,7 @@ export default function InsurancePage() {
                                                     </div>
                                                 </div>
                                                 <form action={deleteInsuranceAction}>
-                                                    <input type="hidden" name="id" value={policy.id} />
+                                                    <input type="hidden" name="insuranceId" value={policy.id} />
                                                     <Button variant="ghost" size="icon" type="submit" className="h-10 w-10 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
                                                         <Trash2 className="w-5 h-5" />
                                                     </Button>

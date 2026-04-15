@@ -149,7 +149,7 @@ export default function SearchPage({ searchParams }: { searchParams: Promise<any
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {doctorsWithHospitals.map(doc => (
-                        <DoctorCard key={doc.id} doctor={doc} />
+                        <DoctorCard key={doc.id} doctor={doc} className="" />
                     ))}
                 </div>
             )}

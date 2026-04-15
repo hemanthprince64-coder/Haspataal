@@ -2,6 +2,49 @@ import prisma from "../prisma";
 import logger from "../logger";
 
 export class CareLifecycleService {
+    private static buildRecoveryState(journey: any) {
+        const visitDate = new Date(journey.createdAt);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const currentDay = Math.min(Math.max(diffDays, 1), 14);
+
+        return {
+            journeyId: journey.id,
+            currentDay,
+            condition: journey.conditionSimple,
+            explanation: journey.explanation,
+            medications: journey.medications,
+            todayPlan: journey.recoverySteps.find((s: any) => s.dayNumber === currentDay),
+            fullHistory: [...journey.recoverySteps].sort((a: any, b: any) => a.dayNumber - b.dayNumber),
+            engagements: journey.engagements,
+            checkIns: journey.checkIns,
+            followUp: journey.followUp
+        };
+    }
+
+    private static async getOwnedJourney(careJourneyId: string, patientId: string) {
+        const journey = await prisma.careJourney.findUnique({
+            where: { id: careJourneyId },
+            include: {
+                visit: {
+                    include: {
+                        appointment: {
+                            select: {
+                                patientId: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!journey || journey.visit?.appointment?.patientId !== patientId) {
+            throw new Error('Unauthorized');
+        }
+
+        return journey;
+    }
+
     /**
      * Calculates the current Day of recovery and fetches the relevant plan
      */
@@ -19,25 +62,39 @@ export class CareLifecycleService {
 
         if (!journey) return null;
 
-        const visitDate = new Date(journey.createdAt);
-        const now = new Date();
-        const diffDays = Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        
-        // Cap at 14 days
-        const currentDay = Math.min(Math.max(diffDays, 1), 14);
+        return this.buildRecoveryState(journey);
+    }
 
-        return {
-            journeyId: journey.id,
-            currentDay,
-            condition: journey.conditionSimple,
-            explanation: journey.explanation,
-            medications: journey.medications,
-            todayPlan: journey.recoverySteps.find(s => s.dayNumber === currentDay),
-            fullHistory: journey.recoverySteps.sort((a,b) => a.dayNumber - b.dayNumber),
-            engagements: journey.engagements,
-            checkIns: journey.checkIns,
-            followUp: journey.followUp
-        };
+    static async getRecoveryStateForPatient(patientId: string, visitId: string) {
+        const journey = await prisma.careJourney.findUnique({
+            where: { visitId },
+            include: {
+                recoverySteps: true,
+                engagements: true,
+                checkIns: true,
+                medications: true,
+                followUp: true,
+                visit: {
+                    include: {
+                        appointment: {
+                            select: {
+                                patientId: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!journey) {
+            return null;
+        }
+
+        if (journey.visit?.appointment?.patientId !== patientId) {
+            throw new Error('Unauthorized');
+        }
+
+        return this.buildRecoveryState(journey);
     }
 
     /**
@@ -51,6 +108,11 @@ export class CareLifecycleService {
                 metadata: { medName, schedule, recordedAt: new Date().toISOString() }
             }
         });
+    }
+
+    static async logMedicationForPatient(patientId: string, careJourneyId: string, medName: string, schedule: string) {
+        await this.getOwnedJourney(careJourneyId, patientId);
+        return this.logMedication(careJourneyId, medName, schedule);
     }
 
     /**
@@ -77,6 +139,11 @@ export class CareLifecycleService {
         }
 
         return checkIn;
+    }
+
+    static async submitCheckInForPatient(patientId: string, careJourneyId: string, dayNumber: number, status: 'BETTER' | 'SAME' | 'WORSE') {
+        await this.getOwnedJourney(careJourneyId, patientId);
+        return this.submitCheckIn(careJourneyId, dayNumber, status);
     }
 
     /**

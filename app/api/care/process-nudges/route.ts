@@ -9,6 +9,16 @@ import logger from "@/lib/logger";
  * In production, this should be secured by a secret token in the header.
  */
 export async function GET(request: Request) {
+    // ── AUTHENTICATION ───────────────────────────────────────────
+    const authHeader = request.headers.get('Authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+        logger.warn({ action: 'api_process_nudges_unauthorized' }, 'Unauthorized access attempt to nudge processor');
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    // ─────────────────────────────────────────────────────────────
+
     try {
         logger.info({ action: 'api_process_nudges' }, 'Nudge processor triggered');
         

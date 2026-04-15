@@ -3,7 +3,10 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { UserRole } from '../types'
 
-const secretKey = process.env.SESSION_SECRET || 'default-secret-key-change-me-in-prod-1234567890'
+const secretKey = process.env.NEXTAUTH_SECRET
+if (!secretKey) {
+    throw new Error('NEXTAUTH_SECRET is required for session signing')
+}
 const key = new TextEncoder().encode(secretKey)
 
 interface SessionPayload {

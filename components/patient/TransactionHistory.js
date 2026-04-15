@@ -54,7 +54,7 @@ export default function TransactionHistory({ transactions }) {
                                 </div>
                                 {txn.description && (
                                     <div className="text-xs text-slate-500 mt-1 font-medium italic opacity-70 group-hover:opacity-100 transition-opacity">
-                                        "{txn.description}"
+                                        &quot;{txn.description}&quot;
                                     </div>
                                 )}
                             </div>

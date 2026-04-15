@@ -19,7 +19,7 @@ export async function proxy(request) {
     let isBlocked = false;
     let currentCount = 0;
 
-    if (ip !== 'unknown') {
+    if (ip !== 'unknown' && redis) {
         try {
             // Atomic increment and expire
             const multi = redis.multi();

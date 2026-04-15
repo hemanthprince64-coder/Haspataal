@@ -165,7 +165,7 @@ export default function PharmacyPage() {
                         </Badge>
                         <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Upload Prescription</h3>
                         <p className="text-slate-500 text-lg font-medium tracking-tight mb-0">
-                            Don't have time to search? Simply upload your prescription and our experts will handle everything.
+                            Don&apos;t have time to search? Simply upload your prescription and our experts will handle everything.
                         </p>
                     </div>
                     

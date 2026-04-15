@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Download, Eye, Calendar, User } from "lucide-react";
+import { MoreVertical, Download, Eye, Calendar, User, FileText } from "lucide-react";
 
 export default function RecordsList({ records }) {
     if (records.length === 0) {

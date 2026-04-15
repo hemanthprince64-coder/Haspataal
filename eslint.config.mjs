@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
     "haspataal-com/**",
     "haspataal-mobile/**",
     "scripts/**",
+    ".kilo/**",
   ]),
 ]);
 

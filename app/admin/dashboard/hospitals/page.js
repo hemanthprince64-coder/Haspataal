@@ -1,6 +1,8 @@
 import { services } from "@/lib/services";
 import HospitalActions from "./HospitalActions";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminHospitalsPage() {
     const rawHospitals = await services.admin.getAllHospitals();
 

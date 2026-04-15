@@ -8,12 +8,13 @@ import { TRANSLATIONS } from "@/lib/medchat/translations";
 import { 
     Bot, User, Activity, AlertTriangle, ChevronRight, ChevronLeft, 
     RefreshCcw, Calendar, MapPin, Star, ShieldAlert, Sparkles, 
-    CheckCircle2, Info, Loader2, Languages, ArrowRight, Ambulance, ShieldCheck
+    CheckCircle2, Info, Loader2, Languages, ArrowRight, Ambulance, ShieldCheck, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
