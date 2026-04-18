@@ -23,17 +23,21 @@ import Image from "next/image"
 const AvatarImage = React.forwardRef<
   HTMLImageElement,
   React.ComponentPropsWithoutRef<typeof Image>
->(({ className, alt = "", src, ...props }, ref) => (
-  <Image
-    ref={ref as any}
-    src={src || ""}
-    alt={alt}
-    fill
-    unoptimized // Often necessary for external avatar providers like Gravatar/Google
-    className={cn("aspect-square h-full w-full object-cover", className)}
-    {...props}
-  />
-))
+>(({ className, alt = "", src, ...props }, ref) => {
+  if (!src) return null
+
+  return (
+    <Image
+      ref={ref as any}
+      src={src}
+      alt={alt}
+      fill
+      unoptimized // Often necessary for external avatar providers like Gravatar/Google
+      className={cn("aspect-square h-full w-full object-cover", className)}
+      {...props}
+    />
+  )
+})
 AvatarImage.displayName = "AvatarImage"
 
 

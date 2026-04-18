@@ -290,7 +290,7 @@ export default function MedChatPage() {
     }
 
     return (
-        <main className="container max-w-4xl mx-auto px-6 py-8 animate-fade-in text-slate-900" suppressHydrationWarning transition-all duration-500>
+        <main className="container max-w-4xl mx-auto px-6 py-8 animate-fade-in text-slate-900 transition-all duration-500" suppressHydrationWarning>
             {/* Header Area */}
             <div className="flex items-center justify-between mb-8">
                 <Button variant="ghost" asChild className="text-slate-500 hover:text-blue-600 -ml-4 font-bold">

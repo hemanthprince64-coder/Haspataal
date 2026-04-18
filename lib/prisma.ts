@@ -1,5 +1,12 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 
+/**
+ * PRISMA PERFORMANCE & BUILD STABILITY NOTE:
+ * If encountering 'Too many connections' or 'Connection Refused' during 'next build':
+ * 1. append '?connection_limit=10' to DATABASE_URL in .env.
+ * 2. If using Supabase Pooler (Port 6543), append '&pgbouncer=true'.
+ */
+
 // Models that use soft-delete (medical records — never hard-delete)
 const SOFT_DELETE_MODELS = [
     'Appointment',
@@ -54,8 +61,17 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
                 }
             }
 
-            // Auto-filter soft-deleted rows from reads
-            if (['findFirst', 'findMany', 'findUnique', 'count'].includes(params.action)) {
+            // Auto-filter soft-deleted rows from reads.
+            // `findUnique` only accepts unique fields, so convert it to `findFirst`
+            // before injecting the soft-delete predicate.
+            if (params.action === 'findUnique') {
+                params.action = 'findFirst';
+            }
+            if (params.action === 'findUniqueOrThrow') {
+                params.action = 'findFirstOrThrow';
+            }
+
+            if (['findFirst', 'findFirstOrThrow', 'findMany', 'count'].includes(params.action)) {
                 if (!params.args) params.args = {};
                 if (params.args.where) {
                     if (params.args.where.deletedAt === undefined) {

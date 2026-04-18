@@ -488,7 +488,7 @@ export const services = {
         },
 
         updateVisitStatus: async (visitId: string, patientId: string, newStatus: BookingStatus) => {
-            const appointment = await prisma.appointment.findUnique({
+            const appointment = await prisma.appointment.findFirst({
                 where: { id: visitId, patientId }
             });
 
@@ -1008,16 +1008,23 @@ export const services = {
         },
 
         getPatientById: async (hospitalId: string, patientId: string) => {
-            // Look up patient from visit records for this hospital
-            const visit = await prisma.visit.findFirst({
-                where: { hospitalId, id: patientId }
-            });
-            if (visit) {
-                return { name: visit.patientName, mobile: visit.patientPhone };
-            }
-            // Fall back to finding the patient by ID
             const patient = await prisma.patient.findUnique({ where: { id: patientId } });
-            return patient ? { name: patient.name, mobile: patient.phone } : null;
+            if (patient) {
+                return { name: patient.name, mobile: patient.phone };
+            }
+
+            // Fall back to visit-backed walk-ins when there is no patient master record.
+            const visit = await prisma.visit.findFirst({
+                where: {
+                    hospitalId,
+                    OR: [
+                        { id: patientId },
+                        { appointment: { is: { patientId } } }
+                    ]
+                }
+            });
+
+            return visit ? { name: visit.patientName, mobile: visit.patientPhone } : null;
         },
 
         getDiagnosticCatalog: async (hospitalId: string) => {
@@ -1380,7 +1387,7 @@ export const services = {
                 patients,
                 stats: {
                     totalHospitals: hospitals.length,
-                    approvedHospitals: hospitals.filter(h => h.verificationStatus === 'VERIFIED').length,
+                    approvedHospitals: hospitals.filter(h => h.verificationStatus === 'verified').length,
                     totalPatients: patients.length
                 }
             };
