@@ -175,6 +175,7 @@ lock:slot:{doctorId}:{scheduledAt}:{slot}  (TTL: 10s)
 - **Middleware RBAC gaps:** Agent dashboards and Admin server actions lacked deep session verification; implemented `decrypt(session)` and explicit role checks across `proxy.js` and `haspataal-admin` actions. *(Fixed in conversation a3702ee0)*
 - **In-memory rate limiting:** Using an in-memory `Map` in `proxy.js` was ineffective for distributed portal instances; migrated to a robust, atomic Redis-backed `incr` strategy with windowed TTL. *(Fixed in conversation a3702ee0)*
 - **N+1 Query Pattern in Hospital Lists:** `getHospitals` was fetching counts sequentially or mocking ratings; consolidated into a single Prisma query using `include: { _count: ... }` to minimize database round-trips. *(Fixed in conversation a3702ee0)*
+- **Patient Lookup & verification status casing:** Database status values were stored as lowercase `'verified'` but compared against uppercase `'VERIFIED'`, causing incorrect counts. Also, patient lookups were failing or returning stale data due to improper fallbacks in `services.js`. *(Fixed in commit dc95ec8)*
 
 ---
 
