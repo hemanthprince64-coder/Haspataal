@@ -42,6 +42,9 @@
         "haspataal-in",
         "haspataal-admin",
         "haspataal-com",
-        "haspataal-mobile"
+        "haspataal-mobile",
+        "shannon",
+        "api-gateway",
+        "auth-service"
     ]
 }
