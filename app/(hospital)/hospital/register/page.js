@@ -1,39 +1,26 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { registerHospital } from '@/app/actions';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Building2, MapPin, User, Phone, Lock, ChevronRight, UserPlus } from 'lucide-react';
+import { Building2, MapPin, User, Phone, Lock, ChevronRight, UserPlus, ArrowRight } from 'lucide-react';
 
 const initialState = { message: '', success: false };
 
 export default function HospitalRegister() {
+    const router = useRouter();
     const [state, formAction, isPending] = useActionState(registerHospital, initialState);
 
-    if (state?.success) {
-        return (
-            <div className="flex justify-center items-center py-16 px-4 bg-slate-50 min-h-screen">
-                <Card className="w-full max-w-[480px] shadow-lg border-green-100 flex flex-col items-center p-8 animate-in fade-in zoom-in-95 duration-500">
-                    <div className="text-6xl mb-4 animate-bounce">🎉</div>
-                    <CardHeader className="text-center p-0 mb-4">
-                        <CardTitle className="text-2xl font-bold text-green-700">Registration Submitted!</CardTitle>
-                        <CardDescription className="text-slate-600 text-base">{state.message}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="w-full pt-4">
-                        <Button asChild className="w-full btn-medical group">
-                            <Link href="/hospital/login" className="flex items-center justify-center gap-2">
-                                Go to Login <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-        );
-    }
+    useEffect(() => {
+        if (state?.success) {
+            router.push('/hospital/register/success');
+        }
+    }, [state, router]);
 
     return (
         <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 bg-slate-50 relative overflow-hidden">
@@ -56,41 +43,47 @@ export default function HospitalRegister() {
                     <form action={formAction} className="space-y-6">
                         
                         {/* Section 1: Hospital Info */}
-                        <div className="space-y-5">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                                <Building2 className="w-4 h-4 text-slate-400" />
-                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Facility Details</h3>
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
+                                    <Building2 className="w-4 h-4" />
+                                </div>
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.15em]">Facility Details</h3>
                             </div>
                             
-                            <div className="space-y-2">
-                                <Label htmlFor="hospitalName" className="text-slate-700 font-medium">Hospital Name <span className="text-red-500">*</span></Label>
-                                <div className="relative">
-                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Building2 className="h-4 w-4 text-slate-400" />
+                            <div className="space-y-2.5">
+                                <Label htmlFor="hospitalName" className="text-slate-700 font-semibold text-sm">
+                                    Hospital Name <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative group">
+                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Building2 className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     </div>
                                     <Input 
                                         id="hospitalName" 
                                         name="hospitalName" 
                                         type="text" 
                                         required 
-                                        className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                        className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                         placeholder="e.g., City General Hospital" 
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="city" className="text-slate-700 font-medium">City <span className="text-red-500">*</span></Label>
-                                <div className="relative">
-                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <MapPin className="h-4 w-4 text-slate-400" />
+                            <div className="space-y-2.5">
+                                <Label htmlFor="city" className="text-slate-700 font-semibold text-sm">
+                                    City <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative group">
+                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <MapPin className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     </div>
                                     <Input 
                                         id="city" 
                                         name="city" 
                                         type="text" 
                                         required 
-                                        className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                        className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                         placeholder="e.g., Mumbai" 
                                     />
                                 </div>
@@ -98,42 +91,48 @@ export default function HospitalRegister() {
                         </div>
 
                         {/* Section 2: Admin Info */}
-                        <div className="space-y-5 pt-4">
-                             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                                <User className="w-4 h-4 text-slate-400" />
-                                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Admin Contact</h3>
+                        <div className="space-y-6 pt-4">
+                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
+                                    <User className="w-4 h-4" />
+                                </div>
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.15em]">Admin Contact</h3>
                             </div>
 
-                            <div className="grid gap-5 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="adminName" className="text-slate-700 font-medium">Admin Name <span className="text-red-500">*</span></Label>
-                                    <div className="relative">
-                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <User className="h-4 w-4 text-slate-400" />
+                            <div className="grid gap-6 sm:grid-cols-2">
+                                <div className="space-y-2.5">
+                                    <Label htmlFor="adminName" className="text-slate-700 font-semibold text-sm">
+                                        Admin Name <span className="text-red-500">*</span>
+                                    </Label>
+                                    <div className="relative group">
+                                         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                            <User className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                         </div>
                                         <Input 
                                             id="adminName" 
                                             name="adminName" 
                                             type="text" 
                                             required 
-                                            className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                            className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                             placeholder="Full name" 
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="mobile" className="text-slate-700 font-medium">Mobile Number <span className="text-red-500">*</span></Label>
-                                    <div className="relative">
-                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Phone className="h-4 w-4 text-slate-400" />
+                                <div className="space-y-2.5">
+                                    <Label htmlFor="mobile" className="text-slate-700 font-semibold text-sm">
+                                        Mobile Number <span className="text-red-500">*</span>
+                                    </Label>
+                                    <div className="relative group">
+                                         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                            <Phone className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                         </div>
                                         <Input 
                                             id="mobile" 
                                             name="mobile" 
                                             type="tel" 
                                             required 
-                                            className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                            className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                             placeholder="10-digit number" 
                                             maxLength="10" 
                                         />
@@ -141,18 +140,21 @@ export default function HospitalRegister() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="password" className="text-slate-700 font-medium">Password <span className="text-red-500">*</span></Label>
-                                <div className="relative">
-                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Lock className="h-4 w-4 text-slate-400" />
+
+                            <div className="space-y-2.5">
+                                <Label htmlFor="password" className="text-slate-700 font-semibold text-sm">
+                                    Password <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative group">
+                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     </div>
                                     <Input 
                                         id="password" 
                                         name="password" 
                                         type="password" 
                                         required 
-                                        className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                        className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                         placeholder="Set a secure password" 
                                     />
                                 </div>

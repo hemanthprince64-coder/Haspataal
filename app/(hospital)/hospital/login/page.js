@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Building2, Phone, Lock, LogIn } from 'lucide-react';
+import { Building2, Phone, Lock, LogIn, ArrowRight } from 'lucide-react';
 
 const initialState = { message: '' };
 
@@ -34,36 +34,36 @@ export default function HospitalLogin() {
                 <CardContent className="px-6 sm:px-8 pb-8">
                     <form action={formAction} className="space-y-6">
                         
-                        <div className="space-y-5">
-                            <div className="space-y-2">
-                                <Label htmlFor="mobile" className="text-slate-700 font-medium">Mobile Number</Label>
-                                <div className="relative">
-                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Phone className="h-4 w-4 text-slate-400" />
+                        <div className="space-y-6">
+                            <div className="space-y-2.5">
+                                <Label htmlFor="mobile" className="text-slate-700 font-semibold text-sm">Mobile Number</Label>
+                                <div className="relative group">
+                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Phone className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     </div>
                                     <Input 
                                         id="mobile" 
                                         name="mobile" 
                                         type="tel" 
                                         required 
-                                        className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                        className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                         placeholder="Admin mobile number" 
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
-                                <div className="relative">
-                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Lock className="h-4 w-4 text-slate-400" />
+                            <div className="space-y-2.5">
+                                <Label htmlFor="password" className="text-slate-700 font-semibold text-sm">Password</Label>
+                                <div className="relative group">
+                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <Lock className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     </div>
                                     <Input 
                                         id="password" 
                                         name="password" 
                                         type="password" 
                                         required 
-                                        className="pl-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/30 text-base" 
+                                        className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all" 
                                         placeholder="Enter password" 
                                     />
                                 </div>
