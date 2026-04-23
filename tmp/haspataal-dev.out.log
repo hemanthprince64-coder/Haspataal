@@ -1,0 +1,14 @@
+
+> haspataal@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.108.224.217:3000
+- Environments: .env.local, .env
+
+✓ Starting...
+✓ Ready in 1656ms
+ GET / 200 in 2.6s (compile: 2.1s, render: 442ms)
+ GET / 200 in 183ms (compile: 5ms, render: 177ms)
+ GET / 200 in 162ms (compile: 4ms, render: 158ms)

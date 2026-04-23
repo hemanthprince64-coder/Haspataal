@@ -7,13 +7,17 @@ export default async function ReportsPage() {
     const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], "session_user");
 
     const rawVisits = await services.hospital.getVisits(user.hospitalId);
-    const visits = await Promise.all(
-        rawVisits.map(async (v) => {
-            const doctor = await services.platform.getDoctorById(v.doctorId);
-            const patient = await services.hospital.getPatientById(user.hospitalId, v.patientId);
-            return { ...v, doctor, patient };
-        })
-    );
+    const visits = rawVisits.map((v) => {
+        const doctor = v.appointment?.doctor || null;
+        const patient = v.appointment?.patient || null;
+        return { 
+            ...v, 
+            displayPatientName: patient?.name || v.patientName || 'Unknown',
+            displayPatientMobile: patient?.phone || v.patientPhone || '—',
+            displayDoctorName: doctor?.fullName || 'Walk-in / No Doctor',
+            displayDoctorSpeciality: v.appointment?.doctor?.affiliations?.[0]?.department || ''
+        };
+    });
 
     return (
         <div className="page-enter">
@@ -51,24 +55,24 @@ export default async function ReportsPage() {
                                             {v.id.substring(0, 8)}...
                                         </td>
                                         <td>
-                                            {new Date(v.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            {new Date(v.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                             <br />
                                             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                                {new Date(v.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                {new Date(v.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </td>
                                         <td>
-                                            <strong>{v.patient?.name || 'Unknown'}</strong>
+                                            <strong>{v.displayPatientName}</strong>
                                             <br />
                                             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                                📱 {v.patient?.mobile || '—'}
+                                                📱 {v.displayPatientMobile}
                                             </span>
                                         </td>
                                         <td>
-                                            <strong>{v.doctor?.name || v.doctorId}</strong>
+                                            <strong>{v.displayDoctorName}</strong>
                                             <br />
                                             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                                {v.doctor?.speciality || ''}
+                                                {v.displayDoctorSpeciality}
                                             </span>
                                         </td>
                                         <td>

@@ -177,6 +177,9 @@ lock:slot:{doctorId}:{scheduledAt}:{slot}  (TTL: 10s)
 - **N+1 Query Pattern in Hospital Lists:** `getHospitals` was fetching counts sequentially or mocking ratings; consolidated into a single Prisma query using `include: { _count: ... }` to minimize database round-trips. *(Fixed in conversation a3702ee0)*
 - **Patient Lookup & verification status casing:** Database status values were stored as lowercase `'verified'` but compared against uppercase `'VERIFIED'`, causing incorrect counts. Also, patient lookups were failing or returning stale data due to improper fallbacks in `services.js`. *(Fixed in commit dc95ec8)*
 - **Component Consistency:** When modernizing UI flows using `shadcn/ui`, we must ensure existing form/server-action logic (e.g., `useActionState`) is preserved flawlessly. Wrap components inside Shadcn containers (`Card`, `CardContent`) while maintaining names and actions bound to standard `Input` tags. *(Standardized in hospital portal modernization)*
+- **Footer Modularization:** Refactored the monolithic patient portal footer into a set of modular components (`Footer`, `FooterLinks`, `PortalCards`) using Shadcn UI patterns. This improved visual density and maintainability. *(Implemented in conversation 6dce92dd)*
+- **N+1 Query Fix (Reports):** Optimized the hospital reports dashboard by utilizing pre-fetched relational data from Prisma `include` instead of executing individual service calls inside a `.map()` function, significantly reducing database load and preventing connection pool exhaustion. *(Fixed in conversation 6dce92dd)*
+
 
 ---
 
