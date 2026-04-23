@@ -1,8 +1,8 @@
 # 🩺 CLAUDE.md - Project Haspataal
 
 ## 🎯 High-Level Mission
-Haspataal is a healthcare application for patient management, appointment booking, and hospital discovery.
-Reliability, data privacy, and clean UI are non-negotiable.
+Haspataal is a multi-tenant hospital SaaS platform targeting India's tier-2 and tier-3 cities.
+Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ## ⚠️ Session Protocol (MANDATORY)
 1. **READ FIRST:** At the start of every session or conversation, **always read this `CLAUDE.md` file before doing any work.** No exceptions.
@@ -12,178 +12,88 @@ Reliability, data privacy, and clean UI are non-negotiable.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture (Event-Driven Micro-Architecture)
 
-**Live Domains:**
-- `haspataal.com` → Patient Portal (`:3000`) — `haspataal-com/`
-- `doctor.haspataal.com` → Doctor Portal (`:3001`) — `haspataal-in/`
-- `hospital.haspataal.com` → Hospital HMS (`:3002`) — `hospital-hms/`
-- `admin.haspataal.com` → Admin Panel (`:3003`) — `haspataal-admin/`
-- `api.haspataal.com` → API Gateway (`:4002`) — `api-gateway/`
-- `auth.haspataal.com` → Auth Service (`:4001`) — `auth-service/`
+**Core Logic:**
+- **Single Source of Truth:** `EventLog` table. Every write in HMS emits an event.
+- **Event Bus:** Dual-write to PostgreSQL (`EventLog`) and Redis Streams for async processing.
+- **Multi-Tenancy:** Strict Row-Level Security (RLS) on EVERY table using `current_setting('app.hospital_id')`.
+- **Inter-Module Communication:** No direct calls. Modules communicate purely via events (e.g., `patient_visited` triggers `bill_generated`).
 
-```
-Nginx (Load Balancer / Reverse Proxy)
-│
-├── Patient Portal    (Next.js, port 3000)
-├── Doctor Portal     (Next.js, port 3001)
-├── Hospital HMS      (Next.js, port 3002)
-├── Admin Panel       (Next.js, port 3003)
-│
-├── API Gateway       (Express.js, port 4002)
-│   ├── Rate limiting via Redis
-│   ├── JWT RBAC middleware (requireAuth, requireRole, requireHospitalTenant)
-│   ├── Redis Token Blacklist (for logout revocation)
-│   └── Redlock for atomic appointment slot reservation
-│
-├── Auth Service      (Express.js, port 4001)
-│   ├── /oauth/token  — Multi-role JWT issuance (patient, doctor, hospital_admin, staff)
-│   └── /auth/logout  — Token blacklisting via Redis TTL
-│
-├── Redis             → Caching, rate-limiting, distributed locking
-└── Supabase PostgreSQL → Primary database (accessed via Prisma ORM)
-```
+**Key Modules:**
+- `onboarding/`: Hospital registration and document verification.
+- `setup-wizard/`: Dynamic hospital configuration and activation.
+- `migration-engine/`: Fuzzy-mapping CSV/Excel imports for legacy data.
+- `hms-core/`: OPD, IPD, Billing, Pharmacy, Diagnostics.
+- `doctor-ux/`: Keyboard-optimized prescription entry (Sub-30s goal).
+- `retention-engine/`: Automated care pathways (Pregnancy, Chronic, etc.) scheduled via `FollowUp` workers.
+- `notification-engine/`: WhatsApp-first delivery with SMS fallback and 10pm-8am curfew.
+- `analytics-bi/`: Real-time ROI dashboards via Materialized Views and incremental aggregation.
 
 ---
 
 ## 🛠 Tech Stack & Environment
-- **Framework:** Next.js 16 (App Router) with React 19
-- **Styling:** Tailwind CSS 3.4
-- **ORM/DB:** Prisma 5 → Supabase (PostgreSQL)
-- **Auth:** Custom JWT (`jsonwebtoken`) + Redis blacklisting + `bcryptjs`
-- **Validation:** Zod 4
-- **Logging:** Pino + pino-pretty
-- **Caching:** Redis (`ioredis`), cache-aside pattern
-- **Locking:** Redlock for distributed mutexes (appointment booking)
-- **Queue:** BullMQ (Redis-backed)
-- **Containerisation:** Docker Compose + Nginx
-- **AI/LLM:** Google Generative AI SDK (`@google/generative-ai`)
-- **DB Tooling:** Google MCP Toolbox for Databases (`toolbox.exe`)
-- **Environment:** AntiGravity Agentic IDE
-- **Package Manager:** npm
+- **Framework:** Next.js 16 (App Router) / Express.js
+- **Styling:** Tailwind CSS 3.4 + Shadcn UI
+- **ORM/DB:** Prisma 5 / Raw `pg` Pool for RLS-scoped transactions
+- **Auth:** JWT RBAC + Multi-tenant hospital isolation
+- **Messaging:** Redis Streams
+- **Notifications:** WhatsApp Business API + SMS Gateway
+- **AI:** Gemini (Triage & OCR)
 
 ---
 
 ## 🧠 Recursive Memory & Learning (CRITICAL)
-- **Self-Correction:** After every bug fix, identify the root cause. If it's a project-specific pattern, update this `CLAUDE.md` under the "Knowledge Base" section immediately.
-- **Onboarding:** When I ask "What's the status?", review recent PRs and your internal history to provide a concise summary.
-
----
-
-## 🚀 AntiGravity Workflow
-- **Implementation Plan:** For any change involving >2 files, provide a bulleted "Implementation Plan" and wait for my "Go" before editing.
-- **Verification:** Do not mark a task as "Done" until the change has been validated (lint, build, or browser test).
+- **RLS Boundary:** Always wrap DB calls in transactions that `SET LOCAL app.hospital_id` to ensure tenant isolation.
+- **Event-First:** If you are about to call another module's function, STOP. Emit an event instead.
 
 ---
 
 ## 📋 Coding Standards
 - **Naming:** `PascalCase` for Components, `camelCase` for variables, `kebab-case` for folder names.
-- **Safety:** Treat all patient-related data objects as immutable. Never expose PII in logs.
-- **Imports:** Use absolute paths (e.g., `@/components/...`) instead of relative paths.
-- **Multi-Tenancy:** All hospital-scoped queries MUST filter by `hospitalId`. Never fetch cross-tenant data.
+- **Imports:** Use absolute paths (e.g., `@/components/...`).
+- **Performance:** Prescription entry MUST be mouse-free (Tab/Enter optimized).
 
 ---
 
 ## 🛠 Commands
-
-### Root (Patient Portal)
-```bash
-npm run dev       # Start patient portal on :3000
-npm run build     # Production build
-npm run lint      # ESLint
-```
-
-### Auth Service
-```bash
-cd auth-service && node index.js     # Start on :4001
-```
-
-### API Gateway
-```bash
-cd api-gateway && node index.js      # Start on :4002
-```
-
-### Database
-```bash
-npx prisma generate       # Regenerate Prisma client after schema changes
-npx prisma db push        # Push schema to Supabase
-npx prisma studio         # Visual DB explorer
-```
-
-### MCP Toolbox (AI Database Queries)
-```bash
-.\toolbox.exe --config tools.yaml --stdio   # MCP server mode
-.\toolbox.exe --config tools.yaml --ui      # Visual UI on :5000
-```
-
-### Audit Scripts
-```bash
-node scripts/audit.js             # Doctor KYC audit
-node scripts/audit_isolation.js   # Multi-tenant isolation audit
-node scripts/validate-env.js      # Environment variable validation
-node scripts/fix_audit.js         # Remediate KYC inconsistencies
-```
+- `npm run dev` — Start dev server
+- `npx prisma db push` — Update schema
+- `node workers/followup.worker.js` — Run retention engine cron
 
 ---
 
 ## 🔑 Key Design Patterns
 
-### JWT RBAC
-Middleware chain on protected routes:
-```js
-requireAuth → requireRole('hospital_admin') → requireHospitalTenant → handler
-```
-Roles: `patient`, `doctor`, `hospital_admin`, `staff`, `super_admin`
-
-### Token Revocation (Logout)
-On logout, JWT is stored in Redis until its natural expiry:
-```
-blacklist:{token} → 1  (with TTL = remaining exp seconds)
+### RLS Transaction Wrapper
+```ts
+await client.query('BEGIN');
+await client.query(`SET LOCAL app.hospital_id = $1`, [hospitalId]);
+// ... business logic ...
+await client.query('COMMIT');
 ```
 
-### Distributed Slot Locking
-Appointment booking uses Redlock to prevent race conditions:
+### Event Dual-Write
+```ts
+await client.query('INSERT INTO "EventLog" ...');
+await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(payload));
 ```
-lock:slot:{doctorId}:{scheduledAt}:{slot}  (TTL: 10s)
-```
-
-### Environment Validation
-`scripts/validate-env.js` uses Zod. Both services call `validateEnv()` on startup.
-
-### MCP Toolbox
-`tools.yaml` configures two tools:
-- `list-tables` — Schema discovery
-- `execute-query` — Arbitrary SQL against the Supabase DB
 
 ---
 
 ## 📚 Knowledge Base (Lessons Learned)
-> **Claude: You MUST update this section after every bug fix. Never skip this step.**
-
-- **Prisma select/include conflict:** Never mix `select` and `include` on the same relation field in Prisma queries — use one or the other. *(Fixed in conversation 842dbe37)*
-- **Logout flow:** Patient logout requires a dedicated server action that clears the JWT cookie; client-side only clearing is insufficient. *(Fixed in conversation 4c8aae98)*
-- **Supabase RLS:** Row-Level Security policies must be audited when adding new tables or modifying access patterns — see `supabase_rls_audit_day11.sql` for reference.
-- **AccountStatus enum:** The valid values in the Prisma schema are `ACTIVE`, `SUSPENDED`, `INACTIVE` — NOT `DEACTIVATED`. Using an invalid enum value throws a `PrismaClientValidationError`. *(Fixed in conversation 3ecc8175)*
-- **Auth middleware async:** `requireAuth` middleware must be declared `async` if it uses `await` inside (e.g., Redis blacklist check). Without `async`, the `await` throws a SyntaxError at load time. *(Fixed in conversation 3ecc8175)*
-- **Prisma scripts need dotenv:** Standalone Node scripts that use Prisma directly must call `require('dotenv').config()` before instantiating `PrismaClient`, otherwise `DATABASE_URL` is not found. *(Fixed in conversation 3ecc8175)*
-- **DoctorMaster KYC/AccountStatus mismatch:** Doctors can end up with `kycStatus: PENDING` but `accountStatus: ACTIVE` — run `scripts/audit.js` and `scripts/fix_audit.js` periodically to detect and remediate. *(Discovered in conversation 3ecc8175)*
-- **Prisma MaxClientsInSessionMode:** Parallel sub-queries in mapping functions can exhaust connection pools. Always use Prisma's `include`, `_count`, and `batching` features to consolidate queries into single database trips. *(Fixed in conversation 3ecc8175)*
-- **Supabase Connectivity Fallback:** If the connection pooler (port 6543) is unreachable, bypass it by using the direct connection host on port 5432 with the standard `postgres` user. *(Configured in conversation 3ecc8175)*
-- **UI Compaction Strategy:** Standardizing on a compact, information-dense clinic aesthetic (smaller avatars, tighter typography, horizontal slots) significantly improves accessibility and platform professionalism. *(Implemented in conversation 3ecc8175)*
-- **Hardcoded OTP demo bypass:** OTP '1234' was previously present in production-ready actions; removed to enforce strictly service-layer validation via Prisma `otpCode` records. *(Fixed in conversation a3702ee0)*
-- **Plaintext Admin authentication:** Admin passwords were compared as strings using environment variables; migrated to `bcrypt.compare` with hashed environment variables and secure defaults. *(Fixed in conversation a3702ee0)*
-- **Middleware RBAC gaps:** Agent dashboards and Admin server actions lacked deep session verification; implemented `decrypt(session)` and explicit role checks across `proxy.js` and `haspataal-admin` actions. *(Fixed in conversation a3702ee0)*
-- **In-memory rate limiting:** Using an in-memory `Map` in `proxy.js` was ineffective for distributed portal instances; migrated to a robust, atomic Redis-backed `incr` strategy with windowed TTL. *(Fixed in conversation a3702ee0)*
-- **N+1 Query Pattern in Hospital Lists:** `getHospitals` was fetching counts sequentially or mocking ratings; consolidated into a single Prisma query using `include: { _count: ... }` to minimize database round-trips. *(Fixed in conversation a3702ee0)*
-- **Patient Lookup & verification status casing:** Database status values were stored as lowercase `'verified'` but compared against uppercase `'VERIFIED'`, causing incorrect counts. Also, patient lookups were failing or returning stale data due to improper fallbacks in `services.js`. *(Fixed in commit dc95ec8)*
-- **Component Consistency:** When modernizing UI flows using `shadcn/ui`, we must ensure existing form/server-action logic (e.g., `useActionState`) is preserved flawlessly. Wrap components inside Shadcn containers (`Card`, `CardContent`) while maintaining names and actions bound to standard `Input` tags. *(Standardized in hospital portal modernization)*
-- **Footer Modularization:** Refactored the monolithic patient portal footer into a set of modular components (`Footer`, `FooterLinks`, `PortalCards`) using Shadcn UI patterns. This improved visual density and maintainability. *(Implemented in conversation 6dce92dd)*
-- **N+1 Query Fix (Reports):** Optimized the hospital reports dashboard by utilizing pre-fetched relational data from Prisma `include` instead of executing individual service calls inside a `.map()` function, significantly reducing database load and preventing connection pool exhaustion. *(Fixed in conversation 6dce92dd)*
-
+- **Phase 4-10 Build Sequence:** Never skip activation gates. A hospital MUST be `verified` then `activated` before HMS access is granted.
+- **Migration Validation:** Always perform client-side fuzzy mapping and validation reports before batch-importing legacy data to prevent DB pollution.
+- **Notification Curfew:** Never send non-critical notifications (follow-ups) between 10 PM and 8 AM IST.
+- **Materialized Views ROI:** Use materialized views refreshed every 15m for complex analytics (Readmission rates, Network Benchmarks) to keep dashboards responsive.
+- **Keyboard-Optimized UX:** Prescription fields must auto-focus sequentially (Drug -> Dose -> Freq -> Duration) on Enter/Tab to hit the <30s target.
+- **Chronic Escalation:** Patients missing 2 consecutive chronic follow-ups MUST fire an escalation alert to the treating doctor.
+- **WhatsApp Fallback:** If WhatsApp delivery fails or is unregistered (Meta error 131026), immediately fallback to SMS to ensure critical medical adherence.
+- **Prisma/RLS Conflict:** Prisma doesn't natively support `SET LOCAL` within its query API easily for every transaction; use raw `pg` pool for sensitive multi-tenant write operations.
 
 ---
 
 ## 🤖 Agent Personality
 - Be concise.
-- Use "we" (e.g., "We should update the hook...").
-- If a request is ambiguous, ask for clarification before guessing.
+- Use "we".
+- Prioritize event-driven decoupling.
