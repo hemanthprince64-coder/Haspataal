@@ -1066,6 +1066,14 @@ export const services = {
         register: async (data: { hospitalName: string; city: string; adminName: string; mobile: string; password?: string; registrationNumber?: string; }) => {
             logger.info({ action: 'hospital_register', hospitalName: data.hospitalName }, 'Registering new hospital');
             if (!data.password) throw new Error("PASSWORD_REQUIRED");
+
+            // 0. Pre-check: reject duplicate mobile before entering transaction
+            const existingAdmin = await prisma.hospitalAdmin.findUnique({ where: { mobile: data.mobile } });
+            if (existingAdmin) {
+                logger.warn({ action: 'hospital_register_duplicate', mobile: data.mobile }, 'Duplicate mobile on hospital registration');
+                throw new Error("MOBILE_ALREADY_REGISTERED");
+            }
+
             const hashedPassword = await bcrypt.hash(data.password, 12);
 
             return await prisma.$transaction(async (tx) => {
@@ -1091,7 +1099,7 @@ export const services = {
                         hospitalId: hospital.id,
                         fullName: data.adminName,
                         mobile: data.mobile,
-                        email: `${data.mobile}@example.com`,
+                        email: `${data.mobile}@haspataal.in`,
                         isPrimary: true,
                         verificationStatus: 'pending'
                     }
@@ -1104,6 +1112,14 @@ export const services = {
         registerLab: async (data: { labName: string; city: string; adminName: string; mobile: string; password?: string; registrationNumber?: string; }) => {
             logger.info({ action: 'lab_register', labName: data.labName }, 'Registering new diagnostic lab');
             if (!data.password) throw new Error("PASSWORD_REQUIRED");
+
+            // 0. Pre-check: reject duplicate mobile before entering transaction
+            const existingAdmin = await prisma.hospitalAdmin.findUnique({ where: { mobile: data.mobile } });
+            if (existingAdmin) {
+                logger.warn({ action: 'lab_register_duplicate', mobile: data.mobile }, 'Duplicate mobile on lab registration');
+                throw new Error("MOBILE_ALREADY_REGISTERED");
+            }
+
             const hashedPassword = await bcrypt.hash(data.password, 12);
 
             return await prisma.$transaction(async (tx) => {
@@ -1127,7 +1143,7 @@ export const services = {
                         hospitalId: lab.id,
                         fullName: data.adminName,
                         mobile: data.mobile,
-                        email: `${data.mobile}@example.com`,
+                        email: `${data.mobile}@haspataal.in`,
                         isPrimary: true,
                         verificationStatus: 'pending'
                     }
