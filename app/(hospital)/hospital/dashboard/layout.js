@@ -1,9 +1,6 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { logoutHospital } from "@/app/actions";
-import Image from "next/image";
-
 import { requireRole } from "../../../../lib/auth/requireRole";
 import { UserRole } from "../../../../types";
 
@@ -16,113 +13,80 @@ export default async function DashboardLayout({ children }) {
     }
 
     const navItems = [
-        { href: "/hospital/dashboard", label: "Overview", icon: "📊" },
-        { href: "/hospital/dashboard/billing", label: "OPD & Billing", icon: "💳" },
-        { href: "/hospital/dashboard/reports", label: "Reports", icon: "📈" },
-        { href: "/hospital/dashboard/doctors", label: "Manage Doctors", icon: "👨‍⚕️", adminOnly: true },
+        { href: "/hospital/dashboard", label: "Overview", icon: "◈", badge: null },
+        { href: "/hospital/dashboard/billing", label: "OPD & Billing", icon: "⊕", badge: null },
+        { href: "/hospital/dashboard/retention", label: "Retention", icon: "♻", badge: "3" },
+        { href: "/hospital/dashboard/wards", label: "IPD / Wards", icon: "⊞", badge: null },
+        { href: "/hospital/dashboard/pharmacy", label: "Pharmacy", icon: "⊠", badge: null },
+        { href: "/hospital/dashboard/diagnostics", label: "Diagnostics", icon: "⊗", badge: null },
+        { href: "/hospital/dashboard/analytics", label: "Analytics", icon: "◉", badge: null },
+        { href: "/hospital/dashboard/notifications", label: "Notifications", icon: "◎", badge: "12" },
+        { href: "/hospital/dashboard/reports", label: "Reports", icon: "◫", badge: null },
+        { href: "/hospital/dashboard/setup", label: "Setup Wizard", icon: "◑", badge: null },
     ];
 
-    const visibleItems = navItems.filter(item => !item.adminOnly || user.role === 'ADMIN');
+    const initials = (user.name || "H").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
     return (
-        <div style={{ display: "flex", minHeight: "calc(100vh - 60px)" }}>
+        <div style={{ display: "flex", minHeight: "calc(100vh - 60px)", fontFamily: "'DM Sans', sans-serif" }}>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+                .dash-nav-link { display:flex; align-items:center; gap:0.65rem; padding:0.6rem 1rem; border-radius:8px; color:#94a3b8; text-decoration:none; font-size:0.875rem; font-weight:500; transition:all 0.15s; position:relative; }
+                .dash-nav-link:hover { background:rgba(20,184,166,0.08); color:#5eead4; }
+                .dash-nav-link.active { background:rgba(20,184,166,0.12); color:#2dd4bf; border-left:3px solid #14b8a6; padding-left:calc(1rem - 3px); }
+                .dash-nav-badge { font-size:0.65rem; font-weight:700; background:#14b8a6; color:#fff; border-radius:999px; padding:0.1rem 0.4rem; margin-left:auto; }
+                .logout-btn { width:100%; padding:0.65rem 1rem; border-radius:8px; background:rgba(239,68,68,0.08); color:#f87171; border:none; cursor:pointer; font-size:0.85rem; font-weight:500; text-align:left; display:flex; align-items:center; gap:0.65rem; transition:background 0.15s; }
+                .logout-btn:hover { background:rgba(239,68,68,0.15); }
+                .setup-bar-fill { height:6px; background:linear-gradient(90deg,#14b8a6,#06b6d4); border-radius:999px; width:87%; transition:width 0.5s; }
+            `}</style>
+
             {/* Sidebar */}
-            <aside style={{
-                width: "260px",
-                background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
-                color: "white",
-                display: "flex",
-                flexDirection: "column",
-                padding: "1.5rem 0",
-                flexShrink: 0,
-            }}>
-                {/* Hospital Info */}
-                <div style={{ padding: "0 1.25rem", marginBottom: "2rem" }}>
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                        marginBottom: "0.75rem"
-                    }}>
-                        <div style={{
-                            width: "40px",
-                            height: "40px",
-                            borderRadius: "10px",
-                            background: "rgba(255,255,255,0.1)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "1.25rem",
-                            flexShrink: 0,
-                        }}>
-                            🏥
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: "700", fontSize: "0.9rem" }}>{user.name}</div>
-                            <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{user.role}</div>
+            <aside style={{ width: "240px", background: "#0f172a", color: "white", display: "flex", flexDirection: "column", padding: "1.25rem 0.75rem", flexShrink: 0, borderRight: "1px solid #1e293b" }}>
+
+                {/* Hospital Badge */}
+                <div style={{ padding: "0 0.5rem", marginBottom: "1.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", background: "rgba(255,255,255,0.05)", borderRadius: "10px" }}>
+                        <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "linear-gradient(135deg,#14b8a6,#0891b2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", flexShrink: 0 }}>🏥</div>
+                        <div style={{ overflow: "hidden" }}>
+                            <div style={{ fontWeight: "700", fontSize: "0.82rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.name}</div>
+                            <div style={{ fontSize: "0.68rem", color: "#64748b", fontWeight: "500", letterSpacing: "0.05em" }}>HOSPITAL_ADMIN</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Navigation */}
-                <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", padding: "0 0.75rem" }}>
-                    {visibleItems.map(item => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.75rem",
-                                padding: "0.75rem 1rem",
-                                borderRadius: "var(--radius)",
-                                color: "#e2e8f0",
-                                textDecoration: "none",
-                                fontSize: "0.9rem",
-                                fontWeight: "500",
-                                transition: "background 0.15s",
-                            }}
-                        >
-                            <span style={{ fontSize: "1.1rem" }}>{item.icon}</span>
-                            {item.label}
+                {/* Nav */}
+                <nav style={{ flex: 1, display: "flex", flexDirection: "column", gap: "1px", overflowY: "auto" }}>
+                    {navItems.map(item => (
+                        <Link key={item.href} href={item.href} className="dash-nav-link">
+                            <span style={{ fontSize: "1rem", opacity: 0.7 }}>{item.icon}</span>
+                            <span>{item.label}</span>
+                            {item.badge && <span className="dash-nav-badge">{item.badge}</span>}
                         </Link>
                     ))}
                 </nav>
 
-                {/* Bottom */}
-                <div style={{ padding: "0 1rem", borderTop: "1px solid #334155", paddingTop: "1rem", marginTop: "1rem" }}>
+                {/* Setup Progress */}
+                <div style={{ margin: "1rem 0.5rem", padding: "0.75rem", background: "rgba(20,184,166,0.08)", borderRadius: "10px", border: "1px solid rgba(20,184,166,0.15)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", fontWeight: "600", color: "#2dd4bf", marginBottom: "0.5rem" }}>
+                        <span>Setup Complete</span><span>87%</span>
+                    </div>
+                    <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "999px" }}>
+                        <div className="setup-bar-fill" />
+                    </div>
+                </div>
+
+                {/* Logout */}
+                <div style={{ borderTop: "1px solid #1e293b", paddingTop: "0.75rem" }}>
                     <form action={logoutHospital}>
-                        <button
-                            type="submit"
-                            style={{
-                                width: "100%",
-                                padding: "0.75rem 1rem",
-                                borderRadius: "var(--radius)",
-                                background: "rgba(239,68,68,0.1)",
-                                color: "#fca5a5",
-                                border: "none",
-                                cursor: "pointer",
-                                fontSize: "0.875rem",
-                                fontWeight: "500",
-                                textAlign: "left",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.75rem",
-                            }}
-                        >
-                            🚪 Logout
+                        <button type="submit" className="logout-btn">
+                            <span>🚪</span> Logout
                         </button>
                     </form>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main style={{
-                flex: 1,
-                padding: "2rem",
-                background: "#f8fafc",
-                overflowY: "auto",
-            }}>
+            {/* Main */}
+            <main style={{ flex: 1, background: "#f8fafc", overflowY: "auto" }}>
                 {children}
             </main>
         </div>
