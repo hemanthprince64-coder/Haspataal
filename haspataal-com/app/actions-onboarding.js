@@ -20,9 +20,20 @@ export async function registerHospital(prevState, formData) {
     }
 
     try {
+        // 0. Pre-check for existing records to avoid unique constraint failures
+        const [existingHospital, existingAdminMobile, existingAdminEmail] = await Promise.all([
+            prisma.hospitalsMaster.findUnique({ where: { registrationNumber: rawData.registrationNumber } }),
+            prisma.hospitalAdmin.findUnique({ where: { mobile: rawData.adminMobile } }),
+            prisma.hospitalAdmin.findUnique({ where: { email: rawData.adminEmail } })
+        ]);
+
+        if (existingHospital) return { success: false, message: 'Hospital with this registration number already exists.' };
+        if (existingAdminMobile) return { success: false, message: 'Admin mobile number is already registered.' };
+        if (existingAdminEmail) return { success: false, message: 'Admin email is already registered.' };
+
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create Hospital
-            const hospital = await tx.hospital.create({
+            const hospital = await tx.hospitalsMaster.create({
                 data: {
                     legalName: rawData.legalName,
                     registrationNumber: rawData.registrationNumber,
