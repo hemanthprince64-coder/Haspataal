@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, ChevronRight, ArrowRight, Building2, ClipboardCheck } from 'lucide-react';
+import { CheckCircle2, ChevronRight, ArrowRight, Building2, ClipboardCheck, MessageCircle, Phone } from 'lucide-react';
 
 export default function RegistrationSuccess() {
     return (
@@ -33,8 +33,18 @@ export default function RegistrationSuccess() {
                                 <span><b>Verification:</b> Our team will review your hospital details and credentials (24-48h).</span>
                             </li>
                             <li className="flex items-start gap-3 text-slate-600 text-[15px]">
-                                <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">2</div>
-                                <span><b>Activation:</b> You&apos;ll receive an email once your dashboard access is activated.</span>
+                                <div className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">2</div>
+                                <span>
+                                    <b>Activation:</b> You&apos;ll receive a confirmation on your registered mobile number via{' '}
+                                    <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                                        <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                    </span>
+                                    {' '}&amp;{' '}
+                                    <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                                        <Phone className="w-3.5 h-3.5" /> SMS
+                                    </span>
+                                    {' '}once your dashboard access is activated.
+                                </span>
                             </li>
                         </ul>
                     </div>
