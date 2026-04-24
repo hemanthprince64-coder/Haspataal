@@ -1,4 +1,5 @@
 import prisma from './prisma';
+import { emitEvent } from '@/services/event-emitter';
 import logger from './logger';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -1105,6 +1106,9 @@ export const services = {
                     }
                 });
 
+                // 3. Emit event (fire-and-forget, outside tx)
+                emitEvent({ eventType: 'hospital_registered', hospitalId: hospital.id, payload: { hospitalName: data.hospitalName, city: data.city, adminName: data.adminName } });
+
                 return hospital;
             });
         },
@@ -1149,6 +1153,8 @@ export const services = {
                     }
                 });
 
+                emitEvent({ eventType: 'lab_registered', hospitalId: lab.id, payload: { labName: data.labName, city: data.city, adminName: data.adminName } });
+
                 return lab;
             });
         },
@@ -1187,10 +1193,14 @@ export const services = {
                     amount: 500
                 }
             });
+
+            emitEvent({ eventType: 'patient_visited', hospitalId, patientId: patient.id, payload: { patientName: data.patientName, patientPhone: data.patientMobile, doctorId: data.doctorId || null } });
+
+            return visit;
         },
 
         addDoctor: async (hospitalId: string, data: { name: string; mobile: string; schedule?: string; qualifications?: string; }) => {
-            return await prisma.doctorMaster.create({
+            const doctor = await prisma.doctorMaster.create({
                 data: {
                     fullName: data.name,
                     mobile: data.mobile,
@@ -1212,15 +1222,16 @@ export const services = {
                     }
                 }
             });
+            emitEvent({ eventType: 'doctor_added', hospitalId, payload: { doctorName: data.name, doctorId: doctor.id } });
+            return doctor;
         },
 
         removeDoctor: async (hospitalId: string, doctorId: string) => {
-            return await prisma.doctorHospitalAffiliation.deleteMany({
-                where: {
-                    hospitalId,
-                    doctorId
-                }
+            const result = await prisma.doctorHospitalAffiliation.deleteMany({
+                where: { hospitalId, doctorId }
             });
+            emitEvent({ eventType: 'doctor_removed', hospitalId, payload: { doctorId } });
+            return result;
         }
     },
 
@@ -1249,6 +1260,7 @@ export const services = {
                         }
                     }
                 });
+                emitEvent({ eventType: 'doctor_registered', payload: { doctorName: data.fullName, mobile: data.mobile } });
                 return doctor;
             });
         },
@@ -1299,26 +1311,32 @@ export const services = {
 
         approveHospital: async (id: string) => {
             logger.info({ action: 'approve_hospital', hospitalId: id }, 'Admin approving hospital');
-            return await prisma.hospitalsMaster.update({
+            const result = await prisma.hospitalsMaster.update({
                 where: { id },
                 data: { verificationStatus: 'verified', accountStatus: 'active' }
             });
+            emitEvent({ eventType: 'hospital_approved', hospitalId: id, payload: { hospitalName: result.legalName } });
+            return result;
         },
 
         rejectHospital: async (id: string) => {
             logger.info({ action: 'reject_hospital', hospitalId: id }, 'Admin rejecting hospital');
-            return await prisma.hospitalsMaster.update({
+            const result = await prisma.hospitalsMaster.update({
                 where: { id },
                 data: { verificationStatus: 'rejected', accountStatus: 'inactive' }
             });
+            emitEvent({ eventType: 'hospital_rejected', hospitalId: id, payload: { hospitalName: result.legalName } });
+            return result;
         },
 
         suspendHospital: async (id: string) => {
             logger.info({ action: 'suspend_hospital', hospitalId: id }, 'Admin suspending hospital');
-            return await prisma.hospitalsMaster.update({
+            const result = await prisma.hospitalsMaster.update({
                 where: { id },
                 data: { accountStatus: 'suspended' }
             });
+            emitEvent({ eventType: 'hospital_suspended', hospitalId: id, payload: { hospitalName: result.legalName } });
+            return result;
         },
 
     },
@@ -1344,6 +1362,8 @@ export const services = {
                     commissionRate: 5.0
                 }
             });
+            emitEvent({ eventType: 'agent_registered', payload: { agentName: data.fullName, mobile: data.mobile } });
+            return agent;
         },
 
         login: async (mobile: string, password?: string) => {

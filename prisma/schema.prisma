@@ -1040,11 +1040,14 @@ model OutboxEvent {
 
 model EventLog {
   id         String   @id @default(uuid())
+  hospitalId String?  @map("hospital_id")
+  patientId  String?  @map("patient_id")
   eventType  String   @map("event_type")
-  payload    Json
+  payload    Json     @default("{}")
   executedBy String?  @map("executed_by")
   createdAt  DateTime @default(now()) @map("created_at")
 
+  @@index([hospitalId, eventType, createdAt])
   @@map("event_logs")
 }
 

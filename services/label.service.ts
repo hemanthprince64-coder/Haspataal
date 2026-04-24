@@ -6,25 +6,12 @@
 type EventMeta = Record<string, any>;
 
 const LABEL_GENERATORS: Record<string, (m: EventMeta) => string> = {
+    // ─── Patient events ──────────────────────────────────────────────
     patient_discharged: (m) =>
         `${m.patientName || 'Patient'} discharged — ${m.wardName || 'Ward'}`,
 
-    followup_created: (m) =>
-        `Auto follow-up scheduled — ${m.patientName || 'Patient'} (${m.pathwayLabel || m.carePathway || 'General'})`,
-
-    bill_paid: (m) =>
-        `₹${formatINR(m.amount)} received — ${m.patientName || 'Patient'} (${m.paymentMode || 'Cash'})`,
-
-    notification_sent: (m) =>
-        m.patientName
-            ? `${m.channel || 'WhatsApp'} reminder sent — ${m.patientName}`
-            : `${m.channel || 'WhatsApp'} reminder sent — ${m.count || 1} patients`,
-
     patient_admitted: (m) =>
         `${m.patientName || 'Patient'} admitted — ${m.wardName || 'Ward'} Bed ${m.bedNo || '?'}`,
-
-    doctor_prescribes: (m) =>
-        `Dr. ${m.doctorName || 'Doctor'} — ${m.count || 1} prescriptions completed`,
 
     patient_registered: (m) =>
         `New patient registered — ${m.patientName || 'Patient'}`,
@@ -32,14 +19,82 @@ const LABEL_GENERATORS: Record<string, (m: EventMeta) => string> = {
     patient_visited: (m) =>
         `OPD visit recorded — ${m.patientName || 'Patient'}`,
 
-    hospital_activated: (m) =>
-        `Hospital setup completed`,
+    patient_created: (m) =>
+        `Patient created — ${m.patientName || 'Patient'}`,
+
+    // ─── Visit / Billing events ──────────────────────────────────────
+    visit_completed: (m) =>
+        `Visit completed — ${m.patientName || 'Patient'} (${m.diagnosis || 'OPD'})`,
+
+    bill_paid: (m) =>
+        `₹${formatINR(m.amount)} received — ${m.patientName || 'Patient'} (${m.paymentMode || 'Cash'})`,
+
+    bill_generated: (m) =>
+        `Bill ₹${formatINR(m.amount)} generated — ${m.patientName || 'Patient'}`,
+
+    // ─── Follow-up events ────────────────────────────────────────────
+    followup_created: (m) =>
+        `Auto follow-up scheduled — ${m.patientName || 'Patient'} (${m.pathwayLabel || m.carePathway || 'General'})`,
 
     followup_completed: (m) =>
         `Follow-up completed — ${m.patientName || 'Patient'}`,
 
     followup_missed: (m) =>
         `Follow-up missed — ${m.patientName || 'Patient'}`,
+
+    // ─── Notification / Reminder events ──────────────────────────────
+    notification_sent: (m) =>
+        m.patientName
+            ? `${m.channel || 'WhatsApp'} sent — ${m.patientName}`
+            : `${m.channel || 'WhatsApp'} sent — ${m.count || 1} patients`,
+
+    reminder_sent: (m) =>
+        `${(m.channel || 'WhatsApp').charAt(0).toUpperCase() + (m.channel || 'whatsapp').slice(1)} reminder sent via dashboard`,
+
+    // ─── Doctor events ───────────────────────────────────────────────
+    doctor_prescribes: (m) =>
+        `Dr. ${m.doctorName || 'Doctor'} — ${m.count || 1} prescriptions completed`,
+
+    doctor_registered: (m) =>
+        `New doctor registered — ${m.doctorName || 'Doctor'}`,
+
+    doctor_added: (m) =>
+        `Doctor added to hospital — ${m.doctorName || 'Doctor'}`,
+
+    doctor_removed: (m) =>
+        `Doctor removed from hospital`,
+
+    doctor_approved: (m) =>
+        `Doctor affiliation approved — ${m.doctorName || 'Doctor'}`,
+
+    doctor_rejected: (m) =>
+        `Doctor affiliation rejected — ${m.doctorName || 'Doctor'}`,
+
+    // ─── Hospital events ─────────────────────────────────────────────
+    hospital_registered: (m) =>
+        `Hospital registered — ${m.hospitalName || 'Hospital'}`,
+
+    hospital_verified: (m) =>
+        `Hospital verified — ${m.hospitalName || 'Hospital'}`,
+
+    hospital_activated: () =>
+        `Hospital setup completed`,
+
+    hospital_approved: (m) =>
+        `Hospital approved — ${m.hospitalName || 'Hospital'}`,
+
+    hospital_rejected: (m) =>
+        `Hospital rejected — ${m.hospitalName || 'Hospital'}`,
+
+    hospital_suspended: (m) =>
+        `Hospital suspended — ${m.hospitalName || 'Hospital'}`,
+
+    // ─── Other events ────────────────────────────────────────────────
+    lab_registered: (m) =>
+        `Diagnostic lab registered — ${m.labName || 'Lab'}`,
+
+    agent_registered: (m) =>
+        `New agent registered — ${m.agentName || 'Agent'}`,
 };
 
 export function generateEventLabel(eventType: string, metadata: EventMeta): string {

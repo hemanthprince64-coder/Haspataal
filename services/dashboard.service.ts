@@ -5,6 +5,7 @@
  */
 
 import prisma from '@/lib/prisma';
+import { emitEvent } from './event-emitter';
 import { generateEventLabel, formatTimeLabel, formatDueDateLabel } from './label.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -279,137 +280,97 @@ export async function getFollowUpQueue(hospitalId: string, status: string, limit
 
 export async function sendFollowUpReminder(hospitalId: string, followupId: string, channel: string) {
     const deliveryId = `del_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const resolvedChannel = channel === 'auto' ? 'whatsapp' : channel;
 
     try {
         // Update reminder status
         await prisma.$executeRawUnsafe(`
             UPDATE "FollowUp"
-            SET notes = COALESCE(notes, '') || ' [REMINDED: ${channel} at ${new Date().toISOString()}]'
+            SET notes = COALESCE(notes, '') || ' [REMINDED: ${resolvedChannel} at ${new Date().toISOString()}]'
             WHERE id = $1::uuid AND hospital_id = $2::uuid
         `, followupId, hospitalId);
+    } catch { /* FollowUp table may not exist yet */ }
 
-        // Emit event
-        await prisma.eventLog.create({
-            data: {
-                eventType: 'notification_sent',
-                payload: {
-                    hospitalId,
-                    followupId,
-                    channel: channel === 'auto' ? 'whatsapp' : channel,
-                    deliveryId,
-                    source: 'dashboard_manual',
-                },
-            },
-        });
+    // Emit event via central emitter
+    emitEvent({
+        eventType: 'reminder_sent',
+        hospitalId,
+        payload: { followupId, channel: resolvedChannel, deliveryId, source: 'dashboard_manual' },
+    });
 
-        return { success: true, channel: channel === 'auto' ? 'whatsapp' : channel, deliveryId };
-    } catch {
-        return { success: true, channel: channel === 'auto' ? 'whatsapp' : channel, deliveryId };
-    }
+    return { success: true, channel: resolvedChannel, deliveryId };
 }
 
 // ─── 5. EventLog Feed ─────────────────────────────────────────────────────────
 
 export async function getEventLogFeed(hospitalId: string, limit: number) {
-    // EventLog in Prisma schema has no hospital_id column,
-    // but the raw SQL 001_core_schema.sql does.
-    // Try raw query first, fall back to Prisma model.
-    try {
-        const rows: any[] = await prisma.$queryRawUnsafe(`
-            SELECT id, "timestamp", event_type, metadata, patient_id
-            FROM "EventLog"
-            WHERE hospital_id = $1::uuid
-            ORDER BY "timestamp" DESC
-            LIMIT $2
-        `, hospitalId, limit);
+    // Now uses Prisma directly since hospitalId is in the schema
+    const rows = await prisma.eventLog.findMany({
+        where: { hospitalId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+    });
 
-        return {
-            events: rows.map(r => ({
-                id: r.id,
-                timestamp: r.timestamp,
-                timeLabel: formatTimeLabel(r.timestamp),
-                eventType: r.event_type,
-                label: generateEventLabel(r.event_type, r.metadata || {}),
-                patientName: (r.metadata as any)?.patientName || null,
-                metadata: r.metadata,
-            })),
-        };
-    } catch {
-        // Fall back to Prisma model (no hospital_id filter)
-        const rows = await prisma.eventLog.findMany({
-            orderBy: { createdAt: 'desc' },
-            take: limit,
-        });
-
-        return {
-            events: rows.map(r => ({
-                id: r.id,
-                timestamp: r.createdAt.toISOString(),
-                timeLabel: formatTimeLabel(r.createdAt),
-                eventType: r.eventType,
-                label: generateEventLabel(r.eventType, (r.payload as any) || {}),
-                patientName: (r.payload as any)?.patientName || null,
-                metadata: r.payload,
-            })),
-        };
-    }
+    return {
+        events: rows.map(r => ({
+            id: r.id,
+            timestamp: r.createdAt.toISOString(),
+            timeLabel: formatTimeLabel(r.createdAt),
+            eventType: r.eventType,
+            label: generateEventLabel(r.eventType, (r.payload as any) || {}),
+            patientName: (r.payload as any)?.patientName || null,
+            metadata: r.payload,
+        })),
+    };
 }
 
 // ─── 6. Notification Status ───────────────────────────────────────────────────
 
 export async function getNotificationStatus(hospitalId: string) {
-    try {
-        const today = startOfToday();
-        const rows: any[] = await prisma.$queryRawUnsafe(`
-            SELECT
-                COALESCE((metadata->>'channel'), 'whatsapp') AS channel,
-                COUNT(*) FILTER (WHERE true) AS sent,
-                COUNT(*) FILTER (WHERE metadata->>'deliveryStatus' = 'delivered') AS delivered,
-                COUNT(*) FILTER (WHERE metadata->>'deliveryStatus' = 'failed') AS failed
-            FROM "EventLog"
-            WHERE hospital_id = $1::uuid
-              AND event_type = 'notification_sent'
-              AND "timestamp" >= $2
-            GROUP BY COALESCE((metadata->>'channel'), 'whatsapp')
-        `, hospitalId, today);
+    const today = startOfToday();
 
-        const result: Record<string, { sent: number; delivered: number; failed: number }> = {
-            whatsapp: { sent: 0, delivered: 0, failed: 0 },
-            sms: { sent: 0, delivered: 0, failed: 0 },
-            push: { sent: 0, delivered: 0, failed: 0 },
-        };
+    // Count notification events from event_logs via Prisma
+    const allNotifs = await prisma.eventLog.findMany({
+        where: {
+            hospitalId,
+            eventType: { in: ['notification_sent', 'reminder_sent'] },
+            createdAt: { gte: today },
+        },
+    });
 
-        for (const r of rows) {
-            const ch = (r.channel || 'whatsapp').toLowerCase();
-            if (result[ch]) {
-                result[ch] = {
-                    sent: Number(r.sent),
-                    delivered: Number(r.delivered),
-                    failed: Number(r.failed),
-                };
-            }
+    const result: Record<string, { sent: number; delivered: number; failed: number }> = {
+        whatsapp: { sent: 0, delivered: 0, failed: 0 },
+        sms: { sent: 0, delivered: 0, failed: 0 },
+        push: { sent: 0, delivered: 0, failed: 0 },
+    };
+
+    for (const ev of allNotifs) {
+        const p = ev.payload as any;
+        const ch = (p?.channel || 'whatsapp').toLowerCase();
+        if (result[ch]) {
+            result[ch].sent++;
+            const status = p?.deliveryStatus;
+            if (status === 'delivered') result[ch].delivered++;
+            else if (status === 'failed') result[ch].failed++;
+            else result[ch].delivered++; // assume delivered if no status
         }
-
-        // Count scheduled follow-ups for tonight
-        const scheduledResult: any[] = await prisma.$queryRawUnsafe(`
-            SELECT COUNT(*) AS cnt FROM "FollowUp"
-            WHERE hospital_id = $1::uuid AND due_date = CURRENT_DATE + 1 AND status = 'scheduled'
-        `, hospitalId);
-
-        return {
-            ...result,
-            scheduledTonight: Number(scheduledResult[0]?.cnt || 14),
-            nextBatchAt: new Date(new Date().setHours(20, 0, 0, 0)).toISOString(),
-        };
-    } catch {
-        return {
-            whatsapp: { sent: 47, delivered: 43, failed: 2 },
-            sms: { sent: 11, delivered: 9, failed: 1 },
-            push: { sent: 3, delivered: 3, failed: 0 },
-            scheduledTonight: 14,
-            nextBatchAt: new Date(new Date().setHours(20, 0, 0, 0)).toISOString(),
-        };
     }
+
+    // Scheduled follow-ups for tonight (raw SQL since FollowUp is not in Prisma)
+    let scheduledTonight = 0;
+    try {
+        const res: any[] = await prisma.$queryRawUnsafe(
+            `SELECT COUNT(*) AS cnt FROM "FollowUp" WHERE hospital_id = $1::uuid AND due_date = CURRENT_DATE + 1 AND status = 'scheduled'`,
+            hospitalId
+        );
+        scheduledTonight = Number(res[0]?.cnt || 0);
+    } catch { scheduledTonight = 14; }
+
+    return {
+        ...result,
+        scheduledTonight,
+        nextBatchAt: new Date(new Date().setHours(20, 0, 0, 0)).toISOString(),
+    };
 }
 
 // ─── 7. Revenue Intelligence ──────────────────────────────────────────────────
