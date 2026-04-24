@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export function MedicineAutocomplete({ onAdd }: { onAdd: (med: any) => void }) {
   const [query, setQuery] = useState('');

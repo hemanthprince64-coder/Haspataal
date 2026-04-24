@@ -103,18 +103,17 @@ export class EventService {
     while (true) {
       try {
         const response = await redis.xReadGroup(
-          redis.commandOptions({ isolated: true }),
           consumerGroup,
           consumerName,
           [
             {
               key: streamKey,
-              id: '>', // Read new messages never delivered to other consumers
+              id: '>',
             }
           ],
           {
             COUNT: 10,
-            BLOCK: 5000, // Block for 5 seconds
+            BLOCK: 5000,
           }
         );
 

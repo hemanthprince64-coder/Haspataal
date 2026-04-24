@@ -40,7 +40,6 @@ export type EventType =
   // Onboarding & Migration
   | 'partial_setup_saved'
   | 'data_imported'
-  | 'hospital_activated'
   // Agents
   | 'agent_registered'
   // Infrastructure & Operations

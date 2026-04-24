@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Clock } from 'lucide-react';
 
 export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any) => void }) {
-  const [beds, setBeds] = useState(config.bed_counts || {
+  const [beds, setBeds] = useState<{general: number, icu: number, private: number, semi: number}>(config.bed_counts || {
     general: 0, icu: 0, private: 0, semi: 0
   });
 
@@ -21,7 +21,7 @@ export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any)
     setBeds({ ...beds, [field]: isNaN(num) ? 0 : Math.max(0, num) });
   };
 
-  const totalBeds = Object.values(beds).reduce((acc: number, curr: number) => acc + curr, 0);
+  const totalBeds: number = Object.values(beds).reduce((acc, curr) => acc + (typeof curr === 'number' ? curr : 0), 0);
 
   return (
     <div className="space-y-6">

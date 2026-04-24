@@ -1357,7 +1357,7 @@ export const services = {
             if (!data.password) throw new Error("PASSWORD_REQUIRED");
             const hashedPassword = await bcrypt.hash(data.password, 12);
 
-            return await prisma.agent.create({
+            const agent = await prisma.agent.create({
                 data: {
                     fullName: data.fullName,
                     mobile: data.mobile,

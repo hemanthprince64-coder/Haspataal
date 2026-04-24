@@ -92,7 +92,8 @@ router.post('/admit', async (req: Request, res: Response) => {
 
 router.post('/discharge/:id', async (req: Request, res: Response) => {
   try {
-    const result = await IPDService.dischargePatient((req as any).hospital_id, req.params.id, req.body);
+    const rawId = req.params.id; const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    const result = await IPDService.dischargePatient((req as any).hospital_id, id, req.body);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Failed to discharge patient' });

@@ -37,8 +37,9 @@ router.get('/today', async (req: Request, res: Response) => {
 router.post('/:id/complete', async (req: Request, res: Response) => {
   try {
     const hospitalId = (req as any).hospital_id;
-    const { id } = req.params;
-    
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
     const result = await RetentionService.markCompleted(hospitalId, id);
     res.json(result);
   } catch (err) {
