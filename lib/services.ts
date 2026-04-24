@@ -1289,7 +1289,7 @@ export const services = {
         login: async (username: string, password?: string) => {
             // Updated to use Bcrypt comparison for Admin
             // Fallback to a hashed version of 'admin123' if env var is missing
-            const adminPassHash = process.env.ADMIN_PASSWORD_HASH || '$2a$12$6uP0.S1uY/r7Bf8fK9u9v.L9Y1uY/r7Bf8fK9u9v.L9Y1uY/r7'; 
+            const adminPassHash = process.env.ADMIN_PASSWORD_HASH || '$2b$12$YwrNaShX3AbSpPDb7FtlFOilUoeGAmPX5pCfa6IAd48UYfF6B3X7e'; 
             const adminUser = process.env.ADMIN_USERNAME || 'admin';
             
             if (password && username === adminUser && await bcrypt.compare(password, adminPassHash)) {

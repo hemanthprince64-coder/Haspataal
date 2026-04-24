@@ -39,12 +39,12 @@ export default function AdminLoginPage() {
                 <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div className="form-group">
                         <label className="form-label">👤 Username</label>
-                        <input name="username" type="text" placeholder="Admin username" required className="form-input" />
+                        <input name="username" type="text" placeholder="Admin username" required className="form-input" suppressHydrationWarning />
                     </div>
 
                     <div className="form-group">
                         <label className="form-label">🔑 Password</label>
-                        <input name="password" type="password" placeholder="Admin password" required className="form-input" />
+                        <input name="password" type="password" placeholder="Admin password" required className="form-input" suppressHydrationWarning />
                     </div>
 
                     {process.env.NODE_ENV === 'development' && (
@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
                         <div className="alert alert-error">⚠️ {state.message}</div>
                     )}
 
-                    <button type="submit" disabled={isPending} className="btn btn-lg" style={{
+                    <button type="submit" disabled={isPending} className="btn btn-lg" suppressHydrationWarning style={{
                         width: '100%',
                         background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
                         color: 'white'
