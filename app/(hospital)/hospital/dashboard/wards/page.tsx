@@ -11,7 +11,7 @@ interface BedRecord {
   patient?: { name: string; admittedAt: string; expectedDischargeAt?: string };
 }
 
-export default function IPDPage() {
+export default function WardsPage() {
   const [beds, setBeds] = useState<BedRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("ALL");

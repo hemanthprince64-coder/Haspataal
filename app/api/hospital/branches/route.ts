@@ -6,12 +6,12 @@ export async function GET(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const stock = await prisma.drugStock.findMany({
+  const branches = await prisma.branch.findMany({
     where: { hospitalId },
-    orderBy: { drugName: 'asc' }
+    orderBy: { createdAt: 'asc' }
   });
 
-  return NextResponse.json({ stock });
+  return NextResponse.json({ branches });
 }
 
 export async function POST(req: NextRequest) {
@@ -20,17 +20,26 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const item = await prisma.drugStock.create({
+  const branch = await prisma.branch.create({
     data: {
       hospitalId,
-      drugName: body.drugName,
-      batchNumber: body.batchNumber,
-      expiryDate: new Date(body.expiryDate),
-      quantity: body.quantity,
-      mrp: body.mrp,
-      purchasePrice: body.mrp * 0.7, // Simulated
+      name: body.name,
+      code: body.code,
+      address: body.address,
+      city: body.city,
+      contactNumber: body.contactNumber,
+      isMainBranch: body.isMainBranch ?? false,
+      isActive: true,
     }
   });
 
-  return NextResponse.json({ item });
+  // If this is set as main branch, unset others
+  if (body.isMainBranch) {
+    await prisma.branch.updateMany({
+      where: { hospitalId, id: { not: branch.id } },
+      data: { isMainBranch: false }
+    });
+  }
+
+  return NextResponse.json({ branch });
 }

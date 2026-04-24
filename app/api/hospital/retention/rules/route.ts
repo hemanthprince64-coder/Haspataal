@@ -6,12 +6,12 @@ export async function GET(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const stock = await prisma.drugStock.findMany({
+  const rules = await prisma.retentionRule.findMany({
     where: { hospitalId },
-    orderBy: { drugName: 'asc' }
+    orderBy: { createdAt: 'desc' }
   });
 
-  return NextResponse.json({ stock });
+  return NextResponse.json({ rules });
 }
 
 export async function POST(req: NextRequest) {
@@ -20,17 +20,21 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const item = await prisma.drugStock.create({
+  const rule = await prisma.retentionRule.create({
     data: {
       hospitalId,
-      drugName: body.drugName,
-      batchNumber: body.batchNumber,
-      expiryDate: new Date(body.expiryDate),
-      quantity: body.quantity,
-      mrp: body.mrp,
-      purchasePrice: body.mrp * 0.7, // Simulated
+      name: body.name,
+      trigger: {
+        type: body.triggerType,
+        daysAfter: body.triggerDays,
+      },
+      action: {
+        type: body.actionType,
+      },
+      priority: body.priority || "MEDIUM",
+      isActive: true,
     }
   });
 
-  return NextResponse.json({ item });
+  return NextResponse.json({ rule });
 }
