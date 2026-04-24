@@ -18,7 +18,10 @@ export async function GET(
         }
 
         const url = new URL(req.url);
-        const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50);
+        const rawLimit = url.searchParams.get('limit');
+        let limit = parseInt(rawLimit || '20', 10);
+        if (isNaN(limit) || limit <= 0) limit = 20;
+        limit = Math.min(limit, 50);
 
         const data = await getEventLogFeed(hospitalId, limit);
         return NextResponse.json(data);

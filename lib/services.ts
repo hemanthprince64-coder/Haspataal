@@ -1184,7 +1184,7 @@ export const services = {
                 });
             }
 
-            return await prisma.visit.create({
+            const visit = await prisma.visit.create({
                 data: {
                     hospitalId,
                     patientName: data.patientName,
@@ -1194,7 +1194,16 @@ export const services = {
                 }
             });
 
-            emitEvent({ eventType: 'patient_visited', hospitalId, patientId: patient.id, payload: { patientName: data.patientName, patientPhone: data.patientMobile, doctorId: data.doctorId || null } });
+            emitEvent({
+                eventType: 'patient_visited',
+                hospitalId,
+                patientId: patient.id,
+                payload: {
+                    patientName: data.patientName,
+                    patientPhone: data.patientMobile,
+                    doctorId: data.doctorId || null
+                }
+            });
 
             return visit;
         },

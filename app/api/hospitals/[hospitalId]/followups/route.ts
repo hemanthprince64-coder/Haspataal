@@ -19,8 +19,13 @@ export async function GET(
 
         const url = new URL(req.url);
         const status = url.searchParams.get('status') || 'pending';
-        const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 50);
-        const offset = parseInt(url.searchParams.get('offset') || '0');
+
+        let limit = parseInt(url.searchParams.get('limit') || '20', 10);
+        if (isNaN(limit) || limit <= 0) limit = 20;
+        limit = Math.min(limit, 50);
+
+        let offset = parseInt(url.searchParams.get('offset') || '0', 10);
+        if (isNaN(offset) || offset < 0) offset = 0;
 
         const data = await getFollowUpQueue(hospitalId, status, limit, offset);
         return NextResponse.json(data);

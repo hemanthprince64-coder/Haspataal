@@ -48,8 +48,41 @@ const LABEL_GENERATORS: Record<string, (m: EventMeta) => string> = {
             ? `${m.channel || 'WhatsApp'} sent — ${m.patientName}`
             : `${m.channel || 'WhatsApp'} sent — ${m.count || 1} patients`,
 
+    notification_delivered: (m) =>
+        `Notification delivered — ${m.patientName || 'Patient'}`,
+
+    notification_queued: (m) =>
+        `Notification queued — ${m.channel || 'System'}`,
+
     reminder_sent: (m) =>
         `${(m.channel || 'WhatsApp').charAt(0).toUpperCase() + (m.channel || 'whatsapp').slice(1)} reminder sent via dashboard`,
+
+    // ─── Appointment & Scheduling ────────────────────────────────────
+    APPOINTMENT_BOOKED: (m) =>
+        `Appointment confirmed — ${m.patientName || 'Patient'} with Dr. ${m.doctorName || 'Doctor'}`,
+
+    // ─── Lab & Diagnostics ───────────────────────────────────────────
+    lab_result_ready: (m) =>
+        `Lab results ready — ${m.testName || 'Diagnostic Report'}`,
+
+    // ─── Pharmacy ─────────────────────────────────────────────────────
+    medicine_dispensed: (m) =>
+        `Medicine dispensed — ${m.medicineName || 'Medication'}`,
+
+    // ─── Onboarding & Migration ──────────────────────────────────────
+    partial_setup_saved: (m) =>
+        `Onboarding step ${m.step || '?'} saved`,
+
+    data_imported: (m) =>
+        `Data import complete — ${m.row_count || 0} rows from ${m.source_type || 'unknown'}`,
+
+    // ─── Chronic Care Escalation ─────────────────────────────────────
+    chronic_escalation_alert: (m) =>
+        `Chronic escalation alert — ${m.patientName || 'Patient'}`,
+
+    // ─── Document Management ─────────────────────────────────────────
+    document_expiring_soon: (m) =>
+        `Document expiring soon — ${m.documentName || 'Document'}`,
 
     // ─── Doctor events ───────────────────────────────────────────────
     doctor_prescribes: (m) =>

@@ -319,7 +319,7 @@ export async function getEventLogFeed(hospitalId: string, limit: number) {
             eventType: r.eventType,
             label: generateEventLabel(r.eventType, (r.payload as any) || {}),
             patientName: (r.payload as any)?.patientName || null,
-            metadata: r.payload,
+            // metadata intentionally omitted to avoid exposing raw payload with PII
         })),
     };
 }
