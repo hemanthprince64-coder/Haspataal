@@ -94,6 +94,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Admin Password Hash Management:** Always use Bcrypt for admin credentials. Ensure hardcoded fallbacks match the intended dev credentials (e.g., `admin123` hash: `$2b$12$YwrNaShX3AbSpPDb7FtlFOilUoeGAmPX5pCfa6IAd48UYfF6B3X7e`).
 - **Hydration Attribute Mismatches:** Browser extensions (like Edge Password Manager) often inject attributes (e.g., `fdprocessedid`) into form elements before hydration. Use `suppressHydrationWarning` on inputs and buttons to prevent Next.js hydration errors.
 - **Service Layer Hygiene:** Maintain strict organization in `lib/services.ts`. When refactoring, ensure no duplicate service blocks (e.g., `doctor` service) are left behind, as they can cause build failures during ESM parsing.
+- **Dashboard Service Integrity:** When replacing or refactoring `dashboard.service.ts` with real Prisma queries, ensure all required API route exports (`getRetentionKPI`, `getFollowUpQueue`, `getEventLogFeed`, `getNotificationStatus`, `getRevenueIntelligence`) are maintained. This preserves the functionality of dashboard tiles, retention analytics, and live event streaming.
 
 ---
 

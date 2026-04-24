@@ -23,3 +23,18 @@ export async function requireRole(role: UserRole | UserRole[], sessionName: stri
 
     return user;
 }
+
+export async function getHospitalIdFromSession(req: any) {
+    try {
+        const cookieStore = await cookies();
+        const session = cookieStore.get('session_user')?.value;
+        if (!session) return null;
+
+        const payload = await decrypt(session);
+        if (!payload || !payload.user) return null;
+
+        return payload.user.hospitalId || null;
+    } catch {
+        return null;
+    }
+}
