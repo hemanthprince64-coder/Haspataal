@@ -118,7 +118,7 @@ export class EventService {
         );
 
         if (response) {
-          for (const stream of response) {
+          for (const stream of (response as any[])) {
             for (const message of stream.messages) {
               const eventPayload = JSON.parse(message.message.payload as string);
               

@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   // Map to a common UI structure
   const doctors = affiliations.map(a => ({
     id: a.doctor.id,
-    name: a.doctor.name,
+    name: a.doctor.fullName,
     email: a.doctor.email,
     mobile: a.doctor.mobile,
     speciality: (a.payload as any)?.speciality || "General",
@@ -56,11 +56,11 @@ export async function POST(req: NextRequest) {
 
   // 1. Find or create doctor in global DoctorsMaster (or simplified Doctor model)
   // For this implementation, we'll assume a simplified link to a Doctor record.
-  let doctor = await prisma.doctor.findUnique({ where: { mobile: data.mobile } });
+  let doctor = await prisma.doctorMaster.findUnique({ where: { mobile: data.mobile } });
   if (!doctor) {
-    doctor = await prisma.doctor.create({
+    doctor = await prisma.doctorMaster.create({
       data: {
-        name: data.name,
+        fullName: data.name,
         mobile: data.mobile,
         email: data.email || null,
         password: "changeme123", // Default password
@@ -71,12 +71,13 @@ export async function POST(req: NextRequest) {
   // 2. Create affiliation with specific fees and payload for this hospital
   const affiliation = await prisma.doctorHospitalAffiliation.create({
     data: {
-      hospitalId,
+      hospitalId: hospitalId as string,
       doctorId: doctor.id,
       consultationFee: data.consultationFee,
       followUpFee: data.followUpFee,
       followUpWindowDays: data.followUpDays,
       isCurrent: true,
+      role: "DOCTOR",
       payload: {
         speciality: data.speciality,
         experienceYears: data.experienceYears,
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ 
     doctor: {
       id: doctor.id,
-      name: doctor.name,
+      name: doctor.fullName,
       speciality: data.speciality,
       consultationFee: data.consultationFee,
       isActive: true,

@@ -24,7 +24,7 @@ function decrypt(text: string): string {
 
 const gatewaySchema = z.object({
   provider: z.enum(['RAZORPAY', 'STRIPE', 'CASH', 'UPI']),
-  config: z.record(z.string()),
+  config: z.record(z.string(), z.string()),
   isLive: z.boolean().default(false),
 });
 

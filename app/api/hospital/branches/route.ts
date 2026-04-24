@@ -24,20 +24,19 @@ export async function POST(req: NextRequest) {
     data: {
       hospitalId,
       name: body.name,
-      code: body.code,
       address: body.address,
       city: body.city,
-      contactNumber: body.contactNumber,
-      isMainBranch: body.isMainBranch ?? false,
+      phone: body.phone,
+      isHeadquarters: body.isHeadquarters ?? false,
       isActive: true,
     }
   });
 
   // If this is set as main branch, unset others
-  if (body.isMainBranch) {
+  if (body.isHeadquarters) {
     await prisma.branch.updateMany({
       where: { hospitalId, id: { not: branch.id } },
-      data: { isMainBranch: false }
+      data: { isHeadquarters: false }
     });
   }
 

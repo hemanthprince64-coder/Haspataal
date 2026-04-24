@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
 
 export function Step6Review({ config, onActivate }: { config: any, onActivate: () => void }) {
-  const totalBeds = Object.values(config.bed_counts || {}).reduce((acc, curr) => acc + (Number(curr) || 0), 0);
+  const totalBeds = Object.values(config.bed_counts || {}).reduce<number>((acc, curr) => acc + (Number(curr) || 0), 0);
 
   return (
     <div className="space-y-6">

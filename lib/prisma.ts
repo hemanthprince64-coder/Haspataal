@@ -92,8 +92,8 @@ declare global {
     var _prisma: ExtendedPrismaClient | undefined;
 }
 
-const prisma = globalThis._prisma || prismaClientSingleton()
+export const prisma = globalThis._prisma || prismaClientSingleton();
 
-export default prisma
+export default prisma;
 
-if (process.env.NODE_ENV !== 'production') globalThis._prisma = prisma
+if (process.env.NODE_ENV !== 'production') globalThis._prisma = prisma;

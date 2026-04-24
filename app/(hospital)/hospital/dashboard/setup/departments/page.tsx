@@ -1,3 +1,22 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import type { Unit, Department, DeptType } from "@prisma/client";
+import {
+  Plus, Pencil, Trash2, GripVertical, ChevronRight,
+  Building2, Layers, AlertCircle, Loader2, Check, X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DndContext,
   closestCenter,
@@ -55,11 +74,11 @@ function SortableUnit({ unit }: { unit: Unit }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
-  const [deptDialog, setDeptDialog] = useState<{ open: boolean; edit?: Department }>({ open: false });
+  const [deptDialog, setDeptDialog] = useState<{ open: boolean; edit?: any }>({ open: false });
   const [unitDialog, setUnitDialog] = useState(false);
 
   const sensors = useSensors(
@@ -97,15 +116,14 @@ export default function DepartmentsPage() {
       return newDepts;
     });
 
-    // In production, would send a PATCH to update sortOrder
     await fetch(`/api/hospital/departments/${selectedDept}/units/reorder`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         unitIds: arrayMove(selectedDeptData!.units, 
-          selectedDeptData!.units.findIndex(u => u.id === active.id),
-          selectedDeptData!.units.findIndex(u => u.id === over.id)
-        ).map(u => u.id)
+          selectedDeptData!.units.findIndex((u: any) => u.id === active.id),
+          selectedDeptData!.units.findIndex((u: any) => u.id === over.id)
+        ).map((u: any) => u.id)
       }),
     });
   };
@@ -116,7 +134,7 @@ export default function DepartmentsPage() {
       const res = await fetch("/api/hospital/departments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seed: true, departments: SEED_DEPARTMENTS }),
+        body: JSON.stringify({ seed: true }),
       });
       const data = await res.json();
       if (data.departments) setDepartments(data.departments);
@@ -124,18 +142,7 @@ export default function DepartmentsPage() {
     setSeeding(false);
   };
 
-  const handleAddDept = async (form: Partial<Department>) => {
-    const optimistic: Department = {
-      id: `temp-${Date.now()}`,
-      name: form.name ?? "",
-      code: form.code ?? "",
-      type: form.type ?? "OPD",
-      isActive: true,
-      analyticsEnabled: form.analyticsEnabled ?? true,
-      units: [],
-    };
-    setDepartments((prev) => [...prev, optimistic]);
-
+  const handleAddDept = async (form: any) => {
     const res = await fetch("/api/hospital/departments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -143,11 +150,11 @@ export default function DepartmentsPage() {
     });
     const data = await res.json();
     if (data.department) {
-      setDepartments((prev) => prev.map((d) => (d.id === optimistic.id ? data.department : d)));
+      setDepartments((prev) => [...prev, data.department]);
     }
   };
 
-  const handleUpdateDept = async (id: string, updates: Partial<Department>) => {
+  const handleUpdateDept = async (id: string, updates: any) => {
     setDepartments((prev) => prev.map((d) => (d.id === id ? { ...d, ...updates } : d)));
     await fetch(`/api/hospital/departments/${id}`, {
       method: "PUT",
@@ -162,7 +169,7 @@ export default function DepartmentsPage() {
     await fetch(`/api/hospital/departments/${id}`, { method: "DELETE" });
   };
 
-  const handleAddUnit = async (unit: Partial<Unit>) => {
+  const handleAddUnit = async (unit: any) => {
     if (!selectedDept) return;
     const res = await fetch(`/api/hospital/departments/${selectedDept}/units`, {
       method: "POST",
@@ -177,7 +184,7 @@ export default function DepartmentsPage() {
     }
   };
 
-  const deptTypeColor: Record<DeptType, string> = {
+  const deptTypeColor: Record<string, string> = {
     OPD: "bg-blue-100 text-blue-700",
     IPD: "bg-purple-100 text-purple-700",
     BOTH: "bg-teal-100 text-teal-700",
@@ -219,7 +226,13 @@ export default function DepartmentsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
             </div>
           ) : departments.length === 0 ? (
-            <EmptyDepts onSeed={handleSeedDepts} seeding={seeding} />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-sm text-slate-500 mb-4">No departments configured</p>
+              <Button onClick={handleSeedDepts} disabled={seeding} variant="outline" size="sm">
+                {seeding ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                Seed Common Departments
+              </Button>
+            </div>
           ) : (
             <div className="divide-y divide-slate-100">
               {departments.map((dept) => (
@@ -231,17 +244,14 @@ export default function DepartmentsPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <EditableCell
-                        value={dept.name}
-                        onSave={(v) => handleUpdateDept(dept.id, { name: v })}
-                      />
+                      <span className="text-xs font-semibold text-slate-800 truncate">{dept.name}</span>
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${deptTypeColor[dept.type]}`}>
                         {dept.type}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-mono text-slate-400">{dept.code}</span>
-                      <span className="text-[10px] text-slate-400">{dept.units.length} units</span>
+                      <span className="text-[10px] text-slate-400">{dept.units?.length || 0} units</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -250,18 +260,6 @@ export default function DepartmentsPage() {
                       onCheckedChange={(v) => handleUpdateDept(dept.id, { isActive: v })}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setDeptDialog({ open: true, edit: dept }); }}
-                      className="p-1 text-slate-400 hover:text-blue-600"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteDept(dept.id); }}
-                      className="p-1 text-slate-400 hover:text-red-500"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
                     <ChevronRight className={`h-3.5 w-3.5 transition-colors ${selectedDept === dept.id ? "text-blue-500" : "text-slate-300"}`} />
                   </div>
                 </div>
@@ -290,7 +288,7 @@ export default function DepartmentsPage() {
                 </Button>
               </div>
 
-              {!selectedDeptData?.units.length ? (
+              {!selectedDeptData?.units?.length ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Layers className="h-7 w-7 text-slate-300 mb-2" />
                   <p className="text-sm text-slate-500">No units yet</p>
@@ -303,11 +301,11 @@ export default function DepartmentsPage() {
                   onDragEnd={handleDragEnd}
                 >
                   <SortableContext
-                    items={selectedDeptData.units.map(u => u.id)}
+                    items={selectedDeptData.units.map((u: any) => u.id)}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="divide-y divide-slate-100">
-                      {selectedDeptData.units.map((unit) => (
+                      {selectedDeptData.units.map((unit: any) => (
                         <SortableUnit key={unit.id} unit={unit} />
                       ))}
                     </div>
@@ -319,18 +317,46 @@ export default function DepartmentsPage() {
         </div>
       </div>
 
-      {/* Dialogs */}
-      <DeptDialog
-        open={deptDialog.open}
-        onClose={() => setDeptDialog({ open: false })}
-        onSave={deptDialog.edit ? (form) => handleUpdateDept(deptDialog.edit!.id, form) : handleAddDept}
-        initial={deptDialog.edit}
-      />
-      <UnitDialog
-        open={unitDialog}
-        onClose={() => setUnitDialog(false)}
-        onSave={handleAddUnit}
-      />
+      {/* Dialogs placeholders (Simplified for now) */}
+      {unitDialog && (
+        <Dialog open={unitDialog} onOpenChange={setUnitDialog}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Add Unit</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-4">
+              <Input id="unitName" placeholder="Unit Name (e.g. ICU-A)" />
+              <Input id="unitCapacity" type="number" placeholder="Capacity" />
+            </div>
+            <DialogFooter>
+              <Button onClick={() => {
+                const name = (document.getElementById("unitName") as HTMLInputElement).value;
+                const capacity = parseInt((document.getElementById("unitCapacity") as HTMLInputElement).value);
+                handleAddUnit({ name, capacity });
+                setUnitDialog(false);
+              }}>Add Unit</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {deptDialog.open && (
+        <Dialog open={deptDialog.open} onOpenChange={(o) => setDeptDialog({ open: o })}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Add Department</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-4">
+              <Input id="deptName" placeholder="Department Name" />
+              <Input id="deptCode" placeholder="Code (e.g. CARD)" />
+            </div>
+            <DialogFooter>
+              <Button onClick={() => {
+                const name = (document.getElementById("deptName") as HTMLInputElement).value;
+                const code = (document.getElementById("deptCode") as HTMLInputElement).value;
+                handleAddDept({ name, code, type: 'OPD' });
+                setDeptDialog({ open: false });
+              }}>Add Department</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

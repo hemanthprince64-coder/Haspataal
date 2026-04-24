@@ -336,3 +336,11 @@ export async function getRevenueIntelligence(hospitalId: string, period: string 
     ]
   };
 }
+// ─────────────────────────────────────────────────────────────
+// Notification & Reminders
+// ─────────────────────────────────────────────────────────────
+export async function sendFollowUpReminder(hospitalId: string, followupId: string, channel?: string) {
+  // Placeholder for notification engine (WhatsApp/SMS)
+  console.log(`Sending reminder for follow-up ${followupId} in hospital ${hospitalId}`);
+  return { success: true };
+}

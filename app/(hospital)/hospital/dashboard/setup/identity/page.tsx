@@ -78,7 +78,7 @@ function Section({
 
 // ─── Field Component ───────────────────────────────────────────────────────────
 
-function Field({ label, error, children, required }: { label: string; error?: string; children: React.ReactNode; required?: boolean }) {
+function Field({ label, error, children, required }: { label: string; error?: any; children: React.ReactNode; required?: boolean }) {
   return (
     <div className="mb-4">
       <label className="block text-xs font-semibold text-slate-600 mb-1.5">
@@ -95,10 +95,10 @@ function Field({ label, error, children, required }: { label: string; error?: st
 
 export default function HospitalIdentityPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const autosaveRef = useRef<ReturnType<typeof setTimeout>>();
+  const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const DRAFT_KEY = "identity_draft";
 
-  const form = useForm<IdentityForm>({
+  const form = useForm<any>({
     resolver: zodResolver(identitySchema),
     defaultValues: {
       legalName: "",

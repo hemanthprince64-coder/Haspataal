@@ -272,6 +272,11 @@ model DoctorHospitalAffiliation {
   approvedAt         DateTime?          @map("approved_at")
   createdAt          DateTime           @default(now()) @map("created_at")
   schedule           String?
+  consultationFee    Decimal?           @map("consultation_fee")
+  followUpFee        Decimal?           @map("follow_up_fee")
+  followUpWindowDays Int?               @default(7) @map("follow_up_window_days")
+  payload            Json?              @map("payload")
+
   doctor             DoctorMaster       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   hospital           HospitalsMaster    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
@@ -1272,6 +1277,10 @@ enum Role {
   DOCTOR
   RECEPTIONIST
   STAFF
+  NURSE
+  BILLING
+  PHARMACIST
+  LAB_TECH
   PATIENT
 }
 

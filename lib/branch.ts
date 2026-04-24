@@ -17,6 +17,6 @@ export async function getActiveBranch(hospitalId: string) {
 
   // Fallback to main branch
   return await prisma.branch.findFirst({
-    where: { hospitalId, isMainBranch: true, isActive: true }
+    where: { hospitalId, isHeadquarters: true, isActive: true }
   });
 }

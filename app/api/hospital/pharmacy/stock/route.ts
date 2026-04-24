@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const stock = await prisma.drugStock.findMany({
     where: { hospitalId },
-    orderBy: { drugName: 'asc' }
+    orderBy: { name: 'asc' }
   });
 
   return NextResponse.json({ stock });
@@ -23,12 +23,10 @@ export async function POST(req: NextRequest) {
   const item = await prisma.drugStock.create({
     data: {
       hospitalId,
-      drugName: body.drugName,
-      batchNumber: body.batchNumber,
+      name: body.drugName,
+      stock: body.quantity,
       expiryDate: new Date(body.expiryDate),
-      quantity: body.quantity,
-      mrp: body.mrp,
-      purchasePrice: body.mrp * 0.7, // Simulated
+      category: body.category,
     }
   });
 

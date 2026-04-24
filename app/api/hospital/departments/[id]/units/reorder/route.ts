@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getHospitalIdFromSession } from '@/lib/auth';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const hospitalId = await getHospitalIdFromSession(req);
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { unitIds } = await req.json();
-  const departmentId = params.id;
+  const departmentId = id;
 
   // Use a transaction to update all sort orders
   await prisma.$transaction(

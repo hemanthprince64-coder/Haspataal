@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const beds = await prisma.bed.findMany({
     where: { hospitalId },
-    orderBy: { name: 'asc' }
+    orderBy: { bedNumber: 'asc' }
   });
 
   return NextResponse.json({ beds });
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const bed = await prisma.bed.create({
       data: {
         hospitalId,
-        name: `${prefix}-${i.toString().padStart(3, '0')}`,
+        bedNumber: `${prefix}-${i.toString().padStart(3, '0')}`,
         type: type || "GENERAL",
         status: "AVAILABLE",
         isActive: true,
