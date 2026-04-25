@@ -20,19 +20,25 @@ export interface SetupCompletion {
 async function checkIdentityComplete(hospitalId: string): Promise<{ complete: boolean; score: number; warnings: string[] }> {
   const h = await prisma.hospitalsMaster.findUnique({
     where: { id: hospitalId },
-    select: { legalName: true, displayName: true, logoUrl: true, gstNumber: true, contactNumber: true, timezone: true },
+    select: { legalName: true, displayName: true, logoUrl: true, gstNumber: true, contactNumber: true },
   });
   if (!h) return { complete: false, score: 0, warnings: ['Hospital not found'] };
-  const checks = [
+  
+  const mandatory = [
     !!h.legalName,
     !!h.displayName,
-    !!h.logoUrl,
-    !!h.gstNumber,
     !!h.contactNumber,
   ];
-  const score = checks.filter(Boolean).length / checks.length;
+
+  const optional = [
+    !!h.logoUrl,
+    !!h.gstNumber,
+  ];
+
+  const score = (mandatory.filter(Boolean).length + optional.filter(Boolean).length) / (mandatory.length + optional.length);
+
   return {
-    complete: score === 1,
+    complete: mandatory.every(Boolean), // Only require core fields to unlock next steps
     score,
     warnings: [
       ...(!h.logoUrl ? ['No hospital logo uploaded → affects patient trust'] : []),

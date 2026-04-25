@@ -1173,7 +1173,7 @@ model FollowUp {
 model Bed {
   id                  String          @id @default(uuid())
   hospitalId          String          @map("hospital_id")
-  wardId              String?         @map("ward_id")
+  unitId              String?         @map("unit_id")
   bedNumber           String          @map("bed_number")
   type                BedType         @default(GENERAL)
   status              BedStatus       @default(AVAILABLE)
@@ -1186,10 +1186,11 @@ model Bed {
   updatedAt           DateTime        @updatedAt @map("updated_at")
   hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient             Patient?        @relation(fields: [patientId], references: [id])
+  unit                Unit?           @relation(fields: [unitId], references: [id])
 
   @@index([hospitalId])
-  @@index([status])
-  @@index([wardId])
+  @@index([unitId])
+  @@unique([hospitalId, bedNumber])
   @@map("beds")
 }
 
@@ -1416,9 +1417,12 @@ model Unit {
   capacity     Int        @default(0)
   bedType      BedType    @default(GENERAL)
   wardNumber   String?    @map("ward_number")
+  floor        String?
+  type         String?    // e.g. "General", "Semi-Private", "Private"
   sortOrder    Int        @default(0) @map("sort_order")
   createdAt    DateTime   @default(now()) @map("created_at")
   department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  beds         Bed[]
 
   @@index([departmentId])
   @@map("units")

@@ -22,6 +22,8 @@ const identitySchema = z.object({
   letterheadTemplate: z.string().optional(),
   prescriptionHeader: z.string().optional(),
   prescriptionFooter: z.string().optional(),
+  logoUrl: z.string().optional().or(z.literal("")),
+  faviconUrl: z.string().optional().or(z.literal("")),
 });
 
 export async function GET(req: NextRequest) {
@@ -94,6 +96,8 @@ export async function PUT(req: NextRequest) {
       letterheadTemplate: data.letterheadTemplate,
       prescriptionHeader: data.prescriptionHeader,
       prescriptionFooter: data.prescriptionFooter,
+      logoUrl: data.logoUrl || undefined,
+      faviconUrl: data.faviconUrl || undefined,
     },
   });
 

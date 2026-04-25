@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
 
   const departments = await prisma.department.findMany({
     where: { hospitalId },
-    include: { units: { orderBy: { sortOrder: 'asc' } } },
+    include: {
+      units: {
+        include: { beds: { orderBy: { bedNumber: 'asc' } } },
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
     orderBy: { sortOrder: 'asc' },
   });
 

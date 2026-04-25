@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { cancelVisitHospital, completeVisitHospital } from '@/app/actions';
-import { Check, X, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { Check, X, FileText, Sparkles, Loader2, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const initialState = { message: '', success: false };
@@ -22,7 +22,16 @@ export default function ReportActions({ visitId, status }: ReportActionsProps) {
     if (completeState?.success) return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold flex items-center gap-1"><Sparkles className="h-2 w-2" /> COMPLETED</span>;
 
     if (status !== 'SCHEDULED') {
-        return <span className="text-slate-300 text-xs">—</span>;
+        return (
+            <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open(`/hospital/dashboard/reports/print/${visitId}`, '_blank')}
+                className="h-8 text-[10px] font-bold text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+                <Printer className="h-3 w-3 mr-1" /> PRINT PAD
+            </Button>
+        );
     }
 
     if (showNotes) {
@@ -86,7 +95,15 @@ export default function ReportActions({ visitId, status }: ReportActionsProps) {
             >
                 <Check className="h-3 w-3 mr-1" /> COMPLETE
             </Button>
-            
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => window.open(`/hospital/dashboard/reports/print/${visitId}`, '_blank')}
+              className="h-8 text-[10px] font-bold text-blue-600 border-blue-200 hover:bg-blue-50"
+            >
+                <Printer className="h-3 w-3 mr-1" /> PRINT PAD
+            </Button>
+
             <form action={cancelAction}>
                 <input type="hidden" name="visitId" value={visitId} />
                 <Button 

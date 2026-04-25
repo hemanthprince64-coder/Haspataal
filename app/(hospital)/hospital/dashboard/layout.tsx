@@ -161,7 +161,11 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
                 {/* Logout Action */}
                 <div className="pt-4 mt-2 border-t border-slate-800">
                     <form action={logoutHospital}>
-                        <button type="submit" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all group">
+                        <button 
+                            type="submit" 
+                            suppressHydrationWarning
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all group"
+                        >
                             <LogOut className="h-4 w-4 opacity-70 group-hover:opacity-100" />
                             <span>Sign Out</span>
                         </button>
