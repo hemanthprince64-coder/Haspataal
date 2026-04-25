@@ -22,18 +22,23 @@ export async function GET(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const departments = await prisma.department.findMany({
-    where: { hospitalId },
-    include: {
-      units: {
-        include: { beds: { orderBy: { bedNumber: 'asc' } } },
-        orderBy: { sortOrder: 'asc' },
+  try {
+    const departments = await prisma.department.findMany({
+      where: { hospitalId },
+      include: {
+        units: {
+          include: { beds: { orderBy: { bedNumber: 'asc' } } },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
-    },
-    orderBy: { sortOrder: 'asc' },
-  });
+      orderBy: { sortOrder: 'asc' },
+    });
 
-  return NextResponse.json({ departments });
+    return NextResponse.json({ departments });
+  } catch (err: any) {
+    console.error("[DEPARTMENTS_GET_ERROR]", err);
+    return NextResponse.json({ error: 'Internal Server Error', message: err.message }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {

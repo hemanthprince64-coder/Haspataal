@@ -140,6 +140,11 @@ export default function DepartmentsPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/hospital/departments");
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("API Error:", res.status, errorText);
+        return;
+      }
       const data = await res.json();
       setDepartments(data.departments ?? []);
       if (data.departments?.length > 0 && !selectedDeptId) {
