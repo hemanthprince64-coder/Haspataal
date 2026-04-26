@@ -58,8 +58,19 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ## 🛠 Commands
 - `npm run dev` — Start dev server
+- `npm run build` — Production Next.js build
+- `npx prisma generate` — Regenerate Prisma client after schema changes
 - `npx prisma db push` — Update schema
 - `node workers/followup.worker.js` — Run retention engine cron
+
+---
+
+## ✅ Current Production Surface
+- Implemented tenant-scoped HMS APIs for setup activation, RBAC permissions, OPD appointments/queue, IPD admissions/discharge, billing invoices/payments, pharmacy dispensing/stock, diagnostics orders/results/pricing, notifications, retention tags, and marketplace discovery.
+- Setup wizard is a 14-step DB-backed flow with activation gates for identity, staff/admin, doctors, OPD, billing, and security configuration.
+- Billing supports GST-aware invoice line calculations, finalization, payments, and OPD/IPD/diagnostic/pharmacy linkage.
+- Security baseline uses JWT hospital sessions, module-level RBAC guard (`requireHospitalAccess`), audit logging on critical writes, encrypted integration credentials, and RLS SQL migration coverage for active tenant tables.
+- Known limitation: Prisma requests are tenant-filtered in application code; full PostgreSQL RLS isolation requires applying the SQL migration and binding `app.hospital_id` in production database sessions.
 
 ---
 
@@ -107,6 +118,9 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Supabase Connectivity Optimization:** If the Supabase PgBouncer pooler (port 6543) is intermittently unreachable in local development, switch the `DATABASE_URL` to the direct connection (port 5432) to restore stability.
 - **Relaxed Onboarding Requirements:** To prevent administrative friction, only require "Core" identity fields (Legal Name, Display Name, Contact Number) for "Complete" status in the setup wizard. Treat branding assets (Logo, GST) as optional warnings rather than hard blocks for downstream clinical configuration.
 - **Clinical Structure Integrity:** Enforce strict rules for hospital structure at the API layer: (1) Auto-generate bed identifiers (B1, B2...) when unit capacity is set, and (2) Prevent deletion of units containing occupied beds to ensure patient data continuity.
+- **Setup/API Shape Drift:** Setup pages must consume the same DTO shape returned by their APIs. Pharmacy stock now maps `DrugStock.name/stock/category` to `drugName/quantity/type`, and diagnostics pricing now maps nested master tests to setup-friendly `testName/category/patientMrp` fields.
+- **Integration Key Safety:** Never pad or synthesize encryption keys. Integration APIs must refuse writes unless `ENCRYPTION_KEY` is present and at least 32 characters.
+- **Fresh Deploy Prisma Generation:** Schema changes that add Prisma models require `prisma generate` during installation; keep `postinstall` in `package.json` so clean deployments build with the current client.
 
 ---
 

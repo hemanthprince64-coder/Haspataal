@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 const identitySchema = z.object({
   legalName: z.string().min(2, "Legal name required"),
   displayName: z.string().min(2, "Display name required"),
-  hospitalType: z.enum(["CLINIC", "NURSING_HOME", "MULTISPECIALTY", "CORPORATE"]),
+  hospitalType: z.enum(["HOSPITAL", "CLINIC", "DIAGNOSTIC_CENTER", "NURSING_HOME", "MULTISPECIALTY", "CORPORATE"]),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be hex color").optional().or(z.literal("")),
   stateRegistrationNumber: z.string().optional(),
   gstNumber: z.string().optional().refine((v) => !v || v.length === 15, "GST must be 15 chars"),
@@ -29,6 +29,7 @@ const identitySchema = z.object({
   openTime: z.string().optional(),
   closeTime: z.string().optional(),
   emergencyContact: z.string().optional(),
+  isMultiBranch: z.boolean().default(false),
   letterheadTemplate: z.string().optional(),
   prescriptionHeader: z.string().optional(),
   prescriptionFooter: z.string().optional(),
@@ -41,7 +42,9 @@ type IdentityForm = z.infer<typeof identitySchema>;
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const TIMEZONES = ["Asia/Kolkata", "Asia/Colombo", "Asia/Dhaka", "Asia/Kathmandu"];
 const HOSPITAL_TYPES = [
+  { value: "HOSPITAL", label: "Hospital" },
   { value: "CLINIC", label: "Clinic" },
+  { value: "DIAGNOSTIC_CENTER", label: "Diagnostic Center" },
   { value: "NURSING_HOME", label: "Nursing Home" },
   { value: "MULTISPECIALTY", label: "Multispecialty Hospital" },
   { value: "CORPORATE", label: "Corporate Hospital" },

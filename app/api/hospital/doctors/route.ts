@@ -63,7 +63,6 @@ export async function POST(req: NextRequest) {
         fullName: data.name,
         mobile: data.mobile,
         email: data.email || null,
-        password: "changeme123", // Default password
       }
     });
   }

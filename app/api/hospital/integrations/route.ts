@@ -1,23 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getHospitalIdFromSession } from '@/lib/auth';
+import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import { IntegrationProvider } from '@prisma/client';
 import { createCipheriv, randomBytes } from 'crypto';
+import { z } from 'zod';
 
-const ENCRYPTION_KEY = (process.env.ENCRYPTION_KEY ?? '').padEnd(32, '0').slice(0, 32);
+const integrationSchema = z.object({
+  provider: z.nativeEnum(IntegrationProvider),
+  config: z.record(z.string(), z.unknown()).default({}),
+  isActive: z.boolean().default(true),
+  isLive: z.boolean().default(false),
+});
+
+function getEncryptionKey() {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key || key.length < 32) return null;
+  return key.slice(0, 32);
+}
 
 function encrypt(text: string): string {
+  const encryptionKey = getEncryptionKey();
+  if (!encryptionKey) throw new Error('ENCRYPTION_KEY must be at least 32 characters');
   const iv = randomBytes(16);
-  const cipher = createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  const cipher = createCipheriv('aes-256-cbc', Buffer.from(encryptionKey), iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
 export async function GET(req: NextRequest) {
-  const hospitalId = await getHospitalIdFromSession(req);
-  if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  let access;
+  try {
+    access = await requireHospitalAccess('integrations', 'read');
+  } catch (error) {
+    return hospitalAccessError(error);
+  }
 
   const configs = await prisma.integrationConfig.findMany({
-    where: { hospitalId },
+    where: { hospitalId: access.hospitalId },
     select: { id: true, provider: true, isActive: true, isLive: true }
   });
 
@@ -25,30 +44,52 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const hospitalId = await getHospitalIdFromSession(req);
-  if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  let access;
+  try {
+    access = await requireHospitalAccess('integrations', 'update');
+  } catch (error) {
+    return hospitalAccessError(error);
+  }
 
-  const body = await req.json();
-  const { provider, config, isActive } = body;
+  if (!getEncryptionKey()) {
+    return NextResponse.json({ error: 'ENCRYPTION_KEY must be at least 32 characters' }, { status: 500 });
+  }
 
-  // Encrypt sensitive config
+  let body: unknown;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+
+  const parsed = integrationSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+  const { provider, config, isActive, isLive } = parsed.data;
+
   const encryptedConfig = encrypt(JSON.stringify(config));
 
   const integration = await prisma.integrationConfig.upsert({
-    where: { hospitalId_provider: { hospitalId, provider } },
+    where: { hospitalId_provider: { hospitalId: access.hospitalId, provider } },
     update: {
       encryptedConfig: encryptedConfig as any,
-      isActive: isActive ?? true,
+      isActive,
+      isLive,
       lastTestedAt: new Date(),
     },
     create: {
-      hospitalId,
+      hospitalId: access.hospitalId,
       provider,
       encryptedConfig: encryptedConfig as any,
-      isActive: isActive ?? true,
+      isActive,
+      isLive,
       lastTestedAt: new Date(),
     }
   });
 
-  return NextResponse.json({ ok: true });
+  await writeAuditLog({
+    hospitalId: access.hospitalId,
+    userId: access.user.id,
+    action: 'integration.upsert',
+    entity: 'IntegrationConfig',
+    entityId: integration.id,
+    details: { provider, isActive, isLive },
+  });
+
+  return NextResponse.json({ ok: true, id: integration.id });
 }

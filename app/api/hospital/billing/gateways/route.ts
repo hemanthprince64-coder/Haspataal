@@ -4,11 +4,17 @@ import { prisma } from '@/lib/prisma';
 import { getHospitalIdFromSession } from '@/lib/auth';
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-const ENCRYPTION_KEY = (process.env.ENCRYPTION_KEY ?? '').padEnd(32, '0').slice(0, 32);
+function encryptionKey() {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key || key.length < 32) {
+    throw new Error('ENCRYPTION_KEY_REQUIRED');
+  }
+  return key.slice(0, 32);
+}
 
 function encrypt(text: string): string {
   const iv = randomBytes(16);
-  const cipher = createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  const cipher = createCipheriv('aes-256-cbc', Buffer.from(encryptionKey()), iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
@@ -17,7 +23,7 @@ function decrypt(text: string): string {
   const [ivHex, encHex] = text.split(':');
   const iv = Buffer.from(ivHex, 'hex');
   const encryptedText = Buffer.from(encHex, 'hex');
-  const decipher = createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  const decipher = createDecipheriv('aes-256-cbc', Buffer.from(encryptionKey()), iv);
   const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
   return decrypted.toString('utf8');
 }
@@ -53,10 +59,15 @@ export async function POST(req: NextRequest) {
 
   const { provider, config, isLive } = parsed.data;
 
-  // Encrypt sensitive config
-  const encryptedConfig = config['Key ID'] || config['Publishable Key'] || config['VPA Address']
-    ? encrypt(JSON.stringify(config))
-    : null;
+  let encryptedConfig: string | null;
+  try {
+    encryptedConfig = Object.keys(config).length ? encrypt(JSON.stringify(config)) : null;
+  } catch (error) {
+    if (error instanceof Error && error.message === 'ENCRYPTION_KEY_REQUIRED') {
+      return NextResponse.json({ error: 'ENCRYPTION_KEY must be configured with at least 32 characters' }, { status: 500 });
+    }
+    throw error;
+  }
 
   await prisma.paymentGateway.upsert({
     where: { hospitalId_provider: { hospitalId, provider } },

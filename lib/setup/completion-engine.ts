@@ -179,6 +179,19 @@ async function checkMarketplaceListing(hospitalId: string): Promise<{ complete: 
   };
 }
 
+async function checkActivation(hospitalId: string): Promise<{ complete: boolean; score: number; warnings: string[] }> {
+  const hospital = await prisma.hospitalsMaster.findUnique({
+    where: { id: hospitalId },
+    select: { accountStatus: true },
+  });
+  const active = hospital?.accountStatus === 'active';
+  return {
+    complete: active,
+    score: active ? 1 : 0,
+    warnings: active ? [] : ['Hospital is not activated → production workflows remain gated'],
+  };
+}
+
 async function checkBranchesConfigured(hospitalId: string): Promise<{ complete: boolean; score: number; warnings: string[] }> {
   const count = await prisma.branch.count({ where: { hospitalId, isActive: true } });
   return {
@@ -209,6 +222,7 @@ const SETUP_STEPS: Array<{
   { id: 'integrations',  weight: 1, check: checkIntegrations },
   { id: 'retention',     weight: 0.5, check: checkRetentionEngine },
   { id: 'marketplace',   weight: 0.5, check: checkMarketplaceListing },
+  { id: 'activation',    weight: 1, check: checkActivation },
 ];
 
 

@@ -6,7 +6,7 @@ import { getHospitalIdFromSession } from '@/lib/auth';
 const identitySchema = z.object({
   legalName: z.string().min(2),
   displayName: z.string().min(2),
-  hospitalType: z.enum(['CLINIC', 'NURSING_HOME', 'MULTISPECIALTY', 'CORPORATE']).optional(),
+  hospitalType: z.enum(['HOSPITAL', 'CLINIC', 'DIAGNOSTIC_CENTER', 'NURSING_HOME', 'MULTISPECIALTY', 'CORPORATE']).optional(),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal('')),
   stateRegistrationNumber: z.string().optional(),
   gstNumber: z.string().optional(),

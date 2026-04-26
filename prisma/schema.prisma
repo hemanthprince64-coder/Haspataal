@@ -22,6 +22,7 @@ model DoctorMaster {
   updatedAt           DateTime                    @updatedAt @map("updated_at")
   password            String?
   appointments        Appointment[]
+  admissions          Admission[]
   prescribedOrders    DiagnosticOrder[]
   verifiedResults     DiagnosticResult[]
   flags               DoctorFlag[]
@@ -156,6 +157,11 @@ model HospitalsMaster {
   verificationLogs        HospitalVerificationLog[]
   agent                   Agent?                      @relation(fields: [agentId], references: [id])
   labOrders               LabOrder[]
+  admissions              Admission[]
+  invoices                Invoice[]
+  notifications           Notification[]
+  pharmacyDispenses       PharmacyDispense[]
+  rolePermissions         RolePermission[]
   qualityControls         LabQualityControl[]
   reviews                 Review[]
   staff                   Staff[]
@@ -341,6 +347,7 @@ model Staff {
   createdAt    DateTime        @default(now()) @map("created_at")
   branch       Branch?         @relation(fields: [branchId], references: [id])
   hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
 
   @@index([hospitalId])
   @@index([role])
@@ -385,6 +392,11 @@ model Patient {
   followUps                FollowUp[]
   insuranceDetails         InsuranceDetail[]
   labOrders                LabOrder[]
+  admissions               Admission[]
+  invoices                 Invoice[]
+  notifications            Notification[]
+  pharmacyDispenses        PharmacyDispense[]
+  lifecycleTags            PatientLifecycleTag[]
   medicalRecords           MedicalRecord[]
   addresses                PatientAddress[]
   medicalHistories         PatientMedicalHistory?
@@ -462,6 +474,7 @@ model PatientPrescription {
   doctor        DoctorMaster?      @relation(fields: [doctorId], references: [id])
   patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
   items         PrescriptionItem[]
+  pharmacyDispenses PharmacyDispense[]
 
   @@index([patientId])
   @@map("patient_prescriptions")
@@ -518,6 +531,7 @@ model Appointment {
   PatientPrescription PatientPrescription[]
   payment             Payment?
   visit               Visit?
+  invoices            Invoice[]
 
   @@unique([doctorId, date, slot])
   @@index([patientId])
@@ -650,6 +664,7 @@ model DiagnosticOrder {
   createdAt   DateTime              @default(now()) @map("created_at")
   deletedAt   DateTime?             @map("deleted_at")
   items       DiagnosticOrderItem[]
+  invoices    Invoice[]
   doctor      DoctorMaster?         @relation(fields: [doctorId], references: [id])
   hospital    HospitalsMaster       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient     Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -873,13 +888,35 @@ model MedicalRecord {
 model AuditLog {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
+  hospitalId String? @map("hospital_id")
   action    String
   entity    String
   entityId  String   @map("entity_id")
   details   Json?
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([hospitalId])
   @@map("audit_logs")
+}
+
+model RolePermission {
+  id          String          @id @default(cuid())
+  hospitalId  String          @map("hospital_id")
+  staffId     String?         @map("staff_id")
+  role        Role
+  module      String
+  action      String
+  allowed     Boolean         @default(true)
+  conditions  Json?           @default("{}")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  staff       Staff?          @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId, role])
+  @@index([staffId])
+  @@unique([hospitalId, role, module, action, staffId])
+  @@map("role_permissions")
 }
 
 model PatientRecord {
@@ -1170,6 +1207,202 @@ model FollowUp {
   @@map("follow_ups")
 }
 
+model Admission {
+  id                  String          @id @default(uuid())
+  hospitalId          String          @map("hospital_id")
+  patientId           String          @map("patient_id")
+  bedId               String?         @map("bed_id")
+  attendingDoctorId   String?         @map("attending_doctor_id")
+  admissionNumber     String          @map("admission_number")
+  status              String          @default("ADMITTED")
+  reason              String?
+  admittedAt          DateTime        @default(now()) @map("admitted_at")
+  expectedDischargeAt DateTime?       @map("expected_discharge_at")
+  dischargedAt        DateTime?       @map("discharged_at")
+  dischargeSummary    String?         @map("discharge_summary")
+  dailyBedCharge      Decimal?        @map("daily_bed_charge")
+  payload             Json?           @default("{}")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+  hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient             Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bed                 Bed?            @relation(fields: [bedId], references: [id])
+  attendingDoctor     DoctorMaster?   @relation(fields: [attendingDoctorId], references: [id])
+  invoices            Invoice[]
+
+  @@unique([hospitalId, admissionNumber])
+  @@index([hospitalId, status])
+  @@index([patientId])
+  @@index([bedId])
+  @@map("admissions")
+}
+
+model Invoice {
+  id                String            @id @default(uuid())
+  hospitalId        String            @map("hospital_id")
+  patientId         String?           @map("patient_id")
+  appointmentId     String?           @map("appointment_id")
+  admissionId       String?           @map("admission_id")
+  diagnosticOrderId String?           @map("diagnostic_order_id")
+  billId            String?           @map("bill_id")
+  invoiceNumber     String            @map("invoice_number")
+  source            String            @default("DIRECT")
+  status            String            @default("DRAFT")
+  subtotal          Decimal           @default(0)
+  gstTotal          Decimal           @default(0) @map("gst_total")
+  discountTotal     Decimal           @default(0) @map("discount_total")
+  totalAmount       Decimal           @default(0) @map("total_amount")
+  paidAmount        Decimal           @default(0) @map("paid_amount")
+  balanceAmount     Decimal           @default(0) @map("balance_amount")
+  finalizedAt       DateTime?         @map("finalized_at")
+  paidAt            DateTime?         @map("paid_at")
+  cancelledAt       DateTime?         @map("cancelled_at")
+  payload           Json?             @default("{}")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  hospital          HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient           Patient?          @relation(fields: [patientId], references: [id])
+  appointment       Appointment?      @relation(fields: [appointmentId], references: [id])
+  admission         Admission?        @relation(fields: [admissionId], references: [id])
+  diagnosticOrder   DiagnosticOrder?  @relation(fields: [diagnosticOrderId], references: [id])
+  bill              Bill?             @relation(fields: [billId], references: [id])
+  lineItems         InvoiceLineItem[]
+  payments          InvoicePayment[]
+  pharmacyDispenses PharmacyDispense[]
+
+  @@unique([hospitalId, invoiceNumber])
+  @@index([hospitalId, status])
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([admissionId])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id             String          @id @default(uuid())
+  invoiceId      String          @map("invoice_id")
+  serviceId      String?         @map("service_id")
+  description    String
+  type           ServiceType
+  quantity       Decimal         @default(1)
+  unitPrice      Decimal         @map("unit_price")
+  gstRate        Float           @default(0) @map("gst_rate")
+  gstInclusive   Boolean         @default(false) @map("gst_inclusive")
+  discountAmount Decimal         @default(0) @map("discount_amount")
+  taxableAmount  Decimal         @default(0) @map("taxable_amount")
+  gstAmount      Decimal         @default(0) @map("gst_amount")
+  totalAmount    Decimal         @default(0) @map("total_amount")
+  metadata       Json?           @default("{}")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  invoice        Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service        ServiceCatalog? @relation(fields: [serviceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([serviceId])
+  @@map("invoice_line_items")
+}
+
+model InvoicePayment {
+  id              String   @id @default(uuid())
+  invoiceId       String   @map("invoice_id")
+  hospitalId      String   @map("hospital_id")
+  amount          Decimal
+  method          String
+  status          String   @default("SUCCESS")
+  referenceNumber String?  @map("reference_number")
+  gatewayProvider String?  @map("gateway_provider")
+  payload         Json?    @default("{}")
+  paidAt          DateTime @default(now()) @map("paid_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([invoiceId])
+  @@map("invoice_payments")
+}
+
+model Notification {
+  id            String          @id @default(uuid())
+  hospitalId    String          @map("hospital_id")
+  patientId     String?         @map("patient_id")
+  channel       String
+  templateKey   String?         @map("template_key")
+  recipient     String
+  subject       String?
+  body          String
+  status        String          @default("PENDING")
+  scheduledAt   DateTime?       @map("scheduled_at")
+  sentAt        DateTime?       @map("sent_at")
+  failureReason String?         @map("failure_reason")
+  payload       Json?           @default("{}")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  hospital      HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient       Patient?        @relation(fields: [patientId], references: [id])
+
+  @@index([hospitalId, status])
+  @@index([patientId])
+  @@map("notifications")
+}
+
+model PharmacyDispense {
+  id             String               @id @default(uuid())
+  hospitalId     String               @map("hospital_id")
+  patientId      String               @map("patient_id")
+  prescriptionId String?              @map("prescription_id")
+  invoiceId      String?              @map("invoice_id")
+  status         String               @default("DISPENSED")
+  dispensedBy    String?              @map("dispensed_by")
+  notes          String?
+  totalAmount    Decimal              @default(0) @map("total_amount")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  hospital       HospitalsMaster      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient        Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  prescription   PatientPrescription? @relation(fields: [prescriptionId], references: [id])
+  invoice        Invoice?             @relation(fields: [invoiceId], references: [id])
+  items          PharmacyDispenseItem[]
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@index([invoiceId])
+  @@map("pharmacy_dispenses")
+}
+
+model PharmacyDispenseItem {
+  id          String           @id @default(uuid())
+  dispenseId  String           @map("dispense_id")
+  drugStockId String           @map("drug_stock_id")
+  drugName    String           @map("drug_name")
+  batchNumber String?          @map("batch_number")
+  quantity    Int
+  unitPrice   Decimal          @default(0) @map("unit_price")
+  totalAmount Decimal          @default(0) @map("total_amount")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  dispense    PharmacyDispense @relation(fields: [dispenseId], references: [id], onDelete: Cascade)
+  drugStock   DrugStock        @relation(fields: [drugStockId], references: [id])
+
+  @@index([dispenseId])
+  @@index([drugStockId])
+  @@map("pharmacy_dispense_items")
+}
+
+model PatientLifecycleTag {
+  id         String   @id @default(uuid())
+  patientId  String   @map("patient_id")
+  hospitalId String   @map("hospital_id")
+  tag        String
+  source     String?
+  metadata   Json?    @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([hospitalId, patientId, tag])
+  @@index([hospitalId, tag])
+  @@index([patientId])
+  @@map("patient_lifecycle_tags")
+}
+
 model Bed {
   id                  String          @id @default(uuid())
   hospitalId          String          @map("hospital_id")
@@ -1187,6 +1420,7 @@ model Bed {
   hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient             Patient?        @relation(fields: [patientId], references: [id])
   unit                Unit?           @relation(fields: [unitId], references: [id])
+  admissions          Admission[]
 
   @@index([hospitalId])
   @@index([unitId])
@@ -1210,6 +1444,7 @@ model Bill {
   branch      Branch?         @relation(fields: [branchId], references: [id])
   hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient     Patient?        @relation(fields: [patientId], references: [id])
+  invoices    Invoice[]
 
   @@index([hospitalId])
   @@index([status])
@@ -1228,6 +1463,7 @@ model DrugStock {
   createdAt  DateTime        @default(now()) @map("created_at")
   updatedAt  DateTime        @updatedAt @map("updated_at")
   hospital   HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  dispenseItems PharmacyDispenseItem[]
 
   @@index([hospitalId])
   @@map("drug_stocks")
@@ -1442,6 +1678,7 @@ model ServiceCatalog {
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
   hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  invoiceLineItems InvoiceLineItem[]
 
   @@unique([hospitalId, code])
   @@index([hospitalId])

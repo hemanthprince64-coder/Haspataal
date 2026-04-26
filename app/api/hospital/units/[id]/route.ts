@@ -26,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const unit = await prisma.unit.findUnique({
     where: { id },
-    include: { department: true }
+    include: { department: true, beds: true }
   });
 
   if (!unit || unit.department.hospitalId !== hospitalId) {

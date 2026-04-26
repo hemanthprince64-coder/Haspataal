@@ -170,6 +170,17 @@ const STEPS = [
     depends: ["identity", "doctors"],
     warning: "Not listed → missing patient acquisition channel",
   },
+  {
+    id: "activation",
+    title: "Final Review & Activation",
+    subtitle: "Validate critical setup and activate production workflows",
+    icon: CheckCircle2,
+    href: "/hospital/dashboard/setup",
+    weight: 1,
+    critical: true,
+    depends: ["identity", "staff", "doctors", "opd", "billing"],
+    warning: "Activation blocked until critical configuration is complete",
+  },
 ];
 
 type StepState = "complete" | "in_progress" | "locked";
@@ -186,38 +197,31 @@ function computeWeightedScore(completion: Record<string, boolean>): number {
 
 export default function SetupWizardPage() {
   const router = useRouter();
-  const [hospitalId, setHospitalId] = useState<string>("default");
   const [activeStep, setActiveStep] = useState<string>(STEPS[0].id);
   const [completion, setCompletion] = useState<Record<string, boolean>>({});
+  const [serverWarnings, setServerWarnings] = useState<Record<string, string[]>>({});
+  const [activationError, setActivationError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const storageKey = `setup_completion_${hospitalId}`;
-
-  // Load from localStorage + server
+  // Load real completion from server
   useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setCompletion(JSON.parse(stored));
-      } catch {}
-    }
-
-    // Fetch real completion from server
     fetch("/api/hospital/setup/completion")
       .then((r) => r.json())
       .then((data) => {
         if (data.stepStatuses) {
           const map: Record<string, boolean> = {};
-          for (const [id, status] of Object.entries(data.stepStatuses as Record<string, { complete: boolean }>)) {
+          const warnings: Record<string, string[]> = {};
+          for (const [id, status] of Object.entries(data.stepStatuses as Record<string, { complete: boolean; warnings?: string[] }>)) {
             map[id] = status.complete;
+            warnings[id] = status.warnings ?? [];
           }
           setCompletion(map);
-          localStorage.setItem(storageKey, JSON.stringify(map));
+          setServerWarnings(warnings);
         }
       })
-      .catch(() => {}) // use localStorage fallback
+      .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [storageKey]);
+  }, []);
 
   const weightedScore = computeWeightedScore(completion);
 
@@ -241,6 +245,25 @@ export default function SetupWizardPage() {
   const progressColor =
     weightedScore >= 80 ? "#22c55e" : weightedScore >= 50 ? "#f59e0b" : "#ef4444";
 
+  const handleConfigure = async () => {
+    setActivationError("");
+    if (activeStepDef.id !== "activation") {
+      router.push(activeStepDef.href);
+      return;
+    }
+
+    const response = await fetch("/api/hospital/setup/activate", { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) {
+      const missing = Array.isArray(data.missing) ? data.missing.join(", ") : "critical steps";
+      const security = Array.isArray(data.security) && data.security.length ? ` ${data.security.join(", ")}` : "";
+      setActivationError(`Activation blocked: ${missing}.${security}`);
+      return;
+    }
+
+    setCompletion((current) => ({ ...current, activation: true }));
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       {/* ── Sidebar Stepper ── */}
@@ -251,7 +274,7 @@ export default function SetupWizardPage() {
             <Settings className="h-5 w-5 text-blue-600" />
             <h1 className="text-base font-bold text-slate-900">Setup Wizard</h1>
           </div>
-          <p className="text-xs text-slate-500">Configure your HMS in 13 steps</p>
+          <p className="text-xs text-slate-500">Configure your HMS in 14 steps</p>
         </div>
 
         {/* Weighted Progress */}
@@ -376,8 +399,10 @@ export default function SetupWizardPage() {
                 state={activeState}
                 completion={completion}
                 allSteps={STEPS}
+                warnings={serverWarnings[activeStep] ?? []}
+                activationError={activationError}
                 onNavigate={(id) => setActiveStep(id)}
-                onConfigure={() => router.push(activeStepDef.href)}
+                onConfigure={handleConfigure}
               />
             </motion.div>
           </AnimatePresence>
@@ -394,6 +419,8 @@ function StepContent({
   state,
   completion,
   allSteps,
+  warnings,
+  activationError,
   onNavigate,
   onConfigure,
 }: {
@@ -401,6 +428,8 @@ function StepContent({
   state: StepState;
   completion: Record<string, boolean>;
   allSteps: typeof STEPS;
+  warnings: string[];
+  activationError: string;
   onNavigate: (id: string) => void;
   onConfigure: () => void;
 }) {
@@ -480,7 +509,14 @@ function StepContent({
       {state !== "complete" && state !== "locked" && (
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-orange-700">{step.warning}</span>
+          <span className="text-xs text-orange-700">{warnings[0] ?? step.warning}</span>
+        </div>
+      )}
+
+      {activationError && step.id === "activation" && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+          <span className="text-xs text-red-700">{activationError}</span>
         </div>
       )}
 
@@ -494,7 +530,7 @@ function StepContent({
               : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
           }`}
         >
-          {state === "complete" ? "Review & Update Configuration" : "Configure →"}
+          {step.id === "activation" ? "Activate Hospital" : state === "complete" ? "Review & Update Configuration" : "Configure →"}
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       )}
