@@ -25,7 +25,10 @@ export interface ExtendedPrismaClient extends PrismaClient {
 }
 
 const prismaClientSingleton = (): ExtendedPrismaClient => {
-    const client = new PrismaClient() as unknown as ExtendedPrismaClient;
+    const client = new PrismaClient({
+      // Ensure we don't exhaust Supabase connection pool during dev/static generation
+      // connection_limit is set via DATABASE_URL query params
+    }) as unknown as ExtendedPrismaClient;
 
     // RLS Session Helper: ensures absolute database-level isolation
     // Use this wrapper for any query requiring multi-tenant security
@@ -86,11 +89,11 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
     });
 
     return client;
-}
+  };
 
-declare global {
+  declare global {
     var _prisma: ExtendedPrismaClient | undefined;
-}
+  }
 
 export const prisma = globalThis._prisma || prismaClientSingleton();
 
