@@ -13,6 +13,7 @@ export interface SetupCompletion {
   criticalWarnings: string[];
   generalWarnings: string[];
   stepStatuses: Record<string, StepStatus>;
+  verificationStatus: string;
 }
 
 // ─── Individual Step Checkers ─────────────────────────────────────────────────
@@ -331,5 +332,16 @@ export async function computeSetupCompletion(hospitalId: string): Promise<SetupC
     .filter((r) => !criticalStepIds.includes(r.id) && r.warnings.length > 0)
     .flatMap((r) => r.warnings);
 
-  return { totalWeightedScore, criticalWarnings, generalWarnings, stepStatuses };
+  const hospital = await prisma.hospitalsMaster.findUnique({
+    where: { id: hospitalId },
+    select: { verificationStatus: true }
+  });
+
+  return { 
+    totalWeightedScore, 
+    criticalWarnings, 
+    generalWarnings, 
+    stepStatuses, 
+    verificationStatus: hospital?.verificationStatus || 'pending' 
+  };
 }

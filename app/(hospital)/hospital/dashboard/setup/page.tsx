@@ -211,6 +211,7 @@ export default function SetupWizardPage() {
   const [stepHistory, setStepHistory] = useState<string[]>([STEPS[0].id]);
   const [completion, setCompletion] = useState<Record<string, boolean>>({});
   const [serverWarnings, setServerWarnings] = useState<Record<string, string[]>>({});
+  const [verificationStatus, setVerificationStatus] = useState<string>("pending");
   const [activationError, setActivationError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
@@ -253,6 +254,7 @@ export default function SetupWizardPage() {
           }
           setCompletion(map);
           setServerWarnings(warnings);
+          setVerificationStatus(data.verificationStatus || "pending");
         }
       })
       .catch(() => {})
@@ -264,11 +266,15 @@ export default function SetupWizardPage() {
   const getStepState = useCallback(
     (step: (typeof STEPS)[number]): StepState => {
       if (completion[step.id]) return "complete";
+      
+      // If hospital is approved (verified), unlock all modules regardless of dependencies
+      if (verificationStatus === "verified") return "in_progress";
+
       const depsComplete = step.depends.every((dep) => completion[dep]);
       if (!depsComplete) return "locked";
       return "in_progress";
     },
-    [completion]
+    [completion, verificationStatus]
   );
 
   const activeStepDef = STEPS.find((s) => s.id === activeStep) ?? STEPS[0];
