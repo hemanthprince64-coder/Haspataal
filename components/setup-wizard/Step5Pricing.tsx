@@ -10,6 +10,11 @@ export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: a
     opd_fees: 500, ipd_rate: 2000, diag_markup: 15
   });
 
+  // Generate unique IDs for inputs
+  const idOpd = React.useId();
+  const idIpd = React.useId();
+  const idMarkup = React.useId();
+
   const handleChange = (field: string, value: string) => {
     const num = parseInt(value, 10);
     setPricing({ ...pricing, [field]: isNaN(num) ? 0 : Math.max(0, num) });
@@ -29,8 +34,9 @@ export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: a
 
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label>Standard OPD Consultation Fee (₹)</Label>
+          <Label htmlFor={idOpd}>Standard OPD Consultation Fee (₹)</Label>
           <Input 
+            id={idOpd}
             type="number" 
             value={pricing.opd_fees} 
             onChange={(e) => handleChange('opd_fees', e.target.value)} 
@@ -38,8 +44,9 @@ export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: a
         </div>
         
         <div className="space-y-2">
-          <Label>General Ward IPD Rate (₹ / day)</Label>
+          <Label htmlFor={idIpd}>General Ward IPD Rate (₹ / day)</Label>
           <Input 
+            id={idIpd}
             type="number" 
             value={pricing.ipd_rate} 
             onChange={(e) => handleChange('ipd_rate', e.target.value)} 
@@ -47,8 +54,9 @@ export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: a
         </div>
 
         <div className="space-y-2">
-          <Label>Diagnostics/Pharmacy Markup (%)</Label>
+          <Label htmlFor={idMarkup}>Diagnostics/Pharmacy Markup (%)</Label>
           <Input 
+            id={idMarkup}
             type="number" 
             value={pricing.diag_markup} 
             onChange={(e) => handleChange('diag_markup', e.target.value)} 

@@ -57,6 +57,7 @@ export function Step4OPDTimings({ config, onSave }: { config: any, onSave: (data
                   className="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500"
                   value={docTiming.schedule}
                   onChange={e => updateTiming(doc.name, 'schedule', e.target.value)}
+                  aria-label={`Shift timings for ${doc.name}`}
                 >
                   <option value="10:00 AM - 02:00 PM">10:00 AM - 02:00 PM</option>
                   <option value="04:00 PM - 08:00 PM">04:00 PM - 08:00 PM</option>
@@ -70,6 +71,7 @@ export function Step4OPDTimings({ config, onSave }: { config: any, onSave: (data
                   className="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500"
                   value={docTiming.slotDuration}
                   onChange={e => updateTiming(doc.name, 'slotDuration', e.target.value)}
+                  aria-label={`Slot duration for ${doc.name}`}
                 >
                   <option value="10">10 mins</option>
                   <option value="15">15 mins</option>

@@ -17,7 +17,23 @@ export async function POST(req: NextRequest) {
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const parsed = inviteSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });
+  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+
+  // Check for existing pending invite for same email (idempotency/duplicate prevention)
+  const existingPending = await prisma.staffInvite.findFirst({
+    where: {
+      hospitalId,
+      email: parsed.data.email,
+      isAccepted: false,
+      expiresAt: { gt: new Date() }
+    }
+  });
+  if (existingPending) {
+    return NextResponse.json(
+      { error: 'An invite has already been sent to this email. Please wait for them to accept or resend.' },
+      { status: 409 }
+    );
+  }
 
   const token = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days

@@ -50,49 +50,99 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const parsed = doctorSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Validation failed', details: parsed.error.format() },
+      { status: 422 }
+    );
+  }
 
   const data = parsed.data;
 
-  // 1. Find or create doctor in global DoctorsMaster (or simplified Doctor model)
-  // For this implementation, we'll assume a simplified link to a Doctor record.
-  let doctor = await prisma.doctorMaster.findUnique({ where: { mobile: data.mobile } });
-  if (!doctor) {
-    doctor = await prisma.doctorMaster.create({
-      data: {
+  // Wrap in transaction to ensure atomicity
+  try {
+    // Upsert doctor by mobile (atomic) — prevents duplicate doctor race condition
+    const doctor = await prisma.doctorMaster.upsert({
+      where: { mobile: data.mobile },
+      update: {
+        fullName: data.name,
+        email: data.email || null,
+      },
+      create: {
         fullName: data.name,
         mobile: data.mobile,
         email: data.email || null,
       }
     });
-  }
 
-  // 2. Create affiliation with specific fees and payload for this hospital
-  const affiliation = await prisma.doctorHospitalAffiliation.create({
-    data: {
-      hospitalId: hospitalId as string,
-      doctorId: doctor.id,
-      consultationFee: data.consultationFee,
-      followUpFee: data.followUpFee,
-      followUpWindowDays: data.followUpDays,
-      isCurrent: true,
-      role: "DOCTOR",
-      payload: {
-        speciality: data.speciality,
-        experienceYears: data.experienceYears,
-        departments: data.deptIds,
-      }
+    // Check for existing affiliation (idempotency)
+    const existingAffiliation = await prisma.doctorHospitalAffiliation.findFirst({
+      where: { doctorId: doctor.id, hospitalId },
+    });
+
+    if (existingAffiliation) {
+      // Update existing affiliation with new fees/speciality
+      const updated = await prisma.doctorHospitalAffiliation.update({
+        where: { id: existingAffiliation.id },
+        data: {
+          consultationFee: data.consultationFee,
+          followUpFee: data.followUpFee,
+          followUpWindowDays: data.followUpDays,
+          isCurrent: true,
+          payload: {
+            speciality: data.speciality,
+            experienceYears: data.experienceYears,
+            departments: data.deptIds,
+          }
+        }
+      });
+      return NextResponse.json({ 
+        doctor: {
+          id: doctor.id,
+          name: doctor.fullName,
+          speciality: data.speciality,
+          consultationFee: data.consultationFee,
+          isActive: true,
+          departments: data.deptIds
+        },
+        affiliationId: updated.id
+      });
     }
-  });
 
-  return NextResponse.json({ 
-    doctor: {
-      id: doctor.id,
-      name: doctor.fullName,
-      speciality: data.speciality,
-      consultationFee: data.consultationFee,
-      isActive: true,
-      departments: data.deptIds
-    } 
-  });
+    // Create new affiliation
+    const affiliation = await prisma.doctorHospitalAffiliation.create({
+      data: {
+        hospitalId,
+        doctorId: doctor.id,
+        consultationFee: data.consultationFee,
+        followUpFee: data.followUpFee,
+        followUpWindowDays: data.followUpDays,
+        isCurrent: true,
+        role: "DOCTOR",
+        payload: {
+          speciality: data.speciality,
+          experienceYears: data.experienceYears,
+          departments: data.deptIds,
+        }
+      }
+    });
+
+    return NextResponse.json({ 
+      doctor: {
+        id: doctor.id,
+        name: doctor.fullName,
+        speciality: data.speciality,
+        consultationFee: data.consultationFee,
+        isActive: true,
+        departments: data.deptIds
+      },
+      affiliationId: affiliation.id
+    });
+  } catch (error) {
+    console.error('[doctors POST] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create doctor. Please try again.' },
+      { status: 500 }
+    );
+  }
 }

@@ -36,15 +36,30 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {SPECIALITIES_LIST.map(spec => (
-          <div 
+          <button
             key={spec}
+            type="button"
             onClick={() => toggleSpec(spec)}
-            className={`p-4 border rounded-lg cursor-pointer transition-all ${selected.includes(spec) ? 'border-blue-500 bg-blue-50 text-blue-800 font-medium' : 'border-slate-200 hover:border-blue-300'}`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleSpec(spec);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-pressed={selected.includes(spec)}
+            aria-label={`Select ${spec}${selected.includes(spec) ? ' (selected)' : ''}`}
+            className={`p-4 border rounded-lg cursor-pointer transition-all text-left
+              ${selected.includes(spec)
+                ? 'border-blue-500 bg-blue-50 text-blue-800 font-medium'
+                : 'border-slate-200 hover:border-blue-300'
+              }`}
           >
             {spec}
-          </div>
+          </button>
         ))}
       </div>
 

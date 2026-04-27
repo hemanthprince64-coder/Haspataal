@@ -1418,16 +1418,17 @@ model Bed {
   isActive            Boolean         @default(true) @map("is_active")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
-  hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  patient             Patient?        @relation(fields: [patientId], references: [id])
-  unit                Unit?           @relation(fields: [unitId], references: [id])
-  department          Department?     @relation(fields: [departmentId], references: [id])
-  admissions          Admission[]
+   hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+   patient             Patient?        @relation(fields: [patientId], references: [id])
+   unit                Unit?           @relation(fields: [unitId], references: [id])
+   department          Department?     @relation("DepartmentBeds", fields: [departmentId], references: [id])
+   admissions          Admission[]
 
   @@index([hospitalId])
   @@index([unitId])
   @@index([departmentId])
   @@unique([hospitalId, bedNumber])
+  @@unique([unitId, bedNumber], name: "idx_unit_bednumber")
   @@map("beds")
 }
 
@@ -1647,13 +1648,14 @@ model Department {
   sortOrder        Int             @default(0) @map("sort_order")
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
-  hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  units            Unit[]
+   hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+   units            Unit[]
+   beds             Bed[]            @relation("DepartmentBeds")
 
-  @@unique([hospitalId, code])
-  @@index([hospitalId])
-  @@map("departments")
-}
+   @@unique([hospitalId, code])
+   @@index([hospitalId])
+   @@map("departments")
+ }
 
 model Unit {
   id           String     @id @default(cuid())
@@ -1810,9 +1812,9 @@ model Branch {
   staff           Staff[]
   bills           Bill[]
 
-  @@index([hospitalId])
-  @@map("branches")
-}
+   @@index([hospitalId])
+   @@map("branches")
+ }
 
 model StaffInvite {
   id         String   @id @default(cuid())

@@ -8,30 +8,42 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const branchId = id;
 
-   const branch = await prisma.branch.update({
-     where: { id: branchId, hospitalId },
-     data: {
-       name: body.name,
-       code: body.code ? body.code.toUpperCase() : undefined,
-       address: body.address,
-       city: body.city,
-       pincode: body.pincode,
-       phone: body.phone,
-       isActive: body.isActive,
-       isHeadquarters: body.isHeadquarters,
-     }
-   });
-
-  if (body.isHeadquarters) {
-    await prisma.branch.updateMany({
-      where: { hospitalId, id: { not: branchId } },
-      data: { isHeadquarters: false }
+  try {
+    const branch = await prisma.branch.update({
+      where: { id, hospitalId },
+      data: {
+        name: body.name,
+        code: body.code ? body.code.toUpperCase() : undefined,
+        address: body.address,
+        city: body.city,
+        pincode: body.pincode,
+        phone: body.phone,
+        isActive: body.isActive,
+        isHeadquarters: body.isHeadquarters,
+      }
     });
-  }
 
-  return NextResponse.json({ branch });
+    if (body.isHeadquarters) {
+      await prisma.branch.updateMany({
+        where: { hospitalId, id: { not: id } },
+        data: { isHeadquarters: false }
+      });
+    }
+
+    return NextResponse.json({ branch });
+  } catch (error: any) {
+    console.error('[branches PUT] Error:', error);
+    
+    if (error.code === 'P2002' && error.meta?.target?.includes('code')) {
+      return NextResponse.json({ error: 'Branch code already exists.' }, { status: 409 });
+    }
+    if (error.code === 'P2002' && error.meta?.target?.includes('is_headquarters')) {
+      return NextResponse.json({ error: 'Only one main branch per hospital is allowed.' }, { status: 409 });
+    }
+
+    return NextResponse.json({ error: 'Failed to update branch' }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

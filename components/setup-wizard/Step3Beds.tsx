@@ -10,16 +10,22 @@ export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any)
     general: 0, icu: 0, private: 0, semi: 0
   });
 
+  // Generate unique IDs for inputs
+  const idGeneral = React.useId();
+  const idIcu = React.useId();
+  const idPrivate = React.useId();
+  const idSemi = React.useId();
+
+  // Apply smart defaults if user hasn't entered anything
   useEffect(() => {
     if (Object.values(beds).every(v => v === 0)) {
-      // Smart Defaults for a mid-size setup
       setBeds({ general: 20, icu: 5, private: 5, semi: 10 });
     }
   }, []);
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: 'general' | 'icu' | 'private' | 'semi', value: string) => {
     const num = parseInt(value, 10);
-    setBeds({ ...beds, [field]: isNaN(num) ? 0 : Math.max(0, num) });
+    setBeds(prev => ({ ...prev, [field]: isNaN(num) ? 0 : Math.max(0, num) }));
   };
 
   const totalBeds: number = Object.values(beds).reduce((acc, curr) => acc + (typeof curr === 'number' ? curr : 0), 0);
@@ -36,39 +42,44 @@ export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any)
         </div>
       </div>
 
-      <div className="bg-blue-50 text-blue-800 p-4 rounded-lg flex justify-between items-center font-semibold">
+      <div className="bg-blue-50 text-blue-800 p-4 rounded-lg flex justify-between items-center font-semibold" aria-live="polite">
         <span>Total Hospital Bed Capacity:</span>
         <span className="text-2xl">{totalBeds} Beds</span>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label>General Ward Beds</Label>
+          <Label htmlFor={idGeneral}>General Ward Beds</Label>
           <Input 
+            id={idGeneral}
             type="number" 
             value={beds.general} 
             onChange={(e) => handleChange('general', e.target.value)} 
+            aria-describedby="general-help"
           />
         </div>
         <div className="space-y-2">
-          <Label>ICU / NICU Beds</Label>
+          <Label htmlFor={idIcu}>ICU / NICU Beds</Label>
           <Input 
+            id={idIcu}
             type="number" 
             value={beds.icu} 
             onChange={(e) => handleChange('icu', e.target.value)} 
           />
         </div>
         <div className="space-y-2">
-          <Label>Private Rooms</Label>
+          <Label htmlFor={idPrivate}>Private Rooms</Label>
           <Input 
+            id={idPrivate}
             type="number" 
             value={beds.private} 
             onChange={(e) => handleChange('private', e.target.value)} 
           />
         </div>
         <div className="space-y-2">
-          <Label>Semi-Private Beds</Label>
+          <Label htmlFor={idSemi}>Semi-Private Beds</Label>
           <Input 
+            id={idSemi}
             type="number" 
             value={beds.semi} 
             onChange={(e) => handleChange('semi', e.target.value)} 

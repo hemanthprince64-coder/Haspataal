@@ -64,11 +64,42 @@ export function Step2Doctors({ config, onSave }: { config: any, onSave: (data: a
       <div className="space-y-3">
         {doctors.map((doc, i) => (
           <div key={i} className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-white p-3 rounded-lg border shadow-sm">
-            <Input placeholder="Dr. Name" value={doc.name} onChange={e => updateDoctor(i, 'name', e.target.value)} className="w-full md:flex-1" />
-            <Input placeholder="Speciality" value={doc.speciality} onChange={e => updateDoctor(i, 'speciality', e.target.value)} className="w-full md:flex-1" />
-            <Input placeholder="Degree" className="w-24" value={doc.degree} onChange={e => updateDoctor(i, 'degree', e.target.value)} />
-            <Input placeholder="Fees (₹)" className="w-24" type="number" value={doc.fees} onChange={e => updateDoctor(i, 'fees', e.target.value)} />
-            <Button variant="ghost" size="icon" onClick={() => removeDoctor(i)} className="text-red-500 hover:text-red-700 hover:bg-red-50 self-start md:self-auto">
+            <Input 
+              placeholder="Dr. Name" 
+              aria-label={`Doctor name row ${i + 1}`}
+              value={doc.name} 
+              onChange={e => updateDoctor(i, 'name', e.target.value)} 
+              className="w-full md:flex-1" 
+            />
+            <Input 
+              placeholder="Speciality" 
+              aria-label={`Doctor speciality row ${i + 1}`}
+              value={doc.speciality} 
+              onChange={e => updateDoctor(i, 'speciality', e.target.value)} 
+              className="w-full md:flex-1" 
+            />
+            <Input 
+              placeholder="Degree" 
+              aria-label={`Doctor degree row ${i + 1}`}
+              className="w-24" 
+              value={doc.degree} 
+              onChange={e => updateDoctor(i, 'degree', e.target.value)} 
+            />
+            <Input 
+              placeholder="Fees (₹)" 
+              aria-label={`Consultation fee row ${i + 1}`}
+              className="w-24" 
+              type="number" 
+              value={doc.fees} 
+              onChange={e => updateDoctor(i, 'fees', e.target.value)} 
+            />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => removeDoctor(i)} 
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 self-start md:self-auto"
+              aria-label={`Remove doctor row ${i + 1}`}
+            >
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
