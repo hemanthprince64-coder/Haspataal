@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useRouter } from "next/navigation";
 
 // ─── Schema ────────────────────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ function Field({ label, error, children, required }: { label: string; error?: an
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function HospitalIdentityPage() {
+  const router = useRouter();
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const autosaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const DRAFT_KEY = "identity_draft";
@@ -196,7 +198,10 @@ export default function HospitalIdentityPage() {
       if (!res.ok) throw new Error("Save failed");
       localStorage.removeItem(DRAFT_KEY);
       setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 3000);
+      // Redirect back to wizard after short delay; wizard will auto-advance to next step
+      setTimeout(() => {
+        router.push("/hospital/dashboard/setup");
+      }, 1000);
     } catch {
       setSaveState("error");
       setTimeout(() => setSaveState("idle"), 3000);

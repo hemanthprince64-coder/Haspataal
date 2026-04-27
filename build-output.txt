@@ -1,0 +1,31 @@
+
+> haspataal@0.1.0 build
+> next build
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 13.3s
+  Running TypeScript ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/103) ...
+  Generating static pages using 15 workers (25/103) 
+  Generating static pages using 15 workers (51/103) 
+  Generating static pages using 15 workers (77/103) 
+Error occurred prerendering page "/sitemap.xml". Read more: https://nextjs.org/docs/messages/prerender-error
+Error [PrismaClientInitializationError]: 
+Invalid `prisma.hospitalsMaster.findMany()` invocation:
+
+
+Can't reach database server at `aws-1-ap-south-1.pooler.supabase.com`:`6543`
+
+Please make sure your database server is running at `aws-1-ap-south-1.pooler.supabase.com`:`6543`.
+    at async Object.getHubMetadata (C:\Users\heman\.gemini\antigravity\scratch\haspataal\.next\server\chunks\lib_services_ts_f2bcd5c4._.js:1:3603)
+    at async w (C:\Users\heman\.gemini\antigravity\scratch\haspataal\.next\server\chunks\[root-of-the-server]__c933bb7c._.js:16:509)
+    at async _ (C:\Users\heman\.gemini\antigravity\scratch\haspataal\.next\server\chunks\[root-of-the-server]__c933bb7c._.js:16:1154) {
+  clientVersion: '5.10.2',
+  errorCode: undefined
+}
+Export encountered an error on /sitemap.xml/route: /sitemap.xml, exiting the build.
+Γ¿» Next.js build worker exited with code: 1 and signal: null

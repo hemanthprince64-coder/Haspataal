@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,7 +10,6 @@ import {
   RefreshCw, Store, CheckCircle2, Clock, Lock,
   AlertTriangle, ChevronRight, ArrowRight, Settings, MapPin,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -245,6 +245,33 @@ export default function SetupWizardPage() {
   const progressColor =
     weightedScore >= 80 ? "#22c55e" : weightedScore >= 50 ? "#f59e0b" : "#ef4444";
 
+  // ── Auto-progression: advance to next unlocked step when current completes ──
+  const prevCompletionRef = useRef<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const wasComplete = prevCompletionRef.current[activeStep] ?? false;
+    const isComplete = !!completion[activeStep];
+
+    if (isComplete && !wasComplete) {
+      // Current step just became complete — find next unlocked step
+      const nextStep = STEPS.find((s) => {
+        if (completion[s.id]) return false;
+        return s.depends.every((dep) => completion[dep]);
+      });
+      if (nextStep) {
+        setActiveStep(nextStep.id);
+      }
+    }
+
+    // Update the ref for future comparisons
+    prevCompletionRef.current = {
+      ...prevCompletionRef.current,
+      [activeStep]: isComplete,
+    };
+  }, [completion, activeStep, isLoading]);
+
   const handleConfigure = async () => {
     setActivationError("");
     if (activeStepDef.id !== "activation") {
@@ -383,6 +410,49 @@ export default function SetupWizardPage() {
             </ul>
           </div>
         )}
+
+        {/* Breadcrumb Navigation */}
+        <div className="px-6 py-4 border-b border-slate-200 bg-white">
+          <nav className="flex items-center gap-1 overflow-x-auto pb-1">
+            {STEPS.map((step, idx) => {
+              const stepState = getStepState(step);
+              const isActive = activeStep === step.id;
+              const Icon = step.icon;
+              const isLast = idx === STEPS.length - 1;
+
+              return (
+                <React.Fragment key={step.id}>
+                  <button
+                    onClick={() => stepState !== "locked" && setActiveStep(step.id)}
+                    disabled={stepState === "locked"}
+                    title={`${step.title}: ${stepState === "complete" ? "Completed" : stepState === "locked" ? "Locked - complete prerequisites first" : "In progress"}`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
+                      ${isActive
+                        ? "bg-blue-600 text-white shadow-md"
+                        : stepState === "complete"
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : stepState === "locked"
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }
+                      ${stepState !== "locked" ? "cursor-pointer" : "cursor-not-allowed"}
+                    `}
+                  >
+                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold
+                      ${isActive ? "bg-white/20" : stepState === "complete" ? "bg-green-200 text-green-700" : "bg-slate-200 text-slate-500"}
+                    `}>
+                      {stepState === "complete" ? "✓" : idx + 1}
+                    </span>
+                    <span className="max-w-[120px] truncate">{step.title}</span>
+                  </button>
+                  {!isLast && (
+                    <ChevronRight className="h-3 w-3 text-slate-300 flex-shrink-0" />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </nav>
+        </div>
 
         {/* Step Content */}
         <div className="p-6">
