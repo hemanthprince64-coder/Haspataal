@@ -21,8 +21,10 @@ const identitySchema = z.object({
   hospitalType: z.enum(["HOSPITAL", "CLINIC", "DIAGNOSTIC_CENTER", "NURSING_HOME", "MULTISPECIALTY", "CORPORATE"]),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be hex color").optional().or(z.literal("")),
   stateRegistrationNumber: z.string().optional(),
+  registrationNumber: z.string().optional(),
   gstNumber: z.string().optional().refine((v) => !v || v.length === 15, "GST must be 15 chars"),
   panNumber: z.string().optional(),
+  contactNumber: z.string().min(10, "Valid contact number required"),
   nabhAccredited: z.boolean().default(false),
   nablAccredited: z.boolean().default(false),
   timezone: z.string().default("Asia/Kolkata"),
@@ -117,6 +119,7 @@ export default function HospitalIdentityPage() {
       timezone: "Asia/Kolkata",
       workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
       isMultiBranch: false,
+      contactNumber: "",
     },
   });
 
@@ -143,6 +146,7 @@ export default function HospitalIdentityPage() {
             hospitalType: h.hospitalType ?? "MULTISPECIALTY",
             brandColor: h.brandColor ?? "#2563eb",
             stateRegistrationNumber: h.stateRegistrationNumber ?? "",
+            registrationNumber: h.registrationNumber ?? "",
             gstNumber: h.gstNumber ?? "",
             panNumber: h.panNumber ?? "",
             nabhAccredited: h.nabhAccredited ?? false,
@@ -153,6 +157,7 @@ export default function HospitalIdentityPage() {
             closeTime: h.closeTime ?? "",
             emergencyContact: h.emergencyContact ?? "",
             isMultiBranch: h.isMultiBranch ?? false,
+            contactNumber: h.contactNumber ?? "",
             letterheadTemplate: h.letterheadTemplate ?? "",
             prescriptionHeader: h.prescriptionHeader ?? "",
             prescriptionFooter: h.prescriptionFooter ?? "",
@@ -253,17 +258,22 @@ export default function HospitalIdentityPage() {
               <Input {...register("displayName")} placeholder="Apollo Hospital" />
             </Field>
           </div>
-          <Field label="Hospital Type" error={errors.hospitalType?.message}>
-            <select
-              {...register("hospitalType")}
-              suppressHydrationWarning
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {HOSPITAL_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Primary Contact Number" required error={errors.contactNumber?.message}>
+              <Input {...register("contactNumber")} placeholder="+91 98765 43210" />
+            </Field>
+            <Field label="Hospital Type" error={errors.hospitalType?.message}>
+              <select
+                {...register("hospitalType")}
+                suppressHydrationWarning
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {HOSPITAL_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
           <Field label="Brand Color">
             <div className="flex items-center gap-3">
               <input
@@ -338,9 +348,14 @@ export default function HospitalIdentityPage() {
         {/* Section 2 — Compliance */}
         <Section title="Compliance & Registration" icon={Shield} defaultOpen={false}>
           <div className="mt-3 space-y-3">
-            <Field label="State Registration Number" error={errors.stateRegistrationNumber?.message}>
-              <Input {...register("stateRegistrationNumber")} placeholder="MH-HOSP-2024-XXXXX" />
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="State Registration Number" error={errors.stateRegistrationNumber?.message}>
+                <Input {...register("stateRegistrationNumber")} placeholder="MH-HOSP-2024-XXXXX" />
+              </Field>
+              <Field label="Master Registration Number" error={errors.registrationNumber?.message}>
+                <Input {...register("registrationNumber")} placeholder="HOSP-CORE-ID-123" />
+              </Field>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Field label="GST Number" error={errors.gstNumber?.message}>
                 <Input {...register("gstNumber")} placeholder="29ABCDE1234F1Z5" className="font-mono" maxLength={15} />

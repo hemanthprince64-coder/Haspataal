@@ -20,7 +20,16 @@ export interface SetupCompletion {
 async function checkIdentityComplete(hospitalId: string): Promise<{ complete: boolean; score: number; warnings: string[] }> {
   const h = await prisma.hospitalsMaster.findUnique({
     where: { id: hospitalId },
-    select: { legalName: true, displayName: true, logoUrl: true, gstNumber: true, contactNumber: true },
+    select: { 
+      legalName: true, 
+      displayName: true, 
+      logoUrl: true, 
+      gstNumber: true, 
+      contactNumber: true,
+      billingProfile: {
+        select: { gstApplicable: true }
+      }
+    },
   });
   if (!h) return { complete: false, score: 0, warnings: ['Hospital not found'] };
   
@@ -37,13 +46,20 @@ async function checkIdentityComplete(hospitalId: string): Promise<{ complete: bo
 
   const score = (mandatory.filter(Boolean).length + optional.filter(Boolean).length) / (mandatory.length + optional.length);
 
+  const warnings: string[] = [];
+  if (!h.logoUrl) warnings.push('No hospital logo uploaded → affects patient trust');
+  
+  // Only warn about GST if it's either provided or marked as applicable in billing profile
+  // If billing profile says it's NOT applicable, we don't warn.
+  const isGstRequired = h.billingProfile?.gstApplicable ?? true; // Default to true for compliance safety
+  if (isGstRequired && !h.gstNumber) {
+    warnings.push('No GST number → compliance risk on invoices');
+  }
+
   return {
-    complete: mandatory.every(Boolean), // Only require core fields to unlock next steps
+    complete: mandatory.every(Boolean), 
     score,
-    warnings: [
-      ...(!h.logoUrl ? ['No hospital logo uploaded → affects patient trust'] : []),
-      ...(!h.gstNumber ? ['No GST number → compliance risk on invoices'] : []),
-    ],
+    warnings,
   };
 }
 

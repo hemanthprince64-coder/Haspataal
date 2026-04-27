@@ -121,6 +121,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Setup/API Shape Drift:** Setup pages must consume the same DTO shape returned by their APIs. Pharmacy stock now maps `DrugStock.name/stock/category` to `drugName/quantity/type`, and diagnostics pricing now maps nested master tests to setup-friendly `testName/category/patientMrp` fields.
 - **Integration Key Safety:** Never pad or synthesize encryption keys. Integration APIs must refuse writes unless `ENCRYPTION_KEY` is present and at least 32 characters.
 - **Fresh Deploy Prisma Generation:** Schema changes that add Prisma models require `prisma generate` during installation; keep `postinstall` in `package.json` so clean deployments build with the current client.
+- **Identity Configuration Mapping:** To resolve "No identity configured" blocks and invoicing warnings, ensure `contactNumber` and `registrationNumber` are explicitly mapped in the Identity API/UI. Additionally, the setup completion engine must be GST-aware; only trigger compliance warnings for missing GST if the hospital's billing profile explicitly marks GST as applicable, preventing false negatives for non-GST entities.
 
 ---
 
