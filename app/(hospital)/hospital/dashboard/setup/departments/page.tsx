@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -184,8 +185,10 @@ export default function DepartmentsPage() {
       }
       await fetchDepartments();
       setDeptDialog({ open: false });
+      toast.success(`Department ${deptDialog.edit ? 'updated' : 'created'} successfully`);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to save department");
     } finally {
       setSaveLoading(false);
     }
@@ -218,8 +221,10 @@ export default function DepartmentsPage() {
       }
       await fetchDepartments();
       setUnitDialog({ open: false });
+      toast.success(`Unit ${unitDialog.edit ? 'updated' : 'created'} successfully`);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to save unit");
     } finally {
       setSaveLoading(false);
     }
@@ -234,8 +239,10 @@ export default function DepartmentsPage() {
         return;
       }
       await fetchDepartments();
+      toast.success("Unit deleted");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to delete unit");
     }
   };
 

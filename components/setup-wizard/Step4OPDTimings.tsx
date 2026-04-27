@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Clock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 
 export function Step4OPDTimings({ config, onSave }: { config: any, onSave: (data: any) => void }) {
   const doctors = config.doctors || [];
@@ -44,16 +45,16 @@ export function Step4OPDTimings({ config, onSave }: { config: any, onSave: (data
           const docTiming = timings[doc.name] || { slotDuration: '15', schedule: '10:00 AM - 02:00 PM' };
           
           return (
-            <div key={i} className="flex gap-4 items-center bg-white p-4 rounded-lg border shadow-sm">
-              <div className="w-1/3">
+            <div key={i} className="flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center bg-white p-4 rounded-lg border shadow-sm">
+              <div className="w-full md:w-1/3">
                 <p className="font-semibold">{doc.name}</p>
                 <p className="text-xs text-slate-500">{doc.speciality}</p>
               </div>
               
-              <div className="w-1/3">
+              <div className="w-full md:w-1/3">
                 <label className="text-xs text-slate-500 block mb-1">Shift Timings</label>
                 <select 
-                  className="w-full border rounded-md p-2 text-sm"
+                  className="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500"
                   value={docTiming.schedule}
                   onChange={e => updateTiming(doc.name, 'schedule', e.target.value)}
                 >
@@ -63,10 +64,10 @@ export function Step4OPDTimings({ config, onSave }: { config: any, onSave: (data
                 </select>
               </div>
 
-              <div className="w-1/3">
+              <div className="w-full md:w-1/3">
                 <label className="text-xs text-slate-500 block mb-1">Slot Duration</label>
                 <select 
-                  className="w-full border rounded-md p-2 text-sm"
+                  className="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500"
                   value={docTiming.slotDuration}
                   onChange={e => updateTiming(doc.name, 'slotDuration', e.target.value)}
                 >
@@ -82,7 +83,10 @@ export function Step4OPDTimings({ config, onSave }: { config: any, onSave: (data
       </div>
 
       <div className="flex justify-end pt-6">
-        <Button onClick={() => onSave(timings)}>
+        <Button onClick={() => {
+          onSave(timings);
+          toast.success("OPD timings saved successfully");
+        }}>
           Save & Continue
         </Button>
       </div>

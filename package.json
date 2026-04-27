@@ -45,6 +45,7 @@
     "react-hook-form": "^7.73.1",
     "redis": "^5.12.1",
     "redlock": "5.0.0-beta.2",
+    "sonner": "^2.0.7",
     "swr": "^2.4.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface Branch {
   id: string;
@@ -32,23 +33,39 @@ export default function BranchesSetupPage() {
   }, []);
 
   const handleAddBranch = async (form: any) => {
-    const res = await fetch("/api/hospital/branches", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    if (data.branch) setBranches(prev => [...prev, data.branch]);
-    setDialogOpen(false);
+    try {
+      const res = await fetch("/api/hospital/branches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to add branch");
+      }
+      setBranches(prev => [...prev, data.branch]);
+      toast.success("Branch added successfully");
+      setDialogOpen(false);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to add branch";
+      toast.error(msg);
+    }
   };
 
   const handleToggleActive = async (id: string, active: boolean) => {
     setBranches(prev => prev.map(b => b.id === id ? { ...b, isActive: active } : b));
-    await fetch(`/api/hospital/branches/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: active }),
-    });
+    try {
+      await fetch(`/api/hospital/branches/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: active }),
+      });
+      toast.success(`Branch ${active ? "activated" : "deactivated"}`);
+    } catch {
+      toast.error("Failed to update branch status");
+      // Revert optimistic update
+      setBranches(prev => prev.map(b => b.id === id ? { ...b, isActive: !active } : b));
+    }
   };
 
   return (

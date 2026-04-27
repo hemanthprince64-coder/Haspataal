@@ -1407,6 +1407,7 @@ model Bed {
   id                  String          @id @default(uuid())
   hospitalId          String          @map("hospital_id")
   unitId              String?         @map("unit_id")
+  departmentId        String?         @map("department_id")
   bedNumber           String          @map("bed_number")
   type                BedType         @default(GENERAL)
   status              BedStatus       @default(AVAILABLE)
@@ -1420,10 +1421,12 @@ model Bed {
   hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient             Patient?        @relation(fields: [patientId], references: [id])
   unit                Unit?           @relation(fields: [unitId], references: [id])
+  department          Department?     @relation(fields: [departmentId], references: [id])
   admissions          Admission[]
 
   @@index([hospitalId])
   @@index([unitId])
+  @@index([departmentId])
   @@unique([hospitalId, bedNumber])
   @@map("beds")
 }
@@ -1460,6 +1463,9 @@ model DrugStock {
   minLevel   Int             @default(10) @map("min_level")
   expiryDate DateTime        @map("expiry_date")
   category   String?
+  type       String?         // e.g., TABLET, SYRUP, INJECTION
+  batchNumber String?        @map("batch_number")
+  mrp        Float?          @default(0)
   createdAt  DateTime        @default(now()) @map("created_at")
   updatedAt  DateTime        @updatedAt @map("updated_at")
   hospital   HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
@@ -1543,6 +1549,9 @@ enum HospitalType {
   HOSPITAL
   CLINIC
   DIAGNOSTIC_CENTER
+  MULTISPECIALTY
+  NURSING_HOME
+  CORPORATE
 }
 
 enum FollowUpType {
@@ -1788,6 +1797,7 @@ model Branch {
   id              String          @id @default(cuid())
   hospitalId      String          @map("hospital_id")
   name            String
+  code            String?         @unique
   address         String?
   city            String?
   pincode         String?

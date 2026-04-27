@@ -10,17 +10,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const body = await req.json();
   const branchId = id;
 
-  const branch = await prisma.branch.update({
-    where: { id: branchId, hospitalId },
-    data: {
-      name: body.name,
-      address: body.address,
-      city: body.city,
-      phone: body.phone,
-      isActive: body.isActive,
-      isHeadquarters: body.isHeadquarters,
-    }
-  });
+   const branch = await prisma.branch.update({
+     where: { id: branchId, hospitalId },
+     data: {
+       name: body.name,
+       code: body.code ? body.code.toUpperCase() : undefined,
+       address: body.address,
+       city: body.city,
+       pincode: body.pincode,
+       phone: body.phone,
+       isActive: body.isActive,
+       isHeadquarters: body.isHeadquarters,
+     }
+   });
 
   if (body.isHeadquarters) {
     await prisma.branch.updateMany({

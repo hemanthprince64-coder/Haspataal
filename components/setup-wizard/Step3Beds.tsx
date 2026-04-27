@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock } from 'lucide-react';
+import { Clock, BedDouble } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any) => void }) {
   const [beds, setBeds] = useState<{general: number, icu: number, private: number, semi: number}>(config.bed_counts || {
@@ -76,7 +77,10 @@ export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any)
       </div>
 
       <div className="flex justify-end pt-6">
-        <Button onClick={() => onSave(beds)}>
+        <Button onClick={() => {
+          onSave(beds);
+          toast.success("Bed capacity saved successfully");
+        }}>
           Save & Continue
         </Button>
       </div>

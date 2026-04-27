@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // ─── Schema ────────────────────────────────────────────────────────────────────
 
@@ -200,15 +201,21 @@ export default function HospitalIdentityPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.message || "Save failed");
+      }
       localStorage.removeItem(DRAFT_KEY);
       setSaveState("saved");
+      toast.success("Hospital identity saved successfully!");
       // Redirect back to wizard after short delay; wizard will auto-advance to next step
       setTimeout(() => {
         router.push("/hospital/dashboard/setup");
       }, 1000);
-    } catch {
+    } catch (error) {
       setSaveState("error");
+      const msg = error instanceof Error ? error.message : "Save failed";
+      toast.error(msg);
       setTimeout(() => setSaveState("idle"), 3000);
     }
   };

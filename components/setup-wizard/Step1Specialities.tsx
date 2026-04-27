@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 const SPECIALITIES_LIST = [
   'General Medicine', 'Orthopedics', 'Cardiology', 'Gynecology', 
@@ -48,7 +49,10 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
       </div>
 
       <div className="flex justify-end pt-6">
-        <Button onClick={() => onSave(selected)} disabled={selected.length === 0}>
+        <Button onClick={() => {
+          onSave(selected);
+          toast.success("Specialities saved successfully");
+        }} disabled={selected.length === 0}>
           Save & Continue
         </Button>
       </div>

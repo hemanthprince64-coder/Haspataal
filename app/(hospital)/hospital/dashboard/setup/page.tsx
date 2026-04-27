@@ -9,9 +9,19 @@ import {
   BedDouble, CreditCard, Pill, TestTube, Bell, Plug,
   RefreshCw, Store, CheckCircle2, Clock, Lock,
   AlertTriangle, ChevronRight, ArrowRight, Settings, MapPin,
+  Shield, AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 // ─── Step Definitions ─────────────────────────────────────────────────────────
 
@@ -198,12 +208,38 @@ function computeWeightedScore(completion: Record<string, boolean>): number {
 export default function SetupWizardPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState<string>(STEPS[0].id);
+  const [stepHistory, setStepHistory] = useState<string[]>([STEPS[0].id]);
   const [completion, setCompletion] = useState<Record<string, boolean>>({});
   const [serverWarnings, setServerWarnings] = useState<Record<string, string[]>>({});
   const [activationError, setActivationError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
 
-  // Load real completion from server
+  // Keeps track of previous completion state per step for auto-progression
+  const prevCompletionRef = useRef<Record<string, boolean>>({});
+
+  // Navigate to a step, recording it in history stack
+  const navigateToStep = useCallback((stepId: string) => {
+    setActiveStep(stepId);
+    setStepHistory(prev => {
+      const existingIndex = prev.indexOf(stepId);
+      if (existingIndex !== -1) {
+        // Truncate forward history when navigating back to earlier step
+        return prev.slice(0, existingIndex + 1);
+      }
+      return [...prev, stepId];
+    });
+  }, []);
+
+  // Go back to previous step
+  const goBack = useCallback(() => {
+    if (stepHistory.length > 1) {
+      const newHistory = stepHistory.slice(0, -1);
+      const previousStep = newHistory[newHistory.length - 1];
+      setStepHistory(newHistory);
+      setActiveStep(previousStep);
+    }
+  }, [stepHistory]);
   useEffect(() => {
     fetch("/api/hospital/setup/completion")
       .then((r) => r.json())
@@ -246,8 +282,6 @@ export default function SetupWizardPage() {
     weightedScore >= 80 ? "#22c55e" : weightedScore >= 50 ? "#f59e0b" : "#ef4444";
 
   // ── Auto-progression: advance to next unlocked step when current completes ──
-  const prevCompletionRef = useRef<Record<string, boolean>>({});
-
   useEffect(() => {
     if (isLoading) return;
 
@@ -261,7 +295,7 @@ export default function SetupWizardPage() {
         return s.depends.every((dep) => completion[dep]);
       });
       if (nextStep) {
-        setActiveStep(nextStep.id);
+        navigateToStep(nextStep.id);
       }
     }
 
@@ -270,31 +304,44 @@ export default function SetupWizardPage() {
       ...prevCompletionRef.current,
       [activeStep]: isComplete,
     };
-  }, [completion, activeStep, isLoading]);
+  }, [completion, activeStep, isLoading, navigateToStep]);
 
   const handleConfigure = async () => {
     setActivationError("");
     if (activeStepDef.id !== "activation") {
+      // Show a toast that we're navigating to configure the step
+      // The step itself will handle its own save & toast
       router.push(activeStepDef.href);
       return;
     }
 
+    // Show confirmation dialog before activation
+    setShowActivateDialog(true);
+  };
+
+  const confirmActivation = async () => {
+    setShowActivateDialog(false);
     const response = await fetch("/api/hospital/setup/activate", { method: "POST" });
     const data = await response.json();
     if (!response.ok) {
       const missing = Array.isArray(data.missing) ? data.missing.join(", ") : "critical steps";
       const security = Array.isArray(data.security) && data.security.length ? ` ${data.security.join(", ")}` : "";
       setActivationError(`Activation blocked: ${missing}.${security}`);
+      toast.error(`Activation failed: ${missing}`);
       return;
     }
 
     setCompletion((current) => ({ ...current, activation: true }));
+    toast.success("🎉 Hospital activated successfully! Redirecting to dashboard...");
+    setTimeout(() => {
+      router.push("/hospital/dashboard");
+    }, 2000);
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* ── Sidebar Stepper ── */}
-      <aside className="w-72 flex-shrink-0 sticky top-0 h-screen bg-white border-r border-slate-200 flex flex-col overflow-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
+      {/* ── Sidebar Stepper (hidden on mobile; breadcrumb used instead) ── */}
+      <aside className="hidden md:flex w-72 flex-shrink-0 sticky top-0 h-screen bg-white border-r border-slate-200 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-5 py-5 border-b border-slate-100">
           <div className="flex items-center gap-2 mb-1">
@@ -411,9 +458,22 @@ export default function SetupWizardPage() {
           </div>
         )}
 
-        {/* Breadcrumb Navigation */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-white">
-          <nav className="flex items-center gap-1 overflow-x-auto pb-1">
+         {/* Breadcrumb Navigation */}
+        <div className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* Back button */}
+            {stepHistory.length > 1 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goBack}
+                className="flex items-center gap-1 text-slate-600 hover:text-slate-900 -ml-2"
+              >
+                <ChevronRight className="h-4 w-4 rotate-180" />
+                <span className="text-xs font-medium">Back</span>
+              </Button>
+            )}
+            <nav className="flex items-center gap-1 overflow-x-auto pb-1">
             {STEPS.map((step, idx) => {
               const stepState = getStepState(step);
               const isActive = activeStep === step.id;
@@ -423,7 +483,7 @@ export default function SetupWizardPage() {
               return (
                 <React.Fragment key={step.id}>
                   <button
-                    onClick={() => stepState !== "locked" && setActiveStep(step.id)}
+                    onClick={() => stepState !== "locked" && navigateToStep(step.id)}
                     disabled={stepState === "locked"}
                     title={`${step.title}: ${stepState === "complete" ? "Completed" : stepState === "locked" ? "Locked - complete prerequisites first" : "In progress"}`}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
@@ -451,7 +511,8 @@ export default function SetupWizardPage() {
                 </React.Fragment>
               );
             })}
-          </nav>
+            </nav>
+          </div>
         </div>
 
         {/* Step Content */}
@@ -471,13 +532,51 @@ export default function SetupWizardPage() {
                 allSteps={STEPS}
                 warnings={serverWarnings[activeStep] ?? []}
                 activationError={activationError}
-                onNavigate={(id) => setActiveStep(id)}
+                onNavigate={navigateToStep}
                 onConfigure={handleConfigure}
+                onBack={stepHistory.length > 1 ? goBack : undefined}
               />
             </motion.div>
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Activation Confirmation Dialog */}
+      <Dialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              Confirm Hospital Activation
+            </DialogTitle>
+            <DialogDescription>
+              Once activated, your hospital will go live on the platform. Patients will be able to:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 my-2">
+            <p className="text-sm text-slate-600">• Search and view your hospital profile</p>
+            <p className="text-sm text-slate-600">• Book OPD appointments with doctors</p>
+            <p className="text-sm text-slate-600">• Receive SMS/WhatsApp notifications</p>
+            <p className="text-sm text-slate-600">• Access billing and pharmacy services</p>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 my-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+              <p className="text-xs text-amber-800">
+                This action is irreversible. Please ensure all critical configurations are complete before proceeding.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowActivateDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmActivation} className="bg-blue-600 hover:bg-blue-700">
+              Yes, Activate Hospital
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -493,6 +592,7 @@ function StepContent({
   activationError,
   onNavigate,
   onConfigure,
+  onBack,
 }: {
   step: (typeof STEPS)[number];
   state: StepState;
@@ -502,6 +602,7 @@ function StepContent({
   activationError: string;
   onNavigate: (id: string) => void;
   onConfigure: () => void;
+  onBack?: () => void;
 }) {
   const Icon = step.icon;
   const lockedDeps = step.depends.filter((dep) => !completion[dep]);
@@ -592,17 +693,29 @@ function StepContent({
 
       {/* CTA */}
       {state !== "locked" && (
-        <Button
-          onClick={onConfigure}
-          className={`w-full py-6 text-sm font-semibold rounded-xl transition-all ${
-            state === "complete"
-              ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
-          }`}
-        >
-          {step.id === "activation" ? "Activate Hospital" : state === "complete" ? "Review & Update Configuration" : "Configure →"}
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+        <div className="flex gap-3">
+          {onBack && (
+            <Button
+              variant="outline"
+              onClick={onBack}
+              className="flex-1 py-6 text-sm font-semibold rounded-xl border-slate-300 hover:bg-slate-50"
+            >
+              <ChevronRight className="h-4 w-4 mr-1 rotate-180" />
+              Back
+            </Button>
+          )}
+          <Button
+            onClick={onConfigure}
+            className={`${onBack ? 'flex-2' : 'w-full'} py-6 text-sm font-semibold rounded-xl transition-all ${
+              state === "complete"
+                ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
+            }`}
+          >
+            {step.id === "activation" ? "Activate Hospital" : state === "complete" ? "Review & Update Configuration" : "Configure →"}
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
       )}
 
       {/* Next Unlocks */}

@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import "./globals.css";
+import { Toaster } from "sonner";
 
 export const metadata = {
   title: "Haspataal — Healthcare Assistance Platform",
@@ -17,7 +18,10 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <Toaster position="bottom-right" richColors closeButton />
+      </body>
     </html>
   );
 }

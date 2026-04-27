@@ -244,17 +244,68 @@ const SETUP_STEPS: Array<{
 
 // ─── Aggregate Function ────────────────────────────────────────────────────────
 
+/**
+ * Wait helper for staggering queries to avoid connection pool exhaustion
+ */
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Execute a step check with retry for transient DB failures
+ */
+async function checkStepWithRetry(step: typeof SETUP_STEPS[0], hospitalId: string, maxRetries = 2) {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await step.check(hospitalId);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      // Only retry on connection-related errors
+      if (!lastError.message.includes('reach database') && 
+          !lastError.message.includes('connection') &&
+          !lastError.message.includes('pool')) {
+        break; // Don't retry on logic errors
+      }
+      if (attempt < maxRetries) {
+        await sleep(200 * (attempt + 1)); // Exponential backoff: 200ms, 400ms
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 export async function computeSetupCompletion(hospitalId: string): Promise<SetupCompletion> {
-  const results = await Promise.all(
-    SETUP_STEPS.map(async (step) => {
-      const result = await step.check(hospitalId);
-      return {
+  // Run checks with staggered timing to avoid connection pool exhaustion
+  // Parallel queries + static generation can exceed Supabase's connection limit
+  const results: Array<{ id: string; weight: number; complete: boolean; score: number; warnings: string[] }> = [];
+
+  for (let i = 0; i < SETUP_STEPS.length; i++) {
+    const step = SETUP_STEPS[i];
+    try {
+      const result = await checkStepWithRetry(step, hospitalId);
+      results.push({
         id: step.id,
         weight: step.weight,
         ...result,
-      };
-    })
-  );
+      });
+    } catch (err) {
+      console.error(`[setup/completion] Error checking step ${step.id}:`, err);
+      results.push({
+        id: step.id,
+        weight: step.weight,
+        complete: false,
+        score: 0,
+        warnings: [`Unable to verify completion: ${err instanceof Error ? err.message : 'Database unavailable'}`],
+      });
+    }
+
+    // Stagger queries: ~150ms delay after every 4 queries to ease pool pressure
+    // This gives Supabase time to recycle connections without slowing perceptibly (total < 1s)
+    if ((i + 1) % 4 === 0 && i < SETUP_STEPS.length - 1) {
+      await sleep(150);
+    }
+  }
 
   const totalWeight = SETUP_STEPS.reduce((sum, s) => sum + s.weight, 0);
   const weightedScore = results.reduce((sum, r) => sum + r.score * r.weight, 0);

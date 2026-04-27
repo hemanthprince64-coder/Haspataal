@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
     data: {
       hospitalId,
       name: body.name,
+      code: body.code ? body.code.toUpperCase() : null,
       address: body.address,
       city: body.city,
+      pincode: body.pincode,
       phone: body.phone,
       isHeadquarters: body.isHeadquarters ?? false,
       isActive: true,

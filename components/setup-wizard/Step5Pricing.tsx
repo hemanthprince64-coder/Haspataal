@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: any) => void }) {
   const [pricing, setPricing] = useState(config.pricing || {
@@ -60,7 +61,10 @@ export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: a
       </div>
 
       <div className="flex justify-end pt-6">
-        <Button onClick={() => onSave(pricing)}>
+        <Button onClick={() => {
+          onSave(pricing);
+          toast.success("Pricing configuration saved");
+        }}>
           Save & Continue
         </Button>
       </div>
