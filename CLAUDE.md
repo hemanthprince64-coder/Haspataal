@@ -188,6 +188,11 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Prisma @ignore & Query Engine Panics:** Using `@ignore` on fields (like `password`) can cause the Prisma Query Engine to panic with "Server has closed the connection" if `findFirst` or `create` is called without an explicit `select` block that excludes those fields. Always use explicit `select` or raw SQL when working with models that have ignored fields.
 - **Suspicious Dependency Auditing:** Before removing unused-looking dependencies like `boneyard-js`, check for usage in auto-generated or hidden folders (e.g., `bones/`). Restore if necessary to prevent build breakages.
 - **Local Dev Orchestration:** Use the `Makefile` to manage the full Docker stack. `make dev` ensures that networking (Nginx), state (Postgres/Redis), and applications are correctly initialized in order.
+- **Strict FormData Type Safety:** In Next.js Server Actions, always cast `formData.get()` results explicitly (e.g., `as string` or `as File`). TypeScript's `noEmit` check fails if `FormDataEntryValue` is passed directly to functions expecting specific types.
+- **Zod Error Access Migration:** Standardized on `issues[0]` instead of the legacy `errors[0]` property when extracting validation error messages from Zod. This prevents runtime `undefined` errors and aligns with modern Zod patterns.
+- **Supabase Pooler vs. Direct Connect:** When port 6543 (PgBouncer) fails with "Can't reach database server", update `.env.local` to port 5432 and remove `pgbouncer=true`. This is the most reliable way to restore local dev connectivity.
+- **Automated RLS Policy Patching:** If the Supabase linter reports "RLS Enabled No Policy", use a dedicated SQL patch script (e.g., `fix_missing_rls_policies.sql`) to implement modular RBAC for all affected tables, ensuring multi-tenant isolation.
+- **CI/CD Node 20 Migration:** The GitHub Actions pipeline is updated to Node 20. Ensure the `build` job is set as a required status check in GitHub Branch Protection Rules for the `main` branch.
 
 ---
 
