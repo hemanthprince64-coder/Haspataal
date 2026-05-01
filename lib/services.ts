@@ -1220,7 +1220,7 @@ export const services = {
     login: async (mobile: string, password?: string) => {
       if (!password) throw new Error('PASSWORD_REQUIRED');
 
-      // Fetch hospital via raw SQL since @ignore fields (password, name) 
+      // Fetch hospital via raw SQL since @ignore fields (password, name)
       // can cause the Prisma Query Engine to panic during findFirst without explicit select.
       const hospitals = await prisma.$queryRaw<any[]>`
                 SELECT * FROM hospitals_master WHERE contact_number = ${mobile} LIMIT 1
@@ -1299,7 +1299,7 @@ export const services = {
             legalName: true,
             city: true,
             contactNumber: true,
-          }
+          },
         });
 
         // Set password hash via raw SQL (field is @ignore in Prisma schema)
@@ -1374,7 +1374,7 @@ export const services = {
             legalName: true,
             city: true,
             contactNumber: true,
-          }
+          },
         });
 
         // Set password hash via raw SQL (field is @ignore in Prisma schema)
@@ -1693,7 +1693,7 @@ export const services = {
       return {
         user: {
           id: agent.id,
-          role: 'AGENT',
+          role: UserRole.AGENT,
           name: agent.fullName,
           mobile: agent.mobile,
           status: agent.accountStatus,

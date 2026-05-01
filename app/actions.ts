@@ -11,6 +11,8 @@ import {
   RegisterHospitalSchema,
   RegisterLabSchema,
   BookAppointmentSchema,
+  PasswordSchema,
+  MobileSchema,
 } from '@/lib/validations';
 
 // ── Result Types ─────────────────────────────────────────────
@@ -21,7 +23,6 @@ type ActionResult = {
   data?: unknown;
   result?: unknown;
 };
-
 
 // ── Imports ──────────────────────────────────────────────────
 
@@ -65,8 +66,8 @@ export async function loginHospital(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const mobile = formData.get('mobile');
-  const password = formData.get('password');
+  const mobile = formData.get('mobile') as string;
+  const password = formData.get('password') as string;
 
   if (!mobile || !password) {
     return { message: 'Please enter both mobile and password.' };
@@ -88,11 +89,11 @@ export async function registerHospital(
 ): Promise<ActionResult> {
   try {
     const data = {
-      hospitalName: formData.get('hospitalName'),
-      city: formData.get('city'),
-      adminName: formData.get('adminName'),
-      mobile: formData.get('mobile'),
-      password: formData.get('password'),
+      hospitalName: formData.get('hospitalName') as string,
+      city: formData.get('city') as string,
+      adminName: formData.get('adminName') as string,
+      mobile: formData.get('mobile') as string,
+      password: formData.get('password') as string,
     };
 
     if (!data.hospitalName || !data.city || !data.adminName || !data.mobile || !data.password) {
@@ -101,7 +102,8 @@ export async function registerHospital(
 
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
-      return { success: false, message: pwdCheck.error.errors[0].message };
+      const firstError = pwdCheck.error.issues[0];
+      return { success: false, message: firstError.message };
     }
 
     await services.hospital.register(data);
@@ -132,11 +134,11 @@ export async function createVisitAction(
 
   try {
     const visitData = {
-      doctorId: formData.get('doctorId'),
-      patientName: formData.get('patientName'),
-      patientMobile: formData.get('patientMobile'),
-      age: formData.get('age'),
-      gender: formData.get('gender'),
+      doctorId: formData.get('doctorId') as string,
+      patientName: formData.get('patientName') as string,
+      patientMobile: formData.get('patientMobile') as string,
+      age: formData.get('age') as string,
+      gender: formData.get('gender') as string,
       date: new Date().toISOString(),
     };
 
@@ -177,9 +179,9 @@ export async function completeVisitHospital(
     return { success: false, message: 'Unauthorized' };
   }
 
-  const visitId = formData.get('visitId');
-  const notes = formData.get('notes');
-  const imageFile = formData.get('prescriptionImage');
+  const visitId = formData.get('visitId') as string;
+  const notes = formData.get('notes') as string;
+  const imageFile = formData.get('prescriptionImage') as File | null;
 
   if (!visitId || !notes) {
     return { success: false, message: 'Visit ID and Clinical Notes are required for AI analysis.' };
@@ -216,14 +218,14 @@ export async function addDoctorAction(
   }
 
   const doctorData = {
-    name: formData.get('name'),
-    mobile: formData.get('mobile'),
-    speciality: formData.get('speciality'),
-    experience: formData.get('experience'),
-    fee: formData.get('fee'),
-    password: formData.get('password') || '123',
-    qualifications: formData.get('qualifications'),
-    schedule: formData.get('schedule'),
+    name: formData.get('name') as string,
+    mobile: formData.get('mobile') as string,
+    speciality: formData.get('speciality') as string,
+    experience: formData.get('experience') as string,
+    fee: formData.get('fee') as string,
+    password: (formData.get('password') as string) || '123',
+    qualifications: formData.get('qualifications') as string,
+    schedule: formData.get('schedule') as string,
   };
 
   if (!doctorData.name || !doctorData.mobile || !doctorData.speciality) {
@@ -245,8 +247,8 @@ export async function removeDoctorAction(
     return { success: false, message: 'Only hospital admins can remove doctors.' };
   }
 
-  const doctorId = formData.get('doctorId');
-  
+  const doctorId = formData.get('doctorId') as string;
+
   if (!doctorId || typeof doctorId !== 'string') {
     return { success: false, message: 'Invalid doctor ID provided.' };
   }
@@ -271,7 +273,7 @@ export async function approveDoctorAffiliationAction(
     return { success: false, message: 'Only hospital admins can approve doctors.' };
   }
 
-  const doctorId = formData.get('doctorId');
+  const doctorId = formData.get('doctorId') as string;
   await services.hospital.approveDoctorAffiliation(user.hospitalId, doctorId);
   return { success: true, message: 'Doctor approved successfully.' };
 }
@@ -326,7 +328,7 @@ export async function rejectDoctorAffiliationAction(
     return { success: false, message: 'Only hospital admins can reject doctors.' };
   }
 
-  const doctorId = formData.get('doctorId');
+  const doctorId = formData.get('doctorId') as string;
   await services.hospital.rejectDoctorAffiliation(user.hospitalId, doctorId);
   return { success: true, message: 'Doctor rejected successfully.' };
 }
@@ -373,12 +375,12 @@ export async function registerDoctor(
 ): Promise<ActionResult> {
   try {
     const data = {
-      fullName: formData.get('fullName'),
-      mobile: formData.get('mobile'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-      registrationNumber: formData.get('registrationNumber'),
-      councilName: formData.get('councilName'),
+      fullName: formData.get('fullName') as string,
+      mobile: formData.get('mobile') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      registrationNumber: formData.get('registrationNumber') as string,
+      councilName: formData.get('councilName') as string,
     };
 
     if (
@@ -393,7 +395,8 @@ export async function registerDoctor(
 
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
-      return { success: false, message: pwdCheck.error.errors[0].message };
+      const firstError = pwdCheck.error.issues[0];
+      return { success: false, message: firstError.message };
     }
 
     await services.doctor.register(data);
@@ -412,13 +415,13 @@ export async function registerAgent(
 ): Promise<ActionResult> {
   try {
     const data = {
-      fullName: formData.get('fullName'),
-      mobile: formData.get('mobile'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-      area: formData.get('area'),
-      city: formData.get('city'),
-      state: formData.get('state'),
+      fullName: formData.get('fullName') as string,
+      mobile: formData.get('mobile') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      area: formData.get('area') as string,
+      city: formData.get('city') as string,
+      state: formData.get('state') as string,
     };
 
     if (!data.fullName || !data.mobile || !data.email || !data.password) {
@@ -427,7 +430,8 @@ export async function registerAgent(
 
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
-      return { success: false, message: pwdCheck.error.errors[0].message };
+      const firstError = pwdCheck.error.issues[0];
+      return { success: false, message: firstError.message };
     }
 
     await services.agent.register(data);
@@ -446,12 +450,12 @@ export async function registerLab(
 ): Promise<ActionResult> {
   try {
     const data = {
-      labName: formData.get('labName'),
-      city: formData.get('city'),
-      adminName: formData.get('adminName'),
-      mobile: formData.get('mobile'),
-      password: formData.get('password'),
-      registrationNumber: formData.get('registrationNumber'),
+      labName: formData.get('labName') as string,
+      city: formData.get('city') as string,
+      adminName: formData.get('adminName') as string,
+      mobile: formData.get('mobile') as string,
+      password: formData.get('password') as string,
+      registrationNumber: formData.get('registrationNumber') as string,
     };
 
     if (!data.labName || !data.city || !data.adminName || !data.mobile || !data.password) {
@@ -460,7 +464,8 @@ export async function registerLab(
 
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
-      return { success: false, message: pwdCheck.error.errors[0].message };
+      const firstError = pwdCheck.error.issues[0];
+      return { success: false, message: firstError.message };
     }
 
     await services.hospital.registerLab(data);
@@ -477,8 +482,8 @@ export async function agentLogin(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const mobile = formData.get('mobile');
-  const password = formData.get('password');
+  const mobile = formData.get('mobile') as string;
+  const password = formData.get('password') as string;
 
   if (!mobile || !password) {
     return { message: 'Please enter mobile number and password.' };
@@ -486,7 +491,10 @@ export async function agentLogin(
 
   try {
     const result = await services.agent.login(mobile, password);
-    await createSession('session_agent', result);
+    await createSession('session_agent', {
+      ...result,
+      user: { ...result.user, role: result.user.role as UserRole },
+    });
   } catch (e: any) {
     return { message: e.message || 'Login failed.' };
   }
@@ -500,8 +508,8 @@ export async function patientLogin(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const mobile = formData.get('mobile');
-  const otp = formData.get('otp');
+  const mobile = formData.get('mobile') as string;
+  const otp = formData.get('otp') as string;
 
   if (!mobile || !otp) {
     return { message: 'Please enter mobile number and OTP.' };
@@ -524,8 +532,8 @@ export async function requestOtpAction(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const mobile = formData.get('mobile');
-  if (!mobile || mobile.length < 10) {
+  const mobile = formData.get('mobile') as string;
+  if (!mobile || (mobile as string).length < 10) {
     return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
   }
 
@@ -546,13 +554,13 @@ export async function patientRegister(
   formData: FormData,
 ): Promise<ActionResult> {
   const data = {
-    mobile: formData.get('mobile'),
-    name: formData.get('name'),
-    age: formData.get('age'),
-    gender: formData.get('gender'),
-    bloodGroup: formData.get('bloodGroup'),
-    city: formData.get('city'),
-    email: formData.get('email'),
+    mobile: formData.get('mobile') as string,
+    name: formData.get('name') as string,
+    age: formData.get('age') as string,
+    gender: formData.get('gender') as string,
+    bloodGroup: formData.get('bloodGroup') as string,
+    city: formData.get('city') as string,
+    email: formData.get('email') as string,
   };
 
   if (!data.mobile || !data.name) {
@@ -650,31 +658,31 @@ export async function updatePatientProfile(
     return { message: 'Please login first.' };
   }
 
-  const updates = {
-    name: formData.get('name'),
-    nickname: formData.get('nickname') || undefined,
-    gender: formData.get('gender'),
-    bloodGroup: formData.get('bloodGroup'),
-    city: formData.get('city'),
-    email: formData.get('email'),
-    dob: formData.get('dob') ? new Date(formData.get('dob')) : undefined,
-    address: formData.get('address') || undefined,
-    state: formData.get('state') || undefined,
-    country: formData.get('country') || undefined,
-    pincode: formData.get('pincode') || undefined,
-    occupation: formData.get('occupation') || undefined,
-    maritalStatus: formData.get('maritalStatus') || undefined,
-    emergencyContactName: formData.get('emergencyContactName') || undefined,
-    emergencyContactRelation: formData.get('emergencyContactRelation') || undefined,
-    emergencyContactPhone: formData.get('emergencyContactPhone') || undefined,
-    emergencyContactAltPhone: formData.get('emergencyContactAltPhone') || undefined,
-    preferredHospital: formData.get('preferredHospital') || undefined,
-    preferredSpeciality: formData.get('preferredSpeciality') || undefined,
-    preferredDoctor: formData.get('preferredDoctor') || undefined,
+  const updates: any = {
+    name: formData.get('name') as string,
+    nickname: (formData.get('nickname') as string) || undefined,
+    gender: formData.get('gender') as string,
+    bloodGroup: formData.get('bloodGroup') as string,
+    city: formData.get('city') as string,
+    email: formData.get('email') as string,
+    dob: formData.get('dob') ? new Date(formData.get('dob') as string) : undefined,
+    address: (formData.get('address') as string) || undefined,
+    state: (formData.get('state') as string) || undefined,
+    country: (formData.get('country') as string) || undefined,
+    pincode: (formData.get('pincode') as string) || undefined,
+    occupation: (formData.get('occupation') as string) || undefined,
+    maritalStatus: (formData.get('maritalStatus') as string) || undefined,
+    emergencyContactName: (formData.get('emergencyContactName') as string) || undefined,
+    emergencyContactRelation: (formData.get('emergencyContactRelation') as string) || undefined,
+    emergencyContactPhone: (formData.get('emergencyContactPhone') as string) || undefined,
+    emergencyContactAltPhone: (formData.get('emergencyContactAltPhone') as string) || undefined,
+    preferredHospital: (formData.get('preferredHospital') as string) || undefined,
+    preferredSpeciality: (formData.get('preferredSpeciality') as string) || undefined,
+    preferredDoctor: (formData.get('preferredDoctor') as string) || undefined,
   };
 
   // Handle Profile Photo File Upload
-  const photoFile = formData.get('profilePhotoFile');
+  const photoFile = formData.get('profilePhotoFile') as File | null;
   if (photoFile && photoFile.size > 0 && photoFile.name) {
     try {
       const uploadedUrl = await uploadProfilePhoto(photoFile, patient.id);
@@ -685,7 +693,7 @@ export async function updatePatientProfile(
     }
   } else {
     // Fallback for direct URL input
-    updates.profilePhotoUrl = formData.get('profilePhotoUrl') || undefined;
+    updates.profilePhotoUrl = (formData.get('profilePhotoUrl') as string) || undefined;
   }
 
   // Remove undefined values
@@ -727,11 +735,11 @@ export async function addFamilyMemberAction(
   }
 
   const data = {
-    name: formData.get('name'),
-    relation: formData.get('relation'),
-    dob: formData.get('dob') || undefined,
-    gender: formData.get('gender') || undefined,
-    bloodGroup: formData.get('bloodGroup') || undefined,
+    name: formData.get('name') as string,
+    relation: formData.get('relation') as string,
+    dob: (formData.get('dob') as string) || undefined,
+    gender: (formData.get('gender') as string) || undefined,
+    bloodGroup: (formData.get('bloodGroup') as string) || undefined,
   };
 
   if (!data.name || !data.relation) {
@@ -752,7 +760,7 @@ export async function deleteFamilyMemberAction(
   } catch (e: any) {
     return { message: 'Please login first.' };
   }
-  const memberId = formData.get('memberId');
+  const memberId = formData.get('memberId') as string;
   await services.patient.deleteFamilyMember(patient.id, memberId);
   return { success: true, message: 'Family member removed.' };
 }
@@ -771,12 +779,12 @@ export async function saveMedicalHistoryAction(
   }
 
   const data = {
-    chronicDiseases: formData.get('chronicDiseases') || undefined,
-    pastIllnesses: formData.get('pastIllnesses') || undefined,
-    surgeries: formData.get('surgeries') || undefined,
-    allergies: formData.get('allergies') || undefined,
-    drugAllergies: formData.get('drugAllergies') || undefined,
-    hospitalizations: formData.get('hospitalizations') || undefined,
+    chronicDiseases: (formData.get('chronicDiseases') as string) || undefined,
+    pastIllnesses: (formData.get('pastIllnesses') as string) || undefined,
+    surgeries: (formData.get('surgeries') as string) || undefined,
+    allergies: (formData.get('allergies') as string) || undefined,
+    drugAllergies: (formData.get('drugAllergies') as string) || undefined,
+    hospitalizations: (formData.get('hospitalizations') as string) || undefined,
   };
 
   await services.patient.saveMedicalHistory(patient.id, data);
@@ -797,10 +805,10 @@ export async function addMedicationAction(
   }
 
   const data = {
-    drugName: formData.get('drugName'),
-    dose: formData.get('dose') || undefined,
-    frequency: formData.get('frequency') || undefined,
-    startDate: formData.get('startDate') || undefined,
+    drugName: formData.get('drugName') as string,
+    dose: (formData.get('dose') as string) || undefined,
+    frequency: (formData.get('frequency') as string) || undefined,
+    startDate: (formData.get('startDate') as string) || undefined,
   };
 
   if (!data.drugName) {
@@ -821,7 +829,7 @@ export async function deleteMedicationAction(
   } catch (e: any) {
     return { message: 'Please login first.' };
   }
-  const medicationId = formData.get('medicationId');
+  const medicationId = formData.get('medicationId') as string;
   await services.patient.deleteMedication(patient.id, medicationId);
   return { success: true, message: 'Medication removed.' };
 }
@@ -840,13 +848,17 @@ export async function addVitalAction(
   }
 
   const data = {
-    weight: formData.get('weight') ? parseFloat(formData.get('weight')) : undefined,
-    height: formData.get('height') ? parseFloat(formData.get('height')) : undefined,
-    bloodPressure: formData.get('bloodPressure') || undefined,
-    pulse: formData.get('pulse') ? parseInt(formData.get('pulse')) : undefined,
-    bloodSugar: formData.get('bloodSugar') ? parseFloat(formData.get('bloodSugar')) : undefined,
-    spo2: formData.get('spo2') ? parseFloat(formData.get('spo2')) : undefined,
-    temperature: formData.get('temperature') ? parseFloat(formData.get('temperature')) : undefined,
+    weight: formData.get('weight') ? parseFloat(formData.get('weight') as string) : undefined,
+    height: formData.get('height') ? parseFloat(formData.get('height') as string) : undefined,
+    bloodPressure: (formData.get('bloodPressure') as string) || undefined,
+    pulse: formData.get('pulse') ? parseInt(formData.get('pulse') as string) : undefined,
+    bloodSugar: formData.get('bloodSugar')
+      ? parseFloat(formData.get('bloodSugar') as string)
+      : undefined,
+    spo2: formData.get('spo2') ? parseFloat(formData.get('spo2') as string) : undefined,
+    temperature: formData.get('temperature')
+      ? parseFloat(formData.get('temperature') as string)
+      : undefined,
   };
 
   await services.patient.addVital(patient.id, data);
@@ -867,9 +879,9 @@ export async function addVaccinationAction(
   }
 
   const data = {
-    vaccineName: formData.get('vaccineName'),
-    dateGiven: formData.get('dateGiven') || undefined,
-    nextDueDate: formData.get('nextDueDate') || undefined,
+    vaccineName: formData.get('vaccineName') as string,
+    dateGiven: (formData.get('dateGiven') as string) || undefined,
+    nextDueDate: (formData.get('nextDueDate') as string) || undefined,
   };
 
   if (!data.vaccineName) {
@@ -894,15 +906,17 @@ export async function savePregnancyProfileAction(
   }
 
   const data = {
-    lmp: formData.get('lmp') || undefined,
-    edd: formData.get('edd') || undefined,
+    lmp: (formData.get('lmp') as string) || undefined,
+    edd: (formData.get('edd') as string) || undefined,
     gestationalAge: formData.get('gestationalAge')
-      ? parseInt(formData.get('gestationalAge'))
+      ? parseInt(formData.get('gestationalAge') as string)
       : undefined,
     highRisk: formData.get('highRisk') === 'true',
-    ancVisits: formData.get('ancVisits') ? parseInt(formData.get('ancVisits')) : undefined,
-    dangerSigns: formData.get('dangerSigns') || undefined,
-    deliveryPlan: formData.get('deliveryPlan') || undefined,
+    ancVisits: formData.get('ancVisits')
+      ? parseInt(formData.get('ancVisits') as string)
+      : undefined,
+    dangerSigns: (formData.get('dangerSigns') as string) || undefined,
+    deliveryPlan: (formData.get('deliveryPlan') as string) || undefined,
   };
 
   await services.patient.savePregnancyProfile(patient.id, data);
@@ -923,13 +937,13 @@ export async function saveInsuranceAction(
   }
 
   const data = {
-    id: formData.get('insuranceId') || undefined,
-    company: formData.get('company'),
-    policyNumber: formData.get('policyNumber') || undefined,
+    id: (formData.get('insuranceId') as string) || undefined,
+    company: formData.get('company') as string,
+    policyNumber: (formData.get('policyNumber') as string) || undefined,
     coverageAmount: formData.get('coverageAmount')
-      ? parseFloat(formData.get('coverageAmount'))
+      ? parseFloat(formData.get('coverageAmount') as string)
       : undefined,
-    expiryDate: formData.get('expiryDate') || undefined,
+    expiryDate: (formData.get('expiryDate') as string) || undefined,
   };
 
   if (!data.company) {
@@ -950,7 +964,7 @@ export async function deleteInsuranceAction(
   } catch (e: any) {
     return { message: 'Please login first.' };
   }
-  const insuranceId = formData.get('insuranceId');
+  const insuranceId = formData.get('insuranceId') as string;
   await services.patient.deleteInsurance(patient.id, insuranceId);
   return { success: true, message: 'Insurance removed.' };
 }
@@ -981,12 +995,12 @@ export async function addAddressAction(
   }
 
   const data = {
-    type: formData.get('type') || 'Home',
-    address: formData.get('address'),
-    city: formData.get('city'),
-    state: formData.get('state') || undefined,
-    pincode: formData.get('pincode'),
-    landmark: formData.get('landmark') || undefined,
+    type: (formData.get('type') as string) || 'Home',
+    address: formData.get('address') as string,
+    city: formData.get('city') as string,
+    state: (formData.get('state') as string) || undefined,
+    pincode: formData.get('pincode') as string,
+    landmark: (formData.get('landmark') as string) || undefined,
     isDefault: formData.get('isDefault') === 'true',
   };
 
@@ -1008,7 +1022,7 @@ export async function deleteAddressAction(
   } catch (e: any) {
     return { message: 'Please login first.' };
   }
-  const addressId = formData.get('addressId');
+  const addressId = formData.get('addressId') as string;
   await services.patient.deleteAddress(patient.id, addressId);
   return { success: true, message: 'Address removed.' };
 }
@@ -1023,7 +1037,7 @@ export async function setDefaultAddressAction(
   } catch (e: any) {
     return { message: 'Please login first.' };
   }
-  const addressId = formData.get('addressId');
+  const addressId = formData.get('addressId') as string;
   await services.patient.setDefaultAddress(patient.id, addressId);
   return { success: true, message: 'Default address updated.' };
 }
@@ -1042,10 +1056,10 @@ export async function addWalletTransactionAction(
   }
 
   const data = {
-    type: formData.get('type'), // CREDIT, DEBIT
-    amount: parseFloat(formData.get('amount')),
-    source: formData.get('source'), // TOPUP, APPOINTMENT, etc
-    description: formData.get('description') || undefined,
+    type: formData.get('type') as string, // CREDIT, DEBIT
+    amount: parseFloat(formData.get('amount') as string),
+    source: formData.get('source') as string, // TOPUP, APPOINTMENT, etc
+    description: (formData.get('description') as string) || undefined,
   };
 
   if (!data.type || !data.amount || !data.source || isNaN(data.amount)) {
@@ -1068,13 +1082,13 @@ export async function uploadPrescriptionAction(
     return { message: 'Please login first.' };
   }
 
-  const fileUrl = formData.get('fileUrl');
+  const fileUrl = formData.get('fileUrl') as string;
   if (!fileUrl) return { message: 'File URL is required' };
 
   await services.patient.uploadPrescriptionFile(patient.id, {
     fileUrl,
-    notes: formData.get('notes') || undefined,
-    doctorId: formData.get('doctorId') || undefined,
+    notes: (formData.get('notes') as string) || undefined,
+    doctorId: (formData.get('doctorId') as string) || undefined,
   });
 
   return { success: true, message: 'Prescription uploaded!' };
@@ -1096,10 +1110,10 @@ export async function bookAppointment(
     return { message: 'Please login to book an appointment.' };
   }
 
-  const doctorId = formData.get('doctorId');
-  const hospitalId = formData.get('hospitalId');
-  const date = formData.get('date');
-  const slot = formData.get('slot');
+  const doctorId = formData.get('doctorId') as string;
+  const hospitalId = formData.get('hospitalId') as string;
+  const date = formData.get('date') as string;
+  const slot = formData.get('slot') as string;
 
   if (!doctorId || !hospitalId || !date || !slot) {
     return { success: false, message: 'Please fill in all booking details.' };
@@ -1157,7 +1171,7 @@ export async function cancelAppointmentPatient(
   let patient;
   try {
     patient = await requireRole(UserRole.PATIENT, 'session_patient');
-    const visitId = formData.get('visitId');
+    const visitId = formData.get('visitId') as string;
     await services.patient.cancelVisit(patient.id, visitId);
     return { success: true, message: 'Appointment cancelled and refund processed.' };
   } catch (e: any) {
@@ -1181,8 +1195,8 @@ export async function adminLogin(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const username = formData.get('username');
-  const password = formData.get('password');
+  const username = formData.get('username') as string;
+  const password = formData.get('password') as string;
 
   if (!username || !password) {
     return { message: 'Please provide username and password.' };
@@ -1212,7 +1226,7 @@ export async function approveHospitalAction(
     return { message: 'Unauthorized' };
   }
 
-  const hospitalId = formData.get('hospitalId');
+  const hospitalId = formData.get('hospitalId') as string;
   await services.admin.approveHospital(hospitalId);
 
   return { success: true, message: `Hospital approved.` };
@@ -1228,7 +1242,7 @@ export async function rejectHospitalAction(
     return { message: 'Unauthorized' };
   }
 
-  const hospitalId = formData.get('hospitalId');
+  const hospitalId = formData.get('hospitalId') as string;
   await services.admin.rejectHospital(hospitalId);
 
   return { success: true, message: `Hospital rejected.` };
@@ -1244,7 +1258,7 @@ export async function suspendHospitalAction(
     return { message: 'Unauthorized' };
   }
 
-  const hospitalId = formData.get('hospitalId');
+  const hospitalId = formData.get('hospitalId') as string;
   await services.admin.suspendHospital(hospitalId);
 
   return { success: true, message: `Hospital suspended.` };
@@ -1275,20 +1289,20 @@ export async function medchatTriageAction(
 ): Promise<ActionResult> {
   try {
     const rawInput = {
-      age: formData.get('age'),
-      gender: formData.get('gender'),
-      city: formData.get('city'),
-      duration: formData.get('duration'),
-      symptoms: formData.get('symptoms'),
-      fever: formData.get('fever'),
-      breathingDifficulty: formData.get('breathingDifficulty'),
-      seizure: formData.get('seizure'),
-      consciousnessNormal: formData.get('consciousnessNormal'),
+      age: formData.get('age') ? parseInt(formData.get('age') as string) : undefined,
+      gender: formData.get('gender') as string,
+      city: formData.get('city') as string,
+      duration: formData.get('duration') as string,
+      symptoms: formData.get('symptoms') as string,
+      fever: formData.get('fever') as string,
+      breathingDifficulty: formData.get('breathingDifficulty') as string,
+      seizure: formData.get('seizure') as string,
+      consciousnessNormal: formData.get('consciousnessNormal') as string,
     };
 
     const parsed = MedChatInputSchema.safeParse(rawInput);
     if (!parsed.success) {
-      const firstError = parsed.error.errors[0];
+      const firstError = parsed.error.issues[0];
       return {
         success: false,
         message: `Invalid input: ${firstError.path.join('.')} — ${firstError.message}`,
@@ -1401,7 +1415,7 @@ export async function submitCheckInAction(
       patient.id,
       careJourneyId,
       dayNumber,
-      status,
+      status as 'BETTER' | 'SAME' | 'WORSE',
     );
   } catch (e: any) {
     logger.error({ action: 'submit_checkin_failed', careJourneyId, error: e.message });
