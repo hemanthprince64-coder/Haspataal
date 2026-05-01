@@ -93,7 +93,7 @@ model HospitalsMaster {
   verificationStatus      String                      @default("pending") @map("verification_status")
   accountStatus           String                      @default("inactive") @map("account_status")
   name                    String?                     @ignore
-  password                String?
+  password                String?                     @ignore
   adminUserId             String?                     @map("admin_user_id")
   createdAt               DateTime                    @default(now()) @map("created_at")
   agentId                 String?                     @map("agent_id")

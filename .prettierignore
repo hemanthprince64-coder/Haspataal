@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Generated files
+prisma/migrations/
+lib/generated/
+
+# Sub-projects (each has own config)
+haspataal-mobile/
+
+# Package manager
+package-lock.json
+pnpm-lock.yaml
+
+# Environment
+.env*
+
+# IDE
+.vscode/
+.idea/

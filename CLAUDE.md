@@ -1,10 +1,12 @@
 # 🩺 CLAUDE.md - Project Haspataal
 
 ## 🎯 High-Level Mission
+
 Haspataal is a multi-tenant hospital SaaS platform targeting India's tier-2 and tier-3 cities.
 Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ## ⚠️ Session Protocol (MANDATORY)
+
 1. **READ FIRST:** At the start of every session or conversation, **always read this `CLAUDE.md` file before doing any work.** No exceptions.
 2. **UPDATE AFTER EVERY BUG FIX:** After fixing any bug, immediately add an entry to the **Knowledge Base** section below with the root cause and fix.
 3. **NEVER REPEAT MISTAKES:** Before writing code, check the Knowledge Base for known pitfalls. If a past lesson applies, follow it.
@@ -15,6 +17,7 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 ## 🏗️ Architecture (Monorepo + Event-Driven Micro-Architecture)
 
 **Monorepo (npm Workspaces + Turborepo):**
+
 ```
 haspataal/                    ← Workspace root (patient-portal, port 3000)
 ├── packages/
@@ -31,6 +34,7 @@ haspataal/                    ← Workspace root (patient-portal, port 3000)
 ```
 
 **Domain Layer (Clean Architecture):**
+
 ```
 lib/
 ├── repositories/             ← Infrastructure: Prisma queries behind interfaces
@@ -45,12 +49,14 @@ lib/
 ```
 
 **Core Logic:**
+
 - **Single Source of Truth:** `EventLog` table. Every write in HMS emits an event.
 - **Event Bus:** Dual-write to PostgreSQL (`EventLog`) and Redis Streams for async processing.
 - **Multi-Tenancy:** Strict Row-Level Security (RLS) on EVERY table using `current_setting('app.hospital_id')`.
 - **Inter-Module Communication:** No direct calls. Modules communicate purely via events (e.g., `patient_visited` triggers `bill_generated`).
 
 **Key Modules:**
+
 - `onboarding/`: Hospital registration and document verification.
 - `setup-wizard/`: Dynamic hospital configuration and activation.
 - `migration-engine/`: Fuzzy-mapping CSV/Excel imports for legacy data.
@@ -63,6 +69,7 @@ lib/
 ---
 
 ## 🛠 Tech Stack & Environment
+
 - **Framework:** Next.js 16 (App Router) / Express.js
 - **Build System:** Turborepo + npm Workspaces
 - **Styling:** Tailwind CSS 3.4 + Shadcn UI (`@haspataal/ui`)
@@ -76,12 +83,14 @@ lib/
 ---
 
 ## 🧠 Recursive Memory & Learning (CRITICAL)
+
 - **RLS Boundary:** Always wrap DB calls in transactions that `SET LOCAL app.hospital_id` to ensure tenant isolation.
 - **Event-First:** If you are about to call another module's function, STOP. Emit an event instead.
 
 ---
 
 ## 📋 Coding Standards
+
 - **Naming:** `PascalCase` for Components, `camelCase` for variables, `kebab-case` for folder names.
 - **Imports:** Use absolute paths (e.g., `@/components/...`).
 - **Performance:** Prescription entry MUST be mouse-free (Tab/Enter optimized).
@@ -89,6 +98,7 @@ lib/
 ---
 
 ## 🛠 Commands
+
 - `npm run dev` — Start root app dev server
 - `npm run dev:all` — Start ALL apps via Turborepo
 - `npm run dev:admin` — Start admin panel only
@@ -103,6 +113,7 @@ lib/
 ---
 
 ## ✅ Current Production Surface
+
 - Implemented tenant-scoped HMS APIs for setup activation, RBAC permissions, OPD appointments/queue, IPD admissions/discharge, billing invoices/payments, pharmacy dispensing/stock, diagnostics orders/results/pricing, notifications, retention tags, and marketplace discovery.
 - Setup wizard is a 14-step DB-backed flow with activation gates for identity, staff/admin, doctors, OPD, billing, and security configuration.
 - Billing supports GST-aware invoice line calculations, finalization, payments, and OPD/IPD/diagnostic/pharmacy linkage.
@@ -114,6 +125,7 @@ lib/
 ## 🔑 Key Design Patterns
 
 ### RLS Transaction Wrapper
+
 ```ts
 await client.query('BEGIN');
 await client.query(`SET LOCAL app.hospital_id = $1`, [hospitalId]);
@@ -122,6 +134,7 @@ await client.query('COMMIT');
 ```
 
 ### Event Dual-Write
+
 ```ts
 await client.query('INSERT INTO "EventLog" ...');
 await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(payload));
@@ -130,6 +143,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 ---
 
 ## 📚 Knowledge Base (Lessons Learned)
+
 - **Phase 4-10 Build Sequence:** Never skip activation gates. A hospital MUST be `verified` then `activated` before HMS access is granted.
 - **Migration Validation:** Always perform client-side fuzzy mapping and validation reports before batch-importing legacy data to prevent DB pollution.
 - **Notification Curfew:** Never send non-critical notifications (follow-ups) between 10 PM and 8 AM IST.
@@ -138,7 +152,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Chronic Escalation:** Patients missing 2 consecutive chronic follow-ups MUST fire an escalation alert to the treating doctor.
 - **WhatsApp Fallback:** If WhatsApp delivery fails or is unregistered (Meta error 131026), immediately fallback to SMS to ensure critical medical adherence.
 - **Prisma/RLS Conflict:** Prisma doesn't natively support `SET LOCAL` within its query API easily for every transaction; use raw `pg` pool for sensitive multi-tenant write operations.
-- **Unique Constraint Pre-checks:** In hospital registration flows, always perform `Promise.all` pre-checks for unique fields (registrationNumber, adminMobile, adminEmail) before starting a transaction. This prevents generic `P2002` crashes and allows for specific, user-friendly error messages while avoiding transaction rollback overhead. *(Fixed in hospital onboarding flow)*
+- **Unique Constraint Pre-checks:** In hospital registration flows, always perform `Promise.all` pre-checks for unique fields (registrationNumber, adminMobile, adminEmail) before starting a transaction. This prevents generic `P2002` crashes and allows for specific, user-friendly error messages while avoiding transaction rollback overhead. _(Fixed in hospital onboarding flow)_
 - **Admin Password Hash Management:** Always use Bcrypt for admin credentials. Ensure hardcoded fallbacks match the intended dev credentials (e.g., `admin123` hash: `$2b$12$YwrNaShX3AbSpPDb7FtlFOilUoeGAmPX5pCfa6IAd48UYfF6B3X7e`).
 - **Hydration Attribute Mismatches:** Browser extensions (like Edge Password Manager) often inject attributes (e.g., `fdprocessedid`) into form elements before hydration. Use `suppressHydrationWarning` on inputs and buttons to prevent Next.js hydration errors.
 - **Service Layer Hygiene:** Maintain strict organization in `lib/services.ts`. When refactoring, ensure no duplicate service blocks (e.g., `doctor` service) are left behind, as they can cause build failures during ESM parsing.
@@ -164,10 +178,14 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Domain Layer Decomposition:** `lib/services.ts` is being progressively refactored into `lib/repositories/` (Prisma queries behind interfaces) and `lib/use-cases/` (pure business logic). The `services` export object stays identical — nothing downstream breaks. New business logic should be written as a use-case class, not added to `services.ts`.
 - **API Gateway Auth Unification:** The gateway now uses `jose` (not `jsonwebtoken`) for JWT verification, aligned with the root app's `lib/session.ts`. Per-role rate limits: PATIENT=60, DOCTOR=120, HOSPITAL_ADMIN=200, SUPER_ADMIN=unlimited. Every request gets an `X-Request-ID` correlation header for distributed tracing.
 - **npm audit fix --force Workspace Bug:** Never run `npm audit fix --force` in a workspace monorepo — it hits `undefined@undefined` resolution errors. Use `npm audit fix` (without --force) instead.
+- **Hospital.password @ignore (SECURITY):** `HospitalsMaster.password` is marked `@ignore` in Prisma schema to prevent password hashes from leaking to API responses. Hospital login and registration use raw SQL (`$queryRaw` / `$executeRaw`) to read/write the password field. NEVER remove `@ignore` from this field. Use `lib/dto/hospital.ts` → `toHospitalSafeDto()` when returning hospital data to clients.
+- **TypeScript Migration:** `app/actions.ts` (formerly `.js`) now has full Zod input schemas (`RegisterDoctorSchema`, `RegisterHospitalSchema`, `BookAppointmentSchema`, etc.) and typed `ActionResult` returns on all 50+ server actions. All catch clauses use `catch (e: any)`. New server actions MUST be written in TypeScript with Zod validation.
+- **Prettier + Husky + lint-staged:** Pre-commit hooks auto-format staged files. Config: `printWidth: 100`, `singleQuote: true`, `trailingComma: all`. Run `npm run format:check` in CI. Run `npm run format:fix` to format the entire repo.
 
 ---
 
 ## 🤖 Agent Personality
+
 - Be concise.
 - Use "we".
 - Prioritize event-driven decoupling.
