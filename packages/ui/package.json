@@ -1,0 +1,44 @@
+{
+  "name": "@haspataal/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.tsx",
+  "types": "./src/index.tsx",
+  "exports": {
+    ".": "./src/index.tsx",
+    "./button": "./src/button.tsx",
+    "./card": "./src/card.tsx",
+    "./dialog": "./src/dialog.tsx",
+    "./input": "./src/input.tsx",
+    "./label": "./src/label.tsx",
+    "./select": "./src/select.tsx",
+    "./switch": "./src/switch.tsx",
+    "./tabs": "./src/tabs.tsx",
+    "./badge": "./src/badge.tsx",
+    "./checkbox": "./src/checkbox.tsx",
+    "./textarea": "./src/textarea.tsx",
+    "./skeleton": "./src/skeleton.tsx",
+    "./progress": "./src/progress.tsx",
+    "./avatar": "./src/avatar.tsx",
+    "./accordion": "./src/accordion.tsx"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.5.0",
+    "lucide-react": "^1.8.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  }
+}

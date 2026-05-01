@@ -12,7 +12,37 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ---
 
-## 🏗️ Architecture (Event-Driven Micro-Architecture)
+## 🏗️ Architecture (Monorepo + Event-Driven Micro-Architecture)
+
+**Monorepo (npm Workspaces + Turborepo):**
+```
+haspataal/                    ← Workspace root (patient-portal, port 3000)
+├── packages/
+│   ├── types/                ← @haspataal/types — shared TypeScript types
+│   ├── db/                   ← @haspataal/db — shared Prisma client singleton
+│   ├── ui/                   ← @haspataal/ui — shared shadcn component library
+│   └── config/               ← @haspataal/config — shared ESLint/TS/Tailwind
+├── haspataal-in/             ← Next.js app (port 3001)
+├── haspataal-admin/          ← Next.js admin panel (port 3002)
+├── haspataal-com/            ← Next.js public site
+├── api-gateway/              ← Express gateway (port 4002, jose JWT, Pino logging)
+├── haspataal-mobile/         ← React Native/Expo (standalone, NOT in workspaces)
+└── turbo.json                ← Turborepo pipeline config
+```
+
+**Domain Layer (Clean Architecture):**
+```
+lib/
+├── repositories/             ← Infrastructure: Prisma queries behind interfaces
+│   ├── interfaces/           ← IAppointmentRepository, IPatientRepository, IHospitalRepository
+│   ├── PrismaAppointmentRepository.ts
+│   ├── PrismaPatientRepository.ts
+│   └── PrismaHospitalRepository.ts
+├── use-cases/                ← Domain: Pure business logic, NO Prisma imports
+│   ├── appointment/          ← BookAppointment, CancelAppointment, GetAvailableSlots
+│   └── hospital/             ← RegisterHospital
+└── services.ts               ← Thin facade (backward-compatible, delegates to use-cases)
+```
 
 **Core Logic:**
 - **Single Source of Truth:** `EventLog` table. Every write in HMS emits an event.
@@ -34,9 +64,11 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ## 🛠 Tech Stack & Environment
 - **Framework:** Next.js 16 (App Router) / Express.js
-- **Styling:** Tailwind CSS 3.4 + Shadcn UI
-- **ORM/DB:** Prisma 5 / Raw `pg` Pool for RLS-scoped transactions
-- **Auth:** JWT RBAC + Multi-tenant hospital isolation
+- **Build System:** Turborepo + npm Workspaces
+- **Styling:** Tailwind CSS 3.4 + Shadcn UI (`@haspataal/ui`)
+- **ORM/DB:** Prisma 5 (`@haspataal/db`) / Raw `pg` Pool for RLS-scoped transactions
+- **Auth:** `jose` JWT RBAC + Multi-tenant hospital isolation (unified across root app + gateway)
+- **API Gateway:** Express with Pino structured logging, per-role rate limiting, X-Request-ID correlation
 - **Messaging:** Redis Streams
 - **Notifications:** WhatsApp Business API + SMS Gateway
 - **AI:** Gemini (Triage & OCR)
@@ -57,8 +89,13 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 ---
 
 ## 🛠 Commands
-- `npm run dev` — Start dev server
-- `npm run build` — Production Next.js build
+- `npm run dev` — Start root app dev server
+- `npm run dev:all` — Start ALL apps via Turborepo
+- `npm run dev:admin` — Start admin panel only
+- `npm run dev:gateway` — Start API gateway only
+- `npm run build` — Production build (root app)
+- `npm run build:all` — Build ALL apps via Turborepo
+- `npm run lint:all` — Lint ALL apps via Turborepo
 - `npx prisma generate` — Regenerate Prisma client after schema changes
 - `npx prisma db push` — Update schema
 - `node workers/followup.worker.js` — Run retention engine cron
@@ -123,6 +160,10 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Fresh Deploy Prisma Generation:** Schema changes that add Prisma models require `prisma generate` during installation; keep `postinstall` in `package.json` so clean deployments build with the current client.
 - **Identity Configuration Mapping:** To resolve "No identity configured" blocks and invoicing warnings, ensure `contactNumber` and `registrationNumber` are explicitly mapped in the Identity API/UI. Additionally, the setup completion engine must be GST-aware; only trigger compliance warnings for missing GST if the hospital's billing profile explicitly marks GST as applicable, preventing false negatives for non-GST entities.
 - **Resilient Static Generation (Sitemap):** In Next.js static route generation (e.g., `sitemap.ts`), always wrap dynamic database fetches in `try-catch` blocks. This ensures that if the database is unreachable during the build process, the system can gracefully fallback to static routes instead of failing the entire build. Additionally, keep Prisma connection limits tight in shared environments to prevent pool exhaustion during parallel static generation.
+- **Monorepo npm Workspaces:** After pulling, always run `npm install` from the ROOT directory. Individual app `node_modules/` are hoisted to root. Never `npm install` inside a sub-app. `haspataal-mobile` (Expo) stays outside workspaces because Metro bundler is incompatible.
+- **Domain Layer Decomposition:** `lib/services.ts` is being progressively refactored into `lib/repositories/` (Prisma queries behind interfaces) and `lib/use-cases/` (pure business logic). The `services` export object stays identical — nothing downstream breaks. New business logic should be written as a use-case class, not added to `services.ts`.
+- **API Gateway Auth Unification:** The gateway now uses `jose` (not `jsonwebtoken`) for JWT verification, aligned with the root app's `lib/session.ts`. Per-role rate limits: PATIENT=60, DOCTOR=120, HOSPITAL_ADMIN=200, SUPER_ADMIN=unlimited. Every request gets an `X-Request-ID` correlation header for distributed tracing.
+- **npm audit fix --force Workspace Bug:** Never run `npm audit fix --force` in a workspace monorepo — it hits `undefined@undefined` resolution errors. Use `npm audit fix` (without --force) instead.
 
 ---
 
