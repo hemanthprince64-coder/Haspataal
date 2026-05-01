@@ -286,9 +286,18 @@ export async function removeDoctorAction(
   }
 
   const doctorId = formData.get('doctorId');
-  await services.hospital.removeDoctor(user.hospitalId, doctorId);
+  
+  if (!doctorId || typeof doctorId !== 'string') {
+    return { success: false, message: 'Invalid doctor ID provided.' };
+  }
 
-  return { success: true, message: 'Doctor removed successfully.' };
+  try {
+    await services.hospital.removeDoctor(user.hospitalId, doctorId);
+    return { success: true, message: 'Doctor removed successfully.' };
+  } catch (e: any) {
+    logger.error({ action: 'remove_doctor_failed', error: e.message }, 'Failed to remove doctor');
+    return { success: false, message: e.message || 'Failed to remove doctor.' };
+  }
 }
 
 export async function approveDoctorAffiliationAction(

@@ -1,0 +1,42 @@
+export default {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'scope-enum': [
+      2,
+      'always',
+      [
+        'patient',
+        'hospital',
+        'admin',
+        'lab',
+        'agent',
+        'doctor',
+        'auth',
+        'gateway',
+        'db',
+        'infra',
+        'mobile',
+        'deps',
+        'ci',
+      ],
+    ],
+    'type-enum': [
+      2,
+      'always',
+      [
+        'feat',
+        'fix',
+        'docs',
+        'style',
+        'refactor',
+        'perf',
+        'test',
+        'build',
+        'ci',
+        'chore',
+        'revert',
+        'security',
+      ],
+    ],
+  },
+};
