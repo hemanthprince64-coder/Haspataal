@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     globals: true,
-    include: ["lib/**/*.spec.ts"],
+    include: ["tests/**/*.test.ts", "scripts/tests/**/*.test.ts"],
     exclude: [
       "**/.git/**",
       "**/.kilo/**",
@@ -11,5 +11,13 @@ export default defineConfig({
       "**/node_modules/**",
       "**/haspataal-in/**",
     ],
+    coverage: {
+      provider: 'v8',
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+      },
+    },
   },
 });
