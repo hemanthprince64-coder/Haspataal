@@ -5,7 +5,7 @@ import {
   RegisterHospitalSchema,
   RegisterLabSchema,
   BookAppointmentSchema,
-} from '../../app/actions';
+} from '../../lib/validations';
 
 describe('Zod Validation Schemas', () => {
   describe('RegisterDoctorSchema', () => {

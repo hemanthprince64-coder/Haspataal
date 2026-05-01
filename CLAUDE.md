@@ -109,6 +109,9 @@ lib/
 - `npx prisma generate` — Regenerate Prisma client after schema changes
 - `npx prisma db push` — Update schema
 - `node workers/followup.worker.js` — Run retention engine cron
+- `make dev` — Start the full local Docker dev stack (Postgres + Redis + Nginx + Apps)
+- `make test` — Run all unit and integration tests
+- `make migrate` — Apply Prisma migrations locally
 
 ---
 
@@ -181,6 +184,10 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Hospital.password @ignore (SECURITY):** `HospitalsMaster.password` is marked `@ignore` in Prisma schema to prevent password hashes from leaking to API responses. Hospital login and registration use raw SQL (`$queryRaw` / `$executeRaw`) to read/write the password field. NEVER remove `@ignore` from this field. Use `lib/dto/hospital.ts` → `toHospitalSafeDto()` when returning hospital data to clients.
 - **TypeScript Migration:** `app/actions.ts` (formerly `.js`) now has full Zod input schemas (`RegisterDoctorSchema`, `RegisterHospitalSchema`, `BookAppointmentSchema`, etc.) and typed `ActionResult` returns on all 50+ server actions. All catch clauses use `catch (e: any)`. New server actions MUST be written in TypeScript with Zod validation.
 - **Prettier + Husky + lint-staged:** Pre-commit hooks auto-format staged files. Config: `printWidth: 100`, `singleQuote: true`, `trailingComma: all`. Run `npm run format:check` in CI. Run `npm run format:fix` to format the entire repo.
+- **Server Actions & Non-Function Exports:** Files marked with `"use server"` must ONLY export `async` functions. Runtime values like Zod schema objects must be moved to a separate file (e.g., `lib/validations.ts`) to avoid "A 'use server' file can only export async functions" errors.
+- **Prisma @ignore & Query Engine Panics:** Using `@ignore` on fields (like `password`) can cause the Prisma Query Engine to panic with "Server has closed the connection" if `findFirst` or `create` is called without an explicit `select` block that excludes those fields. Always use explicit `select` or raw SQL when working with models that have ignored fields.
+- **Suspicious Dependency Auditing:** Before removing unused-looking dependencies like `boneyard-js`, check for usage in auto-generated or hidden folders (e.g., `bones/`). Restore if necessary to prevent build breakages.
+- **Local Dev Orchestration:** Use the `Makefile` to manage the full Docker stack. `make dev` ensures that networking (Nginx), state (Postgres/Redis), and applications are correctly initialized in order.
 
 ---
 

@@ -1219,18 +1219,21 @@ export const services = {
 
     login: async (mobile: string, password?: string) => {
       if (!password) throw new Error('PASSWORD_REQUIRED');
-      const hospital = await prisma.hospitalsMaster.findFirst({
-        where: { contactNumber: mobile },
-      });
+
+      // Fetch hospital via raw SQL since @ignore fields (password, name) 
+      // can cause the Prisma Query Engine to panic during findFirst without explicit select.
+      const hospitals = await prisma.$queryRaw<any[]>`
+                SELECT * FROM hospitals_master WHERE contact_number = ${mobile} LIMIT 1
+            `;
+
+      const hospital = hospitals?.[0];
+
       if (!hospital) {
         logger.warn({ action: 'hospital_login_failed', mobile }, 'Hospital not found');
         return null;
       }
-      // Fetch password hash via raw SQL since @ignore hides it from Prisma client
-      const pwdRows = await prisma.$queryRaw<{ password: string | null }[]>`
-                SELECT password FROM hospitals_master WHERE id = ${hospital.id} LIMIT 1
-            `;
-      const passwordHash = pwdRows?.[0]?.password;
+
+      const passwordHash = hospital.password;
       if (passwordHash && (await bcrypt.compare(password, passwordHash))) {
         logger.info(
           { action: 'hospital_login', hospitalId: hospital.id },
@@ -1291,6 +1294,12 @@ export const services = {
             verificationStatus: 'pending',
             accountStatus: 'inactive',
           },
+          select: {
+            id: true,
+            legalName: true,
+            city: true,
+            contactNumber: true,
+          }
         });
 
         // Set password hash via raw SQL (field is @ignore in Prisma schema)
@@ -1360,6 +1369,12 @@ export const services = {
             accountStatus: 'inactive',
             type: 'DIAGNOSTIC_CENTER',
           },
+          select: {
+            id: true,
+            legalName: true,
+            city: true,
+            contactNumber: true,
+          }
         });
 
         // Set password hash via raw SQL (field is @ignore in Prisma schema)
