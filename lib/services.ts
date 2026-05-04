@@ -1263,7 +1263,7 @@ export const services = {
             id: hospital.id,
             name: hospital.legalName,
             role: UserRole.HOSPITAL_ADMIN,
-            hospitalId: hospital.id,
+            hospitalId: hospital.id, // ✅ FIX: Add hospitalId to session payload
           },
         };
       }
@@ -1478,7 +1478,10 @@ export const services = {
     addDoctor: async (
       hospitalId: string,
       data: { name: string; mobile: string; schedule?: string; qualifications?: string },
-    ): Promise<{ doctor: typeof import('@prisma/client').Prisma extends never ? any : any; tempPassword: string }> => {
+    ): Promise<{
+      doctor: typeof import('@prisma/client').Prisma extends never ? any : any;
+      tempPassword: string;
+    }> => {
       // Generate a secure one-time temporary password for the doctor.
       // The plaintext is returned ONCE so the hospital can share it; only the hash is persisted.
       const tempPassword = generateTempPassword(12);
