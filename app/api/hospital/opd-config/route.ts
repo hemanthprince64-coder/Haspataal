@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const config = await prisma.opdConfig.findUnique({
-    where: { hospitalId }
+    where: { hospitalId },
   });
 
   return NextResponse.json({ config });
@@ -33,12 +33,17 @@ export async function PUT(req: NextRequest) {
       showEstimatedWait: body.showEstimatedWait,
       avgConsultationMinutes: body.avgConsultationMinutes,
       enableSmartSlots: body.enableSmartSlots,
-      smartSlotAlgorithm: body.smartSlotAlgorithm || "FIFO",
+      smartSlotAlgorithm: body.smartSlotAlgorithm || 'FIFO',
+      slotBufferMinutes: body.slotBufferMinutes,
+      dailySlotCap: body.dailySlotCap,
+      lunchBreakStart: body.lunchBreakStart,
+      lunchBreakEnd: body.lunchBreakEnd,
+      noShowFee: body.noShowFee,
     },
     create: {
       hospitalId,
-      tokenMode: body.tokenMode || "AUTO",
-      tokenPrefix: body.tokenPrefix || "OPD",
+      tokenMode: body.tokenMode || 'AUTO',
+      tokenPrefix: body.tokenPrefix || 'OPD',
       resetDaily: body.resetDaily ?? true,
       displayQueueOnTV: body.displayQueueOnTV ?? false,
       allowWalkIn: body.allowWalkIn ?? true,
@@ -47,9 +52,14 @@ export async function PUT(req: NextRequest) {
       allowReferral: body.allowReferral ?? false,
       showEstimatedWait: body.showEstimatedWait ?? true,
       avgConsultationMinutes: body.avgConsultationMinutes ?? 15,
-      enableSmartSlots: body.enableSmartSlots ?? false,
-      smartSlotAlgorithm: body.smartSlotAlgorithm || "FIFO",
-    }
+      enableSmartSlots: body.enableSmartSlots ?? true,
+      smartSlotAlgorithm: body.smartSlotAlgorithm || 'FIFO',
+      slotBufferMinutes: body.slotBufferMinutes ?? 5,
+      dailySlotCap: body.dailySlotCap,
+      lunchBreakStart: body.lunchBreakStart,
+      lunchBreakEnd: body.lunchBreakEnd,
+      noShowFee: body.noShowFee ?? 0,
+    },
   });
 
   return NextResponse.json({ config });

@@ -6,12 +6,19 @@ import { z } from 'zod';
 const serviceSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
-  type: z.enum(['CONSULTATION', 'PROCEDURE', 'LAB_TEST', 'IMAGING', 'BED_CHARGE', 'MEDICINE', 'PACKAGE']).default('CONSULTATION'),
+  type: z
+    .enum(['CONSULTATION', 'PROCEDURE', 'LAB_TEST', 'IMAGING', 'BED_CHARGE', 'MEDICINE', 'PACKAGE'])
+    .default('CONSULTATION'),
   departmentId: z.string().optional(),
   basePrice: z.number().positive(),
   gstRate: z.number().min(0).max(28).default(0),
   gstInclusive: z.boolean().default(false),
   isActive: z.boolean().default(true),
+  isAddOn: z.boolean().default(false),
+  isSurgical: z.boolean().default(false),
+  hsnCode: z.string().optional(),
+  packageId: z.string().optional(),
+  inventoryItemId: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -31,14 +38,27 @@ export async function POST(req: NextRequest) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = serviceSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
 
-  const service = await prisma.serviceCatalog.create({
-    data: { ...parsed.data, hospitalId },
-  });
-
-  return NextResponse.json({ service }, { status: 201 });
+  try {
+    const service = await prisma.serviceCatalog.create({
+      data: { ...parsed.data, hospitalId },
+    });
+    return NextResponse.json({ service }, { status: 201 });
+  } catch (error: any) {
+    if (error.code === 'P2002')
+      return NextResponse.json({ error: 'Service code already exists' }, { status: 409 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

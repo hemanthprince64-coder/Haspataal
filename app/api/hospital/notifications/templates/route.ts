@@ -6,12 +6,12 @@ export async function GET(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const rules = await prisma.retentionRule.findMany({
+  const templates = await prisma.notificationTemplate.findMany({
     where: { hospitalId },
     orderBy: { createdAt: 'desc' },
   });
 
-  return NextResponse.json({ rules });
+  return NextResponse.json({ templates });
 }
 
 export async function POST(req: NextRequest) {
@@ -20,26 +20,19 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const rule = await prisma.retentionRule.create({
+  const template = await prisma.notificationTemplate.create({
     data: {
       hospitalId,
       name: body.name,
-      trigger: {
-        event: body.trigger?.event || 'APPOINTMENT_COMPLETED',
-        daysAfter: body.trigger?.daysAfter || 0,
-        condition: body.trigger?.condition || '',
-      },
-      action: {
-        type: body.action?.type || 'WHATSAPP',
-        templateId: body.action?.templateId,
-        channel: body.action?.channel || 'WHATSAPP',
-      },
-      audience: body.audience || { segment: 'ALL' },
-      maxPerMonth: body.maxPerMonth || 1,
-      priority: body.priority || 'MEDIUM',
-      isActive: true,
+      channel: body.channel,
+      body: body.body,
+      headerText: body.headerText,
+      footerText: body.footerText,
+      buttons: body.buttons,
+      language: body.language || 'en',
+      providerId: body.providerId, // DLT ID / WA Template Name
     },
   });
 
-  return NextResponse.json({ rule });
+  return NextResponse.json({ template }, { status: 201 });
 }

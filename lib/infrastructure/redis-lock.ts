@@ -5,6 +5,10 @@ const redis = new IORedis({
   port: parseInt(process.env.REDIS_PORT || '6379'),
 });
 
+redis.on('error', (err) => {
+  // Silent fail
+});
+
 /**
  * Simple single-node Redis slot lock (optimistic fast path).
  * For multi-node deployments, the slot-engine uses Redlock instead.
@@ -14,7 +18,11 @@ const redis = new IORedis({
  * @param ttlSeconds - Lock TTL (default 30s)
  * @returns true if lock acquired, false if already locked
  */
-export async function acquireSlotLock(doctorId: string, slotTime: string, ttlSeconds: number = 30): Promise<boolean> {
+export async function acquireSlotLock(
+  doctorId: string,
+  slotTime: string,
+  ttlSeconds: number = 30,
+): Promise<boolean> {
   const lockKey = `slot:lock:${doctorId}:${slotTime}`;
 
   // ioredis v5 accepts SET options as an object

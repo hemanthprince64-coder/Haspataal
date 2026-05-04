@@ -11,6 +11,10 @@ const redisConnection = new IORedis({
   maxRetriesPerRequest: null,
 });
 
+redisConnection.on('error', (err) => {
+  // Silent fail - redlock handles its own retry logic
+});
+
 /**
  * REDLOCK instance for multi-node distributed locking (M2 Fix)
  * Replaces the simple SETNX approach in redis-lock.ts with

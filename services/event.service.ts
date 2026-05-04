@@ -1,13 +1,11 @@
 import { createHash } from 'crypto';
 import { Pool } from 'pg';
-import Redis from 'ioredis';
 import { EventType, CreateEventInput } from '../types/events';
+import redis from '../lib/redis';
 
 // Assuming global instances or injected dependencies.
 // In a real app, these would be initialized elsewhere and injected.
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-
 
 export class EventService {
   /**
@@ -17,7 +15,7 @@ export class EventService {
   private static generateIdempotencyKey(
     hospitalId: string,
     eventType: string,
-    resourceId: string
+    resourceId: string,
   ): string {
     const day = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const raw = `${hospitalId}:${eventType}:${resourceId}:${day}`;
@@ -33,7 +31,7 @@ export class EventService {
     payload: Record<string, any>,
     hospitalId: string,
     patientId: string | null = null,
-    resourceId: string = 'global' // defaults to 'global' if no specific resource
+    resourceId: string = 'global', // defaults to 'global' if no specific resource
   ): Promise<boolean> {
     const idempotencyKey = this.generateIdempotencyKey(hospitalId, eventType, resourceId);
 
@@ -47,7 +45,7 @@ export class EventService {
         ON CONFLICT (idempotency_key) DO NOTHING
         RETURNING *;
         `,
-        [hospitalId, patientId, eventType, JSON.stringify(payload), idempotencyKey]
+        [hospitalId, patientId, eventType, JSON.stringify(payload), idempotencyKey],
       );
 
       // If no rows were returned, it was a duplicate event
@@ -59,15 +57,22 @@ export class EventService {
       const eventRecord = result.rows[0];
 
       // 2. Publish to Redis Stream for Async Processing
-      const streamKey = `events:${eventType}`;
-      // ioredis xadd: XADD key ID field value [field value ...]
-      await redis.xadd(
-        streamKey,
-        '*',
-        'event_id', eventRecord.id,
-        'hospital_id', eventRecord.hospital_id,
-        'payload', JSON.stringify(eventRecord)
-      );
+      if (redis) {
+        const streamKey = `events:${eventType}`;
+        // ioredis xadd: XADD key ID field value [field value ...]
+        await redis.xadd(
+          streamKey,
+          '*',
+          'event_id',
+          eventRecord.id,
+          'hospital_id',
+          eventRecord.hospital_id,
+          'payload',
+          JSON.stringify(eventRecord),
+        );
+      } else {
+        console.warn(`[EventService] Redis unavailable, skipped stream publish for: ${eventType}`);
+      }
 
       return true;
     } catch (error) {
@@ -86,38 +91,48 @@ export class EventService {
     eventType: EventType,
     consumerGroup: string,
     consumerName: string,
-    handler: (event: any) => Promise<void>
+    handler: (event: any) => Promise<void>,
   ) {
     const streamKey = `events:${eventType}`;
 
     // Ensure consumer group exists (ioredis: XGROUP CREATE key group id [MKSTREAM])
-    try {
-      await redis.xgroup('CREATE', streamKey, consumerGroup, '0', 'MKSTREAM');
-    } catch (error: any) {
-      if (!error.message.includes('BUSYGROUP')) {
-        throw error;
+    if (redis) {
+      try {
+        await redis.xgroup('CREATE', streamKey, consumerGroup, '0', 'MKSTREAM');
+      } catch (error: any) {
+        if (!error.message.includes('BUSYGROUP')) {
+          throw error;
+        }
       }
+    } else {
+      console.warn(`[EventService] Redis unavailable, cannot subscribe to: ${eventType}`);
+      return;
     }
 
     // Polling loop
     while (true) {
+      if (!redis) break;
       try {
         // ioredis xreadgroup: XREADGROUP GROUP group consumer [COUNT n] [BLOCK ms] STREAMS key id
-        const response = await redis.xreadgroup(
-          'GROUP', consumerGroup, consumerName,
-          'COUNT', '10',
-          'BLOCK', '5000',
-          'STREAMS', streamKey, '>'
-        ) as any[] | null;
+        const response = (await redis.xreadgroup(
+          'GROUP',
+          consumerGroup,
+          consumerName,
+          'COUNT',
+          '10',
+          'BLOCK',
+          '5000',
+          'STREAMS',
+          streamKey,
+          '>',
+        )) as any[] | null;
 
         if (response) {
           for (const [, messages] of response) {
             for (const [msgId, fields] of messages) {
               // ioredis returns flat [field, value, field, value] array
               const payloadIdx = fields.indexOf('payload');
-              const eventPayload = payloadIdx !== -1
-                ? JSON.parse(fields[payloadIdx + 1])
-                : {};
+              const eventPayload = payloadIdx !== -1 ? JSON.parse(fields[payloadIdx + 1]) : {};
 
               // Process event
               await handler(eventPayload);

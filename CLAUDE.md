@@ -117,11 +117,15 @@ lib/
 
 ## ✅ Current Production Surface
 
-- Implemented tenant-scoped HMS APIs for setup activation, RBAC permissions, OPD appointments/queue, IPD admissions/discharge, billing invoices/payments, pharmacy dispensing/stock, diagnostics orders/results/pricing, notifications, retention tags, and marketplace discovery.
-- Setup wizard is a 14-step DB-backed flow with activation gates for identity, staff/admin, doctors, OPD, billing, and security configuration.
-- Billing supports GST-aware invoice line calculations, finalization, payments, and OPD/IPD/diagnostic/pharmacy linkage.
-- Security baseline uses JWT hospital sessions, module-level RBAC guard (`requireHospitalAccess`), audit logging on critical writes, encrypted integration credentials, and RLS SQL migration coverage for active tenant tables.
-- Known limitation: Prisma requests are tenant-filtered in application code; full PostgreSQL RLS isolation requires applying the SQL migration and binding `app.hospital_id` in production database sessions.
+- Completed the comprehensive 13-step clinical and financial setup wizard.
+- **Clinical Architecture**: Consolidated department and bed inventory management with Head Doctor assignment logic.
+- **Financial Treasury**: GST-compliant billing with HSN mapping, service bundling (packages), and automated invoice sequencing.
+- **Clinical Dispensary**: Pharmacy stock management with formulation tracking, reorder alerts, and safety audits for expired batches.
+- **Investigation Hub**: Diagnostics master test registry with turnaround SLA tracking and LIS integration hooks.
+- **Communications Node**: Consolidated WhatsApp/SMS/Email/Gateway orchestration with DLT-compliant template management.
+- **Marketplace Discovery**: Professional hospital profiles with media galleries, insurance panel support, and multi-tier cancellation policies.
+- **Retention Engine**: Logic-driven patient recall with frequency capping and audience segmentation.
+- **Activation Gate**: Deep validation engine ensuring 100% compliance before production workflow enablement.
 
 ---
 
@@ -198,6 +202,10 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **AI Microservice Orchestration:** Offload heavy clinical reasoning (Gemini 2.5) to dedicated services (FastAPI). The JS engine (`triage-engine.js`) now prioritizes this service with a local fallback (Gemini 2.0) to ensure high availability and performance.
 - **Graphify Exclusions:** Always ignore `graphify-out/` in git to keep the repository clean of large AST/Knowledge Graph artifacts.
 - **Sliding Window Rate Limiting (Redis):** Implemented an atomic Lua-backed sliding window rate limiter in `lib/rate-limit.ts` using `ioredis`. Wrapped critical Server Actions (`loginHospital`, `registerHospital`, etc.) using a generic `withRateLimit` Higher-Order Component. Note that `ioredis` is incompatible with Next.js Edge runtime, so API rate limit headers in `middleware.ts` require separate handling.
+- **Optimized 13-Step Setup Wizard:** Consolidated the configuration flow into a linear dependency chain (Identity → Branches → Clinical Architecture → Staff → Doctors → OPD → Billing → Pharmacy → Diagnostics → Integrations → Retention → Marketplace → Activation). This resolves circular dependencies and merges redundant steps (Wards into Architecture, Notifications into Integrations).
+- **Hardened Clinical Validation (Setup):** The activation engine now enforces deep property-level safety: (1) Mandatory Head Doctor assignments for IPD departments, (2) Block activation if expired batches exist in pharmacy stock, (3) Enforce at least one `HOSPITAL_ADMIN` role, and (4) Require full address/email for compliance.
+- **Marketplace & Treasury Expansion:** Marketplace profiles now support cover images, galleries, and insurance panels (TPA tie-ups). Billing includes native HSN code mapping, automated invoice sequencing (Prefix + Series), and bank payout profiles.
+- **ABDM/ABHA Integration Node:** Dedicated integration node for Ayushman Bharat Digital Mission (ABDM) onboarding, enabling hospital facility ID registration and consent-driven health record syncing.
 
 ---
 

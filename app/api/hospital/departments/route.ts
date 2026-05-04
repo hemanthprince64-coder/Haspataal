@@ -8,7 +8,9 @@ const deptSchema = z.object({
   code: z.string().min(1).max(10),
   type: z.enum(['OPD', 'IPD', 'BOTH', 'EMERGENCY']).default('OPD'),
   headDoctorId: z.string().optional(),
+  description: z.string().optional(),
   billingRules: z.any().optional(),
+  maxCapacity: z.number().int().min(0).default(0),
   analyticsEnabled: z.boolean().default(true),
   isActive: z.boolean().default(true),
 });
@@ -36,8 +38,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ departments });
   } catch (err: any) {
-    console.error("[DEPARTMENTS_GET_ERROR]", err);
-    return NextResponse.json({ error: 'Internal Server Error', message: err.message }, { status: 500 });
+    console.error('[DEPARTMENTS_GET_ERROR]', err);
+    return NextResponse.json(
+      { error: 'Internal Server Error', message: err.message },
+      { status: 500 },
+    );
   }
 }
 
@@ -46,7 +51,11 @@ export async function POST(req: NextRequest) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   // Handle seed request
   const seedParsed = seedSchema.safeParse(body);
@@ -63,15 +72,23 @@ export async function POST(req: NextRequest) {
             type: d.type as 'OPD' | 'IPD' | 'BOTH' | 'EMERGENCY',
             sortOrder: idx,
           },
-        })
-      )
+        }),
+      ),
     );
-    const departments = await prisma.department.findMany({ where: { hospitalId }, include: { units: true }, orderBy: { sortOrder: 'asc' } });
+    const departments = await prisma.department.findMany({
+      where: { hospitalId },
+      include: { units: true },
+      orderBy: { sortOrder: 'asc' },
+    });
     return NextResponse.json({ departments });
   }
 
   const parsed = deptSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
 
   const count = await prisma.department.count({ where: { hospitalId } });
   const department = await prisma.department.create({

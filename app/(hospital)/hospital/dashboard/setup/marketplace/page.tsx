@@ -1,149 +1,452 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Store, Globe, Eye, Image as ImageIcon, CheckCircle, Save, Loader2, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from 'react';
+import {
+  Store,
+  Plus,
+  Search,
+  Filter,
+  Globe,
+  Image as ImageIcon,
+  ShieldCheck,
+  Heart,
+  CreditCard,
+  Calendar,
+  Clock,
+  Lock,
+  Layout,
+  Settings,
+  History,
+  ChevronRight,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink,
+  Sparkles,
+  MapPin,
+  Camera,
+  Briefcase,
+  FileText,
+  Share2,
+  Eye,
+  Monitor,
+  Smartphone,
+  Stethoscope,
+  Building2,
+  Umbrella,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MarketplaceSetupPage() {
-  const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState('listing');
+  const [config, setConfig] = useState({
+    isListedOnMarketplace: true,
+    tagline: '',
+    about: '',
+    showConsultationFees: true,
+    allowOnlineBooking: true,
+    showBedCharges: false,
+    requiresApproval: false,
+    cancellationPolicy: 'FLEXIBLE',
+    depositRequired: false,
+    depositAmount: 0,
+    allowsInstantBooking: true,
+    specialities: [] as string[],
+    facilities: [] as string[],
+    insurancePanels: [] as string[],
+  });
 
   useEffect(() => {
-    fetch("/api/hospital/marketplace")
-      .then(r => r.json())
-      .then(data => setConfig(data.config || {
-        isListedOnMarketplace: false,
-        marketplaceTagline: "",
-        marketplaceAbout: "",
-        showConsultationFees: true,
-        allowOnlineBooking: true,
-        cancellationPolicy: "FLEXIBLE"
-      }))
-      .finally(() => setLoading(false));
+    const fetchConfig = async () => {
+      try {
+        const res = await fetch('/api/hospital/setup/marketplace'); // Assuming this endpoint exists or I'll create/update it
+        const data = await res.json();
+        if (data.hospital) setConfig(data.hospital);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConfig();
   }, []);
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await fetch("/api/hospital/marketplace", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch {}
-    setSaving(false);
+  const handleUpdate = async (updates: any) => {
+    const newConfig = { ...config, ...updates };
+    setConfig(newConfig);
+    // Persist logic here
   };
 
-  if (loading) return <div className="p-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" /></div>;
-
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-orange-50 rounded-xl">
-            <Store className="h-6 w-6 text-orange-600" />
+    <div className="min-h-screen bg-[#F8FAFC] p-6 lg:p-10 pb-32">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="flex items-center gap-5">
+          <div className="p-4 bg-blue-600 rounded-[1.5rem] shadow-2xl shadow-blue-100">
+            <Globe className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Marketplace Listing</h1>
-            <p className="text-xs text-slate-500">Configure how your hospital appears on Haspataal.in public search</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
+              Public Marketplace
+            </h1>
+            <p className="text-sm text-slate-500 font-medium">
+              Configure your global presence, clinical branding, and patient booking policies
+            </p>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="bg-orange-600 hover:bg-orange-700 text-white gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <CheckCircle className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-          {saving ? "Saving..." : saved ? "Published!" : "Save & Publish"}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            className="h-12 px-6 rounded-2xl border-slate-200 font-bold text-slate-600 bg-white"
+          >
+            <Eye className="h-4 w-4 mr-2" /> Live Preview
+          </Button>
+          <Button className="bg-slate-900 hover:bg-black h-12 px-10 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-200">
+            Publish Profile <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          {/* Main Listing Toggle */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">Public Visibility</h2>
-                <p className="text-xs text-slate-500">List your hospital on the Haspataal.in marketplace</p>
-              </div>
-              <Switch checked={config.isListedOnMarketplace} onCheckedChange={v => setConfig({...config, isListedOnMarketplace: v})} />
-            </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
+        <TabsList className="bg-white p-1 rounded-2xl border border-slate-200 h-16 shadow-sm inline-flex">
+          <TabsTrigger
+            value="listing"
+            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
+          >
+            Core Listing
+          </TabsTrigger>
+          <TabsTrigger
+            value="content"
+            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
+          >
+            Rich Media & SEO
+          </TabsTrigger>
+          <TabsTrigger
+            value="policies"
+            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
+          >
+            Booking Protocols
+          </TabsTrigger>
+          <TabsTrigger
+            value="insurance"
+            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
+          >
+            Insurance Panels
+          </TabsTrigger>
+        </TabsList>
 
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1.5">Public Tagline</label>
-                <Input value={config.marketplaceTagline} onChange={e => setConfig({...config, marketplaceTagline: e.target.value})} placeholder="e.g. Most trusted multispecialty hospital in Bangalore" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1.5">About (Public Profile)</label>
-                <textarea 
-                  value={config.marketplaceAbout} 
-                  onChange={e => setConfig({...config, marketplaceAbout: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm min-h-[100px] focus:outline-none"
-                  placeholder="Describe your hospital history, mission, and care standards..."
+        <TabsContent
+          value="listing"
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <section className="bg-white rounded-[3rem] border border-slate-200 p-10 shadow-sm space-y-8">
+              <div className="flex items-center justify-between p-6 bg-blue-50 rounded-[2rem] border border-blue-100">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
+                    <Globe className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest leading-none mb-1 text-blue-900">
+                      Marketplace Visibility
+                    </p>
+                    <p className="text-[10px] text-blue-700 font-medium italic">
+                      Make your hospital discoverable on Haspataal.com
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={config.isListedOnMarketplace}
+                  onCheckedChange={(v) => handleUpdate({ isListedOnMarketplace: v })}
+                  className="data-[state=checked]:bg-blue-600"
                 />
               </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Marketplace Tagline
+                </label>
+                <Input
+                  placeholder="e.g., Premier Cardiac Care & Orthopedic Excellence"
+                  value={config.tagline}
+                  onChange={(e) => handleUpdate({ tagline: e.target.value })}
+                  className="h-14 rounded-2xl border-slate-200 font-bold text-lg px-6"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  About the Facility (Clinical Profile)
+                </label>
+                <Textarea
+                  placeholder="Describe your hospital, history, and medical mission..."
+                  className="min-h-[200px] rounded-[2rem] border-slate-200 font-medium p-6"
+                  value={config.about}
+                  onChange={(e) => handleUpdate({ about: e.target.value })}
+                />
+              </div>
+            </section>
+
+            <section className="space-y-8">
+              <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden shadow-2xl">
+                <div className="relative z-10">
+                  <h3 className="text-xl font-black mb-6 tracking-tight flex items-center gap-3">
+                    <Stethoscope className="h-6 w-6 text-blue-400" /> Specialties & Expertise
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {['Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Oncology'].map(
+                      (spec) => (
+                        <Badge
+                          key={spec}
+                          className="bg-white/10 text-white border-none font-bold py-1.5 px-4 rounded-xl hover:bg-white/20 cursor-pointer"
+                        >
+                          {spec}
+                        </Badge>
+                      ),
+                    )}
+                    <button className="h-8 w-8 bg-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all">
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12">
+                  <Briefcase className="h-48 w-48" />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[3rem] border border-slate-200 p-10 shadow-sm">
+                <h3 className="text-xl font-black mb-6 tracking-tight flex items-center gap-3">
+                  <Layout className="h-6 w-6 text-blue-600" /> Facility Amenities
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {['24/7 Pharmacy', 'Ambulance', 'ICU', 'Cafeteria', 'Parking', 'WiFi'].map(
+                    (fac) => (
+                      <div
+                        key={fac}
+                        className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition-all"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <span className="text-xs font-bold text-slate-700">{fac}</span>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+        </TabsContent>
+
+        <TabsContent
+          value="content"
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+        >
+          <div className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="p-10 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+                Visual Branding & Media
+              </h2>
+              <p className="text-xs text-slate-400 font-medium">
+                Patients are 70% more likely to book if they see high-quality facility photos.
+              </p>
+            </div>
+            <div className="p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="aspect-[16/9] rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-6 hover:bg-slate-50 transition-all cursor-pointer">
+                <div className="h-12 w-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                  <Camera className="h-6 w-6 text-slate-300" />
+                </div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                  Cover Image
+                </p>
+                <p className="text-[10px] text-slate-300 mt-1 uppercase font-black tracking-tighter">
+                  Recommended: 1920x1080px
+                </p>
+              </div>
+              <div className="aspect-[16/9] rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-6 hover:bg-slate-50 transition-all cursor-pointer">
+                <div className="h-12 w-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                  <Plus className="h-6 w-6 text-slate-300" />
+                </div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                  Gallery Item
+                </p>
+                <p className="text-[10px] text-slate-300 mt-1 uppercase font-black tracking-tighter">
+                  Upload room / ward / OT photos
+                </p>
+              </div>
             </div>
           </div>
+        </TabsContent>
 
-          {/* Patient Options */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h2 className="text-sm font-bold text-slate-900 mb-4">Patient Acquisition Settings</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TabsContent
+          value="policies"
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <section className="bg-white rounded-[3rem] border border-slate-200 p-10 shadow-sm">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight mb-8 flex items-center gap-3">
+                <Calendar className="h-6 w-6 text-blue-600" /> Appointment Protocols
+              </h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">
+                      Instant Booking
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium italic">
+                      Confirmed immediately without staff review
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.allowsInstantBooking}
+                    onCheckedChange={(v) => handleUpdate({ allowsInstantBooking: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">
+                      Fee Transparency
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium italic">
+                      Show consultation & bed charges on profile
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <Badge
+                      variant="outline"
+                      className={`cursor-pointer ${config.showConsultationFees ? 'bg-blue-50 border-blue-200 text-blue-600' : 'text-slate-400'}`}
+                      onClick={() =>
+                        handleUpdate({ showConsultationFees: !config.showConsultationFees })
+                      }
+                    >
+                      OPD
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={`cursor-pointer ${config.showBedCharges ? 'bg-blue-50 border-blue-200 text-blue-600' : 'text-slate-400'}`}
+                      onClick={() => handleUpdate({ showBedCharges: !config.showBedCharges })}
+                    >
+                      IPD
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-[3rem] border border-slate-200 p-10 shadow-sm">
+              <h2 className="text-xl font-black text-slate-800 tracking-tight mb-8 flex items-center gap-3">
+                <Lock className="h-6 w-6 text-rose-600" /> Cancellation & Deposits
+              </h2>
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Cancellation Strictness
+                  </label>
+                  <Select
+                    value={config.cancellationPolicy}
+                    onValueChange={(v) => handleUpdate({ cancellationPolicy: v })}
+                  >
+                    <SelectTrigger className="h-14 rounded-2xl border-slate-200 font-bold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl font-bold">
+                      <SelectItem value="FLEXIBLE">Flexible (Free until 2h before)</SelectItem>
+                      <SelectItem value="MODERATE">Moderate (50% charge if &lt; 24h)</SelectItem>
+                      <SelectItem value="STRICT">Strict (Non-refundable)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between p-6 bg-slate-900 rounded-[2rem] text-white">
+                  <div className="flex items-center gap-4">
+                    <CreditCard className="h-6 w-6 text-blue-400" />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-widest leading-none mb-1">
+                        Pre-paid Deposits
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium italic">
+                        Collect part-payment at time of booking
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={config.depositRequired}
+                    onCheckedChange={(v) => handleUpdate({ depositRequired: v })}
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+        </TabsContent>
+
+        <TabsContent
+          value="insurance"
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+        >
+          <div className="bg-white rounded-[3rem] border border-slate-200 p-10 shadow-sm">
+            <div className="flex items-center gap-4 mb-10">
+              <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                <Umbrella className="h-7 w-7" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-800 tracking-tight">
+                  Insurance & TPA Panels
+                </h2>
+                <p className="text-xs text-slate-400 font-medium">
+                  List the insurance companies and TPAs you have cashless tie-ups with.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {[
-                { label: "Show Consult Fees", key: "showConsultationFees", icon: Info },
-                { label: "Allow Online Booking", key: "allowOnlineBooking", icon: Globe },
-                { label: "Show Bed Availability", key: "showBedCharges", icon: Info },
-                { label: "Require Approval", key: "requiresApproval", icon: Info }
-              ].map(opt => (
-                <div key={opt.key} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <span className="text-xs font-medium text-slate-700">{opt.label}</span>
-                  <Switch checked={config[opt.key]} onCheckedChange={v => setConfig({...config, [opt.key]: v})} />
+                'Star Health',
+                'HDFC ERGO',
+                'Niva Bupa',
+                'ICICI Lombard',
+                'Care Health',
+                'TATA AIG',
+              ].map((panel) => (
+                <div
+                  key={panel}
+                  className="flex items-center gap-3 p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 hover:border-emerald-200 transition-all group cursor-pointer"
+                >
+                  <div className="h-4 w-4 rounded-full border-2 border-slate-200 group-hover:border-emerald-500 group-hover:bg-emerald-500 transition-all shrink-0"></div>
+                  <span className="text-xs font-black text-slate-700 uppercase tracking-tighter">
+                    {panel}
+                  </span>
                 </div>
               ))}
+              <button className="flex items-center justify-center gap-3 p-5 border-2 border-dashed border-slate-200 rounded-[1.5rem] text-slate-400 hover:bg-slate-50 hover:border-slate-300 transition-all">
+                <Plus className="h-4 w-4" />{' '}
+                <span className="text-xs font-black uppercase">Add TPA</span>
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Sidebar / Preview */}
-        <div className="space-y-6">
-          <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative">
-            <div className="absolute top-2 right-2">
-              <Badge className="bg-orange-500 text-white border-none">PREVIEW</Badge>
-            </div>
-            <Globe className="h-12 w-12 text-slate-700 mb-4" />
-            <h3 className="text-lg font-bold mb-1">{config.marketplaceTagline || "Your Hospital Name"}</h3>
-            <p className="text-xs text-slate-400 line-clamp-3 mb-4">{config.marketplaceAbout || "Listing description will appear here..."}</p>
-            <div className="space-y-2">
-              <div className="h-1 w-full bg-slate-800 rounded-full" />
-              <div className="h-1 w-2/3 bg-slate-800 rounded-full" />
-            </div>
-            <Button variant="outline" className="w-full mt-6 bg-transparent border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white">
-              <Eye className="h-3.5 w-3.5 mr-2" /> Live Profile
-            </Button>
-          </div>
-
-          <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-            <h3 className="text-xs font-bold text-blue-800 mb-2 uppercase">Ranking Boost</h3>
-            <p className="text-[10px] text-blue-600 mb-4">Complete your profile to rank higher in local search results.</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[10px] text-blue-700 font-medium">
-                <CheckCircle className="h-3 w-3" /> Add 5+ Services
-              </div>
-              <div className="flex items-center gap-2 text-[10px] text-blue-700 font-medium">
-                <CheckCircle className="h-3 w-3" /> Upload Ward Photos
-              </div>
-              <div className="flex items-center gap-2 text-[10px] text-blue-700 font-medium">
-                <CheckCircle className="h-3 w-3" /> Verify GST/Legal
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

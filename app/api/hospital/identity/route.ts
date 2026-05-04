@@ -6,13 +6,33 @@ import { getHospitalIdFromSession } from '@/lib/auth';
 const identitySchema = z.object({
   legalName: z.string().min(2),
   displayName: z.string().min(2),
-  hospitalType: z.enum(['HOSPITAL', 'CLINIC', 'DIAGNOSTIC_CENTER', 'NURSING_HOME', 'MULTISPECIALTY', 'CORPORATE']).optional(),
-  brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal('')),
+  hospitalType: z
+    .enum([
+      'HOSPITAL',
+      'CLINIC',
+      'DIAGNOSTIC_CENTER',
+      'NURSING_HOME',
+      'MULTISPECIALTY',
+      'CORPORATE',
+    ])
+    .optional(),
+  brandColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
+    .or(z.literal('')),
   stateRegistrationNumber: z.string().optional(),
   registrationNumber: z.string().optional(),
   gstNumber: z.string().optional(),
   panNumber: z.string().optional(),
-  contactNumber: z.string().min(10, "Valid contact number required"),
+  cinNumber: z.string().optional(),
+  officialEmail: z.string().email().optional().or(z.literal('')),
+  contactNumber: z.string().min(10, 'Valid contact number required'),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
   nabhAccredited: z.boolean().optional(),
   nablAccredited: z.boolean().optional(),
   timezone: z.string().optional(),
@@ -24,8 +44,8 @@ const identitySchema = z.object({
   letterheadTemplate: z.string().optional(),
   prescriptionHeader: z.string().optional(),
   prescriptionFooter: z.string().optional(),
-  logoUrl: z.string().optional().or(z.literal("")),
-  faviconUrl: z.string().optional().or(z.literal("")),
+  logoUrl: z.string().optional().or(z.literal('')),
+  faviconUrl: z.string().optional().or(z.literal('')),
 });
 
 export async function GET(req: NextRequest) {
@@ -35,15 +55,36 @@ export async function GET(req: NextRequest) {
   const hospital = await prisma.hospitalsMaster.findUnique({
     where: { id: hospitalId },
     select: {
-      id: true, legalName: true, displayName: true, hospitalType: true,
-      logoUrl: true, brandColor: true, faviconUrl: true,
-      stateRegistrationNumber: true, gstNumber: true, panNumber: true,
+      id: true,
+      legalName: true,
+      displayName: true,
+      hospitalType: true,
+      logoUrl: true,
+      brandColor: true,
+      faviconUrl: true,
+      stateRegistrationNumber: true,
+      gstNumber: true,
+      panNumber: true,
+      cinNumber: true,
       registrationNumber: true,
       contactNumber: true,
-      nabhAccredited: true, nablAccredited: true,
-      timezone: true, workingDays: true, openTime: true, closeTime: true,
-      emergencyContact: true, isMultiBranch: true,
-      letterheadTemplate: true, prescriptionHeader: true, prescriptionFooter: true,
+      officialEmail: true,
+      addressLine1: true,
+      addressLine2: true,
+      city: true,
+      state: true,
+      pincode: true,
+      nabhAccredited: true,
+      nablAccredited: true,
+      timezone: true,
+      workingDays: true,
+      openTime: true,
+      closeTime: true,
+      emergencyContact: true,
+      isMultiBranch: true,
+      letterheadTemplate: true,
+      prescriptionHeader: true,
+      prescriptionFooter: true,
     },
   });
 
@@ -64,7 +105,10 @@ export async function PUT(req: NextRequest) {
 
   const parsed = identitySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const data = parsed.data;
@@ -90,7 +134,14 @@ export async function PUT(req: NextRequest) {
       registrationNumber: data.registrationNumber,
       gstNumber: data.gstNumber,
       panNumber: data.panNumber,
+      cinNumber: data.cinNumber,
       contactNumber: data.contactNumber,
+      officialEmail: data.officialEmail || null,
+      addressLine1: data.addressLine1,
+      addressLine2: data.addressLine2,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode,
       nabhAccredited: data.nabhAccredited,
       nablAccredited: data.nablAccredited,
       timezone: data.timezone,

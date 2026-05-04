@@ -1,18 +1,36 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import React from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Hospital, Users, Stethoscope, Calendar, ClipboardList,
-  BedDouble, CreditCard, Pill, TestTube, Bell, Plug,
-  RefreshCw, Store, CheckCircle2, Clock, Lock,
-  AlertTriangle, ChevronRight, ArrowRight, Settings, MapPin,
-  Shield, AlertCircle,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+  Hospital,
+  Users,
+  Stethoscope,
+  Calendar,
+  ClipboardList,
+  BedDouble,
+  CreditCard,
+  Pill,
+  TestTube,
+  Bell,
+  Plug,
+  RefreshCw,
+  Store,
+  CheckCircle2,
+  Clock,
+  Lock,
+  AlertTriangle,
+  ChevronRight,
+  ArrowRight,
+  Settings,
+  MapPin,
+  Shield,
+  AlertCircle,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -20,180 +38,158 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 // ─── Step Definitions ─────────────────────────────────────────────────────────
 
 const STEPS = [
   {
-    id: "identity",
-    title: "Hospital Identity",
-    subtitle: "Legal name, logo, branding, compliance",
+    id: 'identity',
+    title: 'Hospital Identity',
+    subtitle: 'Legal name, address, logo, branding, compliance',
     icon: Hospital,
-    href: "/hospital/dashboard/setup/identity",
+    href: '/hospital/dashboard/setup/identity',
     weight: 2,
     critical: true,
     depends: [],
-    warning: "No identity configured → compliance and invoicing risk",
+    warning: 'Missing identity or address → compliance and invoicing risk',
   },
   {
-    id: "branches",
-    title: "Multi-Branch Support",
-    subtitle: "Satellite clinics, campuses, locations",
+    id: 'branches',
+    title: 'Multi-Branch Support',
+    subtitle: 'Satellite clinics, campuses, locations',
     icon: MapPin,
-    href: "/hospital/dashboard/setup/branches",
+    href: '/hospital/dashboard/setup/branches',
     weight: 0.5,
     critical: false,
-    depends: ["identity"],
-    warning: "No branches configured → only main campus active",
+    depends: ['identity'],
+    warning: 'No branches configured → only main campus active',
   },
   {
-    id: "departments",
-    title: "Departments & Units",
-    subtitle: "OPD, IPD, ICU, OT and sub-units",
+    id: 'departments',
+    title: 'Clinical Architecture',
+    subtitle: 'Departments, units, and bed inventory',
     icon: ClipboardList,
-    href: "/hospital/dashboard/setup/departments",
-    weight: 1,
-    critical: false,
-    depends: ["identity"],
-    warning: "No departments → doctors cannot be assigned",
+    href: '/hospital/dashboard/setup/departments',
+    weight: 1.5,
+    critical: true,
+    depends: ['identity'],
+    warning: 'No departments → clinical workflow cannot be established',
   },
   {
-    id: "staff",
-    title: "Staff & Roles",
-    subtitle: "RBAC, permissions, invite team",
+    id: 'staff',
+    title: 'Staff & Roles',
+    subtitle: 'RBAC, permissions, invite team',
     icon: Users,
-    href: "/hospital/dashboard/setup/staff",
+    href: '/hospital/dashboard/setup/staff',
     weight: 2,
     critical: true,
-    depends: ["identity"],
-    warning: "No staff configured → system cannot operate",
+    depends: ['identity'],
+    warning: 'No staff configured → system cannot operate',
   },
   {
-    id: "doctors",
-    title: "Doctor Configuration",
-    subtitle: "Fees, slots, specialities, marketplace",
+    id: 'doctors',
+    title: 'Doctor Configuration',
+    subtitle: 'Fees, slots, specialities, marketplace',
     icon: Stethoscope,
-    href: "/hospital/dashboard/setup/doctors",
+    href: '/hospital/dashboard/setup/doctors',
     weight: 2,
     critical: true,
-    depends: ["departments", "staff"],
-    warning: "No doctors configured → OPD bookings will fail",
+    depends: ['departments', 'staff'],
+    warning: 'No doctors configured → OPD bookings will fail',
   },
   {
-    id: "opd",
-    title: "OPD Workflow",
-    subtitle: "Token system, queue, overbooking rules",
+    id: 'opd',
+    title: 'OPD Workflow',
+    subtitle: 'Token system, queue, overbooking rules',
     icon: Calendar,
-    href: "/hospital/dashboard/setup/opd",
+    href: '/hospital/dashboard/setup/opd',
     weight: 1,
     critical: false,
-    depends: ["doctors"],
-    warning: "OPD workflow unconfigured → front desk impaired",
+    depends: ['doctors'],
+    warning: 'OPD workflow unconfigured → front desk impaired',
   },
   {
-    id: "ipd",
-    title: "IPD / Ward Setup",
-    subtitle: "Beds, wards, admission workflow",
-    icon: BedDouble,
-    href: "/hospital/dashboard/setup/wards",
-    weight: 1,
-    critical: false,
-    depends: ["departments"],
-    warning: "No beds configured → IPD admissions not possible",
-  },
-  {
-    id: "billing",
-    title: "Billing System",
-    subtitle: "Service catalog, GST, payment gateways",
+    id: 'billing',
+    title: 'Billing System',
+    subtitle: 'Service catalog, GST, bank profiles',
     icon: CreditCard,
-    href: "/hospital/dashboard/setup/billing",
+    href: '/hospital/dashboard/setup/billing',
     weight: 2,
     critical: true,
-    depends: ["identity"],
-    warning: "No billing configured → revenue loss risk",
+    depends: ['identity'],
+    warning: 'No billing configured → revenue loss risk',
   },
   {
-    id: "pharmacy",
-    title: "Pharmacy Setup",
-    subtitle: "Drug catalog, stock, dispensing rules",
+    id: 'pharmacy',
+    title: 'Pharmacy Setup',
+    subtitle: 'Drug catalog, stock, dispensing rules',
     icon: Pill,
-    href: "/hospital/dashboard/setup/pharmacy",
     weight: 1,
     critical: false,
-    depends: ["billing"],
-    warning: "No pharmacy → in-house dispensing unavailable",
+    depends: ['billing'],
+    href: '/hospital/dashboard/setup/pharmacy',
+    warning: 'No pharmacy → in-house dispensing unavailable',
   },
   {
-    id: "diagnostics",
-    title: "Diagnostics Setup",
-    subtitle: "Lab tests, imaging, pricing",
+    id: 'diagnostics',
+    title: 'Diagnostics Setup',
+    subtitle: 'Lab tests, imaging, pricing',
     icon: TestTube,
-    href: "/hospital/dashboard/setup/diagnostics",
+    href: '/hospital/dashboard/setup/diagnostics',
     weight: 1,
     critical: false,
-    depends: ["billing"],
-    warning: "No diagnostics priced → lab revenue inactive",
+    depends: ['billing'],
+    warning: 'No diagnostics priced → lab revenue inactive',
   },
   {
-    id: "notifications",
-    title: "Notification Engine",
-    subtitle: "WhatsApp, SMS, email templates",
-    icon: Bell,
-    href: "/hospital/dashboard/setup/notifications",
-    weight: 1,
-    critical: false,
-    depends: ["identity"],
-    warning: "No notifications → patient engagement disabled",
-  },
-  {
-    id: "integrations",
-    title: "Integration Layer",
-    subtitle: "Razorpay, WhatsApp API, ABHA, Google",
+    id: 'integrations',
+    title: 'Nodes & Integrations',
+    subtitle: 'WhatsApp, SMS, gateways, ABDM',
     icon: Plug,
-    href: "/hospital/dashboard/setup/integrations",
-    weight: 1,
+    href: '/hospital/dashboard/setup/integrations',
+    weight: 1.5,
     critical: false,
-    depends: ["billing"],
-    warning: "No integrations → payment and messaging unavailable",
+    depends: ['billing'],
+    warning: 'No integrations → payment and messaging unavailable',
   },
   {
-    id: "retention",
-    title: "Retention Engine",
-    subtitle: "Follow-up rules, chronic tracking, AI recall",
+    id: 'retention',
+    title: 'Retention Engine',
+    subtitle: 'Follow-up rules, chronic tracking, AI recall',
     icon: RefreshCw,
-    href: "/hospital/dashboard/setup/retention",
+    href: '/hospital/dashboard/setup/retention',
     weight: 0.5,
     critical: false,
-    depends: ["notifications"],
-    warning: "No retention rules → patient recall revenue uncaptured",
+    depends: ['integrations'],
+    warning: 'No retention rules → patient recall revenue uncaptured',
   },
   {
-    id: "marketplace",
-    title: "Marketplace Setup",
-    subtitle: "Public listing on Haspataal.in",
+    id: 'marketplace',
+    title: 'Marketplace Setup',
+    subtitle: 'Public listing on Haspataal.com',
     icon: Store,
-    href: "/hospital/dashboard/setup/marketplace",
+    href: '/hospital/dashboard/setup/marketplace',
     weight: 0.5,
     critical: false,
-    depends: ["identity", "doctors"],
-    warning: "Not listed → missing patient acquisition channel",
+    depends: ['identity', 'doctors'],
+    warning: 'Not listed → missing patient acquisition channel',
   },
   {
-    id: "activation",
-    title: "Final Review & Activation",
-    subtitle: "Validate critical setup and activate production workflows",
+    id: 'activation',
+    title: 'Final Review & Activation',
+    subtitle: 'Validate critical setup and activate production',
     icon: CheckCircle2,
-    href: "/hospital/dashboard/setup",
+    href: '/hospital/dashboard/setup',
     weight: 1,
     critical: true,
-    depends: ["identity", "staff", "doctors", "opd", "billing"],
-    warning: "Activation blocked until critical configuration is complete",
+    depends: ['identity', 'staff', 'doctors', 'opd', 'billing'],
+    warning: 'Activation blocked until critical configuration is complete',
   },
 ];
 
-type StepState = "complete" | "in_progress" | "locked";
+type StepState = 'complete' | 'in_progress' | 'locked';
 
 // ─── Weighted Completion ───────────────────────────────────────────────────────
 
@@ -211,8 +207,8 @@ export default function SetupWizardPage() {
   const [stepHistory, setStepHistory] = useState<string[]>([STEPS[0].id]);
   const [completion, setCompletion] = useState<Record<string, boolean>>({});
   const [serverWarnings, setServerWarnings] = useState<Record<string, string[]>>({});
-  const [verificationStatus, setVerificationStatus] = useState<string>("pending");
-  const [activationError, setActivationError] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState<string>('pending');
+  const [activationError, setActivationError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
 
@@ -222,7 +218,7 @@ export default function SetupWizardPage() {
   // Navigate to a step, recording it in history stack
   const navigateToStep = useCallback((stepId: string) => {
     setActiveStep(stepId);
-    setStepHistory(prev => {
+    setStepHistory((prev) => {
       const existingIndex = prev.indexOf(stepId);
       if (existingIndex !== -1) {
         // Truncate forward history when navigating back to earlier step
@@ -242,19 +238,21 @@ export default function SetupWizardPage() {
     }
   }, [stepHistory]);
   useEffect(() => {
-    fetch("/api/hospital/setup/completion")
+    fetch('/api/hospital/setup/completion')
       .then((r) => r.json())
       .then((data) => {
         if (data.stepStatuses) {
           const map: Record<string, boolean> = {};
           const warnings: Record<string, string[]> = {};
-          for (const [id, status] of Object.entries(data.stepStatuses as Record<string, { complete: boolean; warnings?: string[] }>)) {
+          for (const [id, status] of Object.entries(
+            data.stepStatuses as Record<string, { complete: boolean; warnings?: string[] }>,
+          )) {
             map[id] = status.complete;
             warnings[id] = status.warnings ?? [];
           }
           setCompletion(map);
           setServerWarnings(warnings);
-          setVerificationStatus(data.verificationStatus || "pending");
+          setVerificationStatus(data.verificationStatus || 'pending');
         }
       })
       .catch(() => {})
@@ -265,27 +263,25 @@ export default function SetupWizardPage() {
 
   const getStepState = useCallback(
     (step: (typeof STEPS)[number]): StepState => {
-      if (completion[step.id]) return "complete";
-      
+      if (completion[step.id]) return 'complete';
+
       // If hospital is approved (verified), unlock all modules regardless of dependencies
-      if (verificationStatus === "verified") return "in_progress";
+      if (verificationStatus === 'verified') return 'in_progress';
 
       const depsComplete = step.depends.every((dep) => completion[dep]);
-      if (!depsComplete) return "locked";
-      return "in_progress";
+      if (!depsComplete) return 'locked';
+      return 'in_progress';
     },
-    [completion, verificationStatus]
+    [completion, verificationStatus],
   );
 
   const activeStepDef = STEPS.find((s) => s.id === activeStep) ?? STEPS[0];
   const activeState = getStepState(activeStepDef);
 
-  const criticalWarnings = STEPS.filter(
-    (s) => s.critical && !completion[s.id]
-  );
+  const criticalWarnings = STEPS.filter((s) => s.critical && !completion[s.id]);
 
   const progressColor =
-    weightedScore >= 80 ? "#22c55e" : weightedScore >= 50 ? "#f59e0b" : "#ef4444";
+    weightedScore >= 80 ? '#22c55e' : weightedScore >= 50 ? '#f59e0b' : '#ef4444';
 
   // ── Auto-progression: advance to next unlocked step when current completes ──
   useEffect(() => {
@@ -313,8 +309,8 @@ export default function SetupWizardPage() {
   }, [completion, activeStep, isLoading, navigateToStep]);
 
   const handleConfigure = async () => {
-    setActivationError("");
-    if (activeStepDef.id !== "activation") {
+    setActivationError('');
+    if (activeStepDef.id !== 'activation') {
       // Show a toast that we're navigating to configure the step
       // The step itself will handle its own save & toast
       router.push(activeStepDef.href);
@@ -327,20 +323,21 @@ export default function SetupWizardPage() {
 
   const confirmActivation = async () => {
     setShowActivateDialog(false);
-    const response = await fetch("/api/hospital/setup/activate", { method: "POST" });
+    const response = await fetch('/api/hospital/setup/activate', { method: 'POST' });
     const data = await response.json();
     if (!response.ok) {
-      const missing = Array.isArray(data.missing) ? data.missing.join(", ") : "critical steps";
-      const security = Array.isArray(data.security) && data.security.length ? ` ${data.security.join(", ")}` : "";
+      const missing = Array.isArray(data.missing) ? data.missing.join(', ') : 'critical steps';
+      const security =
+        Array.isArray(data.security) && data.security.length ? ` ${data.security.join(', ')}` : '';
       setActivationError(`Activation blocked: ${missing}.${security}`);
       toast.error(`Activation failed: ${missing}`);
       return;
     }
 
     setCompletion((current) => ({ ...current, activation: true }));
-    toast.success("🎉 Hospital activated successfully! Redirecting to dashboard...");
+    toast.success('🎉 Hospital activated successfully! Redirecting to dashboard...');
     setTimeout(() => {
-      router.push("/hospital/dashboard");
+      router.push('/hospital/dashboard');
     }, 2000);
   };
 
@@ -361,11 +358,8 @@ export default function SetupWizardPage() {
         <div className="px-5 py-4 border-b border-slate-100">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-semibold text-slate-600">Overall Completion</span>
-            <span
-              className="text-sm font-bold"
-              style={{ color: progressColor }}
-            >
-              {isLoading ? "..." : `${weightedScore}%`}
+            <span className="text-sm font-bold" style={{ color: progressColor }}>
+              {isLoading ? '...' : `${weightedScore}%`}
             </span>
           </div>
           <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
@@ -397,42 +391,48 @@ export default function SetupWizardPage() {
               <button
                 key={step.id}
                 onClick={() => {
-                  if (state !== "locked") setActiveStep(step.id);
+                  if (state !== 'locked') setActiveStep(step.id);
                 }}
-                disabled={state === "locked"}
+                disabled={state === 'locked'}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all group
-                  ${isActive ? "bg-blue-50 border-r-2 border-blue-500" : "hover:bg-slate-50"}
-                  ${state === "locked" ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                  ${isActive ? 'bg-blue-50 border-r-2 border-blue-500' : 'hover:bg-slate-50'}
+                  ${state === 'locked' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {/* Step number / icon */}
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold
-                    ${state === "complete" ? "bg-green-100 text-green-700" : isActive ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}
+                    ${state === 'complete' ? 'bg-green-100 text-green-700' : isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}
                 >
-                  {state === "complete" ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
+                  {state === 'complete' ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span
                       className={`text-xs font-semibold truncate
-                        ${isActive ? "text-blue-700" : state === "complete" ? "text-green-700" : "text-slate-700"}`}
+                        ${isActive ? 'text-blue-700' : state === 'complete' ? 'text-green-700' : 'text-slate-700'}`}
                     >
                       {step.title}
                     </span>
                     {step.critical && (
-                      <span className="text-[9px] bg-red-100 text-red-600 font-bold px-1 rounded">CRITICAL</span>
+                      <span className="text-[9px] bg-red-100 text-red-600 font-bold px-1 rounded">
+                        CRITICAL
+                      </span>
                     )}
                   </div>
                   <div className="flex items-center gap-1 mt-0.5">
-                    {state === "complete" ? (
-                      <Badge variant="default" className="text-[9px] px-1 py-0 bg-green-500">Complete</Badge>
-                    ) : state === "locked" ? (
+                    {state === 'complete' ? (
+                      <Badge variant="default" className="text-[9px] px-1 py-0 bg-green-500">
+                        Complete
+                      </Badge>
+                    ) : state === 'locked' ? (
                       <span className="flex items-center gap-0.5 text-[9px] text-slate-400">
                         <Lock className="h-2.5 w-2.5" /> Locked
                       </span>
                     ) : (
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0">In Progress</Badge>
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0">
+                        In Progress
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -450,7 +450,8 @@ export default function SetupWizardPage() {
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <span className="text-sm font-bold text-red-700">
-                {criticalWarnings.length} Critical Configuration{criticalWarnings.length > 1 ? "s" : ""} Missing
+                {criticalWarnings.length} Critical Configuration
+                {criticalWarnings.length > 1 ? 's' : ''} Missing
               </span>
             </div>
             <ul className="space-y-1">
@@ -464,7 +465,7 @@ export default function SetupWizardPage() {
           </div>
         )}
 
-         {/* Breadcrumb Navigation */}
+        {/* Breadcrumb Navigation */}
         <div className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Back button */}
@@ -480,43 +481,44 @@ export default function SetupWizardPage() {
               </Button>
             )}
             <nav className="flex items-center gap-1 overflow-x-auto pb-1">
-            {STEPS.map((step, idx) => {
-              const stepState = getStepState(step);
-              const isActive = activeStep === step.id;
-              const Icon = step.icon;
-              const isLast = idx === STEPS.length - 1;
+              {STEPS.map((step, idx) => {
+                const stepState = getStepState(step);
+                const isActive = activeStep === step.id;
+                const Icon = step.icon;
+                const isLast = idx === STEPS.length - 1;
 
-              return (
-                <React.Fragment key={step.id}>
-                  <button
-                    onClick={() => stepState !== "locked" && navigateToStep(step.id)}
-                    disabled={stepState === "locked"}
-                    title={`${step.title}: ${stepState === "complete" ? "Completed" : stepState === "locked" ? "Locked - complete prerequisites first" : "In progress"}`}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-                      ${isActive
-                        ? "bg-blue-600 text-white shadow-md"
-                        : stepState === "complete"
-                          ? "bg-green-100 text-green-700 hover:bg-green-200"
-                          : stepState === "locked"
-                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                return (
+                  <React.Fragment key={step.id}>
+                    <button
+                      onClick={() => stepState !== 'locked' && navigateToStep(step.id)}
+                      disabled={stepState === 'locked'}
+                      title={`${step.title}: ${stepState === 'complete' ? 'Completed' : stepState === 'locked' ? 'Locked - complete prerequisites first' : 'In progress'}`}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
+                      ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : stepState === 'complete'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : stepState === 'locked'
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }
-                      ${stepState !== "locked" ? "cursor-pointer" : "cursor-not-allowed"}
+                      ${stepState !== 'locked' ? 'cursor-pointer' : 'cursor-not-allowed'}
                     `}
-                  >
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold
-                      ${isActive ? "bg-white/20" : stepState === "complete" ? "bg-green-200 text-green-700" : "bg-slate-200 text-slate-500"}
-                    `}>
-                      {stepState === "complete" ? "✓" : idx + 1}
-                    </span>
-                    <span className="max-w-[120px] truncate">{step.title}</span>
-                  </button>
-                  {!isLast && (
-                    <ChevronRight className="h-3 w-3 text-slate-300 flex-shrink-0" />
-                  )}
-                </React.Fragment>
-              );
-            })}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold
+                      ${isActive ? 'bg-white/20' : stepState === 'complete' ? 'bg-green-200 text-green-700' : 'bg-slate-200 text-slate-500'}
+                    `}
+                      >
+                        {stepState === 'complete' ? '✓' : idx + 1}
+                      </span>
+                      <span className="max-w-[120px] truncate">{step.title}</span>
+                    </button>
+                    {!isLast && <ChevronRight className="h-3 w-3 text-slate-300 flex-shrink-0" />}
+                  </React.Fragment>
+                );
+              })}
             </nav>
           </div>
         </div>
@@ -569,7 +571,8 @@ export default function SetupWizardPage() {
             <div className="flex items-start gap-2">
               <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
               <p className="text-xs text-amber-800">
-                This action is irreversible. Please ensure all critical configurations are complete before proceeding.
+                This action is irreversible. Please ensure all critical configurations are complete
+                before proceeding.
               </p>
             </div>
           </div>
@@ -612,14 +615,27 @@ function StepContent({
 }) {
   const Icon = step.icon;
   const lockedDeps = step.depends.filter((dep) => !completion[dep]);
-  const nextSteps = allSteps.filter(
-    (s) => s.depends.includes(step.id) && !completion[s.id]
-  );
+  const nextSteps = allSteps.filter((s) => s.depends.includes(step.id) && !completion[s.id]);
 
   const stateColors = {
-    complete: { bg: "bg-green-50", border: "border-green-200", badge: "text-green-700 bg-green-100", icon: "text-green-600 bg-green-100" },
-    in_progress: { bg: "bg-blue-50", border: "border-blue-200", badge: "text-blue-700 bg-blue-100", icon: "text-blue-600 bg-blue-100" },
-    locked: { bg: "bg-slate-50", border: "border-slate-200", badge: "text-slate-500 bg-slate-100", icon: "text-slate-400 bg-slate-100" },
+    complete: {
+      bg: 'bg-green-50',
+      border: 'border-green-200',
+      badge: 'text-green-700 bg-green-100',
+      icon: 'text-green-600 bg-green-100',
+    },
+    in_progress: {
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      badge: 'text-blue-700 bg-blue-100',
+      icon: 'text-blue-600 bg-blue-100',
+    },
+    locked: {
+      bg: 'bg-slate-50',
+      border: 'border-slate-200',
+      badge: 'text-slate-500 bg-slate-100',
+      icon: 'text-slate-400 bg-slate-100',
+    },
   };
   const colors = stateColors[state];
 
@@ -635,19 +651,24 @@ function StepContent({
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-xl font-bold text-slate-900">{step.title}</h2>
               {step.critical && (
-                <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">CRITICAL</span>
+                <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">
+                  CRITICAL
+                </span>
               )}
             </div>
             <p className="text-sm text-slate-500 mb-3">{step.subtitle}</p>
             <div className="flex items-center gap-2">
-              {state === "complete" ? (
+              {state === 'complete' ? (
                 <Badge className="bg-green-500 text-white">✓ Complete</Badge>
-              ) : state === "locked" ? (
+              ) : state === 'locked' ? (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <Lock className="h-3 w-3" /> Locked
                 </Badge>
               ) : (
-                <Badge variant="outline" className="flex items-center gap-1 border-blue-300 text-blue-600">
+                <Badge
+                  variant="outline"
+                  className="flex items-center gap-1 border-blue-300 text-blue-600"
+                >
                   <Clock className="h-3 w-3" /> In Progress
                 </Badge>
               )}
@@ -658,11 +679,13 @@ function StepContent({
       </div>
 
       {/* Locked Dependencies */}
-      {state === "locked" && lockedDeps.length > 0 && (
+      {state === 'locked' && lockedDeps.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Lock className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-800">Complete these steps first:</span>
+            <span className="text-sm font-semibold text-amber-800">
+              Complete these steps first:
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {lockedDeps.map((depId) => {
@@ -683,14 +706,14 @@ function StepContent({
       )}
 
       {/* Warning (if not complete) */}
-      {state !== "complete" && state !== "locked" && (
+      {state !== 'complete' && state !== 'locked' && (
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
           <span className="text-xs text-orange-700">{warnings[0] ?? step.warning}</span>
         </div>
       )}
 
-      {activationError && step.id === "activation" && (
+      {activationError && step.id === 'activation' && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
           <span className="text-xs text-red-700">{activationError}</span>
@@ -698,7 +721,7 @@ function StepContent({
       )}
 
       {/* CTA */}
-      {state !== "locked" && (
+      {state !== 'locked' && (
         <div className="flex gap-3">
           {onBack && (
             <Button
@@ -713,19 +736,23 @@ function StepContent({
           <Button
             onClick={onConfigure}
             className={`${onBack ? 'flex-2' : 'w-full'} py-6 text-sm font-semibold rounded-xl transition-all ${
-              state === "complete"
-                ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
+              state === 'complete'
+                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
             }`}
           >
-            {step.id === "activation" ? "Activate Hospital" : state === "complete" ? "Review & Update Configuration" : "Configure →"}
+            {step.id === 'activation'
+              ? 'Activate Hospital'
+              : state === 'complete'
+                ? 'Review & Update Configuration'
+                : 'Configure →'}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       )}
 
       {/* Next Unlocks */}
-      {state === "complete" && nextSteps.length > 0 && (
+      {state === 'complete' && nextSteps.length > 0 && (
         <div className="mt-4">
           <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">
             Completing this unlocks:
@@ -751,34 +778,38 @@ function StepContent({
 
       {/* All Steps Overview Grid */}
       <div className="mt-8">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">All Steps</h3>
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          All Steps
+        </h3>
         <div className="grid grid-cols-2 gap-2">
           {allSteps.map((s) => {
             const sState = s.depends.every((d) => completion[d])
-              ? completion[s.id] ? "complete" : "in_progress"
-              : "locked";
+              ? completion[s.id]
+                ? 'complete'
+                : 'in_progress'
+              : 'locked';
             const SIcon = s.icon;
             return (
               <button
                 key={s.id}
-                onClick={() => sState !== "locked" && onNavigate(s.id)}
-                disabled={sState === "locked"}
+                onClick={() => sState !== 'locked' && onNavigate(s.id)}
+                disabled={sState === 'locked'}
                 className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all
-                  ${s.id === step.id ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-slate-300"}
-                  ${sState === "locked" ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                  ${s.id === step.id ? 'border-blue-300 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}
+                  ${sState === 'locked' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <div
                   className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0
-                    ${sState === "complete" ? "bg-green-100" : sState === "locked" ? "bg-slate-100" : "bg-blue-100"}`}
+                    ${sState === 'complete' ? 'bg-green-100' : sState === 'locked' ? 'bg-slate-100' : 'bg-blue-100'}`}
                 >
                   <SIcon
-                    className={`h-3.5 w-3.5 ${sState === "complete" ? "text-green-600" : sState === "locked" ? "text-slate-400" : "text-blue-600"}`}
+                    className={`h-3.5 w-3.5 ${sState === 'complete' ? 'text-green-600' : sState === 'locked' ? 'text-slate-400' : 'text-blue-600'}`}
                   />
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-semibold text-slate-800 truncate">{s.title}</div>
                   <div className="text-[10px] text-slate-400">
-                    {sState === "complete" ? "✓ Done" : sState === "locked" ? "Locked" : "Pending"}
+                    {sState === 'complete' ? '✓ Done' : sState === 'locked' ? 'Locked' : 'Pending'}
                   </div>
                 </div>
               </button>

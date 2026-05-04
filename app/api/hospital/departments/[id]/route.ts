@@ -8,7 +8,9 @@ const updateSchema = z.object({
   code: z.string().min(1).max(10).optional(),
   type: z.enum(['OPD', 'IPD', 'BOTH', 'EMERGENCY']).optional(),
   headDoctorId: z.string().optional(),
+  description: z.string().optional(),
   billingRules: z.any().optional(),
+  maxCapacity: z.number().int().min(0).optional(),
   analyticsEnabled: z.boolean().optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().optional(),
@@ -17,7 +19,9 @@ const updateSchema = z.object({
 const unitSchema = z.object({
   name: z.string().min(1),
   capacity: z.number().default(0),
-  bedType: z.enum(['GENERAL', 'ICU', 'NICU', 'PRIVATE', 'SEMI_PRIVATE', 'EMERGENCY']).default('GENERAL'),
+  bedType: z
+    .enum(['GENERAL', 'ICU', 'NICU', 'PRIVATE', 'SEMI_PRIVATE', 'EMERGENCY'])
+    .default('GENERAL'),
   wardNumber: z.string().optional(),
 });
 
@@ -29,7 +33,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });

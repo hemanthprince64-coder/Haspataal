@@ -1,9 +1,6 @@
 import Redis from 'ioredis';
 import { headers } from 'next/headers';
-
-// Create a global Redis instance or use an existing one
-// Assuming you have a standard Redis connection string in process.env.REDIS_URL
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+import redisClient from './redis';
 
 // Lua script for atomic sliding window rate limit
 const SLIDING_WINDOW_SCRIPT = `
@@ -33,13 +30,19 @@ const SLIDING_WINDOW_SCRIPT = `
 export class RateLimiter {
   private redis: Redis;
 
-  constructor(redisClient: Redis) {
-    this.redis = redisClient;
+  constructor(redisClient: Redis | null) {
+    this.redis = redisClient as Redis;
     // Define the custom command so ioredis knows about it
-    this.redis.defineCommand('slidingWindowRateLimit', {
-      numberOfKeys: 1,
-      lua: SLIDING_WINDOW_SCRIPT,
-    });
+    if (this.redis && typeof this.redis.defineCommand === 'function') {
+      try {
+        this.redis.defineCommand('slidingWindowRateLimit', {
+          numberOfKeys: 1,
+          lua: SLIDING_WINDOW_SCRIPT,
+        });
+      } catch (e) {
+        // Command might already be defined
+      }
+    }
   }
 
   /**
@@ -49,20 +52,33 @@ export class RateLimiter {
    * @param windowMs The time window in milliseconds
    * @returns { allowed: boolean, remaining: number, resetAt: Date }
    */
-  async check(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+  async check(
+    key: string,
+    limit: number,
+    windowMs: number,
+  ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
     const now = Date.now();
-    
-    // @ts-ignore - custom command created via defineCommand
-    const result = await this.redis.slidingWindowRateLimit(key, limit, windowMs, now);
-    
-    const allowed = result[0] === 1;
-    const count = result[1];
-    const remaining = Math.max(0, limit - count);
-    
-    // The reset time is technically rolling, but we return the max window as the safe retry point
     const resetAt = new Date(now + windowMs);
 
-    return { allowed, remaining, resetAt };
+    if (!this.redis) {
+      // Fail open if Redis is not available
+      return { allowed: true, remaining: limit, resetAt };
+    }
+
+    try {
+      // @ts-ignore - custom command created via defineCommand
+      const result = await this.redis.slidingWindowRateLimit(key, limit, windowMs, now);
+
+      const allowed = result[0] === 1;
+      const count = result[1];
+      const remaining = Math.max(0, limit - count);
+
+      return { allowed, remaining, resetAt };
+    } catch (e) {
+      // Fail open on Redis error to prevent blocking users
+      console.error('[RATE-LIMIT] Redis error, failing open:', e);
+      return { allowed: true, remaining: limit, resetAt };
+    }
   }
 }
 
@@ -79,14 +95,14 @@ type RateLimitOptions = {
  */
 export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
   action: T,
-  options: RateLimitOptions
+  options: RateLimitOptions,
 ): T {
   return (async (...args: Parameters<T>) => {
     // Get IP address from headers
     const headersList = await headers();
     const forwardedFor = headersList.get('x-forwarded-for');
     const realIp = headersList.get('x-real-ip');
-    
+
     let ip = '127.0.0.1';
     if (forwardedFor) {
       ip = forwardedFor.split(',')[0].trim();
@@ -95,14 +111,14 @@ export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
     }
 
     const key = `rl:${options.actionName}:${ip}`;
-    
+
     const { allowed, resetAt } = await rateLimiter.check(key, options.limit, options.windowMs);
 
     if (!allowed) {
       const retryAfter = Math.ceil((resetAt.getTime() - Date.now()) / 1000);
       return {
-        error: "TOO_MANY_REQUESTS",
-        message: "Too many requests. Please try again later.",
+        error: 'TOO_MANY_REQUESTS',
+        message: 'Too many requests. Please try again later.',
         retryAfter,
       };
     }

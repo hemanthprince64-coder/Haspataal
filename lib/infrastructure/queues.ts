@@ -12,6 +12,10 @@ const connection = new IORedis({
   maxRetriesPerRequest: null, // Required by BullMQ
 });
 
+connection.on('error', (err) => {
+  // Silent fail - BullMQ handles its own retry logic
+});
+
 const defaultJobOptions = {
   attempts: 5,
   backoff: {
