@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Globe,
   Plus,
@@ -35,6 +35,9 @@ import {
   Layers,
   Package,
   Radio,
+  Trash2,
+  Settings2,
+  Cpu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +60,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,6 +72,7 @@ interface Integration {
   isLive: boolean;
   testMode: boolean;
   webhookUrl?: string;
+  scope: string[];
 }
 
 interface Template {
@@ -77,7 +82,37 @@ interface Template {
   body: string;
   language: string;
   isApproved: boolean;
+  providerId?: string;
 }
+
+interface EventMapping {
+  id: string;
+  event: string;
+  templateId: string;
+  channel: string;
+  isActive: boolean;
+  template?: { name: string };
+}
+
+const SYSTEM_EVENTS = [
+  {
+    id: 'APPOINTMENT_BOOKED',
+    name: 'Appointment Confirmed',
+    desc: 'Fires when a patient books a slot.',
+  },
+  {
+    id: 'PATIENT_DISCHARGED',
+    name: 'Patient Discharged',
+    desc: 'Fires on IPD discharge completion.',
+  },
+  { id: 'LAB_REPORT_READY', name: 'Lab Report Ready', desc: 'Fires when results are authorized.' },
+  { id: 'PAYMENT_RECEIVED', name: 'Payment Success', desc: 'Fires on successful transaction.' },
+  {
+    id: 'DOCTOR_CANCELLED',
+    name: 'Appointment Cancelled',
+    desc: 'Fires when doctor is unavailable.',
+  },
+];
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -85,29 +120,82 @@ export default function CommunicationsIntegrationsPage() {
   const [loading, setLoading] = useState(true);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [mappings, setMappings] = useState<EventMapping[]>([]);
   const [activeTab, setActiveTab] = useState('messaging');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [intRes, tempRes] = await Promise.all([
-          fetch('/api/hospital/integrations'),
-          fetch('/api/hospital/notifications/templates'),
-        ]);
-        const [intData, tempData] = await Promise.all([intRes.json(), tempRes.json()]);
-        setIntegrations(intData.configs ?? []);
-        setTemplates(tempData.templates ?? []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+  // Modals state
+  const [configModal, setConfigModal] = useState<{ open: boolean; provider: string | null }>({
+    open: false,
+    provider: null,
+  });
+  const [templateModal, setTemplateModal] = useState<{ open: boolean; edit: Template | null }>({
+    open: false,
+    edit: null,
+  });
+  const [mappingModal, setMappingModal] = useState({ open: false });
+
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [intRes, tempRes, mapRes] = await Promise.all([
+        fetch('/api/hospital/integrations'),
+        fetch('/api/hospital/notifications/templates'),
+        fetch('/api/hospital/notifications/mappings'),
+      ]);
+      const [intData, tempData, mapData] = await Promise.all([
+        intRes.json(),
+        tempRes.json(),
+        mapRes.json(),
+      ]);
+      setIntegrations(intData.configs ?? []);
+      setTemplates(tempData.templates ?? []);
+      setMappings(mapData.mappings ?? []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getProviderStatus = (provider: string) => {
     return integrations.find((i) => i.provider === provider);
+  };
+
+  const handleSaveMapping = async (data: any) => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/hospital/notifications/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to save mapping');
+      toast.success('Event rule updated');
+      fetchData();
+      setMappingModal({ open: false });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMapping = async (id: string) => {
+    try {
+      const res = await fetch(`/api/hospital/notifications/mappings?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete mapping');
+      toast.success('Event rule removed');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   return (
@@ -146,25 +234,25 @@ export default function CommunicationsIntegrationsPage() {
             value="messaging"
             className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
           >
-            Messaging & Templates
+            Providers & Nodes
+          </TabsTrigger>
+          <TabsTrigger
+            value="templates"
+            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
+          >
+            Template Library
+          </TabsTrigger>
+          <TabsTrigger
+            value="rules"
+            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
+          >
+            Event Rules
           </TabsTrigger>
           <TabsTrigger
             value="payments"
             className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
           >
             Revenue Gateways
-          </TabsTrigger>
-          <TabsTrigger
-            value="compliance"
-            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
-          >
-            Gov & Compliance
-          </TabsTrigger>
-          <TabsTrigger
-            value="sync"
-            className="rounded-xl px-8 h-full data-[state=active]:bg-slate-900 data-[state=active]:text-white font-black uppercase text-[10px] tracking-widest"
-          >
-            Sync & Calendar
           </TabsTrigger>
         </TabsList>
 
@@ -220,6 +308,7 @@ export default function CommunicationsIntegrationsPage() {
                     {prov.desc}
                   </p>
                   <Button
+                    onClick={() => setConfigModal({ open: true, provider: prov.id })}
                     variant={status?.isActive ? 'outline' : 'default'}
                     className={`w-full h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest ${!status?.isActive && 'bg-slate-900'}`}
                   >
@@ -229,7 +318,12 @@ export default function CommunicationsIntegrationsPage() {
               );
             })}
           </div>
+        </TabsContent>
 
+        <TabsContent
+          value="templates"
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+        >
           {/* Template Library */}
           <section className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -241,7 +335,10 @@ export default function CommunicationsIntegrationsPage() {
                   Pre-approved message structures with Mustache variables
                 </p>
               </div>
-              <Button className="h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black px-8 uppercase text-[10px] tracking-widest shadow-xl shadow-blue-100">
+              <Button
+                onClick={() => setTemplateModal({ open: true, edit: null })}
+                className="h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black px-8 uppercase text-[10px] tracking-widest shadow-xl shadow-blue-100"
+              >
                 <Plus className="h-4 w-4 mr-2" /> Design Template
               </Button>
             </div>
@@ -263,7 +360,7 @@ export default function CommunicationsIntegrationsPage() {
                       Status
                     </th>
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
-                      Preview
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -304,13 +401,17 @@ export default function CommunicationsIntegrationsPage() {
                             {t.isApproved ? 'APPROVED' : 'PENDING DLT'}
                           </Badge>
                         </td>
-                        <td className="px-8 py-6 text-right">
+                        <td className="px-8 py-6 text-right flex justify-end gap-2">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-8 rounded-xl font-bold text-[10px] px-4"
+                            size="icon"
+                            className="h-8 w-8 rounded-lg"
+                            onClick={() => setTemplateModal({ open: true, edit: t })}
                           >
-                            View Body <ExternalLink className="h-3 w-3 ml-2" />
+                            <Settings2 className="h-4 w-4 text-slate-400" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+                            <ExternalLink className="h-4 w-4 text-slate-400" />
                           </Button>
                         </td>
                       </tr>
@@ -320,6 +421,75 @@ export default function CommunicationsIntegrationsPage() {
               </table>
             </div>
           </section>
+        </TabsContent>
+
+        <TabsContent
+          value="rules"
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                Event Orchestration
+              </h2>
+              <p className="text-sm text-slate-500 font-medium italic">
+                Link system events to specific messaging templates.
+              </p>
+            </div>
+            <Button
+              onClick={() => setMappingModal({ open: true })}
+              className="h-12 rounded-2xl bg-slate-900 hover:bg-black text-white font-black px-8 uppercase text-[10px] tracking-widest shadow-xl shadow-slate-100"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add Mapping
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {mappings.length === 0 ? (
+              <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-200">
+                <Cpu className="h-12 w-12 mx-auto text-slate-200 mb-4" />
+                <p className="text-sm font-bold text-slate-400">No active event rules.</p>
+              </div>
+            ) : (
+              mappings.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-white rounded-[2.5rem] border border-slate-200 p-8 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <Badge className="bg-blue-50 text-blue-600 border-none font-black text-[9px] h-5 px-2 uppercase tracking-widest">
+                      {m.event.replace(/_/g, ' ')}
+                    </Badge>
+                    <Switch checked={m.isActive} onCheckedChange={() => {}} className="scale-75" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-800 mb-1">
+                    {m.template?.name || 'Unknown Template'}
+                  </h3>
+                  <div className="flex items-center gap-2 mb-6">
+                    <Badge
+                      variant="outline"
+                      className="text-[8px] font-black border-slate-200 text-slate-400 uppercase"
+                    >
+                      {m.channel}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between pt-6 border-t border-slate-50">
+                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                      Mapped Node
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-xl text-rose-500 hover:bg-rose-50"
+                      onClick={() => handleDeleteMapping(m.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent
@@ -384,135 +554,192 @@ export default function CommunicationsIntegrationsPage() {
             ))}
           </div>
         </TabsContent>
-
-        <TabsContent
-          value="compliance"
-          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-        >
-          <div className="bg-slate-900 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl">
-            <div className="max-w-2xl relative z-10">
-              <h2 className="text-3xl font-black tracking-tight mb-6 flex items-center gap-4">
-                <ShieldCheck className="h-10 w-10 text-emerald-400" /> Digital Health Compliance
-              </h2>
-              <p className="text-slate-400 font-medium leading-relaxed mb-10 text-lg">
-                Connect to the Ayushman Bharat Digital Mission (ABDM) to generate ABHA IDs and sync
-                patient health records across the national healthcare registry.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-12">
-                <div className="p-8 bg-white/5 rounded-[2rem] border border-white/10">
-                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">
-                    Facility Status
-                  </p>
-                  <p className="text-xl font-bold">Facility ID Required</p>
-                  <p className="text-xs text-slate-500 mt-1">Register via ABDM Portal first</p>
-                </div>
-                <div className="p-8 bg-white/5 rounded-[2rem] border border-white/10">
-                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">
-                    Consent Manager
-                  </p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm font-bold">Auto-Sync Records</span>
-                    <Switch className="data-[state=checked]:bg-emerald-500" />
-                  </div>
-                </div>
-              </div>
-              <Button className="h-14 px-10 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-emerald-900/50">
-                Onboard to ABDM Ecosystem
-              </Button>
-            </div>
-            <div className="absolute top-0 right-0 p-20 opacity-10 rotate-12">
-              <Fingerprint className="h-96 w-96 text-white" />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent
-          value="sync"
-          className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <section className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center">
-                  <Calendar className="h-7 w-7 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight">
-                    Calendar Orchestration
-                  </h2>
-                  <p className="text-xs text-slate-400 font-medium">
-                    Sync doctor schedules with Google & Outlook
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                {['Google Calendar', 'Outlook 365'].map((cal) => (
-                  <div
-                    key={cal}
-                    className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:border-blue-200 transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm font-black text-[10px] text-slate-400 uppercase">
-                        {cal[0]}
-                      </div>
-                      <span className="text-sm font-bold text-slate-700">{cal}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50"
-                    >
-                      Link Node
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-10">
-                  <div className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center">
-                    <Layers className="h-7 w-7 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight">
-                      System Webhooks
-                    </h2>
-                    <p className="text-xs text-slate-400 font-medium">
-                      Transmit events to external 3rd party apps
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                      Destination URL
-                    </label>
-                    <Input
-                      placeholder="https://api.yourcms.com/webhook"
-                      className="h-12 rounded-xl border-slate-200 bg-slate-50/50"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between pt-4">
-                    <p className="text-xs font-bold text-slate-500">Payload Format</p>
-                    <Badge variant="outline" className="text-[10px] font-black border-slate-200">
-                      JSON / POST
-                    </Badge>
-                  </div>
-                  <Button className="w-full h-12 rounded-xl bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest mt-4">
-                    Register Endpoints
-                  </Button>
-                </div>
-              </div>
-              <div className="absolute -bottom-10 -right-10 opacity-5">
-                <Terminal className="h-48 w-48" />
-              </div>
-            </section>
-          </div>
-        </TabsContent>
       </Tabs>
+
+      {/* ─── Modals ───────────────────────────────────────────────────────────── */}
+
+      {/* Provider Config Modal */}
+      <Dialog
+        open={configModal.open}
+        onOpenChange={() => setConfigModal({ open: false, provider: null })}
+      >
+        <DialogContent className="rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-slate-900 p-10 text-white relative">
+            <DialogTitle className="text-2xl font-black tracking-tight mb-2 uppercase">
+              {configModal.provider?.replace('_', ' ')}
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 font-medium">
+              Initialize your messaging node with secure credentials.
+            </DialogDescription>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                Access Token / Key
+              </label>
+              <Input type="password" placeholder="••••••••••••••••" className="h-12 rounded-xl" />
+            </div>
+            {configModal.provider === 'WHATSAPP_META' && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Phone Number ID
+                </label>
+                <Input placeholder="e.g. 1092837465" className="h-12 rounded-xl" />
+              </div>
+            )}
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+              <span className="text-xs font-bold text-slate-600">Go Live</span>
+              <Switch />
+            </div>
+          </div>
+          <DialogFooter className="bg-slate-50 p-6">
+            <Button
+              className="w-full bg-slate-900 h-12 rounded-xl font-black uppercase text-xs tracking-widest"
+              onClick={() => {
+                toast.success('Provider initialized successfully');
+                setConfigModal({ open: false, provider: null });
+              }}
+            >
+              Verify & Connect Node
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Modal */}
+      <Dialog
+        open={templateModal.open}
+        onOpenChange={() => setTemplateModal({ open: false, edit: null })}
+      >
+        <DialogContent className="max-w-2xl rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-blue-600 p-10 text-white relative">
+            <DialogTitle className="text-2xl font-black tracking-tight mb-2">
+              {templateModal.edit ? 'Edit Template' : 'Design Clinical Template'}
+            </DialogTitle>
+            <DialogDescription className="text-blue-100 font-medium">
+              Create a reusable message structure for patient alerts.
+            </DialogDescription>
+          </div>
+          <div className="p-10 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Friendly Name
+                </label>
+                <Input
+                  placeholder="e.g. Appointment Reminder"
+                  className="h-12 rounded-xl font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Channel
+                </label>
+                <Select defaultValue="WHATSAPP">
+                  <SelectTrigger className="h-12 rounded-xl font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
+                    <SelectItem value="SMS">Transactional SMS</SelectItem>
+                    <SelectItem value="EMAIL">AWS Email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex justify-between">
+                Message Body <span>Mustache Support: {'{{patient_name}}'}</span>
+              </label>
+              <Textarea
+                placeholder="Hello {{patient_name}}, your appointment with {{doctor_name}} is confirmed for {{time}}."
+                className="min-h-[150px] rounded-2xl p-4 font-medium"
+              />
+            </div>
+          </div>
+          <DialogFooter className="bg-slate-50 p-8">
+            <Button
+              className="w-full bg-blue-600 h-14 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-blue-100"
+              onClick={() => {
+                toast.success('Template saved successfully');
+                setTemplateModal({ open: false, edit: null });
+              }}
+            >
+              Authorize & Save Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mapping Modal */}
+      <Dialog open={mappingModal.open} onOpenChange={() => setMappingModal({ open: false })}>
+        <DialogContent className="rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-slate-900 p-10 text-white">
+            <DialogTitle className="text-2xl font-black tracking-tight mb-2">
+              New Event Rule
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 font-medium">
+              Link a system event to a template.
+            </DialogDescription>
+          </div>
+          <div className="p-8 space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                Clinical Event
+              </label>
+              <Select onValueChange={(v) => {}}>
+                <SelectTrigger className="h-12 rounded-xl font-bold">
+                  <SelectValue placeholder="Select Event Trigger" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYSTEM_EVENTS.map((ev) => (
+                    <SelectItem key={ev.id} value={ev.id}>
+                      <div className="flex flex-col text-left">
+                        <span className="font-bold">{ev.name}</span>
+                        <span className="text-[9px] text-slate-400 uppercase tracking-tighter">
+                          {ev.desc}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                Target Template
+              </label>
+              <Select onValueChange={(v) => {}}>
+                <SelectTrigger className="h-12 rounded-xl font-bold">
+                  <SelectValue placeholder="Select Template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} ({t.channel})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="bg-slate-50 p-6">
+            <Button
+              className="w-full bg-slate-900 h-12 rounded-xl font-black uppercase text-xs tracking-widest"
+              onClick={() =>
+                handleSaveMapping({
+                  event: 'APPOINTMENT_BOOKED',
+                  templateId: templates[0]?.id,
+                  channel: 'WHATSAPP',
+                })
+              }
+              disabled={templates.length === 0}
+            >
+              Deploy Event Rule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

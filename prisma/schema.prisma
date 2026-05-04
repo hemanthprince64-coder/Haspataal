@@ -177,6 +177,7 @@ model HospitalsMaster {
   staff                   Staff[]
   visits                  Visit[]
   NotificationTemplate    NotificationTemplate[]
+  NotificationEventMapping NotificationEventMapping[]
   Supplier                Supplier[]
 
   @@index([city])
@@ -1914,6 +1915,23 @@ model NotificationTemplate {
 
   @@index([hospitalId])
   @@map("notification_templates")
+  NotificationEventMapping NotificationEventMapping[]
+}
+
+model NotificationEventMapping {
+  id         String               @id @default(cuid())
+  hospitalId String               @map("hospital_id")
+  event      String // e.g. "APPOINTMENT_BOOKED"
+  templateId String               @map("template_id")
+  channel    String // WHATSAPP, SMS, EMAIL
+  isActive   Boolean              @default(true) @map("is_active")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
+  hospital   HospitalsMaster      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  template   NotificationTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([hospitalId, event])
+  @@map("notification_event_mappings")
 }
 
 model Supplier {

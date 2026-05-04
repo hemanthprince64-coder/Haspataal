@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
-  Store,
+  Globe,
   Plus,
   Search,
   Filter,
-  Globe,
   Image as ImageIcon,
   ShieldCheck,
   Heart,
@@ -63,11 +63,12 @@ import { toast } from 'sonner';
 
 export default function MarketplaceSetupPage() {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('listing');
   const [config, setConfig] = useState({
-    isListedOnMarketplace: true,
-    tagline: '',
-    about: '',
+    isListedOnMarketplace: false,
+    marketplaceTagline: '',
+    marketplaceAbout: '',
     showConsultationFees: true,
     allowOnlineBooking: true,
     showBedCharges: false,
@@ -77,16 +78,25 @@ export default function MarketplaceSetupPage() {
     depositAmount: 0,
     allowsInstantBooking: true,
     specialities: [] as string[],
-    facilities: [] as string[],
+    marketplaceFacilities: [] as string[],
     insurancePanels: [] as string[],
+    galleryUrls: [] as string[],
+    coverImageUrl: '',
   });
 
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await fetch('/api/hospital/setup/marketplace'); // Assuming this endpoint exists or I'll create/update it
+        const res = await fetch('/api/hospital/setup/marketplace');
         const data = await res.json();
-        if (data.hospital) setConfig(data.hospital);
+        if (data.hospital) {
+          setConfig((prev) => ({
+            ...prev,
+            ...data.hospital,
+            marketplaceTagline: data.hospital.marketplaceTagline || '',
+            marketplaceAbout: data.hospital.marketplaceAbout || '',
+          }));
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -99,8 +109,43 @@ export default function MarketplaceSetupPage() {
   const handleUpdate = async (updates: any) => {
     const newConfig = { ...config, ...updates };
     setConfig(newConfig);
-    // Persist logic here
   };
+
+  const persistChanges = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/hospital/setup/marketplace', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      });
+      if (!res.ok) throw new Error('Failed to save changes');
+      toast.success('Marketplace profile updated successfully');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = (type: 'cover' | 'gallery') => {
+    // Simulated upload logic
+    const mockUrl = `https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80`;
+    if (type === 'cover') {
+      handleUpdate({ coverImageUrl: mockUrl });
+    } else {
+      handleUpdate({ galleryUrls: [...config.galleryUrls, mockUrl] });
+    }
+    toast.info('Branding asset uploaded (Simulated)');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-6 lg:p-10 pb-32">
@@ -126,8 +171,17 @@ export default function MarketplaceSetupPage() {
           >
             <Eye className="h-4 w-4 mr-2" /> Live Preview
           </Button>
-          <Button className="bg-slate-900 hover:bg-black h-12 px-10 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-200">
-            Publish Profile <ChevronRight className="h-4 w-4 ml-2" />
+          <Button
+            onClick={persistChanges}
+            disabled={saving}
+            className="bg-slate-900 hover:bg-black h-12 px-10 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-200"
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <ChevronRight className="h-4 w-4 mr-2" />
+            )}
+            Publish Profile
           </Button>
         </div>
       </div>
@@ -193,8 +247,8 @@ export default function MarketplaceSetupPage() {
                 </label>
                 <Input
                   placeholder="e.g., Premier Cardiac Care & Orthopedic Excellence"
-                  value={config.tagline}
-                  onChange={(e) => handleUpdate({ tagline: e.target.value })}
+                  value={config.marketplaceTagline}
+                  onChange={(e) => handleUpdate({ marketplaceTagline: e.target.value })}
                   className="h-14 rounded-2xl border-slate-200 font-bold text-lg px-6"
                 />
               </div>
@@ -206,8 +260,8 @@ export default function MarketplaceSetupPage() {
                 <Textarea
                   placeholder="Describe your hospital, history, and medical mission..."
                   className="min-h-[200px] rounded-[2rem] border-slate-200 font-medium p-6"
-                  value={config.about}
-                  onChange={(e) => handleUpdate({ about: e.target.value })}
+                  value={config.marketplaceAbout}
+                  onChange={(e) => handleUpdate({ marketplaceAbout: e.target.value })}
                 />
               </div>
             </section>
@@ -275,28 +329,56 @@ export default function MarketplaceSetupPage() {
               </p>
             </div>
             <div className="p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className="aspect-[16/9] rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-6 hover:bg-slate-50 transition-all cursor-pointer">
-                <div className="h-12 w-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
-                  <Camera className="h-6 w-6 text-slate-300" />
-                </div>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  Cover Image
+              <div
+                onClick={() => handleImageUpload('cover')}
+                className={`aspect-[16/9] rounded-[2rem] border-2 border-dashed ${config.coverImageUrl ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200'} flex flex-col items-center justify-center text-center p-6 hover:bg-slate-50 transition-all cursor-pointer overflow-hidden relative`}
+              >
+                {config.coverImageUrl ? (
+                  <Image
+                    src={config.coverImageUrl}
+                    alt="Hospital Cover"
+                    fill
+                    className="object-cover opacity-20"
+                  />
+                ) : (
+                  <div className="h-12 w-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                    <Camera className="h-6 w-6 text-slate-300" />
+                  </div>
+                )}
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest relative z-10">
+                  {config.coverImageUrl ? 'Change Cover Image' : 'Upload Cover Image'}
                 </p>
-                <p className="text-[10px] text-slate-300 mt-1 uppercase font-black tracking-tighter">
+                <p className="text-[10px] text-slate-300 mt-1 uppercase font-black tracking-tighter relative z-10">
                   Recommended: 1920x1080px
                 </p>
               </div>
-              <div className="aspect-[16/9] rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-6 hover:bg-slate-50 transition-all cursor-pointer">
+              <div
+                onClick={() => handleImageUpload('gallery')}
+                className="aspect-[16/9] rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-6 hover:bg-slate-50 transition-all cursor-pointer"
+              >
                 <div className="h-12 w-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
                   <Plus className="h-6 w-6 text-slate-300" />
                 </div>
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                  Gallery Item
+                  Add Gallery Item
                 </p>
                 <p className="text-[10px] text-slate-300 mt-1 uppercase font-black tracking-tighter">
                   Upload room / ward / OT photos
                 </p>
               </div>
+              {config.galleryUrls.map((url, i) => (
+                <div
+                  key={i}
+                  className="aspect-[16/9] rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm relative group"
+                >
+                  <Image src={url} alt={`Gallery Image ${i + 1}`} fill className="object-cover" />
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" className="text-white">
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </TabsContent>

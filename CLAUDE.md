@@ -209,6 +209,8 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Hardened Clinical Validation (Setup):** The activation engine now enforces deep property-level safety: (1) Mandatory Head Doctor assignments for IPD departments, (2) Block activation if expired batches exist in pharmacy stock, (3) Enforce at least one `HOSPITAL_ADMIN` role, and (4) Require full address/email for compliance.
 - **Marketplace & Treasury Expansion:** Marketplace profiles now support cover images, galleries, and insurance panels (TPA tie-ups). Billing includes native HSN code mapping, automated invoice sequencing (Prefix + Series), and bank payout profiles.
 - **ABDM/ABHA Integration Node:** Dedicated integration node for Ayushman Bharat Digital Mission (ABDM) onboarding, enabling hospital facility ID registration and consent-driven health record syncing.
+- **Communications Hub Consolidation:** The standalone Notifications step has been merged into a unified "Communications & Nodes" hub. This hub uses a centralized `NotificationEventMapping` table to link clinical events (e.g., `APPOINTMENT_BOOKED`) to specific WhatsApp/SMS/Email templates, eliminating redundant provider configuration and improving transactional reliability. _(Implemented 2026-05-05)_
+- **Marketplace Persistence & Media:** The Marketplace setup module is now fully hydrated from the `HospitalsMaster` table and supports rich media (cover images, galleries) and complex booking policies (cancellation strictness, deposits). All profile updates use a dedicated REST API to ensure data integrity before public listing. _(Implemented 2026-05-05)_
 
 ---
 
