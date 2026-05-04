@@ -147,10 +147,9 @@ await client.query('INSERT INTO "EventLog" ...');
 await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(payload));
 ```
 
----
-
 ## 📚 Knowledge Base (Lessons Learned)
 
+- **Hospital Login Session (hospitalId):** The login service MUST include `hospitalId` in the returned user object. The `requireHospitalAccess` middleware depends on this field to enforce tenant isolation. Omission causes post-login 401/403 errors and dashboard redirects. _(Fixed 2026-05-05)_
 - **Phase 4-10 Build Sequence:** Never skip activation gates. A hospital MUST be `verified` then `activated` before HMS access is granted.
 - **Migration Validation:** Always perform client-side fuzzy mapping and validation reports before batch-importing legacy data to prevent DB pollution.
 - **Notification Curfew:** Never send non-critical notifications (follow-ups) between 10 PM and 8 AM IST.
