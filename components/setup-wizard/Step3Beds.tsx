@@ -18,9 +18,12 @@ export function Step3Beds({ config, onSave }: { config: any, onSave: (data: any)
 
   // Apply smart defaults if user hasn't entered anything
   useEffect(() => {
-    if (Object.values(beds).every(v => v === 0)) {
-      setBeds({ general: 20, icu: 5, private: 5, semi: 10 });
-    }
+    setBeds(prev => {
+      if (Object.values(prev).every(v => v === 0)) {
+        return { general: 20, icu: 5, private: 5, semi: 10 };
+      }
+      return prev;
+    });
   }, []);
 
   const handleChange = (field: 'general' | 'icu' | 'private' | 'semi', value: string) => {

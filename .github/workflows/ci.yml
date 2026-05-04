@@ -1,31 +1,349 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Haspataal CI Pipeline
+#
+# Job DAG
+# ┌──────────────────────┐
+# │ quality  (~2 min)    │──▶┐
+# └──────────────────────┘   │   ┌──────────────────┐   ┌──────────────┐
+#                             └──▶│ test  (~5 min)   │──▶│ build (main) │
+# ┌──────────────────────┐       └──────────────────┘   └──────────────┘
+# │ schema-safety (PR)   │  (independent, path-filtered)
+# └──────────────────────┘
+#
+# Features
+#   • Concurrency groups → stale PR runs cancelled automatically
+#   • node_modules cache keyed on package-lock.json hash
+#   • npm workspaces + Turbo forward-compatible (packages/*)
+#   • Dummy DATABASE_URL keeps postinstall (prisma generate) happy without a DB
+# ──────────────────────────────────────────────────────────────────────────────
+
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main, develop]
+    branches: [main]
+  pull_request:
+    branches: [main]
 
+# Cancel any in-progress run for the same ref/PR so stale runs don't waste
+# runner minutes. Works for both PRs and direct pushes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal default permissions; jobs request only what they need.
+permissions:
+  contents: read
+
+# ─── Shared environment ────────────────────────────────────────────────────
+env:
+  NODE_VERSION: "18"
+  # Prisma generates the client at postinstall. Supply a syntactically valid
+  # URL so it doesn't abort during CI setup — no real DB connection is made.
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_dummy?schema=public"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JOB 1 — quality
+# Static analysis: TypeScript, ESLint, Prettier, npm audit.
+# Runs on every PR and every push to main.
+# Target: ~2 min on a warm cache.
+# ═══════════════════════════════════════════════════════════════════════════════
 jobs:
-  build:
+  quality:
+    name: "Quality (type · lint · format · audit)"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout code
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so tools that need git blame / merge-base work correctly.
+          fetch-depth: 0
 
-      - name: Setup Node.js
+      # ── Node (with built-in npm cache) ───────────────────────────────────
+      - name: Setup Node ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
+          # actions/setup-node's built-in cache keys on package-lock.json automatically.
+          cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      # ── Secondary node_modules cache ──────────────────────────────────────
+      # Persists the node_modules directory so postinstall scripts (prisma generate)
+      # don't rerun on a perfect cache hit, saving ~25s per job.
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            haspataal-in/node_modules
+            haspataal-admin/node_modules
+            haspataal-com/node_modules
+            api-gateway/node_modules
+          key: nm-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-node${{ env.NODE_VERSION }}-
 
-      - name: Run lint
-        run: npm run lint || echo "No lint configured"
+      # ── Install ──────────────────────────────────────────────────────────
+      - name: Install dependencies (npm ci)
+        # On a perfect cache hit the lockfile hasn't changed — skip install.
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
 
-      - name: Run build
-        run: npm run build || echo "No build step"
+      # postinstall (prisma generate) must still run on a cache hit because
+      # the Prisma client is gitignored and won't be in the cached directory.
+      - name: Generate Prisma client
+        if: steps.nm-cache.outputs.cache-hit == 'true'
+        run: npx prisma generate
 
-      - name: Run tests
-        run: npm test || echo "No tests configured"
+      # ── TypeScript ────────────────────────────────────────────────────────
+      - name: Typecheck (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      # ── ESLint ────────────────────────────────────────────────────────────
+      - name: Lint (ESLint --max-warnings 0)
+        run: npx eslint . --max-warnings 0
+
+      # ── Prettier ──────────────────────────────────────────────────────────
+      # Use .prettierignore (present in repo) so CI ignores the same files
+      # developers ignore locally. Do NOT use .gitignore here.
+      - name: Format check (Prettier)
+        run: >
+          npx prettier --check
+          "**/*.{ts,tsx,js,jsx,json,md}"
+          --ignore-path .prettierignore
+
+      # ── npm audit ────────────────────────────────────────────────────────
+      # --omit=dev so devDependency advisories don't block shipping.
+      # --audit-level=high fails only for high/critical advisories.
+      - name: Dependency audit
+        run: npm audit --audit-level=high --omit=dev
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JOB 2 — test
+# Vitest unit/integration tests with coverage upload; Prisma schema validation.
+# Depends on: quality
+# ═══════════════════════════════════════════════════════════════════════════════
+  test:
+    name: "Test (vitest · coverage · prisma validate)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            haspataal-in/node_modules
+            haspataal-admin/node_modules
+            haspataal-com/node_modules
+            api-gateway/node_modules
+          key: nm-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-node${{ env.NODE_VERSION }}-
+
+      - name: Install dependencies (npm ci)
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      - name: Generate Prisma client
+        if: steps.nm-cache.outputs.cache-hit == 'true'
+        run: npx prisma generate
+
+      # ── Tests + coverage ──────────────────────────────────────────────────
+      # Coverage thresholds (statements 80, branches 75, functions 80) are
+      # declared in vitest.config.ts. Vitest enforces them and exits non-zero
+      # if any threshold is not met — no extra flags needed here.
+      - name: Run tests with coverage
+        run: npx vitest run --coverage --reporter=verbose
+
+      # ── Upload coverage to Codecov ────────────────────────────────────────
+      # Store CODECOV_TOKEN in repository Settings → Secrets → Actions.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        # Don't gate the build on Codecov availability — it's a reporting tool.
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: haspataal-coverage
+          fail_ci_if_error: false
+
+      # ── Prisma schema validation ──────────────────────────────────────────
+      # Validates schema.prisma syntax and internal consistency.
+      # Does NOT require a live database connection.
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JOB 3 — schema-safety
+# Detects when prisma/schema.prisma changes without a matching migration file.
+# Runs independently on PRs only (path-filtered via dorny/paths-filter).
+#
+# Policy (enforced by this job):
+#   • If prisma/migrations/ does NOT exist → db-push workflow is active;
+#     schema changes are fine without a migration file. ✅ (passes)
+#   • If prisma/migrations/ DOES exist → migrations workflow is active;
+#     every schema change MUST be accompanied by a new migration file. ❌ (fails)
+# ═══════════════════════════════════════════════════════════════════════════════
+  schema-safety:
+    name: "Schema Safety (migration gate)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Detect which paths changed in this PR ─────────────────────────────
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            schema:
+              - 'prisma/schema.prisma'
+            migrations:
+              - 'prisma/migrations/**'
+
+      # ── Gate ─────────────────────────────────────────────────────────────
+      - name: Enforce migration policy
+        if: steps.filter.outputs.schema == 'true'
+        shell: bash
+        run: |
+          SCHEMA_CHANGED="${{ steps.filter.outputs.schema }}"
+          MIGRATION_CHANGED="${{ steps.filter.outputs.migrations }}"
+
+          echo "prisma/schema.prisma changed : $SCHEMA_CHANGED"
+          echo "prisma/migrations/ changed   : $MIGRATION_CHANGED"
+          echo ""
+
+          if [ -d "prisma/migrations" ]; then
+            echo "Mode: migrations (prisma/migrations/ exists)"
+            if [ "$MIGRATION_CHANGED" != "true" ]; then
+              echo "::error title=Missing Migration File::schema.prisma was modified but no new file was added inside prisma/migrations/."
+              echo ""
+              echo "  Fix: run the following command locally, then commit and push:"
+              echo ""
+              echo "    npx prisma migrate dev --name <short-description>"
+              echo ""
+              echo "  This generates a timestamped SQL migration that must accompany"
+              echo "  every schema change so the production database stays in sync."
+              exit 1
+            fi
+            echo "✅ Schema change is accompanied by a migration file."
+          else
+            echo "Mode: db-push (prisma/migrations/ does not exist yet)"
+            echo ""
+            echo "  Schema changes are currently deployed via 'prisma db push'."
+            echo "  When the team adopts prisma migrate, create prisma/migrations/"
+            echo "  and this gate will automatically enforce migration files."
+            echo ""
+            echo "✅ Schema safety check passed (db-push mode)."
+          fi
+
+      - name: Schema not changed
+        if: steps.filter.outputs.schema != 'true'
+        run: |
+          echo "✅ prisma/schema.prisma was not modified — schema-safety check skipped."
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# JOB 4 — build
+# Production Next.js build. Runs ONLY on pushes to main (post-merge gate).
+# Depends on: test
+# ═══════════════════════════════════════════════════════════════════════════════
+  build:
+    name: "Build (next build · main only)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+    # Only execute on main-branch pushes — never on PRs.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Restore node_modules cache
+        id: nm-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            packages/*/node_modules
+            haspataal-in/node_modules
+            haspataal-admin/node_modules
+            haspataal-com/node_modules
+            api-gateway/node_modules
+          key: nm-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            nm-${{ runner.os }}-node${{ env.NODE_VERSION }}-
+
+      - name: Install dependencies (npm ci)
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline
+
+      - name: Generate Prisma client
+        if: steps.nm-cache.outputs.cache-hit == 'true'
+        run: npx prisma generate
+
+      # ── Next.js production build ──────────────────────────────────────────
+      # • NEXT_TELEMETRY_DISABLED silences the telemetry notice in logs.
+      # • npm run build maps to `next build` (see package.json).
+      # • Any build error or unhandled warning exits non-zero → job fails.
+      - name: Build (next build)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          # Real secrets live in Vercel / Railway environment variables.
+          # These placeholders satisfy Next.js env validation at build time only.
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          NEXTAUTH_SECRET: "ci-build-placeholder-not-a-real-secret"
+          NEXTAUTH_URL: "http://localhost:3000"
+
+      # ── Post-build summary (visible in Actions UI) ────────────────────────
+      - name: Write build summary
+        if: always()
+        run: |
+          echo "### Next.js Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d ".next" ]; then
+            echo "✅ \`.next/\` output directory created." >> $GITHUB_STEP_SUMMARY
+            ROUTE_COUNT=$(find .next/server/app -name "*.js" 2>/dev/null | wc -l || echo "n/a")
+            echo "- Server route bundles: $ROUTE_COUNT" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ \`.next/\` directory not found — build may have failed silently." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Deployment artefacts are not uploaded here. Use Vercel or Railway for CD." >> $GITHUB_STEP_SUMMARY

@@ -3,6 +3,7 @@
 // ============================================================
 
 import prisma from '../prisma';
+import { AppointmentStatus } from '@prisma/client';
 import type {
   IAppointmentRepository,
   AppointmentRecord,
@@ -21,7 +22,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
         doctorId,
         date,
         slot,
-        status: { in: activeStatuses },
+        status: { in: activeStatuses as AppointmentStatus[] },
       },
     });
   }
@@ -51,7 +52,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
           doctorId: input.doctorId,
           date: input.date,
           slot: input.slot,
-          status: input.status,
+          status: input.status as AppointmentStatus,
         },
       });
     });
@@ -72,7 +73,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
   ): Promise<AppointmentRecord> {
     return prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: newStatus },
+      data: { status: newStatus as AppointmentStatus },
     });
   }
 
@@ -85,7 +86,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       where: {
         doctorId,
         date,
-        status: { in: activeStatuses },
+        status: { in: activeStatuses as AppointmentStatus[] },
       },
       select: { slot: true },
     });

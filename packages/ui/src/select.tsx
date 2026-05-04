@@ -123,3 +123,47 @@ export {
   SelectContent,
   SelectItem,
 }
+
+// ── Supplemental components ───────────────────────────────────────────────────
+// These are lightweight shims that satisfy the barrel re-export in index.tsx.
+// They mirror the Radix UI / shadcn naming so consumers can upgrade to the
+// full Radix implementation without changing import paths.
+
+const SelectGroup = ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div role="group" {...props}>{children}</div>
+)
+SelectGroup.displayName = 'SelectGroup'
+
+const SelectLabel = ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn('px-2 py-1.5 text-xs font-semibold text-slate-500', className)}
+    {...props}
+  >
+    {children}
+  </div>
+)
+SelectLabel.displayName = 'SelectLabel'
+
+const SelectSeparator = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('-mx-1 my-1 h-px bg-slate-200', className)} {...props} />
+)
+SelectSeparator.displayName = 'SelectSeparator'
+
+const SelectScrollUpButton = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex cursor-default items-center justify-center py-1', className)} {...props} />
+)
+SelectScrollUpButton.displayName = 'SelectScrollUpButton'
+
+const SelectScrollDownButton = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex cursor-default items-center justify-center py-1', className)} {...props} />
+)
+SelectScrollDownButton.displayName = 'SelectScrollDownButton'
+
+export {
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+}
+

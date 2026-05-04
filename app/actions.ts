@@ -31,6 +31,7 @@ import { cookies } from 'next/headers';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
 import { requireRole } from '../lib/auth/requireRole';
 import { UserRole } from '../types';
+import { withRateLimit } from '@/lib/rate-limit';
 
 // ==================== PLATFORM ACTIONS ====================
 
@@ -62,7 +63,7 @@ export async function getAllSpecialitiesAction(): Promise<any[]> {
 
 // ==================== HOSPITAL ACTIONS ====================
 
-export async function loginHospital(
+async function _loginHospital(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -83,7 +84,13 @@ export async function loginHospital(
   redirect('/hospital/dashboard');
 }
 
-export async function registerHospital(
+export const loginHospital = withRateLimit(_loginHospital, {
+  actionName: 'loginHospital',
+  limit: 10,
+  windowMs: 15 * 60 * 1000, // 15 mins
+});
+
+async function _registerHospital(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -115,6 +122,12 @@ export async function registerHospital(
     return { success: false, message: e.message || 'Registration failed.' };
   }
 }
+
+export const registerHospital = withRateLimit(_registerHospital, {
+  actionName: 'registerHospital',
+  limit: 3,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
 
 export async function logoutHospital() {
   await deleteSession('session_user');
@@ -369,7 +382,7 @@ export async function getAgentDashboardData(agentId?: string) {
   }
 }
 
-export async function registerDoctor(
+async function _registerDoctor(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -409,7 +422,13 @@ export async function registerDoctor(
   }
 }
 
-export async function registerAgent(
+export const registerDoctor = withRateLimit(_registerDoctor, {
+  actionName: 'registerDoctor',
+  limit: 10,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
+
+async function _registerAgent(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -443,6 +462,12 @@ export async function registerAgent(
     return { success: false, message: e.message || 'Registration failed.' };
   }
 }
+
+export const registerAgent = withRateLimit(_registerAgent, {
+  actionName: 'registerAgent',
+  limit: 5,
+  windowMs: 60 * 60 * 1000, // 1 hour
+});
 
 export async function registerLab(
   prevState: ActionResult | null,
@@ -478,7 +503,7 @@ export async function registerLab(
   }
 }
 
-export async function agentLogin(
+async function _agentLogin(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -501,6 +526,12 @@ export async function agentLogin(
 
   redirect('/agent/dashboard');
 }
+
+export const agentLogin = withRateLimit(_agentLogin, {
+  actionName: 'agentLogin',
+  limit: 10,
+  windowMs: 15 * 60 * 1000, // 15 mins
+});
 
 // ==================== PATIENT ACTIONS ====================
 

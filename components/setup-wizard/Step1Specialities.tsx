@@ -13,9 +13,12 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
 
   useEffect(() => {
     // Smart Defaults (assuming Phase 2 saved it as a general hospital)
-    if (selected.length === 0) {
-      setSelected(['General Medicine', 'Orthopedics', 'Gynecology', 'Pediatrics']);
-    }
+    setSelected(prev => {
+      if (prev.length === 0) {
+        return ['General Medicine', 'Orthopedics', 'Gynecology', 'Pediatrics'];
+      }
+      return prev;
+    });
   }, []);
 
   const toggleSpec = (spec: string) => {

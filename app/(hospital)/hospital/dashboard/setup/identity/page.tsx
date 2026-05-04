@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { toast } from "sonner";
 
 // ─── Schema ────────────────────────────────────────────────────────────────────
@@ -294,9 +295,9 @@ export default function HospitalIdentityPage() {
           <div className="space-y-4 mt-2">
             <Field label="Hospital Logo">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
+                <div className="relative h-16 w-16 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
                   {watch("logoUrl") ? (
-                    <img src={watch("logoUrl")} alt="Logo" className="h-full w-full object-contain" />
+                    <Image src={watch("logoUrl")} alt="Logo" fill className="object-contain" unoptimized />
                   ) : (
                     <Hospital className="h-6 w-6 text-slate-300" />
                   )}
@@ -323,9 +324,9 @@ export default function HospitalIdentityPage() {
 
             <Field label="Favicon (Tab Icon)">
               <div className="flex items-center gap-4">
-                <div className="h-10 w-10 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
+                <div className="relative h-10 w-10 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
                   {watch("faviconUrl") ? (
-                    <img src={watch("faviconUrl")} alt="Favicon" className="h-full w-full object-contain" />
+                    <Image src={watch("faviconUrl")} alt="Favicon" fill className="object-contain" unoptimized />
                   ) : (
                     <Upload className="h-4 w-4 text-slate-300" />
                   )}

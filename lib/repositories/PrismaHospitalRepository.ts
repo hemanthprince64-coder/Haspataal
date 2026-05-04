@@ -3,6 +3,7 @@
 // ============================================================
 
 import prisma from '../prisma';
+import { HospitalType } from '@prisma/client';
 import type {
   IHospitalRepository,
   HospitalRecord,
@@ -59,10 +60,16 @@ export class PrismaHospitalRepository implements IHospitalRepository {
           contactNumber: input.mobile,
           verificationStatus: 'pending',
           accountStatus: 'inactive',
-          password: input.hashedPassword,
-          ...(input.type ? { type: input.type } : {}),
+          ...(input.type ? { type: input.type as HospitalType } : {}),
         },
       });
+
+      // `password` is @ignore in the Prisma schema — must be set via raw SQL.
+      if (input.hashedPassword) {
+        await tx.$executeRaw`
+          UPDATE hospitals_master SET password = ${input.hashedPassword} WHERE id = ${hospital.id}
+        `;
+      }
 
       await tx.hospitalAdmin.create({
         data: {
@@ -77,6 +84,7 @@ export class PrismaHospitalRepository implements IHospitalRepository {
 
       return hospital as any;
     });
+
   }
 
   async updateStatus(

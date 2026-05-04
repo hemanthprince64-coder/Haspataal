@@ -3,6 +3,7 @@ import { toHospitalSafeDto } from '../../lib/dto/hospital';
 import { removeDoctorAction } from '../../app/actions';
 import { services } from '../../lib/services';
 import * as auth from '../../lib/auth/requireRole';
+import { UserRole } from '../../types';
 
 // Mock dependencies
 vi.mock('../../lib/services', () => ({
@@ -40,8 +41,8 @@ describe('Regression Tests: Breaking Changes Audit', () => {
 
       const safeDto = toHospitalSafeDto(mockHospital);
 
-      expect(safeDto.password).toBeUndefined();
-      expect(safeDto.adminUserId).toBeUndefined();
+      expect((safeDto as any).password).toBeUndefined();
+      expect((safeDto as any).adminUserId).toBeUndefined();
       expect(safeDto.id).toBe('hosp-123');
       expect(safeDto.legalName).toBe('Test Hospital');
     });
@@ -50,8 +51,10 @@ describe('Regression Tests: Breaking Changes Audit', () => {
   describe('removeDoctorAction Crash (Issue #3)', () => {
     it('should reject non-string doctorId from FormData', async () => {
       vi.spyOn(auth, 'requireRole').mockResolvedValueOnce({
+        id: 'admin-123',
+        name: 'Admin',
         hospitalId: 'hosp-123',
-        role: 'HOSPITAL_ADMIN',
+        role: UserRole.HOSPITAL_ADMIN,
       });
 
       // Mock FormData returning null or File
@@ -67,8 +70,10 @@ describe('Regression Tests: Breaking Changes Audit', () => {
 
     it('should call service when doctorId is valid', async () => {
       vi.spyOn(auth, 'requireRole').mockResolvedValueOnce({
+        id: 'admin-123',
+        name: 'Admin',
         hospitalId: 'hosp-123',
-        role: 'HOSPITAL_ADMIN',
+        role: UserRole.HOSPITAL_ADMIN,
       });
 
       const formData = new FormData();

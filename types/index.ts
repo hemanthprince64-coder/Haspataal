@@ -14,6 +14,17 @@ export enum BookingStatus {
     CANCELLED = 'CANCELLED'
 }
 
+/**
+ * Allowed state-machine transitions for appointments.
+ * Exported here so use-cases and services share one source of truth.
+ */
+export const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+    [BookingStatus.BOOKED]:     [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+    [BookingStatus.CONFIRMED]:  [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
+    [BookingStatus.CANCELLED]:  [],
+    [BookingStatus.COMPLETED]:  [],
+};
+
 export interface HospitalsMaster {
     id: string;
     legalName: string;

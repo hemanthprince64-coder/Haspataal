@@ -197,6 +197,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Architectural Graphify Discovery:** Use `graphify` to map cross-module relationships. It identified an isolated "ghost" microservice (`medchat-ai-service`) and 55 `requireRole` guarded actions, helping bridge architectural knowledge gaps.
 - **AI Microservice Orchestration:** Offload heavy clinical reasoning (Gemini 2.5) to dedicated services (FastAPI). The JS engine (`triage-engine.js`) now prioritizes this service with a local fallback (Gemini 2.0) to ensure high availability and performance.
 - **Graphify Exclusions:** Always ignore `graphify-out/` in git to keep the repository clean of large AST/Knowledge Graph artifacts.
+- **Sliding Window Rate Limiting (Redis):** Implemented an atomic Lua-backed sliding window rate limiter in `lib/rate-limit.ts` using `ioredis`. Wrapped critical Server Actions (`loginHospital`, `registerHospital`, etc.) using a generic `withRateLimit` Higher-Order Component. Note that `ioredis` is incompatible with Next.js Edge runtime, so API rate limit headers in `middleware.ts` require separate handling.
 
 ---
 

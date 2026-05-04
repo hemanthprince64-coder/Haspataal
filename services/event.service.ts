@@ -1,12 +1,13 @@
 import { createHash } from 'crypto';
 import { Pool } from 'pg';
-import { createClient } from 'redis';
+import Redis from 'ioredis';
 import { EventType, CreateEventInput } from '../types/events';
 
 // Assuming global instances or injected dependencies.
 // In a real app, these would be initialized elsewhere and injected.
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const redis = createClient({ url: process.env.REDIS_URL });
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
 
 export class EventService {
   /**
@@ -59,13 +60,14 @@ export class EventService {
 
       // 2. Publish to Redis Stream for Async Processing
       const streamKey = `events:${eventType}`;
-      if (!redis.isOpen) await redis.connect();
-      
-      await redis.xAdd(streamKey, '*', {
-        event_id: eventRecord.id,
-        hospital_id: eventRecord.hospital_id,
-        payload: JSON.stringify(eventRecord)
-      });
+      // ioredis xadd: XADD key ID field value [field value ...]
+      await redis.xadd(
+        streamKey,
+        '*',
+        'event_id', eventRecord.id,
+        'hospital_id', eventRecord.hospital_id,
+        'payload', JSON.stringify(eventRecord)
+      );
 
       return true;
     } catch (error) {
@@ -87,12 +89,10 @@ export class EventService {
     handler: (event: any) => Promise<void>
   ) {
     const streamKey = `events:${eventType}`;
-    
-    if (!redis.isOpen) await redis.connect();
 
-    // Ensure consumer group exists
+    // Ensure consumer group exists (ioredis: XGROUP CREATE key group id [MKSTREAM])
     try {
-      await redis.xGroupCreate(streamKey, consumerGroup, '0', { MKSTREAM: true });
+      await redis.xgroup('CREATE', streamKey, consumerGroup, '0', 'MKSTREAM');
     } catch (error: any) {
       if (!error.message.includes('BUSYGROUP')) {
         throw error;
@@ -102,31 +102,28 @@ export class EventService {
     // Polling loop
     while (true) {
       try {
-        const response = await redis.xReadGroup(
-          consumerGroup,
-          consumerName,
-          [
-            {
-              key: streamKey,
-              id: '>',
-            }
-          ],
-          {
-            COUNT: 10,
-            BLOCK: 5000,
-          }
-        );
+        // ioredis xreadgroup: XREADGROUP GROUP group consumer [COUNT n] [BLOCK ms] STREAMS key id
+        const response = await redis.xreadgroup(
+          'GROUP', consumerGroup, consumerName,
+          'COUNT', '10',
+          'BLOCK', '5000',
+          'STREAMS', streamKey, '>'
+        ) as any[] | null;
 
         if (response) {
-          for (const stream of (response as any[])) {
-            for (const message of stream.messages) {
-              const eventPayload = JSON.parse(message.message.payload as string);
-              
+          for (const [, messages] of response) {
+            for (const [msgId, fields] of messages) {
+              // ioredis returns flat [field, value, field, value] array
+              const payloadIdx = fields.indexOf('payload');
+              const eventPayload = payloadIdx !== -1
+                ? JSON.parse(fields[payloadIdx + 1])
+                : {};
+
               // Process event
               await handler(eventPayload);
 
-              // Acknowledge message processing
-              await redis.xAck(streamKey, consumerGroup, message.id);
+              // Acknowledge message
+              await redis.xack(streamKey, consumerGroup, msgId);
             }
           }
         }

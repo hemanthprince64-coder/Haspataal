@@ -148,17 +148,17 @@ export default function DepartmentsPage() {
       }
       const data = await res.json();
       setDepartments(data.departments ?? []);
-      if (data.departments?.length > 0 && !selectedDeptId) {
-        setSelectedDeptId(data.departments[0].id);
+      if (data.departments?.length > 0) {
+        setSelectedDeptId(prev => prev || data.departments[0].id);
       }
     } catch (err) {
       console.error("Failed to fetch departments", err);
     } finally {
       setLoading(false);
     }
-  }, [selectedDeptId]);
+  }, []);
 
-  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => { fetchDepartments(); }, [fetchDepartments]);
 
   // Handlers
   const handleDeptSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

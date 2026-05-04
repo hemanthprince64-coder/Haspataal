@@ -19,6 +19,25 @@ function stripSensitiveArray<T extends Record<string, any>>(arr: T[]): T[] {
   return arr.map((item) => stripSensitive(item)!);
 }
 
+/**
+ * Type guard: returns true when a stored password field is plaintext (not a bcrypt hash).
+ * bcrypt hashes always start with "$2b$" or "$2a$". Any other value is treated as plaintext
+ * and must be rehashed before use.
+ */
+export function isPlaintextPassword(s: string): boolean {
+  return !s.startsWith('$2b$') && !s.startsWith('$2a$');
+}
+
+/** Generates a cryptographically-random alphanumeric string of the given length. */
+function generateTempPassword(length = 12): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // no ambiguous chars
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+
 // Helper to preserve CITIES constant from the old data file
 export const CITIES = [
   { id: 'mumbai', name: 'Mumbai', state: 'Maharashtra' },
@@ -1459,12 +1478,23 @@ export const services = {
     addDoctor: async (
       hospitalId: string,
       data: { name: string; mobile: string; schedule?: string; qualifications?: string },
-    ) => {
+    ): Promise<{ doctor: typeof import('@prisma/client').Prisma extends never ? any : any; tempPassword: string }> => {
+      // Generate a secure one-time temporary password for the doctor.
+      // The plaintext is returned ONCE so the hospital can share it; only the hash is persisted.
+      const tempPassword = generateTempPassword(12);
+      const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+      logger.info(
+        { action: 'hospital_add_doctor', hospitalId, mobile: data.mobile },
+        'Adding hospital-enrolled doctor with hashed temp password',
+      );
+
       const doctor = await prisma.doctorMaster.create({
         data: {
           fullName: data.name,
           mobile: data.mobile,
           email: `${data.mobile}@example.com`,
+          password: hashedPassword,
           registration: {
             create: {
               registrationNumber: `HOSP-${Date.now()}`,
@@ -1487,7 +1517,9 @@ export const services = {
         hospitalId,
         payload: { doctorName: data.name, doctorId: doctor.id },
       });
-      return doctor;
+      // Return both the doctor record AND the one-time plaintext password.
+      // Callers MUST surface this to the hospital admin immediately; it is never stored in plaintext.
+      return { doctor, tempPassword };
     },
 
     removeDoctor: async (hospitalId: string, doctorId: string) => {

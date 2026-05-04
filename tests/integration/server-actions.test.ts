@@ -4,6 +4,7 @@ import { execSync } from 'child_process';
 import { PrismaClient } from '@prisma/client';
 import { registerDoctor, approveDoctorAffiliationAction, agentLogin } from '../../app/actions';
 import * as auth from '../../lib/auth/requireRole';
+import { UserRole } from '../../types';
 
 let container: StartedPostgreSqlContainer;
 let prisma: PrismaClient;
@@ -12,7 +13,7 @@ beforeAll(async () => {
   // Increase timeout for downloading postgres image
   vi.setConfig({ hookTimeout: 60000, testTimeout: 30000 });
 
-  container = await new PostgreSqlContainer().start();
+  container = await new PostgreSqlContainer("postgres:15").start();
   const databaseUrl = container.getConnectionUri();
   
   // Set env var for prisma
@@ -35,21 +36,27 @@ describe('Server Actions Integration', () => {
 
   beforeAll(async () => {
     // Seed basic data required for testing
-    const hospital = await prisma.hospital.create({
+    const hospital = await prisma.hospitalsMaster.create({
       data: {
-        name: 'Test Hospital',
+        legalName: 'Test Hospital',
         city: 'Mumbai',
-        phone: '9999999999',
-        password: 'hashedpassword',
-        status: 'APPROVED',
+        contactNumber: '9999999999',
+        verificationStatus: 'VERIFIED',
+        accountStatus: 'ACTIVE',
+        registrationNumber: 'REG-1234'
       }
     });
+    // Set password manually since it's @ignore
+    await prisma.$executeRaw`UPDATE hospitals_master SET password = 'hashedpassword' WHERE id = ${hospital.id}`;
+    
     createdHospitalId = hospital.id;
 
     // Mock requireRole to simulate logged in hospital admin
     vi.spyOn(auth, 'requireRole').mockResolvedValue({
+      id: 'admin-123',
+      name: 'Admin',
       hospitalId: createdHospitalId,
-      role: 'HOSPITAL_ADMIN',
+      role: UserRole.HOSPITAL_ADMIN,
     });
   });
 
@@ -79,7 +86,7 @@ describe('Server Actions Integration', () => {
       
       // Assert affiliation is PENDING
       expect(doctor?.affiliations).toHaveLength(1);
-      expect(doctor?.affiliations[0].status).toBe('PENDING');
+      expect(doctor?.affiliations[0].verificationStatus).toBe('PENDING');
       
       createdDoctorId = doctor!.id;
     });
@@ -100,7 +107,7 @@ describe('Server Actions Integration', () => {
       });
 
       expect(affiliation).not.toBeNull();
-      expect(affiliation?.status).toBe('APPROVED');
+      expect(affiliation?.verificationStatus).toBe('APPROVED');
     });
   });
 
@@ -109,8 +116,8 @@ describe('Server Actions Integration', () => {
       // Seed agent
       await prisma.agent.create({
         data: {
-          name: 'Test Agent',
-          phone: '7777777777',
+          fullName: 'Test Agent',
+          mobile: '7777777777',
           email: 'agent@test.com',
           password: 'hashedpassword123', // In real test, use bcrypt hash
         }

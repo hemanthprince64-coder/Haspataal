@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Users, Shield, Calendar, Plus, Search, Mail, 
   ChevronDown, Check, X, Loader2, Trash2, Pencil,
@@ -282,7 +282,7 @@ export default function StaffPage() {
   const [savingPerms, setSavingPerms] = useState(false);
   const [savedPerms, setSavedPerms] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [staffRes, invitesRes, permsRes] = await Promise.all([
         fetch("/api/hospital/staff"),
@@ -300,13 +300,15 @@ export default function StaffPage() {
       setInvites(invitesData.invites ?? []);
       
       if (permsData.permissions) {
-        const newPerms = { ...perms };
-        permsData.permissions.forEach((p: any) => {
-          if (p.roleName && ROLES.includes(p.roleName as StaffRole)) {
-            newPerms[p.roleName as StaffRole] = p.permissions;
-          }
+        setPerms(prev => {
+          const newPerms = { ...prev };
+          permsData.permissions.forEach((p: any) => {
+            if (p.roleName && ROLES.includes(p.roleName as StaffRole)) {
+              newPerms[p.roleName as StaffRole] = p.permissions;
+            }
+          });
+          return newPerms;
         });
-        setPerms(newPerms);
       }
     } catch (err) {
       console.error(err);
@@ -314,9 +316,9 @@ export default function StaffPage() {
       setLoading(false);
       setPermsLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleUpdateStaff = async (id: string, updates: any) => {
     setStaff(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
