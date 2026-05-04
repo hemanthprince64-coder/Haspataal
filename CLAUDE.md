@@ -11,6 +11,7 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 2. **UPDATE AFTER EVERY BUG FIX:** After fixing any bug, immediately add an entry to the **Knowledge Base** section below with the root cause and fix.
 3. **NEVER REPEAT MISTAKES:** Before writing code, check the Knowledge Base for known pitfalls. If a past lesson applies, follow it.
 4. **Accountability:** If a bug recurs that is already documented in the Knowledge Base, treat it as a critical failure and flag it.
+5. **Mobile Validation:** All hospital-facing login and registration actions MUST validate mobile numbers using `MobileSchema` (min 10 digits) before proceeding to database queries.
 
 ---
 
@@ -150,6 +151,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 ## 📚 Knowledge Base (Lessons Learned)
 
 - **Hospital Login Session (hospitalId):** The login service MUST include `hospitalId` in the returned user object. The `requireHospitalAccess` middleware depends on this field to enforce tenant isolation. Omission causes post-login 401/403 errors and dashboard redirects. _(Fixed 2026-05-05)_
+- **Hospital Mobile Validation:** Hospital login and registration actions must validate mobile numbers via `MobileSchema`. Unvalidated mobile strings lead to poor UX ("Invalid credentials" for typos) and malformed data that breaks downstream SMS/WhatsApp integrations. _(Fixed 2026-05-05)_
 - **Phase 4-10 Build Sequence:** Never skip activation gates. A hospital MUST be `verified` then `activated` before HMS access is granted.
 - **Migration Validation:** Always perform client-side fuzzy mapping and validation reports before batch-importing legacy data to prevent DB pollution.
 - **Notification Curfew:** Never send non-critical notifications (follow-ups) between 10 PM and 8 AM IST.

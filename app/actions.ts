@@ -70,6 +70,15 @@ async function _loginHospital(
   const mobile = formData.get('mobile') as string;
   const password = formData.get('password') as string;
 
+  // ✅ Validate mobile format
+  const mobileParse = MobileSchema.safeParse(mobile);
+  if (!mobileParse.success) {
+    return {
+      success: false,
+      message: 'Mobile number must be at least 10 digits',
+    };
+  }
+
   if (!mobile || !password) {
     return { message: 'Please enter both mobile and password.' };
   }
@@ -103,14 +112,13 @@ async function _registerHospital(
       password: formData.get('password') as string,
     };
 
-    if (!data.hospitalName || !data.city || !data.adminName || !data.mobile || !data.password) {
-      return { success: false, message: 'Please fill in all required fields.' };
-    }
-
-    const pwdCheck = PasswordSchema.safeParse(data.password);
-    if (!pwdCheck.success) {
-      const firstError = pwdCheck.error.issues[0];
-      return { success: false, message: firstError.message };
+    // ✅ Validate all required fields using RegisterHospitalSchema
+    const validation = RegisterHospitalSchema.safeParse(data);
+    if (!validation.success) {
+      return {
+        success: false,
+        message: validation.error.issues[0].message,
+      };
     }
 
     await services.hospital.register(data);
