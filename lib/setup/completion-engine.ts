@@ -175,17 +175,20 @@ async function checkOpdWorkflow(
 async function checkBillingConfigured(
   hospitalId: string,
 ): Promise<{ complete: boolean; score: number; warnings: string[] }> {
-  const [catalogCount, billingProfile] = await Promise.all([
+  const [catalogCount, billingProfile, hospital] = await Promise.all([
     prisma.serviceCatalog.count({ where: { hospitalId, isActive: true } }),
     prisma.hospitalBillingProfile.findUnique({ where: { hospitalId } }),
+    prisma.hospitalsMaster.findUnique({
+      where: { id: hospitalId },
+      select: { invoicePrefix: true },
+    }),
   ]);
 
   const warnings: string[] = [];
   if (catalogCount === 0) warnings.push('No services in billing catalog → cannot generate bills');
   if (!billingProfile?.bankAccountNumber)
     warnings.push('No bank account details → payouts will be blocked');
-  if (!billingProfile?.invoicePrefix)
-    warnings.push('No invoice prefix defined → sequencing may collide');
+  if (!hospital?.invoicePrefix) warnings.push('No invoice prefix defined → sequencing may collide');
 
   return {
     complete: catalogCount > 0 && !!billingProfile?.bankAccountNumber,
@@ -272,11 +275,16 @@ async function checkMarketplaceListing(
 ): Promise<{ complete: boolean; score: number; warnings: string[] }> {
   const hospital = await prisma.hospitalsMaster.findUnique({
     where: { id: hospitalId },
-    select: { isListedOnMarketplace: true, tagline: true, logoUrl: true, coverImageUrl: true },
+    select: {
+      isListedOnMarketplace: true,
+      marketplaceTagline: true,
+      logoUrl: true,
+      coverImageUrl: true,
+    },
   });
 
   const servicesCount = await prisma.serviceCatalog.count({
-    where: { hospitalId, isActive: true, isPackage: false }, // Assuming isPackage is a way to filter or just public services
+    where: { hospitalId, isActive: true, packageId: null },
   });
 
   const listed = hospital?.isListedOnMarketplace ?? false;
@@ -291,7 +299,7 @@ async function checkMarketplaceListing(
 
   return {
     complete: listed && servicesCount >= 3,
-    score: listed ? (hospital?.tagline ? 1 : 0.5) : 0,
+    score: listed ? (hospital?.marketplaceTagline ? 1 : 0.5) : 0,
     warnings,
   };
 }
