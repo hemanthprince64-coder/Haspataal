@@ -121,11 +121,25 @@ async function _registerHospital(
       };
     }
 
-    await services.hospital.register(data);
-    return {
-      success: true,
-      message: 'Hospital registered successfully! Account is pending admin approval.',
+    // ✅ Register hospital and get the returned hospital object
+    const hospital = await services.hospital.register(data);
+
+    // ✅ Create session automatically
+    const result = {
+      user: {
+        id: hospital.id,
+        name: hospital.legalName,
+        role: UserRole.HOSPITAL_ADMIN,
+        hospitalId: hospital.id,
+      },
     };
+    await createSession('session_user', result);
+
+    // ✅ Redirect to setup wizard instead of showing success page
+    redirect('/hospital/dashboard/setup');
+
+    // Return never reached due to redirect, but TypeScript requires it
+    return { success: true, message: 'Registration successful' };
   } catch (e: any) {
     return { success: false, message: e.message || 'Registration failed.' };
   }
