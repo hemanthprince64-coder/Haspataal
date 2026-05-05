@@ -45,14 +45,13 @@ async function checkIdentityComplete(
     !!h.legalName,
     !!h.displayName,
     !!h.contactNumber,
-    !!h.officialEmail,
     !!h.addressLine1,
     !!h.city,
     !!h.state,
     !!h.pincode,
   ];
 
-  const optional = [!!h.logoUrl, !!h.gstNumber];
+  const optional = [!!h.logoUrl, !!h.gstNumber, !!h.officialEmail];
 
   const score =
     (mandatory.filter(Boolean).length + optional.filter(Boolean).length) /
