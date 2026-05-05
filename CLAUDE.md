@@ -214,6 +214,11 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Dependency Hardening & Pinning:** Standardized on exact versions for all dependencies across the monorepo to ensure build reproducibility. Use the `node pin-versions.js` utility after adding new packages to strip carets (`^`) and tildes (`~`) based on the root `package-lock.json`. _(Implemented 2026-05-05)_
 - **Workspace Vulnerability Resolution:** When `npm audit` reports vulnerabilities in workspace `node_modules` that `npm audit fix` fails to resolve, use a structured `overrides` block in the root `package.json`. Specifically, for `postcss` and `uuid` issues inside `next` and `bullmq`, we use explicit version overrides to force secure patches project-wide. _(Fixed 2026-05-05)_
 - **Redis Client Standardization:** The project is strictly consolidated to `ioredis` for all caching, rate-limiting, and queue operations (`bullmq`). The standalone `redis` package is prohibited to avoid client fragmentation and compatibility issues with Next.js/Turborepo. _(Audited 2026-05-05)_
+- **Monorepo Migration (Turborepo):** Haspataal has moved to a full Turborepo structure. All shared logic must reside in `packages/`. Apps in `apps/` must consume shared packages via workspace protocol (`*`). Never copy `lib/` or `types/` between apps. _(Implemented 2026-05-05)_
+- **Strict Healthcare Linting:** ESLint is configured with healthcare-specific rules via `eslint-plugin-local-rules`. Direct Prisma access in pages/layouts is forbidden; use the service/core layer. Logging of PHI (patientId, phone, etc.) is blocked at the lint level. _(Implemented 2026-05-05)_
+- **Clean Architecture Transition:** Core business logic is migrating to `@haspataal/core`. Use-cases must be pure logic classes that depend on repository interfaces, ensuring 100% testability without a database. _(Implemented 2026-05-05)_
+- **PR & Security Guardrails:** All PRs must use the `PULL_REQUEST_TEMPLATE.md` and pass the CI test suite. Security checks are mandatory for any changes touching auth, PII, or schema. _(Implemented 2026-05-05)_
+- **Developer Workflow (Husky/lint-staged):** Pre-commit hooks enforce Prettier formatting and ESLint rules. Commit messages must follow Conventional Commits and are validated via `commitlint`. _(Implemented 2026-05-05)_
 
 ---
 
