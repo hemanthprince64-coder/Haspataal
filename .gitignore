@@ -40,12 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/lib/generated/prisma
-
-# graphify
+**/lib/generated/prisma/
 graphify-out/
-
-# Internal
 .kilo/
 .agent/
 .metagpt/
