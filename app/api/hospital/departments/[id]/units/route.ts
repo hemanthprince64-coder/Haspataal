@@ -6,7 +6,9 @@ import { getHospitalIdFromSession } from '@/lib/auth';
 const unitSchema = z.object({
   name: z.string().min(1),
   capacity: z.number().default(0),
-  bedType: z.enum(['GENERAL', 'ICU', 'NICU', 'PRIVATE', 'SEMI_PRIVATE', 'EMERGENCY']).default('GENERAL'),
+  bedType: z
+    .enum(['GENERAL', 'ICU', 'NICU', 'PRIVATE', 'SEMI_PRIVATE', 'EMERGENCY'])
+    .default('GENERAL'),
   wardNumber: z.string().optional(),
   floor: z.string().optional(),
   type: z.string().optional(),
@@ -24,13 +26,17 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (!dept) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = unitSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });
 
   const count = await prisma.unit.count({ where: { departmentId } });
-  
+
   // Create Unit and Beds in a transaction
   const result = await prisma.$transaction(async (tx) => {
     const unit = await tx.unit.create({

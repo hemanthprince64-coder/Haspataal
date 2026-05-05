@@ -21,10 +21,10 @@ export class DocumentService {
    * Mocks S3 upload and saves metadata to DB.
    */
   public static async uploadDocument(
-    hospitalId: string, 
-    docType: string, 
-    fileBuffer: Buffer, 
-    mimetype: string
+    hospitalId: string,
+    docType: string,
+    fileBuffer: Buffer,
+    mimetype: string,
   ): Promise<DocumentMetadata> {
     const s3Key = `hospitals/${hospitalId}/documents/${docType}_${Date.now()}`;
     const mockUrl = `https://s3.mock.aws.com/${s3Key}`;
@@ -40,9 +40,9 @@ export class DocumentService {
         VALUES ($1, $2, $3, $4, 'pending')
         RETURNING *;
         `,
-        [hospitalId, docType, s3Key, mockUrl]
+        [hospitalId, docType, s3Key, mockUrl],
       );
-      
+
       return result.rows[0];
     } finally {
       client.release();
@@ -62,9 +62,9 @@ export class DocumentService {
         WHERE expires_at IS NOT NULL 
           AND expires_at <= NOW() + INTERVAL '30 days'
           AND status = 'approved';
-        `
+        `,
       );
-      
+
       for (const doc of result.rows) {
         // Here we would integrate with EventService from Phase 1
         // EventService.publish('document_expiring_soon', { doc }, doc.hospital_id);

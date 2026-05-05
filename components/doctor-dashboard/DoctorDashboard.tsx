@@ -39,7 +39,9 @@ export function DoctorDashboard() {
 
         <Card className="border-l-4 border-amber-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Pending Lab Results</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-500">
+              Pending Lab Results
+            </CardTitle>
             <FlaskConical className="w-4 h-4 text-amber-500" />
           </CardHeader>
           <CardContent>
@@ -68,7 +70,10 @@ export function DoctorDashboard() {
           <CardContent>
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex justify-between items-center p-3 bg-slate-100 rounded-lg border border-slate-200">
+                <div
+                  key={i}
+                  className="flex justify-between items-center p-3 bg-slate-100 rounded-lg border border-slate-200"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold">
                       #{i}
@@ -78,7 +83,9 @@ export function DoctorDashboard() {
                       <p className="text-xs text-slate-500">Fever, Cough x3 days</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">Call Next</Button>
+                  <Button size="sm" variant="outline">
+                    Call Next
+                  </Button>
                 </div>
               ))}
             </div>

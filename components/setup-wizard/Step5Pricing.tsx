@@ -5,10 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: any) => void }) {
-  const [pricing, setPricing] = useState(config.pricing || {
-    opd_fees: 500, ipd_rate: 2000, diag_markup: 15
-  });
+export function Step5Pricing({ config, onSave }: { config: any; onSave: (data: any) => void }) {
+  const [pricing, setPricing] = useState(
+    config.pricing || {
+      opd_fees: 500,
+      ipd_rate: 2000,
+      diag_markup: 15,
+    },
+  );
 
   // Generate unique IDs for inputs
   const idOpd = React.useId();
@@ -35,44 +39,47 @@ export function Step5Pricing({ config, onSave }: { config: any, onSave: (data: a
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor={idOpd}>Standard OPD Consultation Fee (₹)</Label>
-          <Input 
+          <Input
             id={idOpd}
-            type="number" 
-            value={pricing.opd_fees} 
-            onChange={(e) => handleChange('opd_fees', e.target.value)} 
+            type="number"
+            value={pricing.opd_fees}
+            onChange={(e) => handleChange('opd_fees', e.target.value)}
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor={idIpd}>General Ward IPD Rate (₹ / day)</Label>
-          <Input 
+          <Input
             id={idIpd}
-            type="number" 
-            value={pricing.ipd_rate} 
-            onChange={(e) => handleChange('ipd_rate', e.target.value)} 
+            type="number"
+            value={pricing.ipd_rate}
+            onChange={(e) => handleChange('ipd_rate', e.target.value)}
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor={idMarkup}>Diagnostics/Pharmacy Markup (%)</Label>
-          <Input 
+          <Input
             id={idMarkup}
-            type="number" 
-            value={pricing.diag_markup} 
-            onChange={(e) => handleChange('diag_markup', e.target.value)} 
+            type="number"
+            value={pricing.diag_markup}
+            onChange={(e) => handleChange('diag_markup', e.target.value)}
           />
         </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg text-sm mt-4">
-        <strong>Note:</strong> Haspataal calculates GST automatically based on the service type (e.g., Room rent &gt; ₹5000 incurs 5% GST).
+        <strong>Note:</strong> Haspataal calculates GST automatically based on the service type
+        (e.g., Room rent &gt; ₹5000 incurs 5% GST).
       </div>
 
       <div className="flex justify-end pt-6">
-        <Button onClick={() => {
-          onSave(pricing);
-          toast.success("Pricing configuration saved");
-        }}>
+        <Button
+          onClick={() => {
+            onSave(pricing);
+            toast.success('Pricing configuration saved');
+          }}
+        >
           Save & Continue
         </Button>
       </div>

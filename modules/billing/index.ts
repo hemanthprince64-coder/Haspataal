@@ -16,8 +16,10 @@ export class BillingService {
   // Utility for GST
   public static calculateGST(amount: number, type: string): number {
     let rate = 0;
-    if (type === 'medicine') rate = 0.12; // 12%
-    else if (type === 'diagnostic') rate = 0.18; // 18%
+    if (type === 'medicine')
+      rate = 0.12; // 12%
+    else if (type === 'diagnostic')
+      rate = 0.18; // 18%
     else rate = 0.05; // 5% base
     return amount * rate;
   }
@@ -29,7 +31,12 @@ export class BillingService {
     console.log('[BillingService] Processing event to auto-populate invoice:', event.event_type);
   }
 
-  public static async recordPayment(hospitalId: string, invoiceId: string, method: string, amount: number) {
+  public static async recordPayment(
+    hospitalId: string,
+    invoiceId: string,
+    method: string,
+    amount: number,
+  ) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -38,11 +45,15 @@ export class BillingService {
       // 1. Update Invoice status
       await client.query(
         `UPDATE "Invoice" SET status='paid', payment_method=$1 WHERE id=$2 AND hospital_id=$3`,
-        [method, invoiceId, hospitalId]
+        [method, invoiceId, hospitalId],
       );
 
       // 2. Emit Event
-      await EventService.publish('bill_paid', { invoice_id: invoiceId, method, amount }, hospitalId);
+      await EventService.publish(
+        'bill_paid',
+        { invoice_id: invoiceId, method, amount },
+        hospitalId,
+      );
 
       await client.query('COMMIT');
       return { success: true };
@@ -62,17 +73,20 @@ router.get('/invoice/:visitId', async (req: Request, res: Response) => {
   // Mock fetching auto-populated invoice
   res.json({
     visit_id: req.params.visitId,
-    line_items: [
-      { description: 'OPD Consultation', amount: 500, gst: 25, total: 525 }
-    ],
-    grand_total: 525
+    line_items: [{ description: 'OPD Consultation', amount: 500, gst: 25, total: 525 }],
+    grand_total: 525,
   });
 });
 
 router.post('/invoice/pay', async (req: Request, res: Response) => {
   try {
     const { invoiceId, method, amount } = req.body;
-    const result = await BillingService.recordPayment((req as any).hospital_id, invoiceId, method, amount);
+    const result = await BillingService.recordPayment(
+      (req as any).hospital_id,
+      invoiceId,
+      method,
+      amount,
+    );
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Payment failed' });

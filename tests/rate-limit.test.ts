@@ -8,7 +8,7 @@ vi.mock('ioredis', () => {
     default: class RedisMock {
       defineCommand = vi.fn();
       slidingWindowRateLimit = vi.fn();
-    }
+    },
   };
 });
 
@@ -27,11 +27,12 @@ describe('Rate Limiter', () => {
   describe('sliding window check', () => {
     it('should allow request when within limit', async () => {
       // Mock the Lua script response: [1 (allowed), 5 (count)]
-      const mockRedisCheck = vi.spyOn(rateLimiter['redis'] as any, 'slidingWindowRateLimit')
+      const mockRedisCheck = vi
+        .spyOn(rateLimiter['redis'] as any, 'slidingWindowRateLimit')
         .mockResolvedValueOnce([1, 5]);
 
       const result = await rateLimiter.check('test-key', 10, 1000);
-      
+
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(5); // 10 - 5 = 5 remaining
       expect(result.resetAt.getTime()).toBeGreaterThan(Date.now());
@@ -40,11 +41,12 @@ describe('Rate Limiter', () => {
 
     it('should deny request when limit exceeded', async () => {
       // Mock the Lua script response: [0 (denied), 10 (count)]
-      const mockRedisCheck = vi.spyOn(rateLimiter['redis'] as any, 'slidingWindowRateLimit')
+      const mockRedisCheck = vi
+        .spyOn(rateLimiter['redis'] as any, 'slidingWindowRateLimit')
         .mockResolvedValueOnce([0, 10]);
 
       const result = await rateLimiter.check('test-key', 10, 1000);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
     });
@@ -54,7 +56,7 @@ describe('Rate Limiter', () => {
     it('should extract IP from headers and block on limit exceeded', async () => {
       // Mock headers
       (headersModule.headers as any).mockResolvedValue(
-        new Map([['x-forwarded-for', '192.168.1.1']]) as any
+        new Map([['x-forwarded-for', '192.168.1.1']]) as any,
       );
 
       // Mock rate limiter to deny
@@ -81,7 +83,7 @@ describe('Rate Limiter', () => {
 
     it('should allow execution if rate limit is not exceeded', async () => {
       (headersModule.headers as any).mockResolvedValue(
-        new Map([['x-forwarded-for', '10.0.0.1']]) as any
+        new Map([['x-forwarded-for', '10.0.0.1']]) as any,
       );
 
       vi.spyOn(rateLimiter, 'check').mockResolvedValueOnce({

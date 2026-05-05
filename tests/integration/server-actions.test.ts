@@ -13,12 +13,12 @@ beforeAll(async () => {
   // Increase timeout for downloading postgres image
   vi.setConfig({ hookTimeout: 60000, testTimeout: 30000 });
 
-  container = await new PostgreSqlContainer("postgres:15").start();
+  container = await new PostgreSqlContainer('postgres:15').start();
   const databaseUrl = container.getConnectionUri();
-  
+
   // Set env var for prisma
   process.env.DATABASE_URL = databaseUrl;
-  
+
   // Run migrations against the test container
   execSync('npx prisma db push --skip-generate', { env: process.env });
 
@@ -43,12 +43,12 @@ describe('Server Actions Integration', () => {
         contactNumber: '9999999999',
         verificationStatus: 'VERIFIED',
         accountStatus: 'ACTIVE',
-        registrationNumber: 'REG-1234'
-      }
+        registrationNumber: 'REG-1234',
+      },
     });
     // Set password manually since it's @ignore
     await prisma.$executeRaw`UPDATE hospitals_master SET password = 'hashedpassword' WHERE id = ${hospital.id}`;
-    
+
     createdHospitalId = hospital.id;
 
     // Mock requireRole to simulate logged in hospital admin
@@ -78,16 +78,16 @@ describe('Server Actions Integration', () => {
       // Assert database state
       const doctor = await prisma.doctorMaster.findUnique({
         where: { email: 'dr.test@integration.com' },
-        include: { affiliations: true }
+        include: { affiliations: true },
       });
 
       expect(doctor).not.toBeNull();
       expect(doctor?.fullName).toBe('Dr. Integration Test');
-      
+
       // Assert affiliation is PENDING
       expect(doctor?.affiliations).toHaveLength(1);
       expect(doctor?.affiliations[0].verificationStatus).toBe('PENDING');
-      
+
       createdDoctorId = doctor!.id;
     });
   });
@@ -100,10 +100,10 @@ describe('Server Actions Integration', () => {
       const result = await approveDoctorAffiliationAction(null, formData);
 
       expect(result.success).toBe(true);
-      
+
       // Assert database state
       const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
-        where: { doctorId: createdDoctorId, hospitalId: createdHospitalId }
+        where: { doctorId: createdDoctorId, hospitalId: createdHospitalId },
       });
 
       expect(affiliation).not.toBeNull();
@@ -120,7 +120,7 @@ describe('Server Actions Integration', () => {
           mobile: '7777777777',
           email: 'agent@test.com',
           password: 'hashedpassword123', // In real test, use bcrypt hash
-        }
+        },
       });
     });
 
@@ -135,8 +135,8 @@ describe('Server Actions Integration', () => {
       expect(result.message).toBe('Invalid credentials');
     });
 
-    // We avoid testing valid password matching directly here because agentLogin 
-    // requires bcrypt which relies on mocked data. But we assert the unhappy path 
+    // We avoid testing valid password matching directly here because agentLogin
+    // requires bcrypt which relies on mocked data. But we assert the unhappy path
     // works correctly hitting the database.
   });
 });

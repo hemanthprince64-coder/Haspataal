@@ -4,7 +4,10 @@ import { validateRow } from '../../utils/column-mapper';
 import { AlertCircle, CheckCircle2, Download, Play } from 'lucide-react';
 
 export function ValidationReport({ rawData, mapping, onComplete, onBack }: any) {
-  const [results, setResults] = useState<{ validRows: any[], errors: any[] }>({ validRows: [], errors: [] });
+  const [results, setResults] = useState<{ validRows: any[]; errors: any[] }>({
+    validRows: [],
+    errors: [],
+  });
   const [analyzing, setAnalyzing] = useState(true);
 
   useEffect(() => {
@@ -16,10 +19,12 @@ export function ValidationReport({ rawData, mapping, onComplete, onBack }: any) 
 
     rawData.forEach((row: any, idx: number) => {
       const { mappedRow, errors, isValid } = validateRow(row, mapping);
-      
+
       let finalValid = isValid;
       if (isValid) {
-        const dupKey = mappedRow.phone ? `${mappedRow.name}-${mappedRow.phone}` : `${mappedRow.name}-${mappedRow.dob}`;
+        const dupKey = mappedRow.phone
+          ? `${mappedRow.name}-${mappedRow.phone}`
+          : `${mappedRow.name}-${mappedRow.dob}`;
         if (seen.has(dupKey)) {
           errors.push('Duplicate row in current upload batch');
           finalValid = false;
@@ -40,7 +45,11 @@ export function ValidationReport({ rawData, mapping, onComplete, onBack }: any) 
   }, [rawData, mapping]);
 
   if (analyzing) {
-    return <div className="py-12 text-center text-slate-500 animate-pulse">Analyzing {rawData.length} rows...</div>;
+    return (
+      <div className="py-12 text-center text-slate-500 animate-pulse">
+        Analyzing {rawData.length} rows...
+      </div>
+    );
   }
 
   return (
@@ -56,11 +65,17 @@ export function ValidationReport({ rawData, mapping, onComplete, onBack }: any) 
           <p className="text-3xl font-bold mt-1 text-slate-800">{rawData.length}</p>
         </div>
         <div className="bg-green-50 border border-green-200 p-4 rounded-xl text-center">
-          <p className="text-sm text-green-700 font-medium flex justify-center items-center gap-1"><CheckCircle2 className="w-4 h-4"/> Valid Rows</p>
+          <p className="text-sm text-green-700 font-medium flex justify-center items-center gap-1">
+            <CheckCircle2 className="w-4 h-4" /> Valid Rows
+          </p>
           <p className="text-3xl font-bold mt-1 text-green-700">{results.validRows.length}</p>
         </div>
-        <div className={`bg-red-50 border border-red-200 p-4 rounded-xl text-center ${results.errors.length > 0 ? '' : 'opacity-50'}`}>
-          <p className="text-sm text-red-700 font-medium flex justify-center items-center gap-1"><AlertCircle className="w-4 h-4"/> Rows with Errors</p>
+        <div
+          className={`bg-red-50 border border-red-200 p-4 rounded-xl text-center ${results.errors.length > 0 ? '' : 'opacity-50'}`}
+        >
+          <p className="text-sm text-red-700 font-medium flex justify-center items-center gap-1">
+            <AlertCircle className="w-4 h-4" /> Rows with Errors
+          </p>
           <p className="text-3xl font-bold mt-1 text-red-700">{results.errors.length}</p>
         </div>
       </div>
@@ -86,9 +101,15 @@ export function ValidationReport({ rawData, mapping, onComplete, onBack }: any) 
                 {results.errors.slice(0, 5).map((e, i) => (
                   <tr key={i}>
                     <td className="px-4 py-3 font-medium">{e.originalRow}</td>
-                    <td className="px-4 py-3 text-slate-600">{e.mappedRow.name || '(No Name)'} - {e.mappedRow.phone || '(No Phone)'}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {e.mappedRow.name || '(No Name)'} - {e.mappedRow.phone || '(No Phone)'}
+                    </td>
                     <td className="px-4 py-3 text-red-600">
-                      <ul className="list-disc pl-4">{e.errors.map((err: string, j: number) => <li key={j}>{err}</li>)}</ul>
+                      <ul className="list-disc pl-4">
+                        {e.errors.map((err: string, j: number) => (
+                          <li key={j}>{err}</li>
+                        ))}
+                      </ul>
                     </td>
                   </tr>
                 ))}
@@ -99,9 +120,11 @@ export function ValidationReport({ rawData, mapping, onComplete, onBack }: any) 
       )}
 
       <div className="flex justify-between pt-6">
-        <Button variant="ghost" onClick={onBack}>Go Back to Mapping</Button>
-        <Button 
-          onClick={() => onComplete(results)} 
+        <Button variant="ghost" onClick={onBack}>
+          Go Back to Mapping
+        </Button>
+        <Button
+          onClick={() => onComplete(results)}
           disabled={results.validRows.length === 0}
           className="bg-blue-600 hover:bg-blue-700 gap-2"
         >

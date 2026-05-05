@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 export default function OPDPage() {
-    redirect("/hospital/dashboard/billing");
+  redirect('/hospital/dashboard/billing');
 }

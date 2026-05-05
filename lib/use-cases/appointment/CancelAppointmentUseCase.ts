@@ -13,18 +13,14 @@ export interface CancelAppointmentInput {
 
 export class CancellationWindowError extends Error {
   constructor(slot: string) {
-    super(
-      `Appointments cannot be cancelled within 6 hours of the scheduled time (${slot})`
-    );
+    super(`Appointments cannot be cancelled within 6 hours of the scheduled time (${slot})`);
     this.name = 'CancellationWindowError';
   }
 }
 
 export class InvalidTransitionError extends Error {
   constructor(current: string, target: string) {
-    super(
-      `Invalid state transition: Cannot move from ${current} to ${target}`
-    );
+    super(`Invalid state transition: Cannot move from ${current} to ${target}`);
     this.name = 'InvalidTransitionError';
   }
 }
@@ -43,22 +39,17 @@ export class CancelAppointmentUseCase {
 
     logger.info(
       { action: 'cancel_booking_attempt', patientId, appointmentId },
-      'Attempting to cancel appointment'
+      'Attempting to cancel appointment',
     );
 
     // 1. Find and verify ownership
-    const appointment = await this.appointmentRepo.findByIdForPatient(
-      appointmentId,
-      patientId
-    );
+    const appointment = await this.appointmentRepo.findByIdForPatient(appointmentId, patientId);
     if (!appointment) {
       throw new Error('Appointment not found');
     }
 
     // 2. Enforce cancellation time window (6-hour rule)
-    const [hours, minutes] = (appointment.slot || '09:00')
-      .split(':')
-      .map(Number);
+    const [hours, minutes] = (appointment.slot || '09:00').split(':').map(Number);
     const appointmentTime = new Date(appointment.date);
     appointmentTime.setHours(hours, minutes, 0, 0);
 
@@ -76,14 +67,13 @@ export class CancelAppointmentUseCase {
 
     // 4. Determine if refund is needed
     const requiresRefund =
-      currentStatus === BookingStatus.CONFIRMED ||
-      currentStatus === BookingStatus.BOOKED;
+      currentStatus === BookingStatus.CONFIRMED || currentStatus === BookingStatus.BOOKED;
     const refundAmount = requiresRefund ? 500 : 0; // Flat consultation fee
 
     // 5. Execute cancellation
     const cancelled = await this.appointmentRepo.updateStatus(
       appointmentId,
-      BookingStatus.CANCELLED
+      BookingStatus.CANCELLED,
     );
 
     logger.info(
@@ -93,7 +83,7 @@ export class CancelAppointmentUseCase {
         oldStatus: currentStatus,
         newStatus: BookingStatus.CANCELLED,
       },
-      `Appointment cancelled`
+      `Appointment cancelled`,
     );
 
     return {

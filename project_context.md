@@ -1,26 +1,27 @@
 # Haspataal Project Context
 
 ## Overview
+
 **Haspataal** is a dual-portal healthcare management platform serving both patients and hospitals. Built with Next.js 14 (App Router), React 18, and Supabase, it features a modern responsive UI using Tailwind CSS and Radix UI components.
 
 ---
 
 ## Tech Stack
 
-| Category | Technology |
-|----------|-----------|
-| Framework | Next.js 14.2.3 (App Router) |
-| Language | JavaScript (ES6+) + JSX |
-| Styling | Tailwind CSS 3.4.1 |
-| UI Components | Radix UI + shadcn/ui |
-| Backend/DB | Supabase (@supabase/supabase-js 2.43.0) |
+| Category         | Technology                                         |
+| ---------------- | -------------------------------------------------- |
+| Framework        | Next.js 14.2.3 (App Router)                        |
+| Language         | JavaScript (ES6+) + JSX                            |
+| Styling          | Tailwind CSS 3.4.1                                 |
+| UI Components    | Radix UI + shadcn/ui                               |
+| Backend/DB       | Supabase (@supabase/supabase-js 2.43.0)            |
 | State Management | React Hooks, Redux (@reduxjs/toolkit, react-redux) |
-| Forms | React Hook Form 7.51.5 |
-| Validation | Zod 3.23.8 |
-| Charts | Chart.js 4.4.2 + react-chartjs-2 5.2.0 |
-| Notifications | Sonner 1.4.41 |
-| Rich Text | Novel (editor) |
-| OTP Input | react-otp-input 3.1.1 |
+| Forms            | React Hook Form 7.51.5                             |
+| Validation       | Zod 3.23.8                                         |
+| Charts           | Chart.js 4.4.2 + react-chartjs-2 5.2.0             |
+| Notifications    | Sonner 1.4.41                                      |
+| Rich Text        | Novel (editor)                                     |
+| OTP Input        | react-otp-input 3.1.1                              |
 
 ---
 
@@ -95,32 +96,38 @@ haspataal/
 ## Key Dependencies
 
 ### Core
+
 - next: ^14.2.3
 - react: ^18
 - react-dom: ^18
 - typescript: ^5
 
 ### Database & Auth
+
 - @supabase/supabase-js: ^2.43.0
 - @supabase/ssr: ^0.3.0
 
 ### State Management
+
 - @reduxjs/toolkit: ^2.2.5
 - react-redux: ^9.1.2
 
 ### Forms & Validation
+
 - react-hook-form: ^7.51.5
 - @hookform/resolvers: ^3.6.0
 - zod: ^3.23.8
 
 ### UI Components
-- @radix-ui/* (various primitives)
+
+- @radix-ui/\* (various primitives)
 - class-variance-authority: ^0.7.0
 - clsx: ^2.1.1
 - tailwind-merge: ^2.3.0
 - lucide-react: ^0.379.0
 
 ### Features
+
 - chart.js: ^4.4.2
 - react-chartjs-2: ^5.2.0
 - novel: ^0.5.0 (rich text editor)
@@ -134,6 +141,7 @@ haspataal/
 ### Tables
 
 #### 1. **patients**
+
 ```sql
 - id: int8 (PK)
 - name: text
@@ -151,6 +159,7 @@ haspataal/
 ```
 
 #### 2. **hospitals**
+
 ```sql
 - id: int8 (PK)
 - name: text
@@ -166,6 +175,7 @@ haspataal/
 ```
 
 #### 3. **doctors**
+
 ```sql
 - id: int8 (PK)
 - name: text
@@ -182,6 +192,7 @@ haspataal/
 ```
 
 #### 4. **appointments**
+
 ```sql
 - id: int8 (PK)
 - patient_id: int8 (FK -> patients)
@@ -196,6 +207,7 @@ haspataal/
 ```
 
 #### 5. **care_journey**
+
 ```sql
 - id: int8 (PK)
 - patient_id: int8 (FK -> patients)
@@ -216,16 +228,19 @@ haspataal/
 ## Authentication Flow
 
 ### Patient Authentication
+
 - Phone-based login with OTP
 - Session management via Supabase Auth
 - Middleware (`middleware.ts`) handles route protection
 
 ### Hospital Authentication
+
 - Email + Password login (hashed passwords in hospitals table)
 - Session-based authentication
 - Logout via `/api/auth/logout`
 
 ### Auth Files
+
 - `middleware.ts` - Route protection and redirects
 - `providers/auth.js` - Auth context and logic
 - `app/api/auth/logout/route.ts` - Logout API
@@ -235,37 +250,41 @@ haspataal/
 ## Portal Structure
 
 ### Patient Portal (`(patient)`)
+
 **Route Group:** `(patient)`
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Portal entry - PortalCards for navigation |
-| `/login` | Patient login with OTP |
-| `/register` | Patient registration |
-| `/search` | Doctor search |
-| `/doctors/[id]` | Doctor profile & booking |
-| `/appointments` | View/manage appointments |
+| Route           | Purpose                                   |
+| --------------- | ----------------------------------------- |
+| `/`             | Portal entry - PortalCards for navigation |
+| `/login`        | Patient login with OTP                    |
+| `/register`     | Patient registration                      |
+| `/search`       | Doctor search                             |
+| `/doctors/[id]` | Doctor profile & booking                  |
+| `/appointments` | View/manage appointments                  |
 
 **Components:**
+
 - `Footer` - Portal navigation links
 - `FooterLinks` - Individual link items
 - `PortalCards` - Grid of portal options
 - `PortalCard` - Individual card component
 
 ### Hospital Portal (`(hospital)`)
+
 **Route Group:** `(hospital)`
 
-| Route | Purpose |
-|-------|---------|
-| `/hospital` | Hospital portal entry/login |
-| `/hospital/dashboard` | Dashboard overview |
-| `/hospital/dashboard/reports` | Reports & analytics |
-| `/hospital/dashboard/appointments` | Appointment management |
-| `/hospital/dashboard/staff` | Staff management |
-| `/hospital/dashboard/help` | Help documentation |
-| `/hospital/dashboard/settings` | Hospital settings |
+| Route                              | Purpose                     |
+| ---------------------------------- | --------------------------- |
+| `/hospital`                        | Hospital portal entry/login |
+| `/hospital/dashboard`              | Dashboard overview          |
+| `/hospital/dashboard/reports`      | Reports & analytics         |
+| `/hospital/dashboard/appointments` | Appointment management      |
+| `/hospital/dashboard/staff`        | Staff management            |
+| `/hospital/dashboard/help`         | Help documentation          |
+| `/hospital/dashboard/settings`     | Hospital settings           |
 
 **Layout:** `dashboard/layout.tsx`
+
 - `Sidebar` - Navigation sidebar
 - `Topbar` - Header with user actions
 
@@ -274,24 +293,25 @@ haspataal/
 ## Configuration Files
 
 ### `next.config.js`
+
 ```javascript
 const nextConfig = {
   images: {
     domains: ['images.unsplash.com', 'plus.unsplash.com'],
-    remotePatterns: [
-      { protocol: 'https', hostname: '**' }
-    ]
-  }
-}
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
+  },
+};
 ```
 
 ### `tailwind.config.ts`
+
 - Custom color scheme with CSS variables
 - Dark mode support via class
 - Custom border-radius, animations
 - Extended colors: primary, secondary, destructive, muted, accent, popover, card
 
 ### `components.json`
+
 - Style: default
 - Base color: slate
 - Component aliases: `@/components/*`
@@ -316,6 +336,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 ## Key Features
 
 ### Patient Features
+
 1. **Phone-based login** - OTP authentication
 2. **Doctor search** - Search doctors by specialty, hospital
 3. **Appointment booking** - Book slots with doctors
@@ -323,6 +344,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 5. **Care journey tracking** - Track treatment progress
 
 ### Hospital Features
+
 1. **Staff management** - Manage doctors and hospital staff
 2. **Appointment management** - View and manage all appointments
 3. **Analytics & reports** - Charts and data visualization
@@ -334,6 +356,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 ## Component Library (shadcn/ui)
 
 Pre-installed components in `components/ui/`:
+
 - button, input, select
 - dropdown-menu, popover, sheet
 - card, badge, avatar
@@ -346,17 +369,17 @@ Pre-installed components in `components/ui/`:
 
 ## Development Utilities (`scratch/`)
 
-| Script | Purpose |
-|--------|---------|
-| `create_missing_tables.js` | Create Supabase tables |
-| `fix_missing_column.js` | Add missing columns |
-| `fix_hospital_login.js` | Debug hospital login |
-| `list_tables.js` | List all DB tables |
-| `check_all_journey_columns.js` | Verify care_journey schema |
-| `check_care_journey_columns.js` | Check specific columns |
-| `check_passwords.js` | Password validation debugging |
-| `find_valid_logins.js` | Find working logins |
-| `get_logins.js` | Retrieve login credentials |
+| Script                          | Purpose                       |
+| ------------------------------- | ----------------------------- |
+| `create_missing_tables.js`      | Create Supabase tables        |
+| `fix_missing_column.js`         | Add missing columns           |
+| `fix_hospital_login.js`         | Debug hospital login          |
+| `list_tables.js`                | List all DB tables            |
+| `check_all_journey_columns.js`  | Verify care_journey schema    |
+| `check_care_journey_columns.js` | Check specific columns        |
+| `check_passwords.js`            | Password validation debugging |
+| `find_valid_logins.js`          | Find working logins           |
+| `get_logins.js`                 | Retrieve login credentials    |
 
 ---
 

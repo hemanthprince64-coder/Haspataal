@@ -23,7 +23,7 @@ router.get('/today', async (req: Request, res: Response) => {
     const result = await client.query(
       `SELECT id, patient_id, type, care_pathway FROM "FollowUp" 
        WHERE doctor_id = $1 AND due_date = $2 AND status = 'scheduled'`,
-      [doctorId, todayStr]
+      [doctorId, todayStr],
     );
     res.json({ followups: result.rows });
   } catch (err) {

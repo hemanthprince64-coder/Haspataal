@@ -1,7 +1,7 @@
 ---
 name: e2e-runner
 description: End-to-end testing specialist for Haspataal patient and doctor flows. Writes and maintains Playwright E2E tests covering patient booking, doctor login, hospital dashboard, and auth flows. Use PROACTIVELY after implementing any new user-facing feature.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob']
 model: sonnet
 ---
 
@@ -11,14 +11,14 @@ You are an expert end-to-end testing specialist for the Haspataal healthcare pla
 
 ## Critical Journeys to Test (Priority Order)
 
-| Priority | Journey | Portal |
-|---|---|---|
-| 🔴 HIGH | Patient searches doctors by city/specialty → books appointment | haspataal.com |
-| 🔴 HIGH | Doctor logs in → views today's schedule → opens patient record | doctor.haspataal.com |
-| 🔴 HIGH | Hospital admin logs in → views IPD patient list | hospital.haspataal.com |
-| 🟡 MEDIUM | Patient registers → verifies email → completes profile | haspataal.com |
-| 🟡 MEDIUM | Doctor receives new appointment notification | doctor.haspataal.com |
-| 🟢 LOW | Admin panel loads and shows hospital approval list | admin.haspataal.com |
+| Priority  | Journey                                                        | Portal                 |
+| --------- | -------------------------------------------------------------- | ---------------------- |
+| 🔴 HIGH   | Patient searches doctors by city/specialty → books appointment | haspataal.com          |
+| 🔴 HIGH   | Doctor logs in → views today's schedule → opens patient record | doctor.haspataal.com   |
+| 🔴 HIGH   | Hospital admin logs in → views IPD patient list                | hospital.haspataal.com |
+| 🟡 MEDIUM | Patient registers → verifies email → completes profile         | haspataal.com          |
+| 🟡 MEDIUM | Doctor receives new appointment notification                   | doctor.haspataal.com   |
+| 🟢 LOW    | Admin panel loads and shows hospital approval list             | admin.haspataal.com    |
 
 ## Setup
 
@@ -75,16 +75,16 @@ test.describe('Patient Booking Flow', () => {
     const searchPage = new DoctorSearchPage(page);
 
     await searchPage.searchDoctor('delhi', 'cardiologist');
-    
+
     // Assert doctors loaded
     await expect(page.locator('[data-testid="doctor-card"]')).toHaveCount(3);
-    
+
     // Book first doctor
     await searchPage.bookFirstDoctor();
-    
+
     // Assert redirect to login or booking confirmation
     await expect(page).toHaveURL(/\/login|\/appointments/);
-    
+
     // Screenshot for audit
     await page.screenshot({ path: 'artifacts/booking-flow.png' });
   });
@@ -103,10 +103,10 @@ test('Doctor views today schedule', async ({ page }) => {
   await page.fill('[data-testid="email"]', 'doctor@test.com');
   await page.fill('[data-testid="password"]', 'TestPass123');
   await page.click('[data-testid="login-btn"]');
-  
+
   // Wait for dashboard
   await expect(page.locator("text=Today's Schedule")).toBeVisible();
-  
+
   // Assert appointment table loaded
   await expect(page.locator('[data-testid="appointment-row"]').first()).toBeVisible();
 });
@@ -144,4 +144,5 @@ test('Doctor views today schedule', async ({ page }) => {
 - Test duration < 10 minutes
 
 ---
-*Based on everything-claude-code `e2e-runner` agent (MIT license) — extended with Haspataal-specific test journeys.*
+
+_Based on everything-claude-code `e2e-runner` agent (MIT license) — extended with Haspataal-specific test journeys._

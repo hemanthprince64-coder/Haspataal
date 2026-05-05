@@ -49,17 +49,19 @@ describe('Slot Engine: bookSmartSlot', () => {
   it('should prevent booking if distributed lock is unavailable', async () => {
     (acquireDistributedLock as any).mockResolvedValue(null);
 
-    await expect(bookSmartSlot(mockData)).rejects.toThrow('Conflict: Slot is currently being processed');
+    await expect(bookSmartSlot(mockData)).rejects.toThrow(
+      'Conflict: Slot is currently being processed',
+    );
   });
 
   it('should return existing appointment if idempotency key matches', async () => {
     const mockLock = { release: vi.fn() };
     (acquireDistributedLock as any).mockResolvedValue(mockLock);
-    
+
     const mockExisting = { id: 'app-existing', status: 'BOOKED' };
     (prisma.$transaction as any).mockImplementation(async (callback) => {
       return await callback({
-        appointment: { findUnique: vi.fn().mockResolvedValue(mockExisting) }
+        appointment: { findUnique: vi.fn().mockResolvedValue(mockExisting) },
       });
     });
 
@@ -75,7 +77,7 @@ describe('Slot Engine: bookSmartSlot', () => {
     (prisma.$transaction as any).mockImplementation(async (callback) => {
       return await callback({
         appointment: { findUnique: vi.fn().mockResolvedValue(null) },
-        doctorSlotBlock: { findFirst: vi.fn().mockResolvedValue({ id: 'block-1' }) }
+        doctorSlotBlock: { findFirst: vi.fn().mockResolvedValue({ id: 'block-1' }) },
       });
     });
 
@@ -89,12 +91,12 @@ describe('Slot Engine: bookSmartSlot', () => {
 
     (prisma.$transaction as any).mockImplementation(async (callback) => {
       const tx = {
-        appointment: { 
-            findUnique: vi.fn().mockResolvedValue(null),
-            count: vi.fn().mockResolvedValue(1) 
+        appointment: {
+          findUnique: vi.fn().mockResolvedValue(null),
+          count: vi.fn().mockResolvedValue(1),
         },
         doctorSlotBlock: { findFirst: vi.fn().mockResolvedValue(null) },
-        $queryRaw: vi.fn().mockResolvedValue([{ id: 'slot-1', capacity: 1 }])
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'slot-1', capacity: 1 }]),
       };
       return await callback(tx);
     });

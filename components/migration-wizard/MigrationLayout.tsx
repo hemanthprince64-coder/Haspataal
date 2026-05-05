@@ -18,9 +18,30 @@ export function MigrationLayout() {
     // In a real app, use XLSX or PapaParse
     const mockHeaders = ['S.No', 'Patient Name', 'Mob No', 'Age', 'Address', 'Gender'];
     const mockData = [
-      { 'S.No': '1', 'Patient Name': 'Rahul Verma', 'Mob No': '9876543210', 'Age': '34', 'Address': 'Lucknow', 'Gender': 'M' },
-      { 'S.No': '2', 'Patient Name': 'Priya Singh', 'Mob No': '12345', 'Age': '28', 'Address': 'Kanpur', 'Gender': 'F' }, // Invalid phone
-      { 'S.No': '3', 'Patient Name': '', 'Mob No': '9999988888', 'Age': '45', 'Address': 'Agra', 'Gender': 'M' } // Missing name
+      {
+        'S.No': '1',
+        'Patient Name': 'Rahul Verma',
+        'Mob No': '9876543210',
+        Age: '34',
+        Address: 'Lucknow',
+        Gender: 'M',
+      },
+      {
+        'S.No': '2',
+        'Patient Name': 'Priya Singh',
+        'Mob No': '12345',
+        Age: '28',
+        Address: 'Kanpur',
+        Gender: 'F',
+      }, // Invalid phone
+      {
+        'S.No': '3',
+        'Patient Name': '',
+        'Mob No': '9999988888',
+        Age: '45',
+        Address: 'Agra',
+        Gender: 'M',
+      }, // Missing name
     ];
     setRawHeaders(mockHeaders);
     setRawData(mockData);
@@ -58,37 +79,40 @@ export function MigrationLayout() {
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-12 text-center bg-slate-50 hover:bg-slate-100 transition-colors">
               <UploadCloud className="w-16 h-16 text-slate-400 mx-auto mb-4" />
               <h3 className="font-semibold text-slate-700 text-lg">Upload Excel or CSV</h3>
-              <p className="text-sm text-slate-500 mb-6">Supports .xlsx, .xls, and .csv files up to 50MB</p>
+              <p className="text-sm text-slate-500 mb-6">
+                Supports .xlsx, .xls, and .csv files up to 50MB
+              </p>
               <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md shadow text-sm font-medium transition-colors">
                 Select File
-                <input type="file" className="hidden" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                />
               </label>
             </div>
           )}
 
           {step === 2 && (
-            <ColumnMapper 
-              headers={rawHeaders} 
-              initialMapping={mapping} 
-              previewData={rawData.slice(0, 5)} 
-              onComplete={handleMappingComplete} 
+            <ColumnMapper
+              headers={rawHeaders}
+              initialMapping={mapping}
+              previewData={rawData.slice(0, 5)}
+              onComplete={handleMappingComplete}
             />
           )}
 
           {step === 3 && (
-            <ValidationReport 
-              rawData={rawData} 
-              mapping={mapping} 
-              onComplete={handleValidationComplete} 
+            <ValidationReport
+              rawData={rawData}
+              mapping={mapping}
+              onComplete={handleValidationComplete}
               onBack={() => setStep(2)}
             />
           )}
 
-          {step === 4 && (
-            <ImportProgress 
-              validatedData={validationResults.validRows} 
-            />
-          )}
+          {step === 4 && <ImportProgress validatedData={validationResults.validRows} />}
         </CardContent>
       </Card>
     </div>

@@ -14,8 +14,8 @@ export const tenantMiddleware = async (req: Request, res: Response, next: NextFu
   const hospitalId = req.headers['x-hospital-id'] || (req as any).user?.hospital_id;
 
   if (!hospitalId) {
-    return res.status(401).json({ 
-      error: 'Tenant isolation failed: missing hospital_id context' 
+    return res.status(401).json({
+      error: 'Tenant isolation failed: missing hospital_id context',
     });
   }
 

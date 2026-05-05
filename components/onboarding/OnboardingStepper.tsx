@@ -9,9 +9,13 @@ import { ChecklistWidget } from './ChecklistWidget';
 export function OnboardingStepper() {
   const [step, setStep] = useState(0); // 0: Checklist, 1: Basics, 2: Rep, 3: Docs, 4: Login
   const [formData, setFormData] = useState({
-    hospitalName: '', city: '', type: 'clinic',
-    repName: '', repPhone: '',
-    email: '', password: ''
+    hospitalName: '',
+    city: '',
+    type: 'clinic',
+    repName: '',
+    repPhone: '',
+    email: '',
+    password: '',
   });
   const [hospitalId, setHospitalId] = useState<string | null>(null);
 
@@ -36,14 +40,14 @@ export function OnboardingStepper() {
       const res = await fetch('/api/hospitals/register', {
         method: 'POST',
         body: JSON.stringify(formData),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       const data = await res.json();
       setHospitalId(data.hospital_id);
       window.location.href = `/verification-pending?id=${data.hospital_id}`;
       return;
     }
-    setStep(s => s + 1);
+    setStep((s) => s + 1);
     handleBlur();
   };
 
@@ -53,7 +57,9 @@ export function OnboardingStepper() {
         return (
           <div className="space-y-4">
             <ChecklistWidget />
-            <Button className="w-full" onClick={handleNext}>I have these ready</Button>
+            <Button className="w-full" onClick={handleNext}>
+              I have these ready
+            </Button>
           </div>
         );
       case 1:
@@ -62,22 +68,24 @@ export function OnboardingStepper() {
             <h2 className="text-xl font-bold">Hospital Basics</h2>
             <div className="space-y-2">
               <Label>Hospital Name</Label>
-              <Input 
-                value={formData.hospitalName} 
-                onChange={e => setFormData({ ...formData, hospitalName: e.target.value })}
+              <Input
+                value={formData.hospitalName}
+                onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
                 onBlur={handleBlur}
                 placeholder="City Hospital"
               />
             </div>
             <div className="space-y-2">
               <Label>City</Label>
-              <Input 
-                value={formData.city} 
-                onChange={e => setFormData({ ...formData, city: e.target.value })}
+              <Input
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 onBlur={handleBlur}
               />
             </div>
-            <Button className="w-full mt-6" onClick={handleNext}>Next: Representative Details</Button>
+            <Button className="w-full mt-6" onClick={handleNext}>
+              Next: Representative Details
+            </Button>
           </div>
         );
       case 2:
@@ -86,32 +94,46 @@ export function OnboardingStepper() {
             <h2 className="text-xl font-bold">Representative Details</h2>
             <div className="space-y-2">
               <Label>Full Name</Label>
-              <Input 
-                value={formData.repName} 
-                onChange={e => setFormData({ ...formData, repName: e.target.value })}
+              <Input
+                value={formData.repName}
+                onChange={(e) => setFormData({ ...formData, repName: e.target.value })}
                 onBlur={handleBlur}
               />
             </div>
             <div className="space-y-2">
               <Label>Mobile Number</Label>
-              <Input 
+              <Input
                 type="tel"
-                value={formData.repPhone} 
-                onChange={e => setFormData({ ...formData, repPhone: e.target.value })}
+                value={formData.repPhone}
+                onChange={(e) => setFormData({ ...formData, repPhone: e.target.value })}
                 onBlur={handleBlur}
                 placeholder="+91"
               />
             </div>
-            <Button className="w-full mt-6" onClick={handleNext}>Next: Documents</Button>
+            <Button className="w-full mt-6" onClick={handleNext}>
+              Next: Documents
+            </Button>
           </div>
         );
       case 3:
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Required Documents</h2>
-            <DocumentUpload hospitalId="draft" docType="license" label="Hospital License" onUploadSuccess={() => {}} />
-            <DocumentUpload hospitalId="draft" docType="gst" label="GST Certificate (Optional)" onUploadSuccess={() => {}} />
-            <Button className="w-full mt-6" onClick={handleNext}>Next: Create Login</Button>
+            <DocumentUpload
+              hospitalId="draft"
+              docType="license"
+              label="Hospital License"
+              onUploadSuccess={() => {}}
+            />
+            <DocumentUpload
+              hospitalId="draft"
+              docType="gst"
+              label="GST Certificate (Optional)"
+              onUploadSuccess={() => {}}
+            />
+            <Button className="w-full mt-6" onClick={handleNext}>
+              Next: Create Login
+            </Button>
           </div>
         );
       case 4:
@@ -120,23 +142,25 @@ export function OnboardingStepper() {
             <h2 className="text-xl font-bold">Create Admin Login</h2>
             <div className="space-y-2">
               <Label>Email</Label>
-              <Input 
+              <Input
                 type="email"
-                value={formData.email} 
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 onBlur={handleBlur}
               />
             </div>
             <div className="space-y-2">
               <Label>Password</Label>
-              <Input 
+              <Input
                 type="password"
-                value={formData.password} 
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 onBlur={handleBlur}
               />
             </div>
-            <Button className="w-full mt-6" onClick={handleNext}>Complete Registration</Button>
+            <Button className="w-full mt-6" onClick={handleNext}>
+              Complete Registration
+            </Button>
           </div>
         );
     }
@@ -148,9 +172,9 @@ export function OnboardingStepper() {
         <CardContent className="p-6">
           {step > 0 && (
             <div className="w-full bg-slate-100 h-2 rounded-full mb-8 overflow-hidden">
-              <div 
-                className="bg-blue-600 h-full transition-all duration-300" 
-                style={{ width: `${(step / 4) * 100}%` }} 
+              <div
+                className="bg-blue-600 h-full transition-all duration-300"
+                style={{ width: `${(step / 4) * 100}%` }}
               />
             </div>
           )}

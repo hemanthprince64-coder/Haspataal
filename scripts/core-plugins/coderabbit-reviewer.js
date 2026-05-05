@@ -5,12 +5,12 @@
  */
 
 async function run() {
-    console.log("🐰 Starting CODERABBIT_REVIEWER...");
+  console.log('🐰 Starting CODERABBIT_REVIEWER...');
 
-    // Logic to simulate AI code review on PRs
-    // Logic to detect anti-patterns
+  // Logic to simulate AI code review on PRs
+  // Logic to detect anti-patterns
 
-    console.log("✅ CodeRabbit Review Passed (Simulation)");
+  console.log('✅ CodeRabbit Review Passed (Simulation)');
 }
 
 run().catch(console.error);

@@ -13,14 +13,18 @@ export interface HospitalConfig {
 }
 
 export class HospitalConfigService {
-  public static async savePartialConfig(hospitalId: string, step: number, configData: Partial<HospitalConfig>): Promise<void> {
+  public static async savePartialConfig(
+    hospitalId: string,
+    step: number,
+    configData: Partial<HospitalConfig>,
+  ): Promise<void> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
       // Update Hospital table with JSONB config and onboarding_pct
       const pct = Math.min(step * 16.6, 99); // 6 steps, max 99% until activated
-      
+
       await client.query(
         `
         UPDATE "Hospital" 
@@ -33,7 +37,7 @@ export class HospitalConfigService {
           )
         WHERE id = $3
         `,
-        [Math.round(pct), JSON.stringify(configData), hospitalId]
+        [Math.round(pct), JSON.stringify(configData), hospitalId],
       );
 
       // Emit partial_setup_saved
@@ -60,7 +64,7 @@ export class HospitalConfigService {
         SET onboarding_pct = 100 
         WHERE id = $1
         `,
-        [hospitalId]
+        [hospitalId],
       );
 
       // Emit hospital_activated
@@ -80,12 +84,12 @@ export class HospitalConfigService {
     try {
       const res = await client.query(
         `SELECT onboarding_pct, audit_trail->'config' as config FROM "Hospital" WHERE id = $1`,
-        [hospitalId]
+        [hospitalId],
       );
       if (res.rowCount === 0) return null;
       return {
         pct: res.rows[0].onboarding_pct,
-        config: res.rows[0].config || {}
+        config: res.rows[0].config || {},
       };
     } finally {
       client.release();

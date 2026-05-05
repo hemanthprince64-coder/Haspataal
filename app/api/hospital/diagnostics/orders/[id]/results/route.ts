@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -26,7 +30,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   const body = await req.json().catch(() => null);
   const parsed = resultSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const data = parsed.data;

@@ -10,7 +10,7 @@ async function processOutbox() {
   const events = await prisma.outboxEvent.findMany({
     where: { processed: false },
     take: 50,
-    orderBy: { createdAt: 'asc' }
+    orderBy: { createdAt: 'asc' },
   });
 
   for (const event of events) {
@@ -25,29 +25,29 @@ async function processOutbox() {
         prisma.eventLog.create({
           data: {
             eventType: event.eventType,
-            payload: event.payload
-          }
+            payload: event.payload,
+          },
         }),
         prisma.outboxEvent.update({
           where: { id: event.id },
-          data: { 
-            processed: true, 
-            processedAt: new Date() 
-          }
-        })
+          data: {
+            processed: true,
+            processedAt: new Date(),
+          },
+        }),
       ]);
-      
+
       console.log(`Relayed event: ${event.id}`);
     } catch (error) {
       console.error(`Failed to relay event ${event.id}:`, error);
-      
+
       // Update error count for dead-letter handling
       await prisma.outboxEvent.update({
         where: { id: event.id },
-        data: { 
+        data: {
           errorCount: { increment: 1 },
-          lastError: (error as Error).message
-        }
+          lastError: (error as Error).message,
+        },
       });
     }
   }

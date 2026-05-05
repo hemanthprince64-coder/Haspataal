@@ -4,16 +4,17 @@ Haspataal is a comprehensive B2B2C platform connecting hospitals, doctors, and p
 
 ## Project Structure
 
--   `haspataal-in`: The main Next.js web application (Patient Portal, Hospital Admin, Super Admin).
--   `haspataal-mobile`: The React Native (Expo) mobile application for patients.
--   `workers`: Background job processors (e.g., notifications).
+- `haspataal-in`: The main Next.js web application (Patient Portal, Hospital Admin, Super Admin).
+- `haspataal-mobile`: The React Native (Expo) mobile application for patients.
+- `workers`: Background job processors (e.g., notifications).
 
 ## 🚀 Getting Started
 
 ### Prerequisites
--   Node.js 18+
--   PostgreSQL
--   Redis (for background jobs)
+
+- Node.js 18+
+- PostgreSQL
+- Redis (for background jobs)
 
 ### 1. Web Application (`haspataal-in`)
 
@@ -54,10 +55,11 @@ Haspataal is a comprehensive B2B2C platform connecting hospitals, doctors, and p
 
 ## 🛠️ Key Features
 
--   **Hospital Management**: Manage doctors, staff, and appointments.
--   **Patient Portal**: Book appointments, view health records.
--   **ABDM Integration**: ABHA linking and consent management (Sandbox).
--   **Analytics**: Admin and Hospital dashboards powerd by Recharts and PostHog.
+- **Hospital Management**: Manage doctors, staff, and appointments.
+- **Patient Portal**: Book appointments, view health records.
+- **ABDM Integration**: ABHA linking and consent management (Sandbox).
+- **Analytics**: Admin and Hospital dashboards powerd by Recharts and PostHog.
 
 ## 📚 Documentation
--   [ABDM Integration Guide](./haspataal-in/ABDM_GUIDE.md)
+
+- [ABDM Integration Guide](./haspataal-in/ABDM_GUIDE.md)

@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Role } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 const permissionSchema = z.object({
   role: z.nativeEnum(Role),
@@ -39,7 +43,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = permissionSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const data = parsed.data;
@@ -78,7 +85,10 @@ export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = permissionSchema.extend({ id: z.string().min(1) }).safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const { id, ...data } = parsed.data;
@@ -117,7 +127,9 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json().catch(() => ({ id: '' }));
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-  const result = await prisma.rolePermission.deleteMany({ where: { id, hospitalId: access.hospitalId } });
+  const result = await prisma.rolePermission.deleteMany({
+    where: { id, hospitalId: access.hospitalId },
+  });
   await writeAuditLog({
     hospitalId: access.hospitalId,
     userId: access.user.id,

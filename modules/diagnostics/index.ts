@@ -11,10 +11,14 @@ export class DiagnosticsService {
     console.log(`[DiagnosticsService] Result entered for order ${orderId}`);
 
     // Emit event. Phase 8 (Notification Engine) will listen to this to send WhatsApp
-    await EventService.publish('lab_result_ready', {
-      order_id: orderId,
-      result: resultData
-    }, hospitalId);
+    await EventService.publish(
+      'lab_result_ready',
+      {
+        order_id: orderId,
+        result: resultData,
+      },
+      hospitalId,
+    );
 
     return { success: true };
   }
@@ -31,7 +35,11 @@ router.post('/order', async (req: Request, res: Response) => {
 router.post('/result', async (req: Request, res: Response) => {
   try {
     const { orderId, resultData } = req.body;
-    const result = await DiagnosticsService.enterResult((req as any).hospital_id, orderId, resultData);
+    const result = await DiagnosticsService.enterResult(
+      (req as any).hospital_id,
+      orderId,
+      resultData,
+    );
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Failed to save result' });

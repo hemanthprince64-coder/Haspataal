@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 const admissionSchema = z.object({
   patientId: z.string().min(1),
@@ -51,42 +55,54 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = admissionSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const data = parsed.data;
-  const admission = await prisma.$transaction(async (tx) => {
-    if (data.bedId) {
-      const bed = await tx.bed.findFirst({ where: { id: data.bedId, hospitalId: access.hospitalId, status: 'AVAILABLE' } });
-      if (!bed) throw new Error('BED_NOT_AVAILABLE');
-    }
+  const admission = await prisma
+    .$transaction(async (tx) => {
+      if (data.bedId) {
+        const bed = await tx.bed.findFirst({
+          where: { id: data.bedId, hospitalId: access.hospitalId, status: 'AVAILABLE' },
+        });
+        if (!bed) throw new Error('BED_NOT_AVAILABLE');
+      }
 
-    const created = await tx.admission.create({
-      data: {
-        hospitalId: access.hospitalId,
-        patientId: data.patientId,
-        bedId: data.bedId ?? null,
-        attendingDoctorId: data.attendingDoctorId ?? null,
-        admissionNumber: admissionNumber(),
-        reason: data.reason,
-        expectedDischargeAt: data.expectedDischargeAt ? new Date(data.expectedDischargeAt) : null,
-        dailyBedCharge: data.dailyBedCharge,
-        payload: (data.payload ?? {}) as any,
-      },
-      include: { patient: true, bed: true },
-    });
-
-    if (data.bedId) {
-      await tx.bed.update({
-        where: { id: data.bedId },
-        data: { status: 'OCCUPIED', patientId: data.patientId, admittedAt: created.admittedAt, expectedDischargeAt: created.expectedDischargeAt },
+      const created = await tx.admission.create({
+        data: {
+          hospitalId: access.hospitalId,
+          patientId: data.patientId,
+          bedId: data.bedId ?? null,
+          attendingDoctorId: data.attendingDoctorId ?? null,
+          admissionNumber: admissionNumber(),
+          reason: data.reason,
+          expectedDischargeAt: data.expectedDischargeAt ? new Date(data.expectedDischargeAt) : null,
+          dailyBedCharge: data.dailyBedCharge,
+          payload: (data.payload ?? {}) as any,
+        },
+        include: { patient: true, bed: true },
       });
-    }
-    return created;
-  }).catch((error) => {
-    if (error instanceof Error && error.message === 'BED_NOT_AVAILABLE') return null;
-    throw error;
-  });
+
+      if (data.bedId) {
+        await tx.bed.update({
+          where: { id: data.bedId },
+          data: {
+            status: 'OCCUPIED',
+            patientId: data.patientId,
+            admittedAt: created.admittedAt,
+            expectedDischargeAt: created.expectedDischargeAt,
+          },
+        });
+      }
+      return created;
+    })
+    .catch((error) => {
+      if (error instanceof Error && error.message === 'BED_NOT_AVAILABLE') return null;
+      throw error;
+    });
 
   if (!admission) return NextResponse.json({ error: 'Bed is not available' }, { status: 409 });
 

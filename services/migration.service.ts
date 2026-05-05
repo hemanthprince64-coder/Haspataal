@@ -9,9 +9,12 @@ export class MigrationService {
    * If any row in the batch triggers a DB error (e.g. strict constraint violation),
    * the entire batch rolls back, but it doesn't crash the migration process.
    */
-  public static async importPatientsBatch(hospitalId: string, mappedRows: any[]): Promise<{ inserted: number, duplicates: number, errors: number }> {
+  public static async importPatientsBatch(
+    hospitalId: string,
+    mappedRows: any[],
+  ): Promise<{ inserted: number; duplicates: number; errors: number }> {
     if (mappedRows.length === 0) return { inserted: 0, duplicates: 0, errors: 0 };
-    
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -37,7 +40,7 @@ export class MigrationService {
             ON CONFLICT DO NOTHING
             RETURNING id;
             `,
-            [hospitalId, row.name, row.phone || null, row.dob || null, row.abha_id || null]
+            [hospitalId, row.name, row.phone || null, row.dob || null, row.abha_id || null],
           );
 
           if (result.rowCount === 0) {
@@ -56,7 +59,6 @@ export class MigrationService {
 
       await client.query('COMMIT');
       return { inserted: insertedCount, duplicates: duplicateCount, errors: 0 };
-
     } catch (error) {
       // Entire batch failed
       await client.query('ROLLBACK');
@@ -70,7 +72,15 @@ export class MigrationService {
   /**
    * Finalizes the migration session and emits the event.
    */
-  public static async finalizeMigration(hospitalId: string, totalRows: number, sourceType: string): Promise<void> {
-    await EventService.publish('data_imported', { row_count: totalRows, source_type: sourceType }, hospitalId);
+  public static async finalizeMigration(
+    hospitalId: string,
+    totalRows: number,
+    sourceType: string,
+  ): Promise<void> {
+    await EventService.publish(
+      'data_imported',
+      { row_count: totalRows, source_type: sourceType },
+      hospitalId,
+    );
   }
 }

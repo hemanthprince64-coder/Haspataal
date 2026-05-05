@@ -27,7 +27,7 @@ const SOFT_DELETE_MODELS = [
 export interface ExtendedPrismaClient extends PrismaClient {
   withAuth: (
     session: any,
-    callback: (tx: Prisma.TransactionClient) => Promise<any>
+    callback: (tx: Prisma.TransactionClient) => Promise<any>,
   ) => Promise<any>;
 }
 
@@ -46,7 +46,7 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
         });
         // Set the session context for Postgres RLS policies
         await tx.$executeRawUnsafe(
-          `SET LOCAL request.jwt.claims = '${claims.replace(/'/g, "''")}'`
+          `SET LOCAL request.jwt.claims = '${claims.replace(/'/g, "''")}'`,
         );
       }
       return callback(tx);
@@ -54,51 +54,45 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
   };
 
   // Middleware: intercept delete → soft-delete
-  (client as any).$use(
-    async (params: any, next: (params: any) => Promise<any>) => {
-      if (SOFT_DELETE_MODELS.includes(params.model)) {
-        // Convert delete to update with deletedAt
-        if (params.action === 'delete') {
-          params.action = 'update';
+  (client as any).$use(async (params: any, next: (params: any) => Promise<any>) => {
+    if (SOFT_DELETE_MODELS.includes(params.model)) {
+      // Convert delete to update with deletedAt
+      if (params.action === 'delete') {
+        params.action = 'update';
+        params.args.data = { deletedAt: new Date() };
+      }
+      if (params.action === 'deleteMany') {
+        params.action = 'updateMany';
+        if (params.args.data) {
+          params.args.data.deletedAt = new Date();
+        } else {
           params.args.data = { deletedAt: new Date() };
         }
-        if (params.action === 'deleteMany') {
-          params.action = 'updateMany';
-          if (params.args.data) {
-            params.args.data.deletedAt = new Date();
-          } else {
-            params.args.data = { deletedAt: new Date() };
-          }
-        }
+      }
 
-        // Auto-filter soft-deleted rows from reads.
-        // `findUnique` only accepts unique fields, so convert it to `findFirst`
-        // before injecting the soft-delete predicate.
-        if (params.action === 'findUnique') {
-          params.action = 'findFirst';
-        }
-        if (params.action === 'findUniqueOrThrow') {
-          params.action = 'findFirstOrThrow';
-        }
+      // Auto-filter soft-deleted rows from reads.
+      // `findUnique` only accepts unique fields, so convert it to `findFirst`
+      // before injecting the soft-delete predicate.
+      if (params.action === 'findUnique') {
+        params.action = 'findFirst';
+      }
+      if (params.action === 'findUniqueOrThrow') {
+        params.action = 'findFirstOrThrow';
+      }
 
-        if (
-          ['findFirst', 'findFirstOrThrow', 'findMany', 'count'].includes(
-            params.action
-          )
-        ) {
-          if (!params.args) params.args = {};
-          if (params.args.where) {
-            if (params.args.where.deletedAt === undefined) {
-              params.args.where.deletedAt = null;
-            }
-          } else {
-            params.args.where = { deletedAt: null };
+      if (['findFirst', 'findFirstOrThrow', 'findMany', 'count'].includes(params.action)) {
+        if (!params.args) params.args = {};
+        if (params.args.where) {
+          if (params.args.where.deletedAt === undefined) {
+            params.args.where.deletedAt = null;
           }
+        } else {
+          params.args.where = { deletedAt: null };
         }
       }
-      return next(params);
     }
-  );
+    return next(params);
+  });
 
   return client;
 };

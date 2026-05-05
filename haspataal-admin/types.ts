@@ -1,1 +1,7 @@
-export type UserRole = 'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'HOSPITAL_ADMIN' | 'PLATFORM_ADMIN' | 'SUPER_ADMIN';
+export type UserRole =
+  | 'PATIENT'
+  | 'DOCTOR'
+  | 'RECEPTIONIST'
+  | 'HOSPITAL_ADMIN'
+  | 'PLATFORM_ADMIN'
+  | 'SUPER_ADMIN';

@@ -52,7 +52,11 @@ export async function POST(req: NextRequest) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = gatewaySchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });
@@ -64,7 +68,10 @@ export async function POST(req: NextRequest) {
     encryptedConfig = Object.keys(config).length ? encrypt(JSON.stringify(config)) : null;
   } catch (error) {
     if (error instanceof Error && error.message === 'ENCRYPTION_KEY_REQUIRED') {
-      return NextResponse.json({ error: 'ENCRYPTION_KEY must be configured with at least 32 characters' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'ENCRYPTION_KEY must be configured with at least 32 characters' },
+        { status: 500 },
+      );
     }
     throw error;
   }

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { FlaskConical, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { FlaskConical, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface LabOrder {
   id: string;
   patientName: string;
   testName: string;
   orderedAt: string;
-  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CRITICAL";
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CRITICAL';
   result?: string;
 }
 
@@ -17,9 +17,12 @@ export default function DiagnosticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/hospital/diagnostics/orders")
+    fetch('/api/hospital/diagnostics/orders')
       .then((r) => r.json())
-      .then((data) => { setOrders(data.orders ?? []); setLoading(false); })
+      .then((data) => {
+        setOrders(data.orders ?? []);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -43,29 +46,43 @@ export default function DiagnosticsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {["Patient", "Test", "Ordered At", "Status", "Result"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500">{h}</th>
+              {['Patient', 'Test', 'Ordered At', 'Status', 'Result'].map((h) => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500">
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Loading orders...</td></tr>
-            ) : orders.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">No lab orders found.</td></tr>
-            ) : orders.map((o) => (
-              <tr key={o.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{o.patientName}</td>
-                <td className="px-4 py-3 text-gray-700">{o.testName}</td>
-                <td className="px-4 py-3 text-gray-500">{new Date(o.orderedAt).toLocaleString("en-IN")}</td>
-                <td className="px-4 py-3">
-                  <span className="flex items-center gap-1 text-xs font-medium">
-                    {statusIcon[o.status]} {o.status}
-                  </span>
+              <tr>
+                <td colSpan={5} className="text-center py-8 text-gray-400">
+                  Loading orders...
                 </td>
-                <td className="px-4 py-3 text-gray-600">{o.result ?? "—"}</td>
               </tr>
-            ))}
+            ) : orders.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center py-8 text-gray-400">
+                  No lab orders found.
+                </td>
+              </tr>
+            ) : (
+              orders.map((o) => (
+                <tr key={o.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">{o.patientName}</td>
+                  <td className="px-4 py-3 text-gray-700">{o.testName}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {new Date(o.orderedAt).toLocaleString('en-IN')}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="flex items-center gap-1 text-xs font-medium">
+                      {statusIcon[o.status]} {o.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{o.result ?? '—'}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

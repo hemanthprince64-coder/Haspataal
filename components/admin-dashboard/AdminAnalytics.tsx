@@ -64,9 +64,7 @@ export function AdminAnalytics() {
                 <Target className="w-5 h-5 text-green-600" />
               </div>
             </div>
-            <div className="mt-4 text-xs text-slate-400">
-              Patients returning for follow-ups
-            </div>
+            <div className="mt-4 text-xs text-slate-400">Patients returning for follow-ups</div>
           </CardContent>
         </Card>
 
@@ -81,9 +79,7 @@ export function AdminAnalytics() {
                 <Activity className="w-5 h-5 text-purple-600" />
               </div>
             </div>
-            <div className="mt-4 text-xs text-slate-400">
-              Prescriptions via portal
-            </div>
+            <div className="mt-4 text-xs text-slate-400">Prescriptions via portal</div>
           </CardContent>
         </Card>
       </div>

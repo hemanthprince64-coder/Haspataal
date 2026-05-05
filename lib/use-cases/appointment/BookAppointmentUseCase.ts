@@ -8,7 +8,10 @@
 // ============================================================
 
 import { BookingStatus } from '../../../types';
-import type { IAppointmentRepository, AppointmentRecord } from '../../repositories/interfaces/IAppointmentRepository';
+import type {
+  IAppointmentRepository,
+  AppointmentRecord,
+} from '../../repositories/interfaces/IAppointmentRepository';
 import type { IPatientRepository } from '../../repositories/interfaces/IPatientRepository';
 import logger from '../../logger';
 
@@ -43,7 +46,7 @@ export class ConcurrencyError extends Error {
 export class BookAppointmentUseCase {
   constructor(
     private appointmentRepo: IAppointmentRepository,
-    private patientRepo: IPatientRepository
+    private patientRepo: IPatientRepository,
   ) {}
 
   async execute(input: BookAppointmentInput): Promise<BookAppointmentResult> {
@@ -65,7 +68,7 @@ export class BookAppointmentUseCase {
         date,
         slot,
       },
-      'Attempting transactional appointment booking'
+      'Attempting transactional appointment booking',
     );
 
     // 1. Normalize date
@@ -96,12 +99,12 @@ export class BookAppointmentUseCase {
           date: targetDate,
           slot,
           status: bookingStatus,
-        }
+        },
       );
 
       logger.info(
         { action: 'booking_created', appointmentId: appointment.id },
-        'Successfully booked appointment'
+        'Successfully booked appointment',
       );
 
       return { appointment };
@@ -110,14 +113,14 @@ export class BookAppointmentUseCase {
       if (error.code === 'P2002') {
         logger.warn(
           { action: 'booking_conflict', doctorId, slot },
-          'Race condition double-booking prevented by Unique Constraint'
+          'Race condition double-booking prevented by Unique Constraint',
         );
         throw new ConcurrencyError();
       }
 
       logger.error(
         { action: 'booking_transaction_failed', error: error.message },
-        'Booking transaction failed'
+        'Booking transaction failed',
       );
       throw error;
     }

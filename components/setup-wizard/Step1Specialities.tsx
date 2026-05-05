@@ -4,16 +4,29 @@ import { Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPECIALITIES_LIST = [
-  'General Medicine', 'Orthopedics', 'Cardiology', 'Gynecology', 
-  'Pediatrics', 'ENT', 'Dermatology', 'Neurology', 'Oncology'
+  'General Medicine',
+  'Orthopedics',
+  'Cardiology',
+  'Gynecology',
+  'Pediatrics',
+  'ENT',
+  'Dermatology',
+  'Neurology',
+  'Oncology',
 ];
 
-export function Step1Specialities({ config, onSave }: { config: any, onSave: (data: any) => void }) {
+export function Step1Specialities({
+  config,
+  onSave,
+}: {
+  config: any;
+  onSave: (data: any) => void;
+}) {
   const [selected, setSelected] = useState<string[]>(config.specialities || []);
 
   useEffect(() => {
     // Smart Defaults (assuming Phase 2 saved it as a general hospital)
-    setSelected(prev => {
+    setSelected((prev) => {
       if (prev.length === 0) {
         return ['General Medicine', 'Orthopedics', 'Gynecology', 'Pediatrics'];
       }
@@ -22,9 +35,7 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
   }, []);
 
   const toggleSpec = (spec: string) => {
-    setSelected(prev => 
-      prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec]
-    );
+    setSelected((prev) => (prev.includes(spec) ? prev.filter((s) => s !== spec) : [...prev, spec]));
   };
 
   return (
@@ -40,7 +51,7 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {SPECIALITIES_LIST.map(spec => (
+        {SPECIALITIES_LIST.map((spec) => (
           <button
             key={spec}
             type="button"
@@ -56,9 +67,10 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
             aria-pressed={selected.includes(spec)}
             aria-label={`Select ${spec}${selected.includes(spec) ? ' (selected)' : ''}`}
             className={`p-4 border rounded-lg cursor-pointer transition-all text-left
-              ${selected.includes(spec)
-                ? 'border-blue-500 bg-blue-50 text-blue-800 font-medium'
-                : 'border-slate-200 hover:border-blue-300'
+              ${
+                selected.includes(spec)
+                  ? 'border-blue-500 bg-blue-50 text-blue-800 font-medium'
+                  : 'border-slate-200 hover:border-blue-300'
               }`}
           >
             {spec}
@@ -67,10 +79,13 @@ export function Step1Specialities({ config, onSave }: { config: any, onSave: (da
       </div>
 
       <div className="flex justify-end pt-6">
-        <Button onClick={() => {
-          onSave(selected);
-          toast.success("Specialities saved successfully");
-        }} disabled={selected.length === 0}>
+        <Button
+          onClick={() => {
+            onSave(selected);
+            toast.success('Specialities saved successfully');
+          }}
+          disabled={selected.length === 0}
+        >
           Save & Continue
         </Button>
       </div>

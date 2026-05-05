@@ -6,7 +6,7 @@ async function checkDb() {
     const journeys = await prisma.careJourney.findMany({
       take: 5,
       orderBy: { createdAt: 'desc' },
-      select: { visitId: true, conditionSimple: true, createdAt: true }
+      select: { visitId: true, conditionSimple: true, createdAt: true },
     });
     console.log(JSON.stringify(journeys, null, 2));
   } catch (error) {

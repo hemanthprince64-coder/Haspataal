@@ -11,7 +11,7 @@ export function VerificationPending({ hospitalId }: { hospitalId: string }) {
       try {
         const res = await fetch(`/api/hospitals/${hospitalId}/onboarding-status`);
         const data = await res.json();
-        
+
         if (data.status === 'verified') {
           setStatus('verified');
           clearInterval(interval);
@@ -48,14 +48,16 @@ export function VerificationPending({ hospitalId }: { hospitalId: string }) {
           {status === 'pending' && (
             <div className="space-y-4">
               <p className="text-slate-600 text-sm">
-                Your hospital profile and documents are currently being reviewed by the Haspataal Trust & Safety team.
+                Your hospital profile and documents are currently being reviewed by the Haspataal
+                Trust & Safety team.
               </p>
               <div className="flex items-center justify-center gap-2 text-sm text-blue-600 bg-blue-50 py-3 rounded-lg border border-blue-100">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Polling for updates...</span>
               </div>
               <p className="text-xs text-slate-500 mt-6">
-                HMS Access is blocked until verification is confirmed. You will be automatically redirected.
+                HMS Access is blocked until verification is confirmed. You will be automatically
+                redirected.
               </p>
             </div>
           )}

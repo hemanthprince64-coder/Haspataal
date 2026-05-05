@@ -2,12 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { invoiceNumber, summarizeInvoice } from '@/lib/billing/invoice';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 const lineSchema = z.object({
   serviceId: z.string().optional().nullable(),
   description: z.string().min(1),
-  type: z.enum(['CONSULTATION', 'PROCEDURE', 'LAB_TEST', 'IMAGING', 'BED_CHARGE', 'MEDICINE', 'PACKAGE']),
+  type: z.enum([
+    'CONSULTATION',
+    'PROCEDURE',
+    'LAB_TEST',
+    'IMAGING',
+    'BED_CHARGE',
+    'MEDICINE',
+    'PACKAGE',
+  ]),
   quantity: z.number().positive().default(1),
   unitPrice: z.number().nonnegative(),
   gstRate: z.number().min(0).max(28).default(0),
@@ -37,7 +49,11 @@ export async function GET(req: NextRequest) {
   const status = req.nextUrl.searchParams.get('status') ?? undefined;
   const invoices = await prisma.invoice.findMany({
     where: { hospitalId: access.hospitalId, ...(status ? { status } : {}) },
-    include: { patient: { select: { id: true, name: true, phone: true } }, lineItems: true, payments: true },
+    include: {
+      patient: { select: { id: true, name: true, phone: true } },
+      lineItems: true,
+      payments: true,
+    },
     orderBy: { createdAt: 'desc' },
     take: 100,
   });
@@ -55,7 +71,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = invoiceSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const data = parsed.data;

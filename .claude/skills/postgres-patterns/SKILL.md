@@ -1,8 +1,11 @@
 # Postgres Patterns — Haspataal
+
 # Adapted from everything-claude-code `postgres-patterns` skill (MIT license)
 
 ## When to Use This Skill
+
 Invoke this skill before:
+
 - Writing any SQL migration (`scripts/*.sql`)
 - Creating a new Prisma model that stores patient or hospital data
 - Debugging slow API responses (likely a missing index)
@@ -13,6 +16,7 @@ Invoke this skill before:
 ## 1. Indexing Rules (NEVER skip these)
 
 ### Always index foreign keys
+
 ```sql
 -- Every time you add a foreign key, add an index
 CREATE INDEX idx_appointments_doctor_id ON appointments(doctor_id);
@@ -21,6 +25,7 @@ CREATE INDEX idx_appointments_hospital_id ON appointments(hospital_id);
 ```
 
 ### Always index RLS policy columns
+
 ```sql
 -- hospital_id is used in every RLS policy — it MUST be indexed
 CREATE INDEX idx_patients_hospital_id ON patients(hospital_id);
@@ -28,6 +33,7 @@ CREATE INDEX idx_appointments_hospital_id ON appointments(hospital_id);
 ```
 
 ### Composite indexes — equality first, range last
+
 ```sql
 -- For "get appointments for hospital, ordered by date"
 CREATE INDEX idx_appt_hospital_date ON appointments(hospital_id, scheduled_at DESC);
@@ -36,12 +42,14 @@ CREATE INDEX idx_appt_hospital_date ON appointments(hospital_id, scheduled_at DE
 ```
 
 ### Partial indexes for soft deletes
+
 ```sql
 -- Only index active records
 CREATE INDEX idx_doctors_active ON doctors(hospital_id) WHERE deleted_at IS NULL;
 ```
 
 ### Covering indexes (avoid table lookups)
+
 ```sql
 -- Include columns used in SELECT to avoid heap fetch
 CREATE INDEX idx_appt_cover ON appointments(hospital_id)
@@ -52,14 +60,14 @@ CREATE INDEX idx_appt_cover ON appointments(hospital_id)
 
 ## 2. Data Types (Critical for Haspataal)
 
-| Data | Use | Never Use |
-|---|---|---|
-| IDs | `UUID DEFAULT gen_random_uuid()` | `SERIAL`, `int` |
-| Money / Fees | `NUMERIC(10,2)` | `FLOAT`, `REAL` |
-| Timestamps | `TIMESTAMPTZ` | `TIMESTAMP` (no TZ) |
-| Status fields | `TEXT` + `CHECK` constraint | Unconstrained `VARCHAR` |
-| Boolean flags | `BOOLEAN DEFAULT false` | `SMALLINT` 0/1 |
-| Free text | `TEXT` | `VARCHAR(255)` (unnecessary limit) |
+| Data          | Use                              | Never Use                          |
+| ------------- | -------------------------------- | ---------------------------------- |
+| IDs           | `UUID DEFAULT gen_random_uuid()` | `SERIAL`, `int`                    |
+| Money / Fees  | `NUMERIC(10,2)`                  | `FLOAT`, `REAL`                    |
+| Timestamps    | `TIMESTAMPTZ`                    | `TIMESTAMP` (no TZ)                |
+| Status fields | `TEXT` + `CHECK` constraint      | Unconstrained `VARCHAR`            |
+| Boolean flags | `BOOLEAN DEFAULT false`          | `SMALLINT` 0/1                     |
+| Free text     | `TEXT`                           | `VARCHAR(255)` (unnecessary limit) |
 
 ```sql
 -- Correct Haspataal appointment schema pattern
@@ -94,6 +102,7 @@ LIMIT 20;
 ```
 
 In Prisma:
+
 ```typescript
 // Cursor-based pagination for appointments
 const appointments = await prisma.appointment.findMany({
@@ -102,7 +111,7 @@ const appointments = await prisma.appointment.findMany({
   skip: cursor ? 1 : 0,
   cursor: cursor ? { id: cursor } : undefined,
   orderBy: { scheduledAt: 'desc' },
-  select: { id: true, patientId: true, doctorId: true, scheduledAt: true, status: true }
+  select: { id: true, patientId: true, doctorId: true, scheduledAt: true, status: true },
 });
 ```
 
@@ -164,6 +173,7 @@ LIMIT 20;
 ```
 
 Flag for review if output contains:
+
 - `Seq Scan` on a large table (> 10k rows)
 - `cost=` numbers > 1000 on critical paths
 - `rows` estimates wildly off from `actual rows`
@@ -204,11 +214,12 @@ await prisma.appointmentSlot.createMany({ data: slots });
 - [ ] No `SELECT *` in Prisma — always use `select:` field list
 - [ ] No `OFFSET` pagination — use cursor-based
 - [ ] No `FLOAT` for money — use `NUMERIC(10,2)`
-- [ ] No `TIMESTAMP` — always `TIMESTAMPTZ`  
+- [ ] No `TIMESTAMP` — always `TIMESTAMPTZ`
 - [ ] No foreign keys without index
 - [ ] No transactions that span external API calls
 - [ ] No RLS policy calling `auth.uid()` without `(SELECT auth.uid())`
 - [ ] No `GRANT ALL` to application user
 
 ---
-*Adapted from everything-claude-code `postgres-patterns` + Supabase postgres-best-practices (MIT license)*
+
+_Adapted from everything-claude-code `postgres-patterns` + Supabase postgres-best-practices (MIT license)_

@@ -5,7 +5,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   DIRECT_URL: z.string().url(),
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
-  NEXTAUTH_SECRET: z.string().min(32, "NEXTAUTH_SECRET must be at least 32 characters for production"),
+  NEXTAUTH_SECRET: z
+    .string()
+    .min(32, 'NEXTAUTH_SECRET must be at least 32 characters for production'),
   AUTH_SERVICE_PORT: z.string().default('4001'),
   API_GATEWAY_PORT: z.string().default('4002'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

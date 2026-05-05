@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 
-export function DiagnosisSearch({ value, onChange }: { value: string, onChange: (v: string) => void }) {
+export function DiagnosisSearch({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
   const [query, setQuery] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,9 +28,9 @@ export function DiagnosisSearch({ value, onChange }: { value: string, onChange: 
 
   return (
     <div className="relative">
-      <Input 
+      <Input
         value={query}
-        onChange={e => {
+        onChange={(e) => {
           setQuery(e.target.value);
           onChange(e.target.value);
           setIsOpen(e.target.value.length >= 2);
@@ -34,9 +40,11 @@ export function DiagnosisSearch({ value, onChange }: { value: string, onChange: 
       />
       {isOpen && (
         <div className="absolute z-10 w-full bg-white border shadow-lg mt-1 rounded-md">
-          {MOCK_ICD.filter(i => i.desc.toLowerCase().includes(query.toLowerCase()) || i.code.includes(query)).map((r, i) => (
-            <div 
-              key={i} 
+          {MOCK_ICD.filter(
+            (i) => i.desc.toLowerCase().includes(query.toLowerCase()) || i.code.includes(query),
+          ).map((r, i) => (
+            <div
+              key={i}
               className="p-2 cursor-pointer text-sm hover:bg-slate-50 flex justify-between"
               onClick={() => handleSelect(`${r.desc} (${r.code})`)}
             >
@@ -46,12 +54,12 @@ export function DiagnosisSearch({ value, onChange }: { value: string, onChange: 
           ))}
         </div>
       )}
-      
+
       <div className="flex gap-2 mt-2">
         <span className="text-xs text-slate-500 py-1">Favorites:</span>
-        {FAVS.map(f => (
-          <span 
-            key={f} 
+        {FAVS.map((f) => (
+          <span
+            key={f}
             className="text-xs bg-slate-100 hover:bg-slate-200 cursor-pointer px-2 py-1 rounded text-slate-700"
             onClick={() => handleSelect(f)}
           >

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 const notificationSchema = z.object({
   patientId: z.string().optional().nullable(),
@@ -43,7 +47,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = notificationSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const data = parsed.data;
@@ -82,9 +89,18 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const parsed = z.object({ id: z.string(), status: z.enum(['PENDING', 'SENT', 'FAILED', 'CANCELLED']), failureReason: z.string().optional() }).safeParse(body);
+  const parsed = z
+    .object({
+      id: z.string(),
+      status: z.enum(['PENDING', 'SENT', 'FAILED', 'CANCELLED']),
+      failureReason: z.string().optional(),
+    })
+    .safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
   }
 
   const notification = await prisma.notification.updateMany({

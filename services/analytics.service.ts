@@ -22,7 +22,7 @@ export class AnalyticsService {
       await client.query(
         `INSERT INTO "AnalyticsDaily" (hospital_id, date)
          VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-        [hospital_id, date]
+        [hospital_id, date],
       );
 
       switch (event_type) {
@@ -30,7 +30,7 @@ export class AnalyticsService {
           await client.query(
             `UPDATE "AnalyticsDaily" SET revenue = revenue + $1, updated_at = now()
              WHERE hospital_id = $2 AND date = $3`,
-            [metadata.amount || 0, hospital_id, date]
+            [metadata.amount || 0, hospital_id, date],
           );
           break;
 
@@ -39,7 +39,7 @@ export class AnalyticsService {
           await client.query(
             `UPDATE "AnalyticsDaily" SET patient_count = patient_count + 1, updated_at = now()
              WHERE hospital_id = $2 AND date = $3`,
-            [hospital_id, date]
+            [hospital_id, date],
           );
           break;
 
@@ -47,7 +47,7 @@ export class AnalyticsService {
           await client.query(
             `UPDATE "AnalyticsDaily" SET prescriptions_count = prescriptions_count + 1, updated_at = now()
              WHERE hospital_id = $2 AND date = $3`,
-            [hospital_id, date]
+            [hospital_id, date],
           );
           // Also track per-doctor adoption
           if (metadata.doctor_id) {
@@ -56,7 +56,7 @@ export class AnalyticsService {
                VALUES ($1, $2, $3, 1)
                ON CONFLICT (hospital_id, doctor_id, date) 
                DO UPDATE SET prescriptions_count = "DoctorAdoption".prescriptions_count + 1`,
-              [hospital_id, metadata.doctor_id, date]
+              [hospital_id, metadata.doctor_id, date],
             );
           }
           break;
@@ -65,7 +65,7 @@ export class AnalyticsService {
           await client.query(
             `UPDATE "AnalyticsDaily" SET followups_scheduled = followups_scheduled + 1, updated_at = now()
              WHERE hospital_id = $2 AND date = $3`,
-            [hospital_id, date]
+            [hospital_id, date],
           );
           break;
 
@@ -73,7 +73,7 @@ export class AnalyticsService {
           await client.query(
             `UPDATE "AnalyticsDaily" SET followups_completed = followups_completed + 1, updated_at = now()
              WHERE hospital_id = $2 AND date = $3`,
-            [hospital_id, date]
+            [hospital_id, date],
           );
           break;
       }
@@ -93,12 +93,12 @@ export class AnalyticsService {
   public static async sendDailySummary(hospitalId: string) {
     const date = new Date().toISOString().split('T')[0];
     const client = await pool.connect();
-    
+
     try {
       await client.query(`SET LOCAL app.hospital_id = $1`, [hospitalId]);
       const res = await client.query(
         `SELECT * FROM "AnalyticsDaily" WHERE hospital_id = $1 AND date = $2`,
-        [hospitalId, date]
+        [hospitalId, date],
       );
 
       if (res.rowCount > 0) {
@@ -110,8 +110,8 @@ export class AnalyticsService {
           variables: {
             patient_name: 'Admin',
             amount: stats.revenue,
-            receipt_url: `Summary: ${stats.patient_count} patients, ${stats.followups_completed} followups.`
-          }
+            receipt_url: `Summary: ${stats.patient_count} patients, ${stats.followups_completed} followups.`,
+          },
         });
       }
     } finally {

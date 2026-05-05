@@ -24,3 +24,8 @@ pnpm-lock.yaml
 # IDE
 .vscode/
 .idea/
+
+# Internal
+.kilo/
+.agent/
+.metagpt/

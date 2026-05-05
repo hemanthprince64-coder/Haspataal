@@ -18,11 +18,11 @@ router.get('/summary', async (req: Request, res: Response) => {
   const client = await pool.connect();
   try {
     await client.query(`SET LOCAL app.hospital_id = $1`, [hospitalId]);
-    
+
     // Get today's stats + last 30 days totals
     const todayRes = await client.query(
       `SELECT * FROM "AnalyticsDaily" WHERE hospital_id = $1 AND date = $2`,
-      [hospitalId, date]
+      [hospitalId, date],
     );
 
     const monthRes = await client.query(
@@ -31,13 +31,13 @@ router.get('/summary', async (req: Request, res: Response) => {
         SUM(patient_count) as total_patients,
         SUM(followups_completed)::float / NULLIF(SUM(followups_scheduled), 0) * 100 as retention_rate
        FROM "AnalyticsDaily" 
-       WHERE hospital_id = $1 AND date > (now() - interval '30 days')`
-      , [hospitalId]
+       WHERE hospital_id = $1 AND date > (now() - interval '30 days')`,
+      [hospitalId],
     );
 
     res.json({
       today: todayRes.rows[0] || { revenue: 0, patient_count: 0, prescriptions_count: 0 },
-      last_30_days: monthRes.rows[0]
+      last_30_days: monthRes.rows[0],
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch analytics summary' });
@@ -56,8 +56,8 @@ router.get('/trends', async (req: Request, res: Response) => {
       `SELECT date, revenue, patient_count 
        FROM "AnalyticsDaily" 
        WHERE hospital_id = $1 AND date > (now() - interval '7 days')
-       ORDER BY date ASC`
-      , [hospitalId]
+       ORDER BY date ASC`,
+      [hospitalId],
     );
     res.json(result.rows);
   } finally {
@@ -72,13 +72,14 @@ router.get('/cmo/metrics', async (req: Request, res: Response) => {
   try {
     // Note: In real app, we would query the MATERIALIZED VIEWS
     const retentionRes = await client.query(
-      `SELECT * FROM mv_retention_stats WHERE hospital_id = $1`, [hospitalId]
+      `SELECT * FROM mv_retention_stats WHERE hospital_id = $1`,
+      [hospitalId],
     );
     const benchmarkRes = await client.query(`SELECT * FROM mv_network_benchmarks`);
-    
+
     res.json({
       hospital: retentionRes.rows[0],
-      network: benchmarkRes.rows[0]
+      network: benchmarkRes.rows[0],
     });
   } finally {
     client.release();
@@ -96,15 +97,15 @@ router.post('/medchat/triage', async (req: Request, res: Response) => {
     const eventId = await client.query(
       `INSERT INTO "EventLog" (hospital_id, patient_id, event_type, metadata)
        VALUES ($1, $2, 'patient_query', $3) RETURNING id`,
-      [hospitalId, patient_id, JSON.stringify({ query })]
+      [hospitalId, patient_id, JSON.stringify({ query })],
     );
 
     // 2. Mock Gemini Triage logic
     const mockTriage = {
-      summary: "Patient reporting chest pain and shortness of breath.",
-      priority: "CRITICAL",
-      department: "Cardiology",
-      action: "Alerting emergency desk"
+      summary: 'Patient reporting chest pain and shortness of breath.',
+      priority: 'CRITICAL',
+      department: 'Cardiology',
+      action: 'Alerting emergency desk',
     };
 
     res.json({ success: true, triage: mockTriage });

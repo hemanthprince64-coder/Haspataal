@@ -5,12 +5,12 @@
  */
 
 async function run() {
-    console.log("⚡ Starting PERFORMANCE_AUDITOR...");
+  console.log('⚡ Starting PERFORMANCE_AUDITOR...');
 
-    // Logic to run Lighthouse CI
-    // Logic to check build bundle size
+  // Logic to run Lighthouse CI
+  // Logic to check build bundle size
 
-    console.log("✅ Performance Audit Passed (Simulation)");
+  console.log('✅ Performance Audit Passed (Simulation)');
 }
 
 run().catch(console.error);

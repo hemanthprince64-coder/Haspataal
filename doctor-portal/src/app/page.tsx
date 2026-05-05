@@ -21,14 +21,21 @@ export default function DoctorDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-white">Good morning, Dr. 👋</h2>
-        <p className="text-gray-400 mt-1 text-sm">Here&apos;s what&apos;s happening in your practice today.</p>
+        <p className="text-gray-400 mt-1 text-sm">
+          Here&apos;s what&apos;s happening in your practice today.
+        </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-colors">
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-lg mb-3`}>
+          <div
+            key={stat.label}
+            className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-colors"
+          >
+            <div
+              className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-lg mb-3`}
+            >
               {stat.icon}
             </div>
             <p className="text-3xl font-bold text-white">{stat.value}</p>
@@ -41,7 +48,12 @@ export default function DoctorDashboard() {
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-semibold text-white">Today&apos;s Schedule</h3>
-          <Link href="/appointments" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">View All →</Link>
+          <Link
+            href="/appointments"
+            className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+          >
+            View All →
+          </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -61,10 +73,15 @@ export default function DoctorDashboard() {
                   <td className="py-3 text-white font-medium">{appt.patient}</td>
                   <td className="py-3 text-gray-400">{appt.reason}</td>
                   <td className="py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${appt.status === 'Confirmed' ? 'bg-emerald-500/20 text-emerald-400' :
-                        appt.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-blue-500/20 text-blue-400'
-                      }`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        appt.status === 'Confirmed'
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : appt.status === 'Pending'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-blue-500/20 text-blue-400'
+                      }`}
+                    >
                       {appt.status}
                     </span>
                   </td>

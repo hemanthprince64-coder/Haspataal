@@ -5,12 +5,12 @@
  */
 
 async function run() {
-    console.log("🚀 Starting GSD_ENFORCER...");
+  console.log('🚀 Starting GSD_ENFORCER...');
 
-    // Logic to check task completion velocity
-    // Logic to indentify stalled tasks in task_log.md
+  // Logic to check task completion velocity
+  // Logic to indentify stalled tasks in task_log.md
 
-    console.log("✅ GSD Enforcer Check Passed (Simulation)");
+  console.log('✅ GSD Enforcer Check Passed (Simulation)');
 }
 
 run().catch(console.error);

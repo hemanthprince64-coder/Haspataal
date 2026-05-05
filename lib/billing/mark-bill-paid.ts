@@ -15,13 +15,7 @@ export interface MarkBillPaidOptions {
  * also marks the FollowUp as COMPLETED.
  */
 export async function markBillPaid(options: MarkBillPaidOptions) {
-  const {
-    billId,
-    hospitalId,
-    source = 'direct',
-    followUpId,
-    metadata = {},
-  } = options;
+  const { billId, hospitalId, source = 'direct', followUpId, metadata = {} } = options;
 
   const paidAt = new Date();
 

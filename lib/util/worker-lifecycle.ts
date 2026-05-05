@@ -19,7 +19,10 @@ const registeredWorkers: WorkerHandle[] = [];
  * Usage:
  *   const id = registerWorker('outbox', setInterval(processOutbox, 5000));
  */
-export function registerWorker(name: string, intervalId: ReturnType<typeof setInterval>): ReturnType<typeof setInterval> {
+export function registerWorker(
+  name: string,
+  intervalId: ReturnType<typeof setInterval>,
+): ReturnType<typeof setInterval> {
   registeredWorkers.push({ name, intervalId });
   return intervalId;
 }
@@ -29,7 +32,9 @@ export function registerWorker(name: string, intervalId: ReturnType<typeof setIn
  * Called automatically on SIGTERM/SIGINT.
  */
 function shutdownWorkers(signal: string) {
-  console.info(`[WorkerManager] Received ${signal}. Stopping ${registeredWorkers.length} workers...`);
+  console.info(
+    `[WorkerManager] Received ${signal}. Stopping ${registeredWorkers.length} workers...`,
+  );
   for (const worker of registeredWorkers) {
     clearInterval(worker.intervalId);
     console.info(`[WorkerManager] Stopped worker: ${worker.name}`);
@@ -40,4 +45,4 @@ function shutdownWorkers(signal: string) {
 
 // Wire shutdown signals
 process.on('SIGTERM', () => shutdownWorkers('SIGTERM'));
-process.on('SIGINT',  () => shutdownWorkers('SIGINT'));
+process.on('SIGINT', () => shutdownWorkers('SIGINT'));

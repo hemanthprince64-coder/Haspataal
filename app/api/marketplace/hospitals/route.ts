@@ -28,7 +28,11 @@ export async function GET(req: NextRequest) {
       facilities: true,
       affiliations: {
         where: { isCurrent: true, doctor: { accountStatus: 'ACTIVE' } },
-        select: { consultationFee: true, department: true, doctor: { select: { id: true, fullName: true, profilePhotoUrl: true } } },
+        select: {
+          consultationFee: true,
+          department: true,
+          doctor: { select: { id: true, fullName: true, profilePhotoUrl: true } },
+        },
         take: 10,
       },
     },

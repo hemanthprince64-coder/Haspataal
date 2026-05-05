@@ -19,14 +19,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });
 
   const unit = await prisma.unit.findUnique({
     where: { id },
-    include: { department: true, beds: true }
+    include: { department: true, beds: true },
   });
 
   if (!unit || unit.department.hospitalId !== hospitalId) {
@@ -39,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const u = await tx.unit.update({
       where: { id },
       data: parsed.data,
-      include: { beds: true }
+      include: { beds: true },
     });
 
     if (parsed.data.capacity !== undefined && parsed.data.capacity !== unit.capacity) {
@@ -60,12 +64,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
         const bedsToDelete = await tx.bed.findMany({
           where: { unitId: id, status: 'AVAILABLE' },
           orderBy: { bedNumber: 'desc' },
-          take: Math.abs(diff)
+          take: Math.abs(diff),
         });
-        
+
         if (bedsToDelete.length > 0) {
           await tx.bed.deleteMany({
-            where: { id: { in: bedsToDelete.map(b => b.id) } }
+            where: { id: { in: bedsToDelete.map((b) => b.id) } },
           });
         }
       }
@@ -73,7 +77,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     return tx.unit.findUnique({
       where: { id },
-      include: { beds: true }
+      include: { beds: true },
     });
   });
 
@@ -87,10 +91,10 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
   const unit = await prisma.unit.findUnique({
     where: { id },
-    include: { 
+    include: {
       department: true,
-      beds: true
-    }
+      beds: true,
+    },
   });
 
   if (!unit || unit.department.hospitalId !== hospitalId) {
@@ -98,12 +102,15 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   // Rule: Cannot delete unit with occupied beds
-  const occupiedBeds = unit.beds.filter(b => b.status === 'OCCUPIED');
+  const occupiedBeds = unit.beds.filter((b) => b.status === 'OCCUPIED');
   if (occupiedBeds.length > 0) {
-    return NextResponse.json({ 
-      error: 'Cannot delete unit with occupied beds', 
-      occupiedCount: occupiedBeds.length 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'Cannot delete unit with occupied beds',
+        occupiedCount: occupiedBeds.length,
+      },
+      { status: 400 },
+    );
   }
 
   await prisma.unit.delete({ where: { id } });

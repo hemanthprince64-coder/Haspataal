@@ -3,7 +3,15 @@ import { CheckCircle, XCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
-export function DocumentViewer({ hospitalId, docType, docUrl }: { hospitalId: string, docType: string, docUrl: string }) {
+export function DocumentViewer({
+  hospitalId,
+  docType,
+  docUrl,
+}: {
+  hospitalId: string;
+  docType: string;
+  docUrl: string;
+}) {
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [rejectionReason, setRejectionReason] = useState('');
 
@@ -33,31 +41,30 @@ export function DocumentViewer({ hospitalId, docType, docUrl }: { hospitalId: st
       {/* Right side - Actions */}
       <div className="w-1/3 p-6 flex flex-col bg-white">
         <h3 className="font-semibold text-lg mb-4 capitalize">{docType} Document</h3>
-        
+
         {status === 'pending' && (
           <div className="space-y-6 flex-1">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Rejection Reason (if any)</label>
-              <Textarea 
+              <label className="text-sm font-medium text-slate-700">
+                Rejection Reason (if any)
+              </label>
+              <Textarea
                 placeholder="Blurry image, expired license, etc."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
               />
             </div>
-            
+
             <div className="flex gap-3">
-              <Button 
-                onClick={handleReject} 
-                variant="destructive" 
+              <Button
+                onClick={handleReject}
+                variant="destructive"
                 className="flex-1"
                 disabled={!rejectionReason}
               >
                 Reject
               </Button>
-              <Button 
-                onClick={handleApprove} 
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
+              <Button onClick={handleApprove} className="flex-1 bg-green-600 hover:bg-green-700">
                 Approve
               </Button>
             </div>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import Image from 'next/image';
@@ -31,10 +31,12 @@ const Avatar: React.FC<AvatarProps> = ({ imageUrl, name, size = 'md', className 
   // 1. IMAGE PRIORITY
   if (imageUrl && !error) {
     return (
-      <div className={`${sizeClasses[size]} rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 ${className}`}>
+      <div
+        className={`${sizeClasses[size]} rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 ${className}`}
+      >
         <Image
           src={imageUrl}
-          alt={name || "Profile"}
+          alt={name || 'Profile'}
           width={sizePixels[size]}
           height={sizePixels[size]}
           className="w-full h-full object-cover"
@@ -47,7 +49,9 @@ const Avatar: React.FC<AvatarProps> = ({ imageUrl, name, size = 'md', className 
   // 2. INITIAL PRIORITY
   if (name) {
     return (
-      <div className={`${sizeClasses[size]} rounded-2xl bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-700 font-black flex-shrink-0 ${className}`}>
+      <div
+        className={`${sizeClasses[size]} rounded-2xl bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-700 font-black flex-shrink-0 ${className}`}
+      >
         {initial}
       </div>
     );
@@ -55,7 +59,9 @@ const Avatar: React.FC<AvatarProps> = ({ imageUrl, name, size = 'md', className 
 
   // 3. DEFAULT PLACEHOLDER
   return (
-    <div className={`${sizeClasses[size]} rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-slate-400 flex-shrink-0 ${className}`}>
+    <div
+      className={`${sizeClasses[size]} rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center text-slate-400 flex-shrink-0 ${className}`}
+    >
       👤
     </div>
   );

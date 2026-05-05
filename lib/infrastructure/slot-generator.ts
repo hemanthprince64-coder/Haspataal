@@ -19,7 +19,7 @@ export async function generateDoctorSlots(doctorId: string, daysAhead: number = 
 
   // 2. Fetch active schedules (camelCase — Prisma generated types)
   const schedules = await prisma.doctorSchedule.findMany({
-    where: { doctorId: doctorId, isActive: true }
+    where: { doctorId: doctorId, isActive: true },
   });
 
   if (schedules.length === 0) {
@@ -35,17 +35,17 @@ export async function generateDoctorSlots(doctorId: string, daysAhead: number = 
     const dayOfWeek = currentDayDate.getDay();
 
     // Use camelCase field names from Prisma generated types
-    const daySchedules = schedules.filter(s => s.dayOfWeek === dayOfWeek);
+    const daySchedules = schedules.filter((s) => s.dayOfWeek === dayOfWeek);
 
     for (const schedule of daySchedules) {
       let currentTime = parse(schedule.startTime as string, 'HH:mm:ss', currentDayDate);
-      const endTime   = parse(schedule.endTime as string,   'HH:mm:ss', currentDayDate);
+      const endTime = parse(schedule.endTime as string, 'HH:mm:ss', currentDayDate);
 
       while (isBefore(currentTime, endTime)) {
         newSlots.push({
-          doctorId:  doctorId,
+          doctorId: doctorId,
           startTime: currentTime,
-          endTime:   addMinutes(currentTime, schedule.slotDurationMinutes),
+          endTime: addMinutes(currentTime, schedule.slotDurationMinutes),
         });
         currentTime = addMinutes(currentTime, schedule.slotDurationMinutes);
       }
@@ -61,9 +61,9 @@ export async function generateDoctorSlots(doctorId: string, daysAhead: number = 
   await prisma.$executeRaw`
     INSERT INTO doctor_slots (doctor_id, start_time, end_time)
     SELECT * FROM UNNEST(
-      ${newSlots.map(s => s.doctorId)}::uuid[],
-      ${newSlots.map(s => s.startTime)}::timestamptz[],
-      ${newSlots.map(s => s.endTime)}::timestamptz[]
+      ${newSlots.map((s) => s.doctorId)}::uuid[],
+      ${newSlots.map((s) => s.startTime)}::timestamptz[],
+      ${newSlots.map((s) => s.endTime)}::timestamptz[]
     ) AS t(doctor_id, start_time, end_time)
     ON CONFLICT (doctor_id, start_time) DO NOTHING;
   `;

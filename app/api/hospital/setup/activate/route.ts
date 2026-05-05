@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { computeSetupCompletion } from '@/lib/setup/completion-engine';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 const CRITICAL_STEPS = ['identity', 'staff', 'doctors', 'opd', 'billing'];
 
@@ -15,17 +19,21 @@ export async function POST() {
 
   const completion = await computeSetupCompletion(access.hospitalId);
   const missing = CRITICAL_STEPS.filter((step) => !completion.stepStatuses[step]?.complete);
-  const encryptionConfigured = Boolean(process.env.ENCRYPTION_KEY && process.env.ENCRYPTION_KEY.length >= 32);
+  const encryptionConfigured = Boolean(
+    process.env.ENCRYPTION_KEY && process.env.ENCRYPTION_KEY.length >= 32,
+  );
 
   if (missing.length > 0 || !encryptionConfigured) {
     return NextResponse.json(
       {
         error: 'Activation requirements not met',
         missing,
-        security: encryptionConfigured ? [] : ['ENCRYPTION_KEY must be configured with at least 32 characters'],
+        security: encryptionConfigured
+          ? []
+          : ['ENCRYPTION_KEY must be configured with at least 32 characters'],
         completion,
       },
-      { status: 422 }
+      { status: 422 },
     );
   }
 

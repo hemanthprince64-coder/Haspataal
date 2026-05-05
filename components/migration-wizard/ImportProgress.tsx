@@ -27,10 +27,10 @@ export function ImportProgress({ validatedData }: { validatedData: any[] }) {
           const res = await fetch('/api/import/patients/batch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mappedRows: chunk })
+            body: JSON.stringify({ mappedRows: chunk }),
           });
           const data = await res.json();
-          
+
           if (data.success) {
             currentInserted += data.inserted || 0;
             currentDuplicates += data.duplicates || 0;
@@ -44,14 +44,18 @@ export function ImportProgress({ validatedData }: { validatedData: any[] }) {
 
         processed += chunk.length;
         setProgress(Math.round((processed / validatedData.length) * 100));
-        setStats({ inserted: currentInserted, duplicates: currentDuplicates, errors: currentErrors });
+        setStats({
+          inserted: currentInserted,
+          duplicates: currentDuplicates,
+          errors: currentErrors,
+        });
       }
 
       // Finalize
       await fetch('/api/import/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ totalRows: validatedData.length, sourceType: 'csv' })
+        body: JSON.stringify({ totalRows: validatedData.length, sourceType: 'csv' }),
       });
 
       setStatus('completed');
@@ -71,8 +75,10 @@ export function ImportProgress({ validatedData }: { validatedData: any[] }) {
           <CheckCircle className="w-10 h-10 text-green-600" />
         </div>
         <h2 className="text-3xl font-bold text-slate-800">Migration Complete!</h2>
-        <p className="text-slate-500 max-w-md mx-auto">Your legacy data has been successfully imported into the Haspataal database.</p>
-        
+        <p className="text-slate-500 max-w-md mx-auto">
+          Your legacy data has been successfully imported into the Haspataal database.
+        </p>
+
         <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto pt-6">
           <Card className="p-4 bg-slate-50 border-0 shadow-sm">
             <p className="text-sm text-slate-500 font-medium">Inserted</p>
@@ -89,7 +95,7 @@ export function ImportProgress({ validatedData }: { validatedData: any[] }) {
         </div>
 
         <div className="pt-8">
-          <Button onClick={() => window.location.href = '/hms/patients'} className="px-8">
+          <Button onClick={() => (window.location.href = '/hms/patients')} className="px-8">
             Go to Patient Directory
           </Button>
         </div>
@@ -100,12 +106,12 @@ export function ImportProgress({ validatedData }: { validatedData: any[] }) {
   return (
     <div className="py-16 text-center space-y-8">
       <h3 className="text-2xl font-bold text-slate-800">Importing Patient Records...</h3>
-      
+
       <div className="max-w-md mx-auto relative pt-4">
         <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden">
-          <div 
-            className="bg-blue-600 h-full transition-all duration-500 ease-out" 
-            style={{ width: `${progress}%` }} 
+          <div
+            className="bg-blue-600 h-full transition-all duration-500 ease-out"
+            style={{ width: `${progress}%` }}
           />
         </div>
         <div className="flex justify-between text-xs text-slate-500 mt-2 font-medium">

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Pill, Search, AlertTriangle, TrendingDown, PackageCheck } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { Pill, Search, AlertTriangle, TrendingDown, PackageCheck } from 'lucide-react';
 
 interface DrugStock {
   id: string;
@@ -14,11 +14,11 @@ interface DrugStock {
 
 export default function PharmacyPage() {
   const [drugs, setDrugs] = useState<DrugStock[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/hospital/pharmacy/stock")
+    fetch('/api/hospital/pharmacy/stock')
       .then((r) => r.json())
       .then((data) => {
         setDrugs(data.drugs ?? []);
@@ -27,9 +27,7 @@ export default function PharmacyPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const filtered = drugs.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = drugs.filter((d) => d.name.toLowerCase().includes(search.toLowerCase()));
   const lowStock = drugs.filter((d) => d.stock <= d.minLevel);
 
   return (
@@ -67,12 +65,12 @@ export default function PharmacyPage() {
             <TrendingDown className="h-4 w-4" /> Expiring Soon
           </div>
           <div className="text-2xl font-bold text-orange-600">
-            {drugs.filter((d) => {
-              const days = Math.ceil(
-                (new Date(d.expiryDate).getTime() - Date.now()) / 86400000
-              );
-              return days <= 30 && days > 0;
-            }).length}
+            {
+              drugs.filter((d) => {
+                const days = Math.ceil((new Date(d.expiryDate).getTime() - Date.now()) / 86400000);
+                return days <= 30 && days > 0;
+              }).length
+            }
           </div>
         </div>
       </div>
@@ -93,7 +91,7 @@ export default function PharmacyPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {["Drug Name", "Category", "Stock", "Min Level", "Expiry", "Status"].map((h) => (
+              {['Drug Name', 'Category', 'Stock', 'Min Level', 'Expiry', 'Status'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                   {h}
                 </th>
@@ -126,12 +124,10 @@ export default function PharmacyPage() {
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                          isLow
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-100 text-green-700"
+                          isLow ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                         }`}
                       >
-                        {isLow ? "Low Stock" : "OK"}
+                        {isLow ? 'Low Stock' : 'OK'}
                       </span>
                     </td>
                   </tr>

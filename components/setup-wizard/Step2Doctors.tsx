@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { UploadCloud, Clock, Plus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function Step2Doctors({ config, onSave }: { config: any, onSave: (data: any) => void }) {
+export function Step2Doctors({ config, onSave }: { config: any; onSave: (data: any) => void }) {
   const [doctors, setDoctors] = useState<any[]>(config.doctors || []);
 
   const addDoctor = () => {
@@ -25,8 +25,20 @@ export function Step2Doctors({ config, onSave }: { config: any, onSave: (data: a
   const handleCSVUpload = (e: any) => {
     // In a real app, use PapaParse here
     const mockParsedCSV = [
-      { name: 'Dr. Sharma', speciality: 'Cardiology', degree: 'MD', reg_no: 'MCI-123', fees: '800' },
-      { name: 'Dr. Gupta', speciality: 'Orthopedics', degree: 'MS', reg_no: 'MCI-456', fees: '700' }
+      {
+        name: 'Dr. Sharma',
+        speciality: 'Cardiology',
+        degree: 'MD',
+        reg_no: 'MCI-123',
+        fees: '800',
+      },
+      {
+        name: 'Dr. Gupta',
+        speciality: 'Orthopedics',
+        degree: 'MS',
+        reg_no: 'MCI-456',
+        fees: '700',
+      },
     ];
     setDoctors([...doctors, ...mockParsedCSV]);
   };
@@ -47,7 +59,9 @@ export function Step2Doctors({ config, onSave }: { config: any, onSave: (data: a
       <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors">
         <UploadCloud className="w-12 h-12 text-slate-400 mx-auto mb-4" />
         <h3 className="font-semibold text-slate-700">Drag & Drop CSV File</h3>
-        <p className="text-sm text-slate-500 mb-4">Template: name, speciality, degree, registration_no, fees</p>
+        <p className="text-sm text-slate-500 mb-4">
+          Template: name, speciality, degree, registration_no, fees
+        </p>
         <label className="cursor-pointer bg-white border border-slate-300 px-4 py-2 rounded-md shadow-sm text-sm font-medium hover:bg-slate-50">
           Browse File
           <input type="file" className="hidden" accept=".csv" onChange={handleCSVUpload} />
@@ -63,40 +77,43 @@ export function Step2Doctors({ config, onSave }: { config: any, onSave: (data: a
       {/* Manual Entry Table */}
       <div className="space-y-3">
         {doctors.map((doc, i) => (
-          <div key={i} className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-white p-3 rounded-lg border shadow-sm">
-            <Input 
-              placeholder="Dr. Name" 
+          <div
+            key={i}
+            className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-white p-3 rounded-lg border shadow-sm"
+          >
+            <Input
+              placeholder="Dr. Name"
               aria-label={`Doctor name row ${i + 1}`}
-              value={doc.name} 
-              onChange={e => updateDoctor(i, 'name', e.target.value)} 
-              className="w-full md:flex-1" 
+              value={doc.name}
+              onChange={(e) => updateDoctor(i, 'name', e.target.value)}
+              className="w-full md:flex-1"
             />
-            <Input 
-              placeholder="Speciality" 
+            <Input
+              placeholder="Speciality"
               aria-label={`Doctor speciality row ${i + 1}`}
-              value={doc.speciality} 
-              onChange={e => updateDoctor(i, 'speciality', e.target.value)} 
-              className="w-full md:flex-1" 
+              value={doc.speciality}
+              onChange={(e) => updateDoctor(i, 'speciality', e.target.value)}
+              className="w-full md:flex-1"
             />
-            <Input 
-              placeholder="Degree" 
+            <Input
+              placeholder="Degree"
               aria-label={`Doctor degree row ${i + 1}`}
-              className="w-24" 
-              value={doc.degree} 
-              onChange={e => updateDoctor(i, 'degree', e.target.value)} 
+              className="w-24"
+              value={doc.degree}
+              onChange={(e) => updateDoctor(i, 'degree', e.target.value)}
             />
-            <Input 
-              placeholder="Fees (₹)" 
+            <Input
+              placeholder="Fees (₹)"
               aria-label={`Consultation fee row ${i + 1}`}
-              className="w-24" 
-              type="number" 
-              value={doc.fees} 
-              onChange={e => updateDoctor(i, 'fees', e.target.value)} 
+              className="w-24"
+              type="number"
+              value={doc.fees}
+              onChange={(e) => updateDoctor(i, 'fees', e.target.value)}
             />
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => removeDoctor(i)} 
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => removeDoctor(i)}
               className="text-red-500 hover:text-red-700 hover:bg-red-50 self-start md:self-auto"
               aria-label={`Remove doctor row ${i + 1}`}
             >
@@ -104,7 +121,7 @@ export function Step2Doctors({ config, onSave }: { config: any, onSave: (data: a
             </Button>
           </div>
         ))}
-        
+
         <Button variant="outline" onClick={addDoctor} className="w-full border-dashed border-2">
           <Plus className="w-4 h-4 mr-2" /> Add Row
         </Button>

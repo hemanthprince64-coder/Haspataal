@@ -15,7 +15,7 @@ router.post('/create', async (req: Request, res: Response) => {
     const hospitalId = (req as any).hospital_id;
     // Mocking doctor extraction from JWT
     const doctorId = (req as any).user?.id || 'doc_mock_123';
-    
+
     const result = await PrescriptionService.createPrescription(hospitalId, doctorId, req.body);
     res.json(result);
   } catch (err) {
@@ -27,9 +27,7 @@ router.post('/create', async (req: Request, res: Response) => {
 router.get('/templates', async (req: Request, res: Response) => {
   // Mock fetch templates
   res.json({
-    templates: [
-      { id: 1, name: 'Standard URTI', diagnosis: 'URTI', medicines: [] }
-    ]
+    templates: [{ id: 1, name: 'Standard URTI', diagnosis: 'URTI', medicines: [] }],
   });
 });
 

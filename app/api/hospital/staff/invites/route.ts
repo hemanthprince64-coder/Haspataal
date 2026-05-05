@@ -17,10 +17,10 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  
+
   const { id } = await req.json();
   await prisma.staffInvite.deleteMany({
-    where: { id, hospitalId }
+    where: { id, hospitalId },
   });
 
   return NextResponse.json({ ok: true });

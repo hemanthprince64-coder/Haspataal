@@ -5,11 +5,11 @@ async function findUsers() {
   try {
     const patient = await prisma.user.findFirst({
       where: { role: 'PATIENT' },
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     });
     const doctor = await prisma.user.findFirst({
       where: { role: 'DOCTOR' },
-      select: { id: true, name: true }
+      select: { id: true, name: true },
     });
     console.log(JSON.stringify({ patient, doctor }, null, 2));
   } catch (error) {

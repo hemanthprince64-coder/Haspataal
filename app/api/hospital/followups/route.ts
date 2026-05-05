@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { getHospitalIdFromSession } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { getHospitalIdFromSession } from '@/lib/auth';
 
 // GET: list pending follow-ups
 export async function GET(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
-  if (!hospitalId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const followUps = await prisma.followUp.findMany({
-    where: { hospitalId, status: { in: ["PENDING", "NO_RESPONSE"] } },
+    where: { hospitalId, status: { in: ['PENDING', 'NO_RESPONSE'] } },
     include: { patient: { select: { id: true, name: true, phone: true } } },
-    orderBy: { scheduledAt: "asc" },
+    orderBy: { scheduledAt: 'asc' },
   });
 
   return NextResponse.json({ followUps });
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 // POST: create a follow-up (always include source for retention tracking)
 export async function POST(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
-  if (!hospitalId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
   const followUp = await prisma.followUp.create({
@@ -28,11 +28,11 @@ export async function POST(req: NextRequest) {
       patientId: body.patientId,
       appointmentId: body.appointmentId,
       billId: body.billId,
-      type: body.type ?? "GENERAL",
+      type: body.type ?? 'GENERAL',
       scheduledAt: new Date(body.scheduledAt),
       notes: body.notes,
       // FIX 3: always set source so Revenue Intelligence can track it
-      source: body.source ?? "manual",
+      source: body.source ?? 'manual',
       payload: body.payload ?? {},
     },
   });
@@ -43,14 +43,14 @@ export async function POST(req: NextRequest) {
 // PATCH: update status
 export async function PATCH(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
-  if (!hospitalId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
   const updated = await prisma.followUp.update({
     where: { id: body.id, hospitalId },
     data: {
       status: body.status,
-      completedAt: body.status === "COMPLETED" ? new Date() : undefined,
+      completedAt: body.status === 'COMPLETED' ? new Date() : undefined,
       notes: body.notes,
     },
   });

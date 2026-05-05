@@ -1,31 +1,31 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextVitals from 'eslint-config-next/core-web-vitals';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   {
     rules: {
-      "react/no-unescaped-entities": "off",
-      "react-hooks/purity": "off",
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/immutability": "off",
+      'react/no-unescaped-entities': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
     },
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "lib/generated/**",
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    'lib/generated/**',
     // Sub-project directories (each has its own lint config)
-    "haspataal-in/**",
-    "haspataal-admin/**",
-    "haspataal-com/**",
-    "haspataal-mobile/**",
-    "scripts/**",
-    ".kilo/**",
+    'haspataal-in/**',
+    'haspataal-admin/**',
+    'haspataal-com/**',
+    'haspataal-mobile/**',
+    'scripts/**',
+    '.kilo/**',
   ]),
 ]);
 

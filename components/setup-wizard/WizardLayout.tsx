@@ -16,15 +16,15 @@ export function WizardLayout() {
     doctors: [],
     bed_counts: { general: 0, icu: 0, private: 0, semi: 0 },
     opd_timings: {},
-    pricing: { opd_fees: 0, ipd_rate: 0, diag_markup: 0 }
+    pricing: { opd_fees: 0, ipd_rate: 0, diag_markup: 0 },
   });
   const [activated, setActivated] = useState(false);
 
   useEffect(() => {
     // Load existing config on mount (save & resume)
     fetch('/api/setup/config')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data && data.config) {
           setConfig((prev: any) => ({ ...prev, ...data.config }));
           setPct(data.pct || 0);
@@ -41,14 +41,14 @@ export function WizardLayout() {
   const handleSaveStep = async (stepNumber: number, partialConfig: any) => {
     const newConfig = { ...config, ...partialConfig };
     setConfig(newConfig);
-    
+
     // Save partial config
     await fetch('/api/setup/partial', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ step: stepNumber, config: newConfig })
+      body: JSON.stringify({ step: stepNumber, config: newConfig }),
     });
-    
+
     setPct(Math.min(stepNumber * 16.6, 99));
     setStep(stepNumber + 1);
   };
@@ -81,7 +81,7 @@ export function WizardLayout() {
           {/* Sidebar */}
           <div className="w-1/4 bg-slate-100 p-6 border-r border-slate-200">
             <h2 className="font-bold text-lg mb-6">Setup Progress</h2>
-            
+
             {/* Progress Ring */}
             <div className="relative w-32 h-32 mx-auto mb-8">
               <svg className="w-full h-full" viewBox="0 0 36 36">
@@ -118,11 +118,36 @@ export function WizardLayout() {
 
           {/* Main Content */}
           <CardContent className="w-3/4 p-8">
-            {step === 1 && <Step1Specialities config={config} onSave={(data) => handleSaveStep(1, { specialities: data })} />}
-            {step === 2 && <Step2Doctors config={config} onSave={(data) => handleSaveStep(2, { doctors: data })} />}
-            {step === 3 && <Step3Beds config={config} onSave={(data) => handleSaveStep(3, { bed_counts: data })} />}
-            {step === 4 && <Step4OPDTimings config={config} onSave={(data) => handleSaveStep(4, { opd_timings: data })} />}
-            {step === 5 && <Step5Pricing config={config} onSave={(data) => handleSaveStep(5, { pricing: data })} />}
+            {step === 1 && (
+              <Step1Specialities
+                config={config}
+                onSave={(data) => handleSaveStep(1, { specialities: data })}
+              />
+            )}
+            {step === 2 && (
+              <Step2Doctors
+                config={config}
+                onSave={(data) => handleSaveStep(2, { doctors: data })}
+              />
+            )}
+            {step === 3 && (
+              <Step3Beds
+                config={config}
+                onSave={(data) => handleSaveStep(3, { bed_counts: data })}
+              />
+            )}
+            {step === 4 && (
+              <Step4OPDTimings
+                config={config}
+                onSave={(data) => handleSaveStep(4, { opd_timings: data })}
+              />
+            )}
+            {step === 5 && (
+              <Step5Pricing
+                config={config}
+                onSave={(data) => handleSaveStep(5, { pricing: data })}
+              />
+            )}
             {step === 6 && <Step6Review config={config} onActivate={handleActivate} />}
           </CardContent>
         </div>

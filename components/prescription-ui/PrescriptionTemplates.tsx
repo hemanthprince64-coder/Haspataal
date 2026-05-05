@@ -6,7 +6,7 @@ export function PrescriptionTemplates() {
   const TEMPLATES = [
     { name: 'Standard URTI', desc: 'Paracetamol, Amoxicillin, Cough Syrup' },
     { name: 'Acute Gastro', desc: 'ORS, Pantoprazole, Ofloxacin' },
-    { name: 'HTN Follow-up', desc: 'Amlodipine, Continue same diet' }
+    { name: 'HTN Follow-up', desc: 'Amlodipine, Continue same diet' },
   ];
 
   return (
@@ -19,7 +19,10 @@ export function PrescriptionTemplates() {
       </CardHeader>
       <CardContent className="p-4 space-y-2">
         {TEMPLATES.map((t, i) => (
-          <div key={i} className="p-3 bg-white border border-amber-200 rounded-lg cursor-pointer hover:border-amber-400 hover:shadow-sm transition-all group">
+          <div
+            key={i}
+            className="p-3 bg-white border border-amber-200 rounded-lg cursor-pointer hover:border-amber-400 hover:shadow-sm transition-all group"
+          >
             <div className="flex justify-between items-center">
               <span className="font-semibold text-sm text-slate-800">{t.name}</span>
               <FileHeart className="w-4 h-4 text-amber-300 group-hover:text-amber-500" />

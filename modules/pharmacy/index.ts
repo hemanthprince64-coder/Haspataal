@@ -10,13 +10,20 @@ export class PharmacyService {
   public static async handlePrescriptionEvent(event: any) {
     const { hospital_id, metadata } = event;
     // Auto-deduct stock logic
-    console.log('[PharmacyService] Auto-deducting stock for prescription:', metadata.prescription_id);
-    
+    console.log(
+      '[PharmacyService] Auto-deducting stock for prescription:',
+      metadata.prescription_id,
+    );
+
     // Emit 'medicine_dispensed' so Billing picks it up
-    await EventService.publish('medicine_dispensed', {
-      prescription_id: metadata.prescription_id,
-      items: metadata.items
-    }, hospital_id);
+    await EventService.publish(
+      'medicine_dispensed',
+      {
+        prescription_id: metadata.prescription_id,
+        items: metadata.items,
+      },
+      hospital_id,
+    );
   }
 }
 
@@ -31,9 +38,7 @@ router.post('/inventory', async (req: Request, res: Response) => {
 router.get('/alerts', async (req: Request, res: Response) => {
   // Mock low stock alerts
   res.json({
-    alerts: [
-      { medicine: 'Paracetamol 500mg', current_stock: 50, threshold: 100 }
-    ]
+    alerts: [{ medicine: 'Paracetamol 500mg', current_stock: 50, threshold: 100 }],
   });
 });
 

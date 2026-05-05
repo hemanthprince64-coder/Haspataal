@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       requiresApproval: true,
       showBedCharges: true,
       cancellationPolicy: true,
-    }
+    },
   });
 
   return NextResponse.json({ config: hospital });
@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest) {
       requiresApproval: body.requiresApproval,
       showBedCharges: body.showBedCharges,
       cancellationPolicy: body.cancellationPolicy,
-    }
+    },
   });
 
   return NextResponse.json({ config: hospital });

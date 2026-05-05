@@ -1,7 +1,7 @@
-import { services } from "@/lib/services";
+import { services } from '@/lib/services';
 
-import AdminDashboardClient from "@/components/admin/AdminDashboardClient";
+import AdminDashboardClient from '@/components/admin/AdminDashboardClient';
 
 export default async function AdminDashboard() {
-    return <AdminDashboardClient />;
+  return <AdminDashboardClient />;
 }

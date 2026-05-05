@@ -5,12 +5,12 @@
  */
 
 async function run() {
-    console.log("🕵️ Starting SECURITY_OWASP_SCANNER...");
+  console.log('🕵️ Starting SECURITY_OWASP_SCANNER...');
 
-    // Logic to scan code patterns for SQL injection risks
-    // Logic to check dependencies for known vulnerabilities (audit)
+  // Logic to scan code patterns for SQL injection risks
+  // Logic to check dependencies for known vulnerabilities (audit)
 
-    console.log("✅ OWASP Security Scan Passed (Simulation)");
+  console.log('✅ OWASP Security Scan Passed (Simulation)');
 }
 
 run().catch(console.error);

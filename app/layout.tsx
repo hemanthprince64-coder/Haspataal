@@ -1,13 +1,14 @@
-import React, { ReactNode } from "react";
-import "./globals.css";
-import { Toaster } from "sonner";
+import React, { ReactNode } from 'react';
+import './globals.css';
+import { Toaster } from 'sonner';
 
 export const metadata = {
-  title: "Haspataal — Healthcare Assistance Platform",
-  description: "India's smart hospital assistance platform connecting patients with local hospitals for outpatient consultations, diagnostic services and inpatient services.",
-  keywords: "healthcare, hospital, doctor, appointment, OPD, India, Haspataal",
+  title: 'Haspataal — Healthcare Assistance Platform',
+  description:
+    "India's smart hospital assistance platform connecting patients with local hospitals for outpatient consultations, diagnostic services and inpatient services.",
+  keywords: 'healthcare, hospital, doctor, appointment, OPD, India, Haspataal',
   icons: {
-    icon: "/logo.svg",
+    icon: '/logo.svg',
   },
 };
 

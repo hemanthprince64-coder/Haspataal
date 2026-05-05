@@ -6,7 +6,16 @@ import { z } from 'zod';
 
 const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['DOCTOR', 'NURSE', 'RECEPTIONIST', 'BILLING', 'PHARMACIST', 'LAB_TECH', 'HOSPITAL_ADMIN', 'SUPER_ADMIN']),
+  role: z.enum([
+    'DOCTOR',
+    'NURSE',
+    'RECEPTIONIST',
+    'BILLING',
+    'PHARMACIST',
+    'LAB_TECH',
+    'HOSPITAL_ADMIN',
+    'SUPER_ADMIN',
+  ]),
 });
 
 export async function POST(req: NextRequest) {
@@ -14,10 +23,18 @@ export async function POST(req: NextRequest) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = inviteSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
 
   // Check for existing pending invite for same email (idempotency/duplicate prevention)
   const existingPending = await prisma.staffInvite.findFirst({
@@ -25,13 +42,16 @@ export async function POST(req: NextRequest) {
       hospitalId,
       email: parsed.data.email,
       isAccepted: false,
-      expiresAt: { gt: new Date() }
-    }
+      expiresAt: { gt: new Date() },
+    },
   });
   if (existingPending) {
     return NextResponse.json(
-      { error: 'An invite has already been sent to this email. Please wait for them to accept or resend.' },
-      { status: 409 }
+      {
+        error:
+          'An invite has already been sent to this email. Please wait for them to accept or resend.',
+      },
+      { status: 409 },
     );
   }
 

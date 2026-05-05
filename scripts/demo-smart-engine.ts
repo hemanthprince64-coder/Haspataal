@@ -18,9 +18,9 @@ async function demo() {
     where: {
       doctorId_dayOfWeek_startTime: {
         doctorId: doctorId,
-        dayOfWeek: 1,       // Monday
-        startTime: '09:00:00'
-      }
+        dayOfWeek: 1, // Monday
+        startTime: '09:00:00',
+      },
     },
     update: {},
     create: {
@@ -28,8 +28,8 @@ async function demo() {
       dayOfWeek: 1,
       startTime: '09:00:00',
       endTime: '12:00:00',
-      slotDurationMinutes: 30
-    }
+      slotDurationMinutes: 30,
+    },
   });
 
   // 2. Generate Slots
@@ -43,9 +43,27 @@ async function demo() {
 
   // Simulate 3 parallel requests — only 1 should succeed (capacity = 1)
   const requests = [
-    bookSmartSlot({ doctorId, hospitalId: 'hosp-1', patientGlobalId: 'pt-1', slotTime, idempotencyKey: 'key-1' }),
-    bookSmartSlot({ doctorId, hospitalId: 'hosp-1', patientGlobalId: 'pt-2', slotTime, idempotencyKey: 'key-2' }),
-    bookSmartSlot({ doctorId, hospitalId: 'hosp-1', patientGlobalId: 'pt-3', slotTime, idempotencyKey: 'key-3' }),
+    bookSmartSlot({
+      doctorId,
+      hospitalId: 'hosp-1',
+      patientGlobalId: 'pt-1',
+      slotTime,
+      idempotencyKey: 'key-1',
+    }),
+    bookSmartSlot({
+      doctorId,
+      hospitalId: 'hosp-1',
+      patientGlobalId: 'pt-2',
+      slotTime,
+      idempotencyKey: 'key-2',
+    }),
+    bookSmartSlot({
+      doctorId,
+      hospitalId: 'hosp-1',
+      patientGlobalId: 'pt-3',
+      slotTime,
+      idempotencyKey: 'key-3',
+    }),
   ];
 
   const results = await Promise.allSettled(requests);

@@ -10,18 +10,18 @@ const redisClient = new Redis(REDIS_URL);
  * 100 requests per 15 minutes per IP
  */
 const apiLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, 
-	max: 100, 
-	standardHeaders: true, 
-	legacyHeaders: false,
-	store: new RedisStore({
-		sendCommand: (...args) => redisClient.call(...args),
-	}),
-    message: {
-        success: false,
-        error: 'Too many requests, please try again later.',
-        code: 'RATE_LIMIT_EXCEEDED'
-    }
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+  }),
+  message: {
+    success: false,
+    error: 'Too many requests, please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED',
+  },
 });
 
 /**
@@ -30,18 +30,18 @@ const apiLimiter = rateLimit({
  * 5 requests per minute
  */
 const strictLimiter = rateLimit({
-	windowMs: 1 * 60 * 1000,
-	max: 5,
-	standardHeaders: true,
-	legacyHeaders: false,
-	store: new RedisStore({
-		sendCommand: (...args) => redisClient.call(...args),
-	}),
-    message: {
-        success: false,
-        error: 'Strict rate limit exceeded. Slow down.',
-        code: 'STRICT_RATE_LIMIT_EXCEEDED'
-    }
+  windowMs: 1 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+  }),
+  message: {
+    success: false,
+    error: 'Strict rate limit exceeded. Slow down.',
+    code: 'STRICT_RATE_LIMIT_EXCEEDED',
+  },
 });
 
 module.exports = { apiLimiter, strictLimiter };

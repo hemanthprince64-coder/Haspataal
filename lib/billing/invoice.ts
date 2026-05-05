@@ -1,6 +1,13 @@
 export type InvoiceInputLine = {
   description: string;
-  type: 'CONSULTATION' | 'PROCEDURE' | 'LAB_TEST' | 'IMAGING' | 'BED_CHARGE' | 'MEDICINE' | 'PACKAGE';
+  type:
+    | 'CONSULTATION'
+    | 'PROCEDURE'
+    | 'LAB_TEST'
+    | 'IMAGING'
+    | 'BED_CHARGE'
+    | 'MEDICINE'
+    | 'PACKAGE';
   serviceId?: string | null;
   quantity?: number;
   unitPrice: number;
@@ -37,7 +44,9 @@ export function summarizeInvoice(lines: InvoiceInputLine[]) {
     lines: calculated,
     subtotal: roundMoney(calculated.reduce((sum, line) => sum + line.amounts.taxableAmount, 0)),
     gstTotal: roundMoney(calculated.reduce((sum, line) => sum + line.amounts.gstAmount, 0)),
-    discountTotal: roundMoney(calculated.reduce((sum, line) => sum + line.amounts.discountAmount, 0)),
+    discountTotal: roundMoney(
+      calculated.reduce((sum, line) => sum + line.amounts.discountAmount, 0),
+    ),
     totalAmount: roundMoney(calculated.reduce((sum, line) => sum + line.amounts.totalAmount, 0)),
   };
 }

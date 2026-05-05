@@ -7,9 +7,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Static routes always included
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: 'https://haspataal.com', lastModified: now, changeFrequency: 'daily', priority: 1 },
-    { url: 'https://haspataal.com/doctors', lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: 'https://haspataal.com/hospitals', lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
-    { url: 'https://haspataal.com/login', lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    {
+      url: 'https://haspataal.com/doctors',
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: 'https://haspataal.com/hospitals',
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: 'https://haspataal.com/login',
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
   ];
 
   try {
@@ -22,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: now,
         changeFrequency: 'weekly' as const,
         priority: 0.7,
-      }))
+      })),
     );
 
     return [...staticRoutes, ...dynamicRoutes];

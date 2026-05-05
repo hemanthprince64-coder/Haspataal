@@ -18,8 +18,19 @@ export async function GET(req: NextRequest) {
       ...(speciality ? { department: { equals: speciality, mode: 'insensitive' } } : {}),
     },
     include: {
-      doctor: { select: { id: true, fullName: true, gender: true, profilePhotoUrl: true, kycStatus: true } },
-      hospital: { select: { id: true, legalName: true, displayName: true, city: true, logoUrl: true, showConsultationFees: true } },
+      doctor: {
+        select: { id: true, fullName: true, gender: true, profilePhotoUrl: true, kycStatus: true },
+      },
+      hospital: {
+        select: {
+          id: true,
+          legalName: true,
+          displayName: true,
+          city: true,
+          logoUrl: true,
+          showConsultationFees: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
     take: 100,
@@ -32,7 +43,9 @@ export async function GET(req: NextRequest) {
       gender: affiliation.doctor.gender,
       profilePhotoUrl: affiliation.doctor.profilePhotoUrl,
       speciality: affiliation.department ?? (affiliation.payload as any)?.speciality ?? 'General',
-      consultationFee: affiliation.hospital.showConsultationFees ? affiliation.consultationFee : null,
+      consultationFee: affiliation.hospital.showConsultationFees
+        ? affiliation.consultationFee
+        : null,
       followUpFee: affiliation.hospital.showConsultationFees ? affiliation.followUpFee : null,
       followUpWindowDays: affiliation.followUpWindowDays,
       hospital: affiliation.hospital,

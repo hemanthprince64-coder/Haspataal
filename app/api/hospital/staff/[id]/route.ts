@@ -5,7 +5,18 @@ import { getHospitalIdFromSession } from '@/lib/auth';
 
 const updateSchema = z.object({
   name: z.string().optional(),
-  role: z.enum(['DOCTOR', 'NURSE', 'RECEPTIONIST', 'BILLING', 'PHARMACIST', 'LAB_TECH', 'HOSPITAL_ADMIN', 'SUPER_ADMIN']).optional(),
+  role: z
+    .enum([
+      'DOCTOR',
+      'NURSE',
+      'RECEPTIONIST',
+      'BILLING',
+      'PHARMACIST',
+      'LAB_TECH',
+      'HOSPITAL_ADMIN',
+      'SUPER_ADMIN',
+    ])
+    .optional(),
   shift: z.enum(['MORNING', 'EVENING', 'NIGHT', 'ROTATIONAL']).nullable().optional(),
   isActive: z.boolean().optional(),
 });
@@ -18,10 +29,18 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (!hospitalId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 422 });
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
 
   const staff = await prisma.staff.updateMany({
     where: { id, hospitalId },
@@ -39,11 +58,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   // Safety check: Cannot delete the last admin
   const member = await prisma.staff.findUnique({ where: { id } });
   if (member?.role === 'HOSPITAL_ADMIN') {
-    const adminCount = await prisma.staff.count({ 
-      where: { hospitalId, role: 'HOSPITAL_ADMIN', isActive: true } 
+    const adminCount = await prisma.staff.count({
+      where: { hospitalId, role: 'HOSPITAL_ADMIN', isActive: true },
     });
     if (adminCount <= 1) {
-      return NextResponse.json({ error: 'Cannot delete the last active administrator' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Cannot delete the last active administrator' },
+        { status: 400 },
+      );
     }
   }
 

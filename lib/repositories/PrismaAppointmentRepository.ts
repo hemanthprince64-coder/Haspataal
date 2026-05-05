@@ -15,7 +15,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     doctorId: string,
     date: Date,
     slot: string,
-    activeStatuses: string[]
+    activeStatuses: string[],
   ): Promise<AppointmentRecord | null> {
     return prisma.appointment.findFirst({
       where: {
@@ -30,7 +30,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
   async createBookingTransactional(
     ensurePatient: () => Promise<{ id: string }>,
     checkSlot: () => Promise<AppointmentRecord | null>,
-    input: CreateBookingInput
+    input: CreateBookingInput,
   ): Promise<AppointmentRecord> {
     return prisma.$transaction(async (tx) => {
       // 1. Ensure patient exists (delegated to caller for flexibility)
@@ -39,9 +39,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       // 2. Check slot availability within transaction snapshot
       const existing = await checkSlot();
       if (existing) {
-        throw new Error(
-          `SLOT_UNAVAILABLE: The slot ${input.slot} has already been booked.`
-        );
+        throw new Error(`SLOT_UNAVAILABLE: The slot ${input.slot} has already been booked.`);
       }
 
       // 3. Create the appointment — @@unique(doctorId, date, slot) constraint
@@ -60,28 +58,21 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
 
   async findByIdForPatient(
     appointmentId: string,
-    patientId: string
+    patientId: string,
   ): Promise<AppointmentRecord | null> {
     return prisma.appointment.findFirst({
       where: { id: appointmentId, patientId },
     });
   }
 
-  async updateStatus(
-    appointmentId: string,
-    newStatus: string
-  ): Promise<AppointmentRecord> {
+  async updateStatus(appointmentId: string, newStatus: string): Promise<AppointmentRecord> {
     return prisma.appointment.update({
       where: { id: appointmentId },
       data: { status: newStatus as AppointmentStatus },
     });
   }
 
-  async getBookedSlots(
-    doctorId: string,
-    date: Date,
-    activeStatuses: string[]
-  ): Promise<string[]> {
+  async getBookedSlots(doctorId: string, date: Date, activeStatuses: string[]): Promise<string[]> {
     const bookings = await prisma.appointment.findMany({
       where: {
         doctorId,

@@ -12,9 +12,22 @@ export interface SlotInfo {
 
 // Standard clinic hours: 09:00 to 17:00, 30-min intervals
 const ALL_SLOTS = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-  '15:00', '15:30', '16:00', '16:30',
+  '09:00',
+  '09:30',
+  '10:00',
+  '10:30',
+  '11:00',
+  '11:30',
+  '12:00',
+  '12:30',
+  '13:00',
+  '13:30',
+  '14:00',
+  '14:30',
+  '15:00',
+  '15:30',
+  '16:00',
+  '16:30',
 ];
 
 export class GetAvailableSlotsUseCase {
@@ -25,19 +38,14 @@ export class GetAvailableSlotsUseCase {
     targetDate.setHours(0, 0, 0, 0);
 
     const now = new Date();
-    const todayMidnight = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const isToday = targetDate.getTime() === todayMidnight.getTime();
 
     // Fetch booked slots from repository
-    const bookedSlots = await this.appointmentRepo.getBookedSlots(
-      doctorId,
-      targetDate,
-      [BookingStatus.BOOKED, BookingStatus.CONFIRMED]
-    );
+    const bookedSlots = await this.appointmentRepo.getBookedSlots(doctorId, targetDate, [
+      BookingStatus.BOOKED,
+      BookingStatus.CONFIRMED,
+    ]);
     const bookedSet = new Set(bookedSlots);
 
     return ALL_SLOTS.map((time) => {

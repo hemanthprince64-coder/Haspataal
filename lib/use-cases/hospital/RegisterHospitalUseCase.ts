@@ -2,7 +2,10 @@
 // RegisterHospitalUseCase — Hospital onboarding business logic
 // ============================================================
 
-import type { IHospitalRepository, HospitalRecord } from '../../repositories/interfaces/IHospitalRepository';
+import type {
+  IHospitalRepository,
+  HospitalRecord,
+} from '../../repositories/interfaces/IHospitalRepository';
 import { emitEvent } from '@/services/event-emitter';
 import logger from '../../logger';
 import bcrypt from 'bcryptjs';
@@ -29,7 +32,7 @@ export class RegisterHospitalUseCase {
   async execute(input: RegisterHospitalInput): Promise<HospitalRecord> {
     logger.info(
       { action: 'hospital_register', hospitalName: input.hospitalName },
-      'Registering new hospital'
+      'Registering new hospital',
     );
 
     if (!input.password) throw new Error('PASSWORD_REQUIRED');
@@ -39,7 +42,7 @@ export class RegisterHospitalUseCase {
     if (exists) {
       logger.warn(
         { action: 'hospital_register_duplicate', mobile: input.mobile },
-        'Duplicate mobile on hospital registration'
+        'Duplicate mobile on hospital registration',
       );
       throw new DuplicateMobileError();
     }

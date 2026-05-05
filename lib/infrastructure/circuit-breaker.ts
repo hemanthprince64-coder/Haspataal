@@ -8,8 +8,8 @@ export class CircuitBreaker {
   private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
 
   constructor(
-    private threshold: number = 5, 
-    private resetTimeout: number = 30000
+    private threshold: number = 5,
+    private resetTimeout: number = 30000,
   ) {}
 
   async execute<T>(action: () => Promise<T>): Promise<T> {

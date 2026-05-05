@@ -8,8 +8,20 @@ export function VerificationDashboard() {
 
   // Mock data for pending applications
   const pendingHospitals = [
-    { id: '1', name: 'City Care Hospital', city: 'Lucknow', submitted_at: '2026-04-24T10:00:00Z', docs: 3 },
-    { id: '2', name: 'Apex Multi-Speciality', city: 'Kanpur', submitted_at: '2026-04-24T11:30:00Z', docs: 2 },
+    {
+      id: '1',
+      name: 'City Care Hospital',
+      city: 'Lucknow',
+      submitted_at: '2026-04-24T10:00:00Z',
+      docs: 3,
+    },
+    {
+      id: '2',
+      name: 'Apex Multi-Speciality',
+      city: 'Kanpur',
+      submitted_at: '2026-04-24T11:30:00Z',
+      docs: 2,
+    },
   ];
 
   return (
@@ -21,9 +33,9 @@ export function VerificationDashboard() {
           <p className="text-sm text-slate-500">{pendingHospitals.length} pending applications</p>
         </div>
         <div className="divide-y divide-slate-100">
-          {pendingHospitals.map(hospital => (
-            <div 
-              key={hospital.id} 
+          {pendingHospitals.map((hospital) => (
+            <div
+              key={hospital.id}
               className={`p-4 cursor-pointer hover:bg-slate-50 ${selectedHospital?.id === hospital.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`}
               onClick={() => setSelectedHospital(hospital)}
             >
@@ -56,14 +68,13 @@ export function VerificationDashboard() {
                 <CardTitle className="text-lg">License Document</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <DocumentViewer 
-                  hospitalId={selectedHospital.id} 
-                  docType="license" 
-                  docUrl="https://mock.url/license.pdf" 
+                <DocumentViewer
+                  hospitalId={selectedHospital.id}
+                  docType="license"
+                  docUrl="https://mock.url/license.pdf"
                 />
               </CardContent>
             </Card>
-
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-slate-400">

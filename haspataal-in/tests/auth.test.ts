@@ -1,4 +1,3 @@
-
 import request from 'supertest';
 
 // Mock the Next.js server or use a running instance?
@@ -21,18 +20,18 @@ describe('Login', () => {
 const BASE_URL = 'http://localhost:3000'; // Or process.env.NEXTAUTH_URL
 
 describe('Login', () => {
-    it('Should reject invalid login', async () => {
-        // Ensure server is running before running this test
-        try {
-            const res = await request(BASE_URL)
-                .post('/api/auth/login')
-                .send({ mobile: '0000000000', password: 'wrongpassword' });
+  it('Should reject invalid login', async () => {
+    // Ensure server is running before running this test
+    try {
+      const res = await request(BASE_URL)
+        .post('/api/auth/login')
+        .send({ mobile: '0000000000', password: 'wrongpassword' });
 
-            expect(res.status).toBe(401);
-        } catch (e) {
-            console.warn("Skipping test: Server might not be running at " + BASE_URL);
-        }
-    });
+      expect(res.status).toBe(401);
+    } catch (e) {
+      console.warn('Skipping test: Server might not be running at ' + BASE_URL);
+    }
+  });
 
-    // Add more tests as needed
+  // Add more tests as needed
 });

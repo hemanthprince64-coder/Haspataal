@@ -27,8 +27,8 @@ export async function verifyDataIntegrity() {
   const stuckOutbox = await prisma.outboxEvent.count({
     where: {
       processed: false,
-      createdAt: { lt: new Date(Date.now() - 60 * 60 * 1000) }
-    }
+      createdAt: { lt: new Date(Date.now() - 60 * 60 * 1000) },
+    },
   });
 
   if (stuckOutbox > 0) {

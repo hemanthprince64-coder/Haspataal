@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Printer, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { Printer, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PrescriptionData {
   hospital: {
@@ -33,15 +33,15 @@ export function PrescriptionPad({ data }: { data: PrescriptionData }) {
     <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center">
       {/* UI Controls - Hidden on Print */}
       <div className="w-full max-w-[210mm] mb-6 flex justify-between items-center print:hidden">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => window.history.back()}
           className="text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
-        <Button 
+        <Button
           onClick={handlePrint}
           className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200"
         >
@@ -51,7 +51,7 @@ export function PrescriptionPad({ data }: { data: PrescriptionData }) {
       </div>
 
       {/* A4 Printable Sheet */}
-      <div 
+      <div
         className="bg-white shadow-2xl w-full max-w-[210mm] min-h-[297mm] p-[15mm] md:p-[20mm] flex flex-col border border-slate-200 print:shadow-none print:border-none print:p-0 print:m-0"
         id="prescription-sheet"
       >
@@ -61,10 +61,8 @@ export function PrescriptionPad({ data }: { data: PrescriptionData }) {
             {data.hospital.name}
           </h1>
           <div className="text-sm text-slate-600 space-y-0.5">
-            <p>{data.hospital.address || "Hospital Address Not Configured"}</p>
-            <p className="font-semibold text-slate-800">
-              Ph: {data.hospital.phone || "N/A"}
-            </p>
+            <p>{data.hospital.address || 'Hospital Address Not Configured'}</p>
+            <p className="font-semibold text-slate-800">Ph: {data.hospital.phone || 'N/A'}</p>
           </div>
         </header>
 
@@ -74,10 +72,10 @@ export function PrescriptionPad({ data }: { data: PrescriptionData }) {
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-slate-900">Dr. {data.doctor.name}</h2>
             <p className="text-xs font-medium text-slate-600 uppercase tracking-wider">
-              {data.doctor.qualification || "General Physician"}
+              {data.doctor.qualification || 'General Physician'}
             </p>
             <p className="text-xs text-slate-500">
-              Reg No: <span className="font-mono">{data.doctor.registration || "N/A"}</span>
+              Reg No: <span className="font-mono">{data.doctor.registration || 'N/A'}</span>
             </p>
           </div>
 
@@ -98,7 +96,7 @@ export function PrescriptionPad({ data }: { data: PrescriptionData }) {
             <div className="flex justify-end gap-2 text-sm">
               <span className="text-slate-500">Age / Sex:</span>
               <span className="font-bold text-slate-900 border-b border-slate-300 px-2 min-w-[120px]">
-                {data.patient.age || "—"} / {data.patient.gender || "—"}
+                {data.patient.age || '—'} / {data.patient.gender || '—'}
               </span>
             </div>
           </div>
@@ -111,7 +109,7 @@ export function PrescriptionPad({ data }: { data: PrescriptionData }) {
               Rx
             </span>
           </div>
-          
+
           {/* Blank space for manual writing */}
           <div className="min-h-[450px] w-full" />
         </div>

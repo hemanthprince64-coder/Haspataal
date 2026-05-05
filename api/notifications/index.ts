@@ -23,33 +23,38 @@ router.post('/webhooks/whatsapp', async (req: Request, res: Response) => {
       const logRes = await client.query(
         `SELECT hospital_id, patient_id, attempts, channel 
          FROM "NotificationLog" WHERE id = $1`,
-        [notification_id]
+        [notification_id],
       );
 
       if (logRes.rowCount > 0) {
         const log = logRes.rows[0];
-        
+
         // If meta throws a hard block (e.g. number not on WA), we can immediately fallback to SMS
-        if (error_code === '131026') { 
+        if (error_code === '131026') {
           await client.query(
             `UPDATE "NotificationLog" SET channel='sms', attempts=0, next_attempt_at=now() WHERE id=$1`,
-            [notification_id]
+            [notification_id],
           );
         } else {
           // Otherwise, let the worker retry logic handle it next tick
           await client.query(
             `UPDATE "NotificationLog" SET status='pending', next_attempt_at=now() WHERE id=$1`,
-            [notification_id]
+            [notification_id],
           );
         }
       }
     } else if (status === 'delivered' || status === 'read') {
       const logRes = await client.query(
         `UPDATE "NotificationLog" SET status=$1 WHERE id=$2 RETURNING hospital_id, patient_id`,
-        [status, notification_id]
+        [status, notification_id],
       );
       if (logRes.rowCount > 0) {
-        await EventService.publish('notification_delivered', { notification_id }, logRes.rows[0].hospital_id, logRes.rows[0].patient_id);
+        await EventService.publish(
+          'notification_delivered',
+          { notification_id },
+          logRes.rows[0].hospital_id,
+          logRes.rows[0].patient_id,
+        );
       }
     }
 

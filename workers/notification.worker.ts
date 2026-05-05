@@ -20,7 +20,7 @@ export class NotificationWorker {
          WHERE status = 'pending' 
            AND next_attempt_at <= now() 
          FOR UPDATE SKIP LOCKED 
-         LIMIT 50` // Batch to respect rate limits
+         LIMIT 50`, // Batch to respect rate limits
       );
 
       for (const row of res.rows) {
@@ -38,16 +38,16 @@ export class NotificationWorker {
 
   private static async attemptSend(client: any, job: any) {
     const { id, hospital_id, patient_id, template_key, variables, channel, attempts } = job;
-    
+
     // Default to WhatsApp if AUTO
     const currentChannel = channel === 'auto' ? 'whatsapp' : channel;
-    
+
     let success = false;
 
     try {
       // Build message
       const message = buildMessage(template_key, variables);
-      
+
       // Mock external provider call
       success = await this.mockProviderSend(currentChannel, patient_id, message);
 
@@ -55,25 +55,31 @@ export class NotificationWorker {
         // Mark delivered
         await client.query(
           `UPDATE "NotificationLog" SET status = 'delivered', delivered_at = now() WHERE id = $1`,
-          [id]
+          [id],
         );
-        await EventService.publish('notification_sent', { notification_id: id, channel: currentChannel }, hospital_id, patient_id);
+        await EventService.publish(
+          'notification_sent',
+          { notification_id: id, channel: currentChannel },
+          hospital_id,
+          patient_id,
+        );
       } else {
         throw new Error('Provider rejected');
       }
-
     } catch (err) {
       const nextAttempts = attempts + 1;
-      
+
       if (nextAttempts >= 3) {
         // Fallback logic
         if (channel === 'auto' || currentChannel === 'whatsapp') {
-          console.log(`[NotificationWorker] WhatsApp failed 3 times for Job ${id}. Falling back to SMS.`);
+          console.log(
+            `[NotificationWorker] WhatsApp failed 3 times for Job ${id}. Falling back to SMS.`,
+          );
           await client.query(
             `UPDATE "NotificationLog" 
              SET channel = 'sms', attempts = 0, next_attempt_at = now() 
              WHERE id = $1`,
-            [id]
+            [id],
           );
         } else {
           // Absolute failure
@@ -89,16 +95,22 @@ export class NotificationWorker {
           `UPDATE "NotificationLog" 
            SET attempts = $1, next_attempt_at = now() + interval '${delayMins} minutes' 
            WHERE id = $2`,
-          [nextAttempts, id]
+          [nextAttempts, id],
         );
       }
     }
   }
 
-  private static async mockProviderSend(channel: string, patientId: string, message: string): Promise<boolean> {
+  private static async mockProviderSend(
+    channel: string,
+    patientId: string,
+    message: string,
+  ): Promise<boolean> {
     // 90% success rate mock
     const isSuccess = Math.random() > 0.1;
-    console.log(`[MockProvider] Sending via ${channel.toUpperCase()} to ${patientId}: "${message}" -> ${isSuccess ? 'SUCCESS' : 'FAIL'}`);
+    console.log(
+      `[MockProvider] Sending via ${channel.toUpperCase()} to ${patientId}: "${message}" -> ${isSuccess ? 'SUCCESS' : 'FAIL'}`,
+    );
     return isSuccess;
   }
 }

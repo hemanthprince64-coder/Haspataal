@@ -22,8 +22,8 @@ export class NotificationService {
       await client.query(`SET LOCAL app.hospital_id = $1`, [req.hospital_id]);
 
       // 1. Curfew Check (10 PM to 8 AM IST)
-      // We assume server is running in UTC or we do offset math. 
-      // For simplicity, we'll do basic JS date hour check assuming IST server time, 
+      // We assume server is running in UTC or we do offset math.
+      // For simplicity, we'll do basic JS date hour check assuming IST server time,
       // or explicit offset if UTC. Assuming UTC server: IST = UTC + 5:30.
       const now = new Date();
       // Simple mockup of curfew check logic:
@@ -45,7 +45,9 @@ export class NotificationService {
         let hoursToAdd = 8 - currentHourIST;
         if (hoursToAdd <= 0) hoursToAdd += 24;
         nextAttemptAt.setHours(nextAttemptAt.getHours() + hoursToAdd);
-        console.log(`[NotificationService] Curfew active. Delaying send until ${nextAttemptAt.toISOString()}`);
+        console.log(
+          `[NotificationService] Curfew active. Delaying send until ${nextAttemptAt.toISOString()}`,
+        );
       }
 
       // 2. Insert into Queue (NotificationLog)
@@ -57,13 +59,13 @@ export class NotificationService {
         RETURNING id
         `,
         [
-          req.hospital_id, 
-          req.patient_id, 
-          req.template_key, 
-          JSON.stringify(req.variables), 
+          req.hospital_id,
+          req.patient_id,
+          req.template_key,
+          JSON.stringify(req.variables),
           req.channel_preference || 'auto',
-          nextAttemptAt.toISOString()
-        ]
+          nextAttemptAt.toISOString(),
+        ],
       );
 
       await client.query('COMMIT');

@@ -14,8 +14,8 @@ export async function recoverNoShows() {
   const potentialNoShows = await prisma.appointment.findMany({
     where: {
       status: 'BOOKED',
-      slotTime: { lt: threshold }
-    }
+      slotTime: { lt: threshold },
+    },
   });
 
   for (const appointment of potentialNoShows) {
@@ -23,7 +23,7 @@ export async function recoverNoShows() {
       // 1. Mark as No-Show
       await tx.appointment.update({
         where: { id: appointment.id },
-        data: { status: 'NO_SHOW' as any }
+        data: { status: 'NO_SHOW' as any },
       });
 
       // 2. Log for Audit
@@ -33,9 +33,9 @@ export async function recoverNoShows() {
           action: 'MARK_NO_SHOW',
           entity: 'appointment',
           entityId: appointment.id,
-        }
+        },
       });
-      
+
       console.log(`Recovered no-show: ${appointment.id}`);
     });
   }

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { hospitalAccessError, requireHospitalAccess, writeAuditLog } from '@/lib/auth/hospital-access';
+import {
+  hospitalAccessError,
+  requireHospitalAccess,
+  writeAuditLog,
+} from '@/lib/auth/hospital-access';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -15,7 +19,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
 
   const invoice = await prisma.invoice.findFirst({ where: { id, hospitalId: access.hospitalId } });
   if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
-  if (invoice.status !== 'DRAFT') return NextResponse.json({ error: 'Only draft invoices can be finalized' }, { status: 409 });
+  if (invoice.status !== 'DRAFT')
+    return NextResponse.json({ error: 'Only draft invoices can be finalized' }, { status: 409 });
 
   const updated = await prisma.invoice.update({
     where: { id },

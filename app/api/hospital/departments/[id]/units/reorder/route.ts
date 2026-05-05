@@ -15,9 +15,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     unitIds.map((id: string, index: number) =>
       prisma.unit.update({
         where: { id, departmentId },
-        data: { sortOrder: index }
-      })
-    )
+        data: { sortOrder: index },
+      }),
+    ),
   );
 
   return NextResponse.json({ ok: true });

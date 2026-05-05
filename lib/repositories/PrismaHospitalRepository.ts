@@ -28,10 +28,7 @@ export class PrismaHospitalRepository implements IHospitalRepository {
     }) as any;
   }
 
-  async findAll(filters?: {
-    city?: string;
-    accountStatus?: string;
-  }): Promise<HospitalRecord[]> {
+  async findAll(filters?: { city?: string; accountStatus?: string }): Promise<HospitalRecord[]> {
     const where: any = {};
     if (filters?.accountStatus) where.accountStatus = filters.accountStatus;
     if (filters?.city) {
@@ -46,9 +43,7 @@ export class PrismaHospitalRepository implements IHospitalRepository {
     }) as any;
   }
 
-  async registerWithAdmin(
-    input: RegisterHospitalInput
-  ): Promise<HospitalRecord> {
+  async registerWithAdmin(input: RegisterHospitalInput): Promise<HospitalRecord> {
     const regNumber = input.registrationNumber || `REG-${Date.now()}`;
 
     return prisma.$transaction(async (tx) => {
@@ -84,12 +79,11 @@ export class PrismaHospitalRepository implements IHospitalRepository {
 
       return hospital as any;
     });
-
   }
 
   async updateStatus(
     id: string,
-    data: { verificationStatus?: string; accountStatus?: string }
+    data: { verificationStatus?: string; accountStatus?: string },
   ): Promise<HospitalRecord> {
     return prisma.hospitalsMaster.update({
       where: { id },

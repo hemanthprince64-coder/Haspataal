@@ -37,10 +37,10 @@ permissions:
 
 # ─── Shared environment ────────────────────────────────────────────────────
 env:
-  NODE_VERSION: "18"
+  NODE_VERSION: '18'
   # Prisma generates the client at postinstall. Supply a syntactically valid
   # URL so it doesn't abort during CI setup — no real DB connection is made.
-  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_dummy?schema=public"
+  DATABASE_URL: 'postgresql://ci:ci@localhost:5432/ci_dummy?schema=public'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # JOB 1 — quality
@@ -50,7 +50,7 @@ env:
 # ═══════════════════════════════════════════════════════════════════════════════
 jobs:
   quality:
-    name: "Quality (type · lint · format · audit)"
+    name: 'Quality (type · lint · format · audit)'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -68,7 +68,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           # actions/setup-node's built-in cache keys on package-lock.json automatically.
-          cache: "npm"
+          cache: 'npm'
 
       # ── Secondary node_modules cache ──────────────────────────────────────
       # Persists the node_modules directory so postinstall scripts (prisma generate)
@@ -123,13 +123,13 @@ jobs:
       - name: Dependency audit
         run: npm audit --audit-level=high --omit=dev
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# JOB 2 — test
-# Vitest unit/integration tests with coverage upload; Prisma schema validation.
-# Depends on: quality
-# ═══════════════════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # JOB 2 — test
+  # Vitest unit/integration tests with coverage upload; Prisma schema validation.
+  # Depends on: quality
+  # ═══════════════════════════════════════════════════════════════════════════════
   test:
-    name: "Test (vitest · coverage · prisma validate)"
+    name: 'Test (vitest · coverage · prisma validate)'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: quality
@@ -144,7 +144,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Restore node_modules cache
         id: nm-cache
@@ -195,19 +195,19 @@ jobs:
       - name: Validate Prisma schema
         run: npx prisma validate
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# JOB 3 — schema-safety
-# Detects when prisma/schema.prisma changes without a matching migration file.
-# Runs independently on PRs only (path-filtered via dorny/paths-filter).
-#
-# Policy (enforced by this job):
-#   • If prisma/migrations/ does NOT exist → db-push workflow is active;
-#     schema changes are fine without a migration file. ✅ (passes)
-#   • If prisma/migrations/ DOES exist → migrations workflow is active;
-#     every schema change MUST be accompanied by a new migration file. ❌ (fails)
-# ═══════════════════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # JOB 3 — schema-safety
+  # Detects when prisma/schema.prisma changes without a matching migration file.
+  # Runs independently on PRs only (path-filtered via dorny/paths-filter).
+  #
+  # Policy (enforced by this job):
+  #   • If prisma/migrations/ does NOT exist → db-push workflow is active;
+  #     schema changes are fine without a migration file. ✅ (passes)
+  #   • If prisma/migrations/ DOES exist → migrations workflow is active;
+  #     every schema change MUST be accompanied by a new migration file. ❌ (fails)
+  # ═══════════════════════════════════════════════════════════════════════════════
   schema-safety:
-    name: "Schema Safety (migration gate)"
+    name: 'Schema Safety (migration gate)'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: github.event_name == 'pull_request'
@@ -270,13 +270,13 @@ jobs:
         run: |
           echo "✅ prisma/schema.prisma was not modified — schema-safety check skipped."
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# JOB 4 — build
-# Production Next.js build. Runs ONLY on pushes to main (post-merge gate).
-# Depends on: test
-# ═══════════════════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # JOB 4 — build
+  # Production Next.js build. Runs ONLY on pushes to main (post-merge gate).
+  # Depends on: test
+  # ═══════════════════════════════════════════════════════════════════════════════
   build:
-    name: "Build (next build · main only)"
+    name: 'Build (next build · main only)'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: test
@@ -293,7 +293,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
 
       - name: Restore node_modules cache
         id: nm-cache
@@ -325,12 +325,12 @@ jobs:
       - name: Build (next build)
         run: npm run build
         env:
-          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_TELEMETRY_DISABLED: '1'
           # Real secrets live in Vercel / Railway environment variables.
           # These placeholders satisfy Next.js env validation at build time only.
           DATABASE_URL: ${{ env.DATABASE_URL }}
-          NEXTAUTH_SECRET: "ci-build-placeholder-not-a-real-secret"
-          NEXTAUTH_URL: "http://localhost:3000"
+          NEXTAUTH_SECRET: 'ci-build-placeholder-not-a-real-secret'
+          NEXTAUTH_URL: 'http://localhost:3000'
 
       # ── Post-build summary (visible in Actions UI) ────────────────────────
       - name: Write build summary

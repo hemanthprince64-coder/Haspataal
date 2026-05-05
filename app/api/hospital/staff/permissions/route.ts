@@ -18,7 +18,12 @@ export async function PUT(req: NextRequest) {
     await prisma.hospitalRole.upsert({
       where: { id: `${hospitalId}_${roleName}` },
       update: { permissions: perms as object },
-      create: { id: `${hospitalId}_${roleName}`, hospitalId, roleName, permissions: perms as object },
+      create: {
+        id: `${hospitalId}_${roleName}`,
+        hospitalId,
+        roleName,
+        permissions: perms as object,
+      },
     });
   }
   return NextResponse.json({ ok: true });

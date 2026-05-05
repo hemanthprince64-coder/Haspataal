@@ -57,10 +57,7 @@ export class PrismaPatientRepository implements IPatientRepository {
     });
   }
 
-  async updateProfile(
-    id: string,
-    updates: Partial<PatientRecord>
-  ): Promise<PatientRecord> {
+  async updateProfile(id: string, updates: Partial<PatientRecord>): Promise<PatientRecord> {
     return prisma.patient.update({
       where: { id },
       data: updates,

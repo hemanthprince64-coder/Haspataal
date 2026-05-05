@@ -2,11 +2,10 @@ export function computeAvailableSlots(
   targetDate: Date,
   bookedSlots: Set<string>,
   allSlots: string[],
-  now: Date = new Date()
+  now: Date = new Date(),
 ): { time: string; available: boolean }[] {
   const isToday =
-    targetDate.getTime() ===
-    new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
   return allSlots.map((time) => {
     let available = !bookedSlots.has(time);
@@ -28,18 +27,15 @@ export function computeAvailableSlots(
 
 export function calculateAgentCommission(
   subscriptionAmount: number,
-  agentTier: 'SILVER' | 'GOLD' | 'PLATINUM'
+  agentTier: 'SILVER' | 'GOLD' | 'PLATINUM',
 ): number {
-  let rate = 0.10; // Default 10%
+  let rate = 0.1; // Default 10%
   if (agentTier === 'GOLD') rate = 0.15;
-  if (agentTier === 'PLATINUM') rate = 0.20;
+  if (agentTier === 'PLATINUM') rate = 0.2;
 
   return Math.round(subscriptionAmount * rate);
 }
 
-export function isAppointmentConflict(
-  requestedSlot: string,
-  existingBookings: string[]
-): boolean {
+export function isAppointmentConflict(requestedSlot: string, existingBookings: string[]): boolean {
   return existingBookings.includes(requestedSlot);
 }

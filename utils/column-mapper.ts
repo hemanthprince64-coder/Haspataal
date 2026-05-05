@@ -12,10 +12,10 @@ export const TARGET_FIELDS = [
  */
 export function fuzzyMatchHeaders(uploadedHeaders: string[]): Record<string, string | null> {
   const mapping: Record<string, string | null> = {};
-  
-  uploadedHeaders.forEach(header => {
+
+  uploadedHeaders.forEach((header) => {
     const clean = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
+
     if (clean.includes('name') || clean.includes('patient')) {
       mapping[header] = 'name';
     } else if (clean.includes('mob') || clean.includes('phone') || clean.includes('contact')) {
@@ -44,7 +44,7 @@ export function validateRow(row: Record<string, any>, mapping: Record<string, st
   const errors: string[] = [];
 
   // Apply mapping
-  Object.keys(row).forEach(header => {
+  Object.keys(row).forEach((header) => {
     const targetKey = mapping[header];
     if (targetKey) {
       mappedRow[targetKey] = row[header];

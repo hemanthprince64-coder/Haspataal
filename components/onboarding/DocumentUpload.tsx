@@ -10,7 +10,13 @@ interface DocumentUploadProps {
   onUploadSuccess: (url: string) => void;
 }
 
-export function DocumentUpload({ hospitalId, docType, label, rejectionReason, onUploadSuccess }: DocumentUploadProps) {
+export function DocumentUpload({
+  hospitalId,
+  docType,
+  label,
+  rejectionReason,
+  onUploadSuccess,
+}: DocumentUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -23,7 +29,7 @@ export function DocumentUpload({ hospitalId, docType, label, rejectionReason, on
   const handleUpload = async () => {
     if (!file) return;
     setUploading(true);
-    
+
     // Simulate API call to POST /hospitals/:id/documents
     const formData = new FormData();
     formData.append('file', file);
@@ -54,13 +60,18 @@ export function DocumentUpload({ hospitalId, docType, label, rejectionReason, on
       <UploadCloud className={`w-8 h-8 text-slate-400 mb-3 ${rejectionReason ? 'mt-6' : ''}`} />
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <span className="text-xs text-slate-500 mb-4">PDF, JPG, PNG up to 10MB</span>
-      
+
       {!file ? (
         <label className="cursor-pointer">
           <span className="bg-white border border-slate-200 px-4 py-2 rounded-md text-sm shadow-sm hover:bg-slate-50 transition-colors">
             Select File
           </span>
-          <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileChange} />
+          <input
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={handleFileChange}
+          />
         </label>
       ) : (
         <div className="flex items-center gap-3 w-full max-w-xs bg-white p-2 rounded-md border border-slate-200 shadow-sm">
@@ -73,11 +84,7 @@ export function DocumentUpload({ hospitalId, docType, label, rejectionReason, on
       )}
 
       {file && (
-        <Button 
-          className="mt-4 w-full max-w-xs" 
-          onClick={handleUpload} 
-          disabled={uploading}
-        >
+        <Button className="mt-4 w-full max-w-xs" onClick={handleUpload} disabled={uploading}>
           {uploading ? 'Uploading...' : 'Confirm Upload'}
         </Button>
       )}

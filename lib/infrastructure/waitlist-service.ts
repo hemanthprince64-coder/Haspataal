@@ -16,8 +16,8 @@ export async function addToWaitlist(data: {
       doctorId: data.doctorId,
       patientGlobalId: data.patientGlobalId,
       priority: data.priority || 1,
-      status: 'waiting'
-    }
+      status: 'waiting',
+    },
   });
 }
 
@@ -27,14 +27,11 @@ export async function addToWaitlist(data: {
  */
 export async function notifyNextInWaitlist(doctorId: string, slotTime: Date) {
   const nextInLine = await prisma.waitlistEntry.findFirst({
-    where: { 
+    where: {
       doctorId: doctorId,
-      status: 'waiting'
+      status: 'waiting',
     },
-    orderBy: [
-      { priority: 'desc' },
-      { createdAt: 'asc' }
-    ]
+    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
   });
 
   if (nextInLine) {
@@ -46,14 +43,14 @@ export async function notifyNextInWaitlist(doctorId: string, slotTime: Date) {
           waitlistId: nextInLine.id,
           patientId: nextInLine.patientGlobalId,
           doctorId,
-          slotTime
-        }
-      }
+          slotTime,
+        },
+      },
     });
 
     await prisma.waitlistEntry.update({
       where: { id: nextInLine.id },
-      data: { status: 'notified' }
+      data: { status: 'notified' },
     });
   }
 }

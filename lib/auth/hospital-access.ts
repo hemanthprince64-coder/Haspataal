@@ -19,11 +19,45 @@ type HospitalModule =
   | 'integrations'
   | 'staff';
 
-type HospitalAction = 'read' | 'create' | 'update' | 'delete' | 'activate' | 'pay' | 'finalize' | 'discharge';
+type HospitalAction =
+  | 'read'
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'activate'
+  | 'pay'
+  | 'finalize'
+  | 'discharge';
 
 const ROLE_MODULES: Record<string, HospitalModule[]> = {
-  SUPER_ADMIN: ['admin', 'setup', 'opd', 'ipd', 'billing', 'pharmacy', 'diagnostics', 'notifications', 'retention', 'marketplace', 'integrations', 'staff'],
-  HOSPITAL_ADMIN: ['admin', 'setup', 'opd', 'ipd', 'billing', 'pharmacy', 'diagnostics', 'notifications', 'retention', 'marketplace', 'integrations', 'staff'],
+  SUPER_ADMIN: [
+    'admin',
+    'setup',
+    'opd',
+    'ipd',
+    'billing',
+    'pharmacy',
+    'diagnostics',
+    'notifications',
+    'retention',
+    'marketplace',
+    'integrations',
+    'staff',
+  ],
+  HOSPITAL_ADMIN: [
+    'admin',
+    'setup',
+    'opd',
+    'ipd',
+    'billing',
+    'pharmacy',
+    'diagnostics',
+    'notifications',
+    'retention',
+    'marketplace',
+    'integrations',
+    'staff',
+  ],
   DOCTOR: ['opd', 'ipd', 'diagnostics', 'notifications', 'retention'],
   RECEPTIONIST: ['opd', 'ipd', 'billing', 'notifications'],
   BILLING: ['billing', 'opd', 'ipd'],
@@ -40,7 +74,10 @@ export interface HospitalAccess {
   staffId?: string;
 }
 
-export async function requireHospitalAccess(module: HospitalModule, action: HospitalAction = 'read'): Promise<HospitalAccess> {
+export async function requireHospitalAccess(
+  module: HospitalModule,
+  action: HospitalAction = 'read',
+): Promise<HospitalAccess> {
   const user = await requireAuth('session_user');
   const hospitalId = user?.hospitalId;
   if (!hospitalId) throw new Error('UNAUTHORIZED');
@@ -55,10 +92,7 @@ export async function requireHospitalAccess(module: HospitalModule, action: Hosp
       hospitalId,
       module,
       action,
-      OR: [
-        { staffId: staffId ?? null },
-        { staffId: null, role: role as Role },
-      ],
+      OR: [{ staffId: staffId ?? null }, { staffId: null, role: role as Role }],
     },
     orderBy: { staffId: 'desc' },
   });

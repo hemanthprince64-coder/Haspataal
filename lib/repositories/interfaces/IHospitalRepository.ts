@@ -40,7 +40,7 @@ export interface IHospitalRepository {
    */
   updateStatus(
     id: string,
-    data: { verificationStatus?: string; accountStatus?: string }
+    data: { verificationStatus?: string; accountStatus?: string },
   ): Promise<HospitalRecord>;
 
   /**

@@ -5,12 +5,12 @@
  */
 
 async function run() {
-    console.log("🎨 Starting RALPH_LINTER...");
+  console.log('🎨 Starting RALPH_LINTER...');
 
-    // Logic to enforce Tailwind class sorting
-    // Logic to check for hardcoded colors (must use CSS variables)
+  // Logic to enforce Tailwind class sorting
+  // Logic to check for hardcoded colors (must use CSS variables)
 
-    console.log("✅ Ralph Linter Check Passed (Simulation)");
+  console.log('✅ Ralph Linter Check Passed (Simulation)');
 }
 
 run().catch(console.error);
