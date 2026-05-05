@@ -222,6 +222,9 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Developer Workflow (Husky/lint-staged):** Pre-commit hooks enforce Prettier formatting and ESLint rules. Commit messages must follow Conventional Commits and are validated via `commitlint`. _(Implemented 2026-05-05)_
 - **PHI Protection (Logging):** Always use `@haspataal/logger`. It is configured to automatically redact sensitive fields (password, token, secret, authorization). Never use `console.log` for patient data; it violates PHI compliance and will be flagged by ESLint. _(Implemented 2026-05-05)_
 - **Structured Health Monitoring:** Use the structured `/api/health` endpoint for Docker/K8s health checks. It validates DB (Prisma), Cache (Redis), and External Services (Supabase) connectivity, returning status codes 200 (healthy), 207 (degraded), or 503 (unhealthy). _(Implemented 2026-05-05)_
+- **Performance Optimization (N+1 & Caching):** Eliminated N+1 query patterns in doctor and hospital fetching via Prisma `include` blocks. Parallelized independent agent dashboard queries using `Promise.all`. Implemented 1-hour ISR caching for public search routes and `revalidate: 0` for clinical dashboards to balance speed and data freshness. _(Implemented 2026-05-05)_
+- **Sentry Error Monitoring:** Integrated `@sentry/nextjs` across all apps. Implemented a mandatory `beforeSend` hook to recursively scrub PHI (passwords, tokens, medicalHistory) before reporting. Standardized Server Actions with `withErrorMonitoring()` HOF to return sanitized `errorId` for patient support. _(Implemented 2026-05-05)_
+- **Automated Quality Audit:** Created `scripts/quality-audit.ts` to verify 28 engineering standards across security, quality, structure, and excellence. Includes automated checks for plaintext passwords, test coverage (70%+), and compliance documentation. _(Implemented 2026-05-05)_
 
 ---
 

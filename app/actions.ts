@@ -4,6 +4,7 @@ import { services } from '@/lib/services';
 import { CareLifecycleService } from '@/lib/services/care-lifecycle';
 import { z } from 'zod';
 import logger from '@/lib/logger';
+import { withErrorMonitoring } from '@/lib/monitoring';
 
 import {
   RegisterDoctorSchema,
@@ -1166,10 +1167,12 @@ export async function logoutPatient() {
   redirect('/');
 }
 
-export async function bookAppointment(
-  prevState: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
+export const bookAppointment = withErrorMonitoring(
+  'bookAppointment',
+  async (
+    prevState: ActionResult | null,
+    formData: FormData,
+  ): Promise<ActionResult> => {
   let patient;
   try {
     patient = await requireRole(UserRole.PATIENT, 'session_patient');
@@ -1229,7 +1232,7 @@ export async function bookAppointment(
   } catch (e: any) {
     return { success: false, message: e.message };
   }
-}
+});
 
 export async function cancelAppointmentPatient(
   prevState: ActionResult | null,
@@ -1487,5 +1490,55 @@ export async function submitCheckInAction(
   } catch (e: any) {
     logger.error({ action: 'submit_checkin_failed', careJourneyId, error: e.message });
     throw e;
+  }
+}
+// ==================== COMPLIANCE & PRIVACY (DPDP) ====================
+
+export async function recordConsentAction(
+  patientId: string,
+  purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+) {
+  try {
+    const session = await decrypt(cookies().get('session_user')?.value);
+    if (!session || (session.userId !== patientId && session.role !== 'PLATFORM_ADMIN')) {
+      throw new Error('Unauthorized');
+    }
+
+    await services.compliance.recordConsent(patientId, purpose);
+    return { success: true };
+  } catch (e: any) {
+    logger.error({ action: 'record_consent_failed', patientId, purpose, error: e.message });
+    return { success: false, error: e.message };
+  }
+}
+
+export async function withdrawConsentAction(
+  patientId: string,
+  purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+) {
+  try {
+    const session = await decrypt(cookies().get('session_user')?.value);
+    if (!session || (session.userId !== patientId && session.role !== 'PLATFORM_ADMIN')) {
+      throw new Error('Unauthorized');
+    }
+
+    await services.compliance.withdrawConsent(patientId, purpose);
+    return { success: true };
+  } catch (e: any) {
+    logger.error({ action: 'withdraw_consent_failed', patientId, purpose, error: e.message });
+    return { success: false, error: e.message };
+  }
+}
+
+export async function deletePatientDataAction(patientId: string) {
+  // DPDP Right to Erasure is protected by PLATFORM_ADMIN
+  const auth = await requireRole(['PLATFORM_ADMIN']);
+  if (!auth) return { success: false, error: 'Unauthorized' };
+
+  try {
+    return await services.compliance.deletePatientData(patientId);
+  } catch (e: any) {
+    logger.error({ action: 'delete_patient_data_failed', patientId, error: e.message });
+    return { success: false, error: e.message };
   }
 }

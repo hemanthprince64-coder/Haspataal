@@ -1,3 +1,4 @@
+export const revalidate = 3600; // Revalidate every 1 hour (ISR)
 import type { Metadata } from 'next';
 import { services } from '@/lib/services';
 import { notFound } from 'next/navigation';

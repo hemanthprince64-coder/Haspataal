@@ -25,7 +25,10 @@ export interface ExtendedPrismaClient extends PrismaClient {
 }
 
 const prismaClientSingleton = (): ExtendedPrismaClient => {
-  const client = new PrismaClient() as unknown as ExtendedPrismaClient;
+  const isDev = process.env.NODE_ENV !== 'production';
+  const client = new PrismaClient({
+    log: isDev ? ['query', 'warn', 'error'] : ['error'],
+  }) as unknown as ExtendedPrismaClient;
 
   // RLS Session Helper: ensures absolute database-level isolation
   // Use this wrapper for any query requiring multi-tenant security

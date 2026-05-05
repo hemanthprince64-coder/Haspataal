@@ -400,6 +400,7 @@ model Patient {
   emergencyContactAltPhone String?                @map("emergency_contact_alt_phone")
   emergencyContactName     String?                @map("emergency_contact_name")
   emergencyContactPhone    String?                @map("emergency_contact_phone")
+  consents                 Consent[]
   emergencyContactRelation String?                @map("emergency_contact_relation")
   maritalStatus            String?                @map("marital_status")
   occupation               String?
@@ -569,6 +570,7 @@ model Slot {
   doctorId String       @map("doctor_id")
   day      String
   time     String
+  isActive Boolean      @default(true) @map("is_active")
   doctor   DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([doctorId, day, time])
@@ -1949,6 +1951,26 @@ model Supplier {
   updatedAt   DateTime        @updatedAt @map("updated_at")
   hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   drugs       DrugStock[]
-
-  @@map("suppliers")
 }
+
+// --- DPDP Act Compliance ---
+
+enum ConsentPurpose {
+  APPOINTMENT_BOOKING
+  HEALTH_RECORDS
+  MARKETING
+}
+
+model Consent {
+  id          String         @id @default(uuid())
+  patientId   String         @map("patient_id")
+  purpose     ConsentPurpose
+  givenAt     DateTime       @default(now()) @map("given_at")
+  withdrawnAt DateTime?      @map("withdrawn_at")
+  version     Int            @default(1)
+  patient     Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, purpose, version])
+  @@map("consents")
+}
+

@@ -65,13 +65,24 @@ export const services = {
   platform: {
     getCities: (): typeof CITIES => CITIES,
 
-    getHospitals: async (city?: string): Promise<HospitalPublic[]> => {
+    getHospitals: async (
+      city?: string,
+      limit = 10,
+      cursor?: string,
+    ): Promise<HospitalPublic[]> => {
       const where: any = { accountStatus: 'active' };
       if (city) {
         where.city = { equals: city, mode: 'insensitive' };
       }
+
+      // PERFORMANCE: Cursor-based pagination + Eager loading to avoid N+1
+      // Note: 'specialities' is a scalar array in this schema, so it is natively included.
       const data = await prisma.hospitalsMaster.findMany({
         where,
+        take: limit,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+        orderBy: { rankingScore: 'desc' },
         include: {
           _count: {
             select: {
@@ -534,6 +545,12 @@ export const services = {
       const targetDate = new Date(data.date);
       targetDate.setHours(0, 0, 0, 0);
       const targetSlot = data.slot || 'ONLINE';
+
+      // DPDP COMPLIANCE: Check for explicit consent before processing booking
+      const hasConsent = await services.compliance.checkConsent(data.patientMobile, 'APPOINTMENT_BOOKING');
+      if (!hasConsent) {
+        throw new Error('CONSENT_REQUIRED: Patient has not provided explicit consent for appointment booking.');
+      }
 
       try {
         // ACID Transaction to prevent double booking race conditions
@@ -1201,9 +1218,21 @@ export const services = {
     },
 
     getDoctors: async (hospitalId: string) => {
+      /**
+       * PERFORMANCE (FIX N+1):
+       * Avoid fetching affiliations and then looping for doctor details.
+       * Deep include handles registration and slots in a single SQL join.
+       */
       const affiliations = await prisma.doctorHospitalAffiliation.findMany({
         where: { hospitalId, isCurrent: true },
-        include: { doctor: true },
+        include: {
+          doctor: {
+            include: {
+              registration: true,
+              slots: { where: { isActive: true } },
+            },
+          },
+        },
       });
       return affiliations.map((a) => ({
         id: a.doctor.id,
@@ -1212,6 +1241,8 @@ export const services = {
         mobile: a.doctor.mobile,
         role: a.role,
         fee: 500,
+        registration: a.doctor.registration?.registrationNumber,
+        activeSlots: a.doctor.slots.length,
       }));
     },
 
@@ -1802,26 +1833,28 @@ export const services = {
     },
 
     getDashboardData: async (agentId: string) => {
-      const hospitals = await prisma.hospitalsMaster.findMany({
-        where: { agentId },
-        select: {
-          id: true,
-          legalName: true,
-          verificationStatus: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      const patients = await prisma.patient.findMany({
-        where: { agentId },
-        select: {
-          id: true,
-          name: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      // PERFORMANCE: Parallelize independent queries to reduce total response time
+      const [hospitals, patients] = await Promise.all([
+        prisma.hospitalsMaster.findMany({
+          where: { agentId },
+          select: {
+            id: true,
+            legalName: true,
+            verificationStatus: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.patient.findMany({
+          where: { agentId },
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
 
       return {
         hospitals,
@@ -1932,6 +1965,115 @@ export const services = {
       }
 
       return analysis;
+    },
+  },
+
+  // --- Compliance & Privacy (DPDP) ---
+  compliance: {
+    recordConsent: async (
+      patientId: string,
+      purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+    ) => {
+      return await prisma.consent.upsert({
+        where: {
+          patientId_purpose_version: {
+            patientId,
+            purpose,
+            version: 1,
+          },
+        },
+        create: {
+          patientId,
+          purpose,
+          version: 1,
+        },
+        update: {
+          givenAt: new Date(),
+          withdrawnAt: null,
+        },
+      });
+    },
+
+    withdrawConsent: async (
+      patientId: string,
+      purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+    ) => {
+      return await prisma.consent.update({
+        where: {
+          patientId_purpose_version: {
+            patientId,
+            purpose,
+            version: 1,
+          },
+        },
+        data: {
+          withdrawnAt: new Date(),
+        },
+      });
+    },
+
+    checkConsent: async (
+      patientIdOrMobile: string,
+      purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+    ) => {
+      // Find patient first if mobile is provided
+      let patientId = patientIdOrMobile;
+      if (!patientIdOrMobile.includes('-')) { // Simple heuristic: mobile doesn't have hyphens
+        const p = await prisma.patient.findUnique({ where: { phone: patientIdOrMobile } });
+        if (!p) return false;
+        patientId = p.id;
+      }
+
+      const consent = await prisma.consent.findUnique({
+        where: {
+          patientId_purpose_version: {
+            patientId,
+            purpose,
+            version: 1,
+          },
+        },
+      });
+      return !!consent && !consent.withdrawnAt;
+    },
+
+    deletePatientData: async (patientId: string) => {
+      return await prisma.$transaction(async (tx) => {
+        // 1. Anonymize Patient Record
+        const patient = await tx.patient.update({
+          where: { id: patientId },
+          data: {
+            name: '[DELETED]',
+            phone: `DELETED-${patientId.substring(0, 8)}`,
+            email: `deleted-${patientId.substring(0, 8)}@haspataal.deleted`,
+            abhaAddress: null,
+            address: null,
+            password: 'DELETED',
+          },
+        });
+
+        // 2. Soft-delete Appointment History
+        await tx.appointment.updateMany({
+          where: { patientId },
+          data: {
+            status: 'CANCELLED',
+            notes: '[DATA ERASURE REQUEST PROCESSED]',
+          },
+        });
+
+        // 3. Audit Log
+        logAudit({
+          action: 'DELETE',
+          actorId: 'SYSTEM',
+          actorRole: 'PLATFORM_ADMIN',
+          resourceType: 'PATIENT',
+          resourceId: patientId,
+          timestamp: new Date().toISOString(),
+          ip: 'system',
+          changes: { erasure: true, timestamp: new Date() },
+        });
+
+        return { success: true };
+      });
     },
   },
 };
