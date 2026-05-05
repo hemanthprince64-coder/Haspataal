@@ -106,7 +106,7 @@ const STEPS = [
     icon: Calendar,
     href: '/hospital/dashboard/setup/opd',
     weight: 1,
-    critical: false,
+    critical: true,
     depends: ['doctors'],
     warning: 'OPD workflow unconfigured → front desk impaired',
   },
