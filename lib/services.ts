@@ -1336,7 +1336,19 @@ export const services = {
           },
         });
 
-        // 3. Emit event (fire-and-forget, outside tx)
+        // 3. Create Staff record for primary admin
+        await tx.staff.create({
+          data: {
+            hospitalId: hospital.id,
+            name: data.adminName,
+            mobile: data.mobile,
+            password: hashedPassword,
+            role: 'HOSPITAL_ADMIN',
+            isActive: true,
+          },
+        });
+
+        // 4. Emit event (fire-and-forget, outside tx)
         emitEvent({
           eventType: 'hospital_registered',
           hospitalId: hospital.id,
