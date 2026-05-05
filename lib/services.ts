@@ -1,6 +1,7 @@
 import prisma from './prisma';
 import { emitEvent } from '@/services/event-emitter';
-import logger from './logger';
+import { logger, logAudit } from '@haspataal/logger';
+import { hospitalRegistrationsCounter, appointmentsCreatedCounter } from '@/lib/metrics';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import {
@@ -418,6 +419,18 @@ export const services = {
           password: hashedPassword,
         },
       });
+
+      logAudit({
+        action: 'CREATE',
+        actorId: patient.id,
+        actorRole: 'PATIENT',
+        resourceType: 'PATIENT_PROFILE',
+        resourceId: patient.id,
+        timestamp: new Date().toISOString(),
+        ip: 'system', // IP would come from request context in a real action
+        changes: { name: patient.name, mobile: patient.phone },
+      });
+
       return {
         user: {
           id: patient.id,
@@ -568,6 +581,24 @@ export const services = {
           { action: 'booking_created', appointmentId: appointment.id },
           'Successfully booked appointment',
         );
+
+        logAudit({
+          action: 'CREATE',
+          actorId: appointment.patientId,
+          actorRole: 'PATIENT',
+          resourceType: 'APPOINTMENT',
+          resourceId: appointment.id,
+          timestamp: new Date().toISOString(),
+          ip: 'system',
+          changes: {
+            doctorId: appointment.doctorId,
+            slot: appointment.slot,
+            date: appointment.date,
+          },
+        });
+
+        appointmentsCreatedCounter.inc({ status: 'BOOKED', hospitalId: appointment.hospitalId });
+
         return appointment;
       } catch (error: any) {
         // Handle Prisma unique constraint violation explicitly (P2002)
@@ -1363,6 +1394,19 @@ export const services = {
           hospitalId: hospital.id,
           payload: { hospitalName: data.hospitalName, city: data.city, adminName: data.adminName },
         });
+
+        logAudit({
+          action: 'CREATE',
+          actorId: hospital.id,
+          actorRole: 'HOSPITAL_ADMIN',
+          resourceType: 'HOSPITAL',
+          resourceId: hospital.id,
+          timestamp: new Date().toISOString(),
+          ip: 'system',
+          changes: { name: hospital.legalName, city: hospital.city },
+        });
+
+        hospitalRegistrationsCounter.inc();
 
         return toHospitalPublic(hospital as Hospital);
       });

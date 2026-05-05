@@ -6,6 +6,7 @@ require('dotenv').config({ path: '../.env' });
 const { requireAuth, requireRole, requireHospitalTenant } = require('./middleware/auth');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { logger } = require('@haspataal/logger');
 
 const { apiLimiter, strictLimiter } = require('./middleware/rate-limit');
 
@@ -32,18 +33,73 @@ app.use(apiLimiter);
 
 const PORT = process.env.API_GATEWAY_PORT || 4002;
 
+const { register, Counter, Histogram } = require('prom-client');
+
+// --- METRICS ---
+const requestDuration = new Histogram({
+  name: 'haspataal_api_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['route', 'method', 'statusCode'],
+});
+register.registerMetric(requestDuration);
+
+const appointmentsCreated = new Counter({
+  name: 'haspataal_appointments_created_total',
+  help: 'Total appointments created',
+  labelNames: ['status', 'hospitalId'],
+});
+register.registerMetric(appointmentsCreated);
+
+// Middleware to track request duration
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    const route = req.route ? req.route.path : req.path;
+    requestDuration.observe({ route, method: req.method, statusCode: res.statusCode }, duration);
+  });
+  next();
+});
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
 // ============================================================
-// HEALTH CHECK (Public)
+// HEALTH CHECK (Structured)
 // ============================================================
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      status: 'healthy',
-      service: 'api-gateway',
-      version: '1.0.0',
-      timestamp: new Date().toISOString(),
-    },
+app.get('/health', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  const checks = {};
+  let overallStatus = 'healthy';
+
+  // DB Check
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    checks.database = { status: 'up' };
+  } catch (err) {
+    checks.database = { status: 'down' };
+    overallStatus = 'unhealthy';
+  }
+
+  // Redis Check
+  const { redis } = require('./lib/cache');
+  try {
+    const ping = await redis.ping();
+    checks.redis = { status: ping === 'PONG' ? 'up' : 'down' };
+    if (ping !== 'PONG') overallStatus = 'degraded';
+  } catch (err) {
+    checks.redis = { status: 'down' };
+    overallStatus = 'degraded';
+  }
+
+  const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 207 : 503;
+  res.status(statusCode).json({
+    status: overallStatus,
+    timestamp,
+    service: 'api-gateway',
+    checks,
   });
 });
 
@@ -150,12 +206,14 @@ app.post('/v1/appointments', requireAuth, async (req, res) => {
       },
     });
 
+    appointmentsCreated.inc({ status: 'BOOKED', hospitalId });
+
     res.status(201).json({
       success: true,
       data: appointment,
     });
   } catch (error) {
-    console.error('[Booking Error]', error);
+    logger.error({ error }, 'Booking failure');
     res.status(error.name === 'ExecutionError' ? 409 : 500).json({
       success: false,
       error:
@@ -253,7 +311,7 @@ app.get(
 // ERROR HANDLER
 // ============================================================
 app.use((err, req, res, next) => {
-  console.error('[API Gateway Error]', err.message);
+  logger.error({ err, path: req.path }, 'Internal server error');
   res.status(500).json({
     success: false,
     error: 'Internal server error',
@@ -262,7 +320,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[API Gateway] Running on port ${PORT}`);
-  console.log(`[API Gateway] RBAC middleware: ACTIVE`);
-  console.log(`[API Gateway] Multi-tenant isolation: ACTIVE`);
+  logger.info({ port: PORT }, '[API Gateway] Running');
+  logger.info('[API Gateway] RBAC middleware: ACTIVE');
+  logger.info('[API Gateway] Multi-tenant isolation: ACTIVE');
 });

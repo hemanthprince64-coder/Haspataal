@@ -14,21 +14,24 @@ test.describe('Appointment Booking', () => {
     // 2. Search and book appointment
     await patientPage.bookAppointment('Dr. Arvind Sharma', 'Cardiology');
 
-    // 3. Assert status is AWAITING_PAYMENT
+    // 3. Assert: BookingStatus is AWAITING_PAYMENT after creation
     await expect(page.locator('text=AWAITING_PAYMENT')).toBeVisible();
 
-    // 4. Hospital confirms payment
+    // 4. Hospital admin confirms payment
     // Log out as patient, log in as hospital
     await patientPage.logout();
     await hospitalPage.login('8000000001', 'hospital-pass');
     await hospitalPage.confirmPayment('Test Patient');
 
-    // 5. Patient verifies status is BOOKED
-    await hospitalPage.page.goto('/hospital/login'); // Triggering logout by going to login or use a logout method
-    // In real app, we would have a clear logout
+    // 5. Assert: BookingStatus is BOOKED
+    await expect(page.locator('text=BOOKED')).toBeVisible();
+
+    // 6. Patient dashboard shows the confirmed appointment
+    await hospitalPage.page.goto('/hospital/login');
     await patientPage.navigateToLogin();
     await patientPage.login('9000000001', '1234');
 
     await expect(page.locator('text=BOOKED')).toBeVisible();
+    await expect(page.locator('text=Dr. Arvind Sharma')).toBeVisible();
   });
 });

@@ -11,6 +11,7 @@ app.use(cors());
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { logger } = require('@haspataal/logger');
 const bcrypt = require('bcryptjs');
 const Redis = require('ioredis');
 
@@ -20,8 +21,53 @@ const redis = new Redis(REDIS_URL);
 const PORT = process.env.AUTH_SERVICE_PORT || 4001;
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'fallback_secret_for_dev_only';
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', service: 'auth-service' });
+const { register, Counter } = require('prom-client');
+
+// --- METRICS ---
+const loginAttempts = new Counter({
+  name: 'haspataal_auth_login_attempts_total',
+  help: 'Total login attempts in auth-service',
+  labelNames: ['role', 'success'],
+});
+register.registerMetric(loginAttempts);
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
+
+// --- HEALTH ---
+app.get('/health', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  const checks = {};
+  let overallStatus = 'healthy';
+
+  // DB Check
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    checks.database = { status: 'up' };
+  } catch (err) {
+    checks.database = { status: 'down' };
+    overallStatus = 'unhealthy';
+  }
+
+  // Redis Check
+  try {
+    const ping = await redis.ping();
+    checks.redis = { status: ping === 'PONG' ? 'up' : 'down' };
+    if (ping !== 'PONG') overallStatus = 'degraded';
+  } catch (err) {
+    checks.redis = { status: 'down' };
+    overallStatus = 'degraded';
+  }
+
+  const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 207 : 503;
+  res.status(statusCode).json({
+    status: overallStatus,
+    timestamp,
+    service: 'auth-service',
+    checks,
+  });
 });
 
 app.post('/oauth/token', async (req, res) => {
@@ -69,8 +115,8 @@ app.post('/oauth/token', async (req, res) => {
     }
 
     // Validate Password
-    const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
+      loginAttempts.inc({ role, success: 'false' });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -84,6 +130,7 @@ app.post('/oauth/token', async (req, res) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 
+    loginAttempts.inc({ role, success: 'true' });
     res.json({
       access_token: token,
       token_type: 'Bearer',
@@ -95,7 +142,7 @@ app.post('/oauth/token', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Auth Error]', error);
+    logger.error({ error }, 'Authentication failed');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -126,6 +173,6 @@ app.post('/auth/logout', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`[Auth Service] Running on port ${PORT}`);
-  console.log(`[Auth Service] Ready to process JWTs for api.haspataal.com`);
+  logger.info({ port: PORT }, '[Auth Service] Running');
+  logger.info('[Auth Service] Ready to process JWTs for api.haspataal.com');
 });

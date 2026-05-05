@@ -133,6 +133,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: quality
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
       - name: Checkout
@@ -183,7 +185,7 @@ jobs:
         # Don't gate the build on Codecov availability — it's a reporting tool.
         continue-on-error: true
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ env.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           flags: unittests
           name: haspataal-coverage
@@ -393,6 +395,7 @@ jobs:
         run: npm ci --prefer-offline
 
       - name: Generate Prisma client
+        if: steps.nm-cache.outputs.cache-hit == 'true'
         run: npx prisma generate
 
       - name: Install Playwright Browsers

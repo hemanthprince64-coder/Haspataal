@@ -19,7 +19,10 @@ test.describe('Patient Authentication', () => {
     // 2. Assert redirect to profile
     await expect(page).toHaveURL('/profile');
 
-    // 3. Log out
+    // 3. Assert: user appears in DB (via API call to a test endpoint)
+    await patientPage.verifyInDb(testData.mobile);
+
+    // 4. Log out
     await patientPage.logout();
 
     // 4. Log back in

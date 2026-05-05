@@ -36,7 +36,14 @@ test.describe('Hospital Onboarding', () => {
     };
     await hospitalPage.addDoctor(doctorData);
 
-    // 4. Verify doctor appears in dashboard
+    // 4. Assert: doctor affiliation is PENDING in DB
+    await hospitalPage.verifyAffiliationInDb(hospitalData.hospitalName, doctorData.mobile);
+
+    // 5. Hospital admin approves doctor (or simulate approval)
+    // For Flow 2, we assume the admin approves it
+    // await hospitalPage.approveDoctor(doctorData.name);
+
+    // 6. Verify doctor appears in dashboard
     await hospitalPage.expectDoctorInDashboard(doctorData.name);
   });
 });

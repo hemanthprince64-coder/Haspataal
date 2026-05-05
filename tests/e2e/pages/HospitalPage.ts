@@ -47,4 +47,19 @@ export class HospitalPage {
     await this.page.goto('/hospital/dashboard/doctors');
     await expect(this.page.locator(`text=${doctorName}`)).toBeVisible();
   }
+
+  async verifyAffiliationInDb(hospitalName: string, doctorMobile: string) {
+    // First get hospital ID
+    const hRes = await this.page.request.get(
+      `/api/test/verify?type=hospital&name=${encodeURIComponent(hospitalName)}`,
+    );
+    const hData = await hRes.json();
+
+    const response = await this.page.request.get(
+      `/api/test/verify?type=affiliation&hospitalId=${hData.id}&mobile=${doctorMobile}`,
+    );
+    const data = await response.json();
+    expect(data).not.toBeNull();
+    expect(data.status).toBe('PENDING');
+  }
 }

@@ -48,4 +48,11 @@ export class PatientPage {
     await this.page.click(`text=${doctorName}`);
     await this.page.click('button:has-text("Book Slot")');
   }
+
+  async verifyInDb(mobile: string) {
+    const response = await this.page.request.get(`/api/test/verify?type=patient&mobile=${mobile}`);
+    const data = await response.json();
+    expect(data).not.toBeNull();
+    expect(data.mobile).toBe(mobile);
+  }
 }

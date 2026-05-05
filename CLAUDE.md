@@ -26,6 +26,7 @@ haspataal/                    ← Workspace root (patient-portal, port 3000)
 │   ├── types/                ← @haspataal/types — shared TypeScript types
 │   ├── db/                   ← @haspataal/db — shared Prisma client singleton
 │   ├── ui/                   ← @haspataal/ui — shared shadcn component library
+│   ├── logger/               ← @haspataal/logger — shared structured Pino logger
 │   └── config/               ← @haspataal/config — shared ESLint/TS/Tailwind
 ├── haspataal-in/             ← Next.js app (port 3001)
 ├── haspataal-admin/          ← Next.js admin panel (port 3002)
@@ -77,8 +78,8 @@ lib/
 - **Styling:** Tailwind CSS 3.4 + Shadcn UI (`@haspataal/ui`)
 - **ORM/DB:** Prisma 5 (`@haspataal/db`) / Raw `pg` Pool for RLS-scoped transactions
 - **Auth:** `jose` JWT RBAC + Multi-tenant hospital isolation (unified across root app + gateway)
-- **API Gateway:** Express with Pino structured logging, per-role rate limiting, X-Request-ID correlation
-- **Messaging:** Redis Streams
+- **Observability:** Shared Pino structured logging (@haspataal/logger) with PHI redaction, Prometheus metrics (prom-client), and structured health checks (/api/health).
+- **API Gateway:** Express with role-based rate limiting and X-Request-ID correlation.
 - **Notifications:** WhatsApp Business API + SMS Gateway
 - **AI:** Gemini (Triage & OCR)
 
@@ -219,6 +220,8 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Clean Architecture Transition:** Core business logic is migrating to `@haspataal/core`. Use-cases must be pure logic classes that depend on repository interfaces, ensuring 100% testability without a database. _(Implemented 2026-05-05)_
 - **PR & Security Guardrails:** All PRs must use the `PULL_REQUEST_TEMPLATE.md` and pass the CI test suite. Security checks are mandatory for any changes touching auth, PII, or schema. _(Implemented 2026-05-05)_
 - **Developer Workflow (Husky/lint-staged):** Pre-commit hooks enforce Prettier formatting and ESLint rules. Commit messages must follow Conventional Commits and are validated via `commitlint`. _(Implemented 2026-05-05)_
+- **PHI Protection (Logging):** Always use `@haspataal/logger`. It is configured to automatically redact sensitive fields (password, token, secret, authorization). Never use `console.log` for patient data; it violates PHI compliance and will be flagged by ESLint. _(Implemented 2026-05-05)_
+- **Structured Health Monitoring:** Use the structured `/api/health` endpoint for Docker/K8s health checks. It validates DB (Prisma), Cache (Redis), and External Services (Supabase) connectivity, returning status codes 200 (healthy), 207 (degraded), or 503 (unhealthy). _(Implemented 2026-05-05)_
 
 ---
 
