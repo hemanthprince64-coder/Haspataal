@@ -44,3 +44,8 @@ next-env.d.ts
 
 # graphify
 graphify-out/
+
+# Internal
+.kilo/
+.agent/
+.metagpt/
