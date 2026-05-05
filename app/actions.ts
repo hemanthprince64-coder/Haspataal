@@ -22,6 +22,8 @@ type ActionResult = {
   message?: string;
   data?: unknown;
   result?: unknown;
+  error?: string;
+  retryAfter?: number;
 };
 
 // ── Imports ──────────────────────────────────────────────────
@@ -96,7 +98,7 @@ async function _loginHospital(
 export const loginHospital = withRateLimit(_loginHospital, {
   actionName: 'loginHospital',
   limit: 10,
-  windowMs: 15 * 60 * 1000, // 15 mins
+  windowSeconds: 15 * 60, // 15 mins
 });
 
 async function _registerHospital(
@@ -148,7 +150,7 @@ async function _registerHospital(
 export const registerHospital = withRateLimit(_registerHospital, {
   actionName: 'registerHospital',
   limit: 3,
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowSeconds: 60 * 60, // 1 hour
 });
 
 export async function logoutHospital() {
@@ -446,8 +448,8 @@ async function _registerDoctor(
 
 export const registerDoctor = withRateLimit(_registerDoctor, {
   actionName: 'registerDoctor',
-  limit: 10,
-  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 5,
+  windowSeconds: 60 * 60, // 1 hour
 });
 
 async function _registerAgent(
@@ -488,10 +490,10 @@ async function _registerAgent(
 export const registerAgent = withRateLimit(_registerAgent, {
   actionName: 'registerAgent',
   limit: 5,
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowSeconds: 60 * 60, // 1 hour
 });
 
-export async function registerLab(
+async function _registerLab(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -525,6 +527,12 @@ export async function registerLab(
   }
 }
 
+export const registerLab = withRateLimit(_registerLab, {
+  actionName: 'registerLab',
+  limit: 3,
+  windowSeconds: 60 * 60, // 1 hour
+});
+
 async function _agentLogin(
   prevState: ActionResult | null,
   formData: FormData,
@@ -552,12 +560,12 @@ async function _agentLogin(
 export const agentLogin = withRateLimit(_agentLogin, {
   actionName: 'agentLogin',
   limit: 10,
-  windowMs: 15 * 60 * 1000, // 15 mins
+  windowSeconds: 15 * 60, // 15 mins
 });
 
 // ==================== PATIENT ACTIONS ====================
 
-export async function patientLogin(
+async function _patientLogin(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -580,6 +588,12 @@ export async function patientLogin(
 
   redirect('/');
 }
+
+export const patientLogin = withRateLimit(_patientLogin, {
+  actionName: 'patientLogin',
+  limit: 10,
+  windowSeconds: 15 * 60, // 15 mins
+});
 
 export async function requestOtpAction(
   prevState: ActionResult | null,

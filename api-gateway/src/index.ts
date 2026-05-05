@@ -29,7 +29,7 @@ export const logger = pino({
 
 const PORT = process.env.API_GATEWAY_PORT || 4002;
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || 'fallback_secret_for_dev_only'
+  process.env.NEXTAUTH_SECRET || 'fallback_secret_for_dev_only',
 );
 
 const RATE_LIMITS: Record<string, number> = {
@@ -81,14 +81,13 @@ app.use(
       'https://admin.haspataal.com',
     ],
     credentials: true,
-  })
+  }),
 );
 
 // ── Middleware: Correlation ID ────────────────────────────────
 
 app.use((req: any, res, next) => {
-  const correlationId =
-    (req.headers['x-request-id'] as string) || randomUUID();
+  const correlationId = (req.headers['x-request-id'] as string) || randomUUID();
   req.correlationId = correlationId;
   res.setHeader('X-Request-ID', correlationId);
 
@@ -150,7 +149,7 @@ const requireRole =
     if (!req.user || !roles.includes(req.user.role)) {
       req.log.warn(
         { requiredRoles: roles, actualRole: req.user?.role },
-        'Insufficient permissions'
+        'Insufficient permissions',
       );
       return res.status(403).json({
         success: false,
@@ -191,10 +190,7 @@ const rateLimiter = async (req: any, res: any, next: any) => {
     res.setHeader('X-RateLimit-Reset', (windowKey + 1) * 60);
 
     if (currentCount > limit) {
-      req.log.warn(
-        { role, count: currentCount, limit },
-        'Rate limit exceeded'
-      );
+      req.log.warn({ role, count: currentCount, limit }, 'Rate limit exceeded');
       return res.status(429).json({
         success: false,
         error: 'Too Many Requests',
@@ -223,7 +219,7 @@ const requireHospitalTenant = (req: any, res: any, next: any) => {
   if (req.user?.hospitalId !== hospitalId) {
     req.log.warn(
       { requestedHospital: hospitalId, userHospital: req.user?.hospitalId },
-      'Cross-tenant access denied'
+      'Cross-tenant access denied',
     );
     return res.status(403).json({
       success: false,
@@ -302,99 +298,86 @@ app.get('/v1/search/doctors', rateLimiter, async (req: any, res) => {
 
 // ── Appointments (Auth + Rate Limited) ───────────────────────
 
-app.post(
-  '/v1/appointments',
-  requireAuth,
-  rateLimiter,
-  async (req: any, res) => {
-    const { doctorId, hospitalId, scheduledAt, notes, slot } = req.body;
+app.post('/v1/appointments', requireAuth, rateLimiter, async (req: any, res) => {
+  const { doctorId, hospitalId, scheduledAt, notes, slot } = req.body;
 
-    if (!doctorId || !scheduledAt || !slot) {
-      return res.status(400).json({
-        success: false,
-        error: 'doctorId, scheduledAt, and slot are required',
-        code: 'VALIDATION_ERROR',
-      });
-    }
-
-    try {
-      const existing = await prisma.appointment.findFirst({
-        where: {
-          doctorId,
-          date: new Date(scheduledAt),
-          slot,
-          status: { in: ['BOOKED', 'CONFIRMED'] },
-        },
-      });
-
-      if (existing) {
-        return res.status(409).json({
-          success: false,
-          error: 'Slot already booked',
-          code: 'SLOT_UNAVAILABLE',
-        });
-      }
-
-      const appointment = await prisma.appointment.create({
-        data: {
-          patientId: req.user.sub || req.user.userId,
-          doctorId,
-          hospitalId,
-          date: new Date(scheduledAt),
-          slot,
-          notes,
-          status: 'BOOKED',
-        },
-      });
-
-      req.log.info({ appointmentId: appointment.id }, 'Appointment created');
-      res.status(201).json({ success: true, data: appointment });
-    } catch (error: any) {
-      req.log.error({ error: error.message }, 'Booking failed');
-      res.status(500).json({
-        success: false,
-        error: 'Failed to book appointment',
-        code: 'INTERNAL_ERROR',
-      });
-    }
+  if (!doctorId || !scheduledAt || !slot) {
+    return res.status(400).json({
+      success: false,
+      error: 'doctorId, scheduledAt, and slot are required',
+      code: 'VALIDATION_ERROR',
+    });
   }
-);
 
-app.patch(
-  '/v1/appointments/:id/status',
-  requireAuth,
-  rateLimiter,
-  async (req: any, res) => {
-    const { status } = req.body;
-    const validStatuses = ['CONFIRMED', 'CANCELLED', 'COMPLETED'];
+  try {
+    const existing = await prisma.appointment.findFirst({
+      where: {
+        doctorId,
+        date: new Date(scheduledAt),
+        slot,
+        status: { in: ['BOOKED', 'CONFIRMED'] },
+      },
+    });
 
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
+    if (existing) {
+      return res.status(409).json({
         success: false,
-        error: `Status must be one of: ${validStatuses.join(', ')}`,
-        code: 'VALIDATION_ERROR',
+        error: 'Slot already booked',
+        code: 'SLOT_UNAVAILABLE',
       });
     }
 
-    try {
-      const appointment = await prisma.appointment.update({
-        where: { id: req.params.id },
-        data: { status },
-      });
-      req.log.info(
-        { appointmentId: req.params.id, newStatus: status },
-        'Status updated'
-      );
-      res.json({ success: true, data: appointment });
-    } catch {
-      res.status(404).json({
-        success: false,
-        error: 'Appointment not found',
-        code: 'NOT_FOUND',
-      });
-    }
+    const appointment = await prisma.appointment.create({
+      data: {
+        patientId: req.user.sub || req.user.userId,
+        doctorId,
+        hospitalId,
+        date: new Date(scheduledAt),
+        slot,
+        notes,
+        status: 'AWAITING_PAYMENT',
+      },
+    });
+
+    req.log.info({ appointmentId: appointment.id }, 'Appointment created');
+    res.status(201).json({ success: true, data: appointment });
+  } catch (error: any) {
+    req.log.error({ error: error.message }, 'Booking failed');
+    res.status(500).json({
+      success: false,
+      error: 'Failed to book appointment',
+      code: 'INTERNAL_ERROR',
+    });
   }
-);
+});
+
+app.patch('/v1/appointments/:id/status', requireAuth, rateLimiter, async (req: any, res) => {
+  const { status } = req.body;
+  const validStatuses = ['CONFIRMED', 'CANCELLED', 'COMPLETED'];
+
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      error: `Status must be one of: ${validStatuses.join(', ')}`,
+      code: 'VALIDATION_ERROR',
+    });
+  }
+
+  try {
+    const appointment = await prisma.appointment.update({
+      where: { id: req.params.id },
+      data: { status },
+    });
+    req.log.info({ appointmentId: req.params.id, newStatus: status }, 'Status updated');
+    res.json({ success: true, data: appointment });
+  } catch {
+    res.status(404).json({
+      success: false,
+      error: 'Appointment not found',
+      code: 'NOT_FOUND',
+    });
+  }
+});
 
 // ── Hospital Endpoints (RBAC + Tenant Isolation) ─────────────
 
@@ -433,7 +416,7 @@ app.get(
         code: 'INTERNAL_ERROR',
       });
     }
-  }
+  },
 );
 
 app.get(
@@ -460,17 +443,14 @@ app.get(
         code: 'INTERNAL_ERROR',
       });
     }
-  }
+  },
 );
 
 // ── Error Handler ────────────────────────────────────────────
 
 app.use((err: any, req: any, res: any, _next: any) => {
   const correlationId = req.correlationId || 'unknown';
-  logger.error(
-    { correlationId, error: err.message, stack: err.stack },
-    'Unhandled error'
-  );
+  logger.error({ correlationId, error: err.message, stack: err.stack }, 'Unhandled error');
   res.status(500).json({
     success: false,
     error: 'Internal server error',

@@ -31,90 +31,96 @@ export async function bookSmartSlot(data: {
   try {
     // 2. SERIALIZABLE transaction with automatic retry on conflict
     return await withRetry(async () => {
-      return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return await prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          // A. Idempotency check — prevents duplicate bookings from client retries
+          const existing = await tx.appointment.findUnique({
+            where: { idempotencyKey: idempotencyKey },
+          });
+          if (existing) return existing;
 
-        // A. Idempotency check — prevents duplicate bookings from client retries
-        const existing = await tx.appointment.findUnique({
-          where: { idempotencyKey: idempotencyKey }
-        });
-        if (existing) return existing;
+          // B. Emergency block check — doctor marked unavailable (emergency/leave)
+          const isBlocked = await tx.doctorSlotBlock.findFirst({
+            where: {
+              doctorId: doctorId,
+              blockStart: { lte: slotTime },
+              blockEnd: { gte: slotTime },
+            },
+          });
+          if (isBlocked) throw new Error('Doctor is currently unavailable (Emergency Block).');
 
-        // B. Emergency block check — doctor marked unavailable (emergency/leave)
-        const isBlocked = await tx.doctorSlotBlock.findFirst({
-          where: {
-            doctorId: doctorId,
-            blockStart: { lte: slotTime },
-            blockEnd: { gte: slotTime }
-          }
-        });
-        if (isBlocked) throw new Error('Doctor is currently unavailable (Emergency Block).');
-
-        // C. Row-level capacity lock — SELECT FOR UPDATE on the slot record
-        const [slot]: Array<{ id: string; capacity: number }> = await tx.$queryRaw`
+          // C. Row-level capacity lock — SELECT FOR UPDATE on the slot record
+          const [slot]: Array<{ id: string; capacity: number }> = await tx.$queryRaw`
           SELECT id, capacity FROM doctor_slots 
           WHERE doctor_id = ${doctorId}::uuid AND start_time = ${slotTime}
           FOR UPDATE
         `;
-        if (!slot) throw new Error('Slot not found.');
+          if (!slot) throw new Error('Slot not found.');
 
-        const currentBookings = await tx.appointment.count({
-          where: {
-            doctorId: doctorId,
-            slotTime: slotTime,
-            status: { not: 'CANCELLED' }
+          const currentBookings = await tx.appointment.count({
+            where: {
+              doctorId: doctorId,
+              slotTime: slotTime,
+              status: { not: 'CANCELLED' },
+            },
+          });
+
+          if (currentBookings >= (slot.capacity || 1)) {
+            throw new Error(`Slot is at full capacity (${slot.capacity} patients).`);
           }
-        });
 
-        if (currentBookings >= (slot.capacity || 1)) {
-          throw new Error(`Slot is at full capacity (${slot.capacity} patients).`);
-        }
-
-        // D. Atomic booking creation
-        const appointment = await tx.appointment.create({
-          data: {
-            hospitalId,
-            doctorId,
-            patientGlobalId,
-            slotTime,
-            idempotencyKey,
-            status: 'BOOKED',
-            date: slotTime,
-            slot: slotTime.toISOString(),
-            // patientId is required by the base Appointment model (existing app flow)
-            // For smart-slot bookings, patientGlobalId acts as the patient identifier
-            patientId: patientGlobalId,
-          }
-        });
-
-        // E. Transactional outbox — guarantees async notification delivery
-        await tx.outboxEvent.create({
-          data: {
-            eventType: 'APPOINTMENT_BOOKED',
-            payload: {
-              appointmentId: appointment.id,
-              patientId: patientGlobalId,
+          // D. Atomic booking creation
+          const appointment = await tx.appointment.create({
+            data: {
+              hospitalId,
               doctorId,
-            }
-          }
-        });
+              patientGlobalId,
+              slotTime,
+              idempotencyKey,
+              status: 'AWAITING_PAYMENT',
+              date: slotTime,
+              slot: slotTime.toISOString(),
+              // patientId is required by the base Appointment model (existing app flow)
+              // For smart-slot bookings, patientGlobalId acts as the patient identifier
+              patientId: patientGlobalId,
+            },
+          });
 
-        // F. Audit log — legal traceability, MUST be in same transaction
-        await tx.auditLog.create({
-          data: {
-            userId: patientGlobalId,
-            action: 'CREATE_APPOINTMENT',
-            entity: 'appointment',
-            entityId: appointment.id,
-          }
-        });
+          // E. Transactional outbox — guarantees async notification delivery
+          await tx.outboxEvent.create({
+            data: {
+              eventType: 'APPOINTMENT_BOOKED',
+              payload: {
+                appointmentId: appointment.id,
+                patientId: patientGlobalId,
+                doctorId,
+              },
+            },
+          });
 
-        return appointment;
-      }, {
-        isolationLevel: 'Serializable', // Prisma's correct way to set isolation level
-      });
+          // F. Audit log — legal traceability, MUST be in same transaction
+          await tx.auditLog.create({
+            data: {
+              userId: patientGlobalId,
+              action: 'CREATE_APPOINTMENT',
+              entity: 'appointment',
+              entityId: appointment.id,
+            },
+          });
+
+          return appointment;
+        },
+        {
+          isolationLevel: 'Serializable', // Prisma's correct way to set isolation level
+        },
+      );
     });
   } finally {
     // Always release the Redlock — even if booking fails
-    try { await lock.release(); } catch { /* lock may have already expired; safe to ignore */ }
+    try {
+      await lock.release();
+    } catch {
+      /* lock may have already expired; safe to ignore */
+    }
   }
 }

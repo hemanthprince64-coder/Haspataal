@@ -1,18 +1,18 @@
 {
-    "name": "haspataal-com",
-    "version": "1.0.0",
-    "private": true,
-    "scripts": {
-        "dev": "next dev --port 3000",
-        "build": "next build",
-        "start": "next start --port 3000"
-    },
-    "dependencies": {
-        "@prisma/client": "^5.10.0",
-        "lucide-react": "^0.574.0",
-        "next": "^16.1.6",
-        "prisma": "^5.10.0",
-        "react": "^19.0.0",
-        "react-dom": "^19.0.0"
-    }
+  "name": "haspataal-com",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000"
+  },
+  "dependencies": {
+    "@prisma/client": "5.10.2",
+    "lucide-react": "1.8.0",
+    "next": "16.3.0-canary.10",
+    "prisma": "5.10.2",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
 }

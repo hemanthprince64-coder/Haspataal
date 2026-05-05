@@ -3,7 +3,16 @@ import { emitEvent } from '@/services/event-emitter';
 import logger from './logger';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { Hospital, Doctor, Appointment, Review, UserRole, BookingStatus } from '../types';
+import {
+  Hospital,
+  HospitalPublic,
+  Doctor,
+  Appointment,
+  Review,
+  UserRole,
+  BookingStatus,
+} from '../types';
+import { toHospitalPublic } from './utils';
 
 // Zod schemas for runtime validation
 const HospitalArraySchema = z.array(z.any());
@@ -55,7 +64,7 @@ export const services = {
   platform: {
     getCities: (): typeof CITIES => CITIES,
 
-    getHospitals: async (city?: string): Promise<Hospital[]> => {
+    getHospitals: async (city?: string): Promise<HospitalPublic[]> => {
       const where: any = { accountStatus: 'active' };
       if (city) {
         where.city = { equals: city, mode: 'insensitive' };
@@ -82,10 +91,10 @@ export const services = {
       // Runtime validation layer
       if (!Array.isArray(processed)) throw new Error('getHospitals must return an array');
 
-      return HospitalArraySchema.parse(processed) as Hospital[];
+      return HospitalArraySchema.parse(processed).map(toHospitalPublic) as HospitalPublic[];
     },
 
-    getHospitalsByCity: async (city: string): Promise<Hospital[]> => {
+    getHospitalsByCity: async (city: string): Promise<HospitalPublic[]> => {
       const data = await prisma.hospitalsMaster.findMany({
         where: {
           city: { equals: city, mode: 'insensitive' },
@@ -112,7 +121,7 @@ export const services = {
         reviews: h.reviews,
       }));
 
-      return HospitalArraySchema.parse(processed) as Hospital[];
+      return HospitalArraySchema.parse(processed).map(toHospitalPublic) as HospitalPublic[];
     },
 
     searchDoctors: async (
@@ -244,7 +253,7 @@ export const services = {
       return stripSensitive(doc) as Doctor | null;
     },
 
-    getHospitalById: async (id: string): Promise<Hospital | null> => {
+    getHospitalById: async (id: string): Promise<HospitalPublic | null> => {
       const hospital = await prisma.hospitalsMaster.findUnique({
         where: { id },
         include: {
@@ -550,7 +559,7 @@ export const services = {
               doctorId: data.doctorId,
               date: targetDate,
               slot: targetSlot,
-              status: data.status || BookingStatus.BOOKED,
+              status: data.status || BookingStatus.AWAITING_PAYMENT,
             },
           });
         });
@@ -1355,7 +1364,7 @@ export const services = {
           payload: { hospitalName: data.hospitalName, city: data.city, adminName: data.adminName },
         });
 
-        return hospital;
+        return toHospitalPublic(hospital as Hospital);
       });
     },
 
@@ -1428,7 +1437,7 @@ export const services = {
           payload: { labName: data.labName, city: data.city, adminName: data.adminName },
         });
 
-        return lab;
+        return toHospitalPublic(lab as Hospital);
       });
     },
 
@@ -1625,18 +1634,18 @@ export const services = {
       return null;
     },
 
-    getPendingHospitals: async (): Promise<Hospital[]> => {
+    getPendingHospitals: async (): Promise<HospitalPublic[]> => {
       const data = await prisma.hospitalsMaster.findMany({
         where: { verificationStatus: 'pending' },
       });
       if (!Array.isArray(data)) throw new Error('getPendingHospitals must return an array');
-      return HospitalArraySchema.parse(data) as Hospital[];
+      return HospitalArraySchema.parse(data).map(toHospitalPublic) as HospitalPublic[];
     },
 
-    getAllHospitals: async (): Promise<Hospital[]> => {
+    getAllHospitals: async (): Promise<HospitalPublic[]> => {
       const data = await prisma.hospitalsMaster.findMany();
       if (!Array.isArray(data)) throw new Error('getAllHospitals must return an array');
-      return HospitalArraySchema.parse(data) as Hospital[];
+      return HospitalArraySchema.parse(data).map(toHospitalPublic) as HospitalPublic[];
     },
 
     approveHospital: async (id: string) => {

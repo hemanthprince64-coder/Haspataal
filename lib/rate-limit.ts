@@ -2,128 +2,85 @@ import Redis from 'ioredis';
 import { headers } from 'next/headers';
 import redisClient from './redis';
 
-// Lua script for atomic sliding window rate limit
-const SLIDING_WINDOW_SCRIPT = `
-  local key = KEYS[1]
-  local limit = tonumber(ARGV[1])
-  local window = tonumber(ARGV[2])
-  local now = tonumber(ARGV[3])
-
-  -- Remove tokens older than the current window
-  redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
-
-  -- Count remaining tokens in the window
-  local count = redis.call('ZCARD', key)
-  local allowed = count < limit
-
-  if allowed then
-    -- Add the new request token
-    redis.call('ZADD', key, now, now)
-    -- Extend expiry of the key
-    redis.call('PEXPIRE', key, window)
-    count = count + 1
-  end
-
-  return { allowed and 1 or 0, count }
-`;
-
-export class RateLimiter {
-  private redis: Redis;
-
-  constructor(redisClient: Redis | null) {
-    this.redis = redisClient as Redis;
-    // Define the custom command so ioredis knows about it
-    if (this.redis && typeof this.redis.defineCommand === 'function') {
-      try {
-        this.redis.defineCommand('slidingWindowRateLimit', {
-          numberOfKeys: 1,
-          lua: SLIDING_WINDOW_SCRIPT,
-        });
-      } catch (e) {
-        // Command might already be defined
-      }
-    }
+/**
+ * Core rate limiter using Redis INCR + EXPIRE pattern (Fixed Window).
+ *
+ * @param key The unique identifier for the rate limit (e.g., rl:action:127.0.0.1)
+ * @param limit Max allowed requests within the window
+ * @param windowSeconds Window duration in seconds
+ */
+export async function rateLimiter(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ allowed: boolean; remaining: number }> {
+  if (!redisClient) {
+    // Fail-open: If Redis is unavailable, allow the request
+    return { allowed: true, remaining: limit };
   }
 
-  /**
-   * Check rate limit using sliding window
-   * @param key The unique key for the rate limit (e.g. rl:registerHospital:192.168.1.1)
-   * @param limit Max number of requests allowed in the window
-   * @param windowMs The time window in milliseconds
-   * @returns { allowed: boolean, remaining: number, resetAt: Date }
-   */
-  async check(
-    key: string,
-    limit: number,
-    windowMs: number,
-  ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
-    const now = Date.now();
-    const resetAt = new Date(now + windowMs);
+  try {
+    const count = await redisClient.incr(key);
 
-    if (!this.redis) {
-      // Fail open if Redis is not available
-      return { allowed: true, remaining: limit, resetAt };
+    // Set expiry only on the first increment
+    if (count === 1) {
+      await redisClient.expire(key, windowSeconds);
     }
 
-    try {
-      // @ts-ignore - custom command created via defineCommand
-      const result = await this.redis.slidingWindowRateLimit(key, limit, windowMs, now);
+    const allowed = count <= limit;
+    const remaining = Math.max(0, limit - count);
 
-      const allowed = result[0] === 1;
-      const count = result[1];
-      const remaining = Math.max(0, limit - count);
-
-      return { allowed, remaining, resetAt };
-    } catch (e) {
-      // Fail open on Redis error to prevent blocking users
-      console.error('[RATE-LIMIT] Redis error, failing open:', e);
-      return { allowed: true, remaining: limit, resetAt };
-    }
+    return { allowed, remaining };
+  } catch (error) {
+    console.error('[RATE-LIMIT] Redis error:', error);
+    return { allowed: true, remaining: limit };
   }
 }
 
-export const rateLimiter = new RateLimiter(redisClient);
-
-type RateLimitOptions = {
-  actionName: string;
-  limit: number;
-  windowMs: number;
-};
-
 /**
- * Higher-order function to wrap Server Actions with rate limiting.
+ * Reusable wrapper for Next.js Server Actions to enforce rate limits.
  */
 export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
   action: T,
-  options: RateLimitOptions,
+  options: {
+    actionName: string;
+    limit: number;
+    windowSeconds: number;
+  },
 ): T {
-  return (async (...args: Parameters<T>) => {
-    // Get IP address from headers
-    const headersList = await headers();
-    const forwardedFor = headersList.get('x-forwarded-for');
-    const realIp = headersList.get('x-real-ip');
+  return (async (...args: any[]) => {
+    // 1. Get Client IP (Next.js 14+ pattern)
+    const headerList = await headers();
+    const forwardedFor = headerList.get('x-forwarded-for');
+    const realIp = headerList.get('x-real-ip');
 
-    let ip = '127.0.0.1';
-    if (forwardedFor) {
-      ip = forwardedFor.split(',')[0].trim();
-    } else if (realIp) {
-      ip = realIp;
-    }
+    // Use the first IP in forwarded-for or fallback to real-ip / localhost
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || '127.0.0.1';
 
     const key = `rl:${options.actionName}:${ip}`;
 
-    const { allowed, resetAt } = await rateLimiter.check(key, options.limit, options.windowMs);
+    // 2. Check Rate Limit
+    const { allowed, remaining } = await rateLimiter(key, options.limit, options.windowSeconds);
 
     if (!allowed) {
-      const retryAfter = Math.ceil((resetAt.getTime() - Date.now()) / 1000);
+      // 3. Get remaining TTL for retry-after calculation
+      let retryAfter = options.windowSeconds;
+      try {
+        const ttl = await redisClient?.ttl(key);
+        if (ttl && ttl > 0) retryAfter = ttl;
+      } catch (e) {
+        // Fallback to full window if TTL fetch fails
+      }
+
+      // 4. Return typed error for client-side handling
       return {
-        error: 'TOO_MANY_REQUESTS',
-        message: 'Too many requests. Please try again later.',
+        error: 'RATE_LIMITED',
+        message: `Too many attempts. Please try again in ${retryAfter} seconds.`,
         retryAfter,
       };
     }
 
-    // Call the original action
+    // 5. Execute original action
     return await action(...args);
   }) as unknown as T;
 }
