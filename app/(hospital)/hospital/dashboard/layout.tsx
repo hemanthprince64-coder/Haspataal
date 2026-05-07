@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { logoutHospital } from '@/app/actions';
 import { requireRole } from '@/lib/auth/requireRole';
-import { UserRole } from '@/types';
+import { UserRole, SessionUser } from '@/types';
 import { computeSetupCompletion } from '@/lib/setup/completion-engine';
 import { getActiveBranchId } from '@/lib/branch';
 import { prisma } from '@/lib/prisma';
@@ -28,9 +28,9 @@ interface DashboardLayoutProps {
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  let user;
+  let user: SessionUser;
   try {
-    user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
+    user = (await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user')) as SessionUser;
   } catch (e) {
     redirect('/hospital/login');
   }
@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   const hospitalId = user.hospitalId;
   let setupProgress = 0;
   let branches: any[] = [];
-  let activeBranchId = null;
+  let activeBranchId: string | null = null;
   let hasCriticalWarnings = false;
 
   try {

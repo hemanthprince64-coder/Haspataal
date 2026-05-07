@@ -9,6 +9,8 @@ import { AuthError } from 'next-auth';
 import { sendSMS } from '@/lib/notifications';
 import { logAction } from '@/lib/audit';
 
+const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
+
 // ==================== HOSPITAL ACTIONS ====================
 
 export async function loginAction(prevState, formData) {
@@ -69,15 +71,15 @@ export async function registerHospital(prevState, formData) {
   const lng = parseFloat(formData.get('lng') || '0');
 
   try {
-    const newHospital = await prisma.hospital.create({
+    const newHospital = await prisma.hospitalsMaster.create({
       data: {
-        name,
+        legalName: name,
+        displayName: name,
+        registrationNumber: `REG-${Date.now()}`,
         city,
-        phone: mobile,
-        password,
-        lat: lat !== 0 ? lat : null,
-        lng: lng !== 0 ? lng : null,
-        status: 'PENDING',
+        contactNumber: mobile,
+        verificationStatus: 'pending',
+        accountStatus: 'inactive',
       },
     });
 
@@ -147,7 +149,7 @@ export async function createVisitAction(prevState, formData) {
         appointmentId: appointment.id,
         patientName: patientName,
         patientPhone: patientMobile,
-        amount: 500,
+        amount: DEFAULT_CONSULTATION_FEE,
       },
     });
 
@@ -248,18 +250,18 @@ export async function removeDoctorAction(prevState, formData) {
 }
 export async function approveHospitalAction(formData) {
   const id = formData.get('id');
-  await prisma.hospital.update({
+  await prisma.hospitalsMaster.update({
     where: { id },
-    data: { status: 'APPROVED' },
+    data: { verificationStatus: 'approved', accountStatus: 'active' },
   });
   redirect('/admin'); // Refresh page
 }
 
 export async function rejectHospitalAction(formData) {
   const id = formData.get('id');
-  await prisma.hospital.update({
+  await prisma.hospitalsMaster.update({
     where: { id },
-    data: { status: 'REJECTED' }, // Or delete?
+    data: { verificationStatus: 'rejected', accountStatus: 'inactive' },
   });
   redirect('/admin');
 }

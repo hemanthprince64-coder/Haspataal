@@ -33,8 +33,10 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
 import { requireRole } from '../lib/auth/requireRole';
-import { UserRole } from '../types';
+import { UserRole, SessionUser } from '../types';
 import { withRateLimit } from '@/lib/rate-limit';
+
+const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
 
 // ==================== PLATFORM ACTIONS ====================
 
@@ -120,7 +122,7 @@ async function _registerHospital(
     if (!validation.success) {
       return {
         success: false,
-        message: validation.error.issues[0].message,
+        message: validation.error.issues[0]?.message || 'Validation failed',
       };
     }
 
@@ -159,15 +161,20 @@ export async function logoutHospital() {
   redirect('/hospital/login');
 }
 
+
 export async function createVisitAction(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  let user;
+  let user: SessionUser;
   try {
     user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
   } catch (e: any) {
     return { success: false, message: 'Unauthorized' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
   }
 
   try {
@@ -195,7 +202,7 @@ export async function cancelVisitHospital(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  let user;
+  let user: SessionUser;
   try {
     user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
   } catch (e: any) {
@@ -210,11 +217,15 @@ export async function completeVisitHospital(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  let user;
+  let user: SessionUser;
   try {
     user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
   } catch (e: any) {
     return { success: false, message: 'Unauthorized' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
   }
 
   const visitId = formData.get('visitId') as string;
@@ -225,7 +236,7 @@ export async function completeVisitHospital(
     return { success: false, message: 'Visit ID and Clinical Notes are required for AI analysis.' };
   }
 
-  let imageData = null;
+  let imageData: { mimeType: string; data: string } | undefined = undefined;
   if (imageFile && imageFile.size > 0) {
     // Convert File to Base64 for processing
     const bytes = await imageFile.arrayBuffer();
@@ -243,16 +254,19 @@ export async function completeVisitHospital(
     return { success: false, message: `Failed to complete visit: ${e.message}` };
   }
 }
-
 export async function addDoctorAction(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  let user;
+  let user: SessionUser;
   try {
     user = await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user');
   } catch (e: any) {
     return { success: false, message: 'Only hospital admins can add doctors.' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
   }
 
   const doctorData = {
@@ -434,7 +448,7 @@ async function _registerDoctor(
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
       const firstError = pwdCheck.error.issues[0];
-      return { success: false, message: firstError.message };
+      return { success: false, message: firstError?.message || 'Invalid password' };
     }
 
     await services.doctor.register(data);
@@ -475,7 +489,7 @@ async function _registerAgent(
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
       const firstError = pwdCheck.error.issues[0];
-      return { success: false, message: firstError.message };
+      return { success: false, message: firstError?.message || 'Invalid password' };
     }
 
     await services.agent.register(data);
@@ -515,7 +529,7 @@ async function _registerLab(
     const pwdCheck = PasswordSchema.safeParse(data.password);
     if (!pwdCheck.success) {
       const firstError = pwdCheck.error.issues[0];
-      return { success: false, message: firstError.message };
+      return { success: false, message: firstError?.message || 'Invalid password' };
     }
 
     await services.hospital.registerLab(data);
@@ -715,6 +729,9 @@ export async function getPatientFullProfile() {
 
 import { uploadProfilePhoto } from '@/lib/supabase';
 
+const MAX_PROFILE_PHOTO_SIZE = 2 * 1024 * 1024;
+const ALLOWED_PROFILE_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
 export async function updatePatientProfile(
   prevState: ActionResult | null,
   formData: FormData,
@@ -752,6 +769,13 @@ export async function updatePatientProfile(
   // Handle Profile Photo File Upload
   const photoFile = formData.get('profilePhotoFile') as File | null;
   if (photoFile && photoFile.size > 0 && photoFile.name) {
+    if (
+      photoFile.size > MAX_PROFILE_PHOTO_SIZE ||
+      !ALLOWED_PROFILE_PHOTO_TYPES.has(photoFile.type)
+    ) {
+      return { message: 'Profile photo must be a JPG, PNG, or WebP image under 2MB.' };
+    }
+
     try {
       const uploadedUrl = await uploadProfilePhoto(photoFile, patient.id);
       if (uploadedUrl) updates.profilePhotoUrl = uploadedUrl;
@@ -1195,8 +1219,7 @@ export const bookAppointment = withErrorMonitoring(
 
     if (payWithWallet) {
       const wallet = await services.patient.getWallet(patient.id);
-      if (wallet.balance < 500) {
-        // Assuming 500 consultation fee
+      if (wallet.balance < DEFAULT_CONSULTATION_FEE) {
         return {
           success: false,
           message: 'Insufficient wallet balance. Please top up your wallet.',
@@ -1204,7 +1227,7 @@ export const bookAppointment = withErrorMonitoring(
       }
       await services.patient.addWalletTransaction(patient.id, {
         type: 'DEBIT',
-        amount: 500,
+        amount: DEFAULT_CONSULTATION_FEE,
         source: 'APPOINTMENT',
         description: `Payment for appointment on ${date} at ${slot}`,
       });
@@ -1375,11 +1398,11 @@ export async function medchatTriageAction(
       const firstError = parsed.error.issues[0];
       return {
         success: false,
-        message: `Invalid input: ${firstError.path.join('.')} — ${firstError.message}`,
+        message: `Invalid input: ${firstError?.path.join('.') || 'Unknown'} — ${firstError?.message || 'Validation failed'}`,
       };
     }
 
-    const result = await triagePatient(parsed.data);
+    const result = (await triagePatient(parsed.data)) as any;
 
     // Strip internal-only fields from client response
     const { probable_differentials_hidden, risk_score_internal, ...clientResult } = result;
@@ -1499,8 +1522,12 @@ export async function recordConsentAction(
   purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
 ) {
   try {
-    const session = await decrypt(cookies().get('session_user')?.value);
-    if (!session || (session.userId !== patientId && session.role !== 'PLATFORM_ADMIN')) {
+    const cookieStore = await cookies();
+    const session = await decrypt(cookieStore.get('session_user')?.value || '');
+    if (
+      !session ||
+      (session.user.id !== patientId && session.user.role !== UserRole.PLATFORM_ADMIN)
+    ) {
       throw new Error('Unauthorized');
     }
 
@@ -1517,8 +1544,12 @@ export async function withdrawConsentAction(
   purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
 ) {
   try {
-    const session = await decrypt(cookies().get('session_user')?.value);
-    if (!session || (session.userId !== patientId && session.role !== 'PLATFORM_ADMIN')) {
+    const cookieStore = await cookies();
+    const session = await decrypt(cookieStore.get('session_user')?.value || '');
+    if (
+      !session ||
+      (session.user.id !== patientId && session.user.role !== UserRole.PLATFORM_ADMIN)
+    ) {
       throw new Error('Unauthorized');
     }
 
@@ -1532,7 +1563,7 @@ export async function withdrawConsentAction(
 
 export async function deletePatientDataAction(patientId: string) {
   // DPDP Right to Erasure is protected by PLATFORM_ADMIN
-  const auth = await requireRole(['PLATFORM_ADMIN']);
+  const auth = await requireRole(UserRole.PLATFORM_ADMIN, 'session_user');
   if (!auth) return { success: false, error: 'Unauthorized' };
 
   try {

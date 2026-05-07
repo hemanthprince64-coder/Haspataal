@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
   // In real app, check for SUPER_ADMIN role here
-  const pendingHospitals = await prisma.hospital.findMany({
-    where: { status: 'PENDING' },
+  const pendingHospitals = await prisma.hospitalsMaster.findMany({
+    where: { verificationStatus: 'pending' },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -29,16 +29,15 @@ export default async function AdminPage() {
             }}
           >
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{h.name}</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>
+                {h.displayName || h.legalName}
+              </h3>
               <p>
-                📍 {h.city} | 📱 {h.phone}
+                📍 {h.city || 'Unknown'} | 📱 {h.contactNumber || 'N/A'}
               </p>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                 Registered: {new Date(h.createdAt).toLocaleDateString()}
               </p>
-              {h.lat && h.lng && (
-                <p style={{ fontSize: '0.8rem', color: 'blue' }}>Has Location ✅</p>
-              )}
             </div>
 
             <div style={{ display: 'flex', gap: '1rem' }}>

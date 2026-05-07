@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const hospitalId = auth.user.hospital_id;
 
     // Fetch hospital details via Prisma
-    const hospital = await prisma.hospital.findUnique({
+    const hospital = await prisma.hospitalsMaster.findUnique({
       where: { id: hospitalId },
     });
 

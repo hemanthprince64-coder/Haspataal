@@ -18,7 +18,7 @@ test.describe('Hospital Onboarding', () => {
     // 1. Register hospital
     await hospitalPage.navigateToRegister();
     await hospitalPage.register(hospitalData);
-    await expect(page).toHaveText(/pending/i);
+    await expect(page.locator('body')).toContainText(/pending/i);
 
     // 2. Super Admin approves hospital
     // Create a new context/page for admin to avoid session mixing if needed,

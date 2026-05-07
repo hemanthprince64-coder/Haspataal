@@ -1,6 +1,20 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'default-dev-secret');
+export type AuthTokenPayload = {
+  user_id: string;
+  hospital_id: string;
+  role: string;
+  global_patient_id?: string;
+  hospital_patient_id?: string;
+};
+
+function getSecretKey() {
+  const jwtSecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!jwtSecret && process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET or NEXTAUTH_SECRET must be set in production');
+  }
+  return new TextEncoder().encode(jwtSecret || 'dummy-dev-secret');
+}
 
 export async function generateToken(user: any) {
   return await new SignJWT({
@@ -9,11 +23,11 @@ export async function generateToken(user: any) {
     role: user.role,
   })
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('1h')
-    .sign(SECRET_KEY);
+    .setExpirationTime('15m')
+    .sign(getSecretKey());
 }
 
-export async function verifyToken(token: string) {
-  const { payload } = await jwtVerify(token, SECRET_KEY);
-  return payload;
+export async function verifyToken(token: string): Promise<AuthTokenPayload> {
+  const { payload } = await jwtVerify(token, getSecretKey());
+  return payload as unknown as AuthTokenPayload;
 }

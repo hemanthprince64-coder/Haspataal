@@ -4,6 +4,8 @@ import { logger, logAudit } from '@haspataal/logger';
 import { hospitalRegistrationsCounter, appointmentsCreatedCounter } from '@/lib/metrics';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { randomBytes, randomInt } from 'crypto';
+import { rateLimiter } from './rate-limit';
 import {
   Hospital,
   HospitalPublic,
@@ -18,6 +20,9 @@ import { toHospitalPublic } from './utils';
 // Zod schemas for runtime validation
 const HospitalArraySchema = z.array(z.any());
 const DoctorArraySchema = z.array(z.any());
+const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
+const OTP_RATE_LIMIT = Number(process.env.OTP_RATE_LIMIT || 3);
+const OTP_RATE_WINDOW_SECONDS = Number(process.env.OTP_RATE_WINDOW_SECONDS || 15 * 60);
 
 // Strip sensitive fields from any object (password, etc.)
 function stripSensitive<T extends Record<string, any>>(obj: T | null): T | null {
@@ -43,9 +48,34 @@ function generateTempPassword(length = 12): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // no ambiguous chars
   let result = '';
   for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
+    result += chars[randomInt(0, chars.length)];
   }
   return result;
+}
+
+function generatePasswordSeed(): string {
+  return randomBytes(32).toString('base64url');
+}
+
+function toFee(value: unknown): number {
+  if (value === null || value === undefined) return DEFAULT_CONSULTATION_FEE;
+  const fee = Number(value);
+  return Number.isFinite(fee) && fee >= 0 ? fee : DEFAULT_CONSULTATION_FEE;
+}
+
+async function getAppointmentFee(appointment: {
+  doctorId: string;
+  hospitalId?: string | null;
+}): Promise<number> {
+  const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
+    where: {
+      doctorId: appointment.doctorId,
+      hospitalId: appointment.hospitalId || undefined,
+      isCurrent: true,
+    },
+    select: { consultationFee: true },
+  });
+  return toFee(affiliation?.consultationFee);
 }
 
 // Helper to preserve CITIES constant from the old data file
@@ -300,7 +330,7 @@ export const services = {
         id: aff.doctor.id,
         name: aff.doctor.fullName,
         speciality: aff.department || 'General',
-        fee: 500,
+        fee: toFee(aff.consultationFee),
       }));
     },
 
@@ -332,7 +362,16 @@ export const services = {
   // --- Patient Services ---
   patient: {
     requestOtp: async (mobile: string) => {
-      const code = Math.floor(1000 + Math.random() * 9000).toString();
+      const otpLimit = await rateLimiter(
+        `rl:requestOtp:${mobile}`,
+        OTP_RATE_LIMIT,
+        OTP_RATE_WINDOW_SECONDS,
+      );
+      if (!otpLimit.allowed) {
+        throw new Error('Too many OTP requests. Please try again later.');
+      }
+
+      const code = randomInt(1000, 10000).toString();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
       await prisma.otpCode.upsert({
@@ -341,10 +380,7 @@ export const services = {
         create: { phone: mobile, code, expiresAt },
       });
 
-      logger.info(
-        { action: 'otp_generated', mobile, code },
-        `DEMO: Use this code to login: ${code}`,
-      );
+      logger.info({ action: 'otp_generated', mobile }, 'OTP generated');
       return true;
     },
 
@@ -367,7 +403,7 @@ export const services = {
           { action: 'patient_registration', mobile },
           'Auto-registering new patient during login',
         );
-        const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
+        const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
         patient = await prisma.patient.create({
           data: {
             phone: mobile,
@@ -556,7 +592,7 @@ export const services = {
         // ACID Transaction to prevent double booking race conditions
         const appointment = await prisma.$transaction(async (tx) => {
           // 1. Ensure patient exists
-          const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
+          const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
           const patient = await tx.patient.upsert({
             where: { phone: data.patientMobile },
             update: { name: data.patientName },
@@ -566,6 +602,18 @@ export const services = {
               password: hashedPassword,
             },
           });
+
+          const affiliation = await tx.doctorHospitalAffiliation.findFirst({
+            where: {
+              doctorId: data.doctorId,
+              hospitalId,
+              isCurrent: true,
+              verificationStatus: 'VERIFIED',
+            },
+          });
+          if (!affiliation) {
+            throw new Error('Doctor is not approved for this hospital.');
+          }
 
           // 2. Check if slot is already taken in this transaction snapshot
           const existing = await tx.appointment.findFirst({
@@ -589,6 +637,7 @@ export const services = {
               doctorId: data.doctorId,
               date: targetDate,
               slot: targetSlot,
+              hospitalId,
               status: data.status || BookingStatus.AWAITING_PAYMENT,
             },
           });
@@ -699,7 +748,7 @@ export const services = {
       if (visit.status === 'CONFIRMED' || visit.status === 'BOOKED') {
         await services.patient.addWalletTransaction(patientId, {
           type: 'CREDIT',
-          amount: 500, // Assuming a flat 500 consultation fee for now
+          amount: await getAppointmentFee(visit),
           source: 'REFUND',
           description: `Refund for cancelled appointment`,
         });
@@ -747,7 +796,10 @@ export const services = {
           specialization,
           patientName: a.patient?.name || 'Patient',
           createdAt: a.createdAt ? a.createdAt.toISOString() : null,
-          amountPaid: a.status === 'CONFIRMED' || a.status === 'COMPLETED' ? 500 : 0,
+          amountPaid:
+            a.status === 'CONFIRMED' || a.status === 'COMPLETED'
+              ? toFee(a.doctor?.affiliations?.[0]?.consultationFee)
+              : 0,
           hospitalId: a.hospitalId || '',
           date: a.date,
           slot: a.slot,
@@ -1240,7 +1292,7 @@ export const services = {
         speciality: a.department || '',
         mobile: a.doctor.mobile,
         role: a.role,
-        fee: 500,
+        fee: toFee(a.consultationFee),
         registration: a.doctor.registration?.registrationNumber,
         activeSlots: a.doctor.slots.length,
       }));
@@ -1524,7 +1576,7 @@ export const services = {
         { action: 'hospital_create_visit', hospitalId, doctorId: data.doctorId },
         'Hospital staff creating new visit',
       );
-      const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
+      const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
       const patient = await prisma.patient.upsert({
         where: { phone: data.patientMobile },
         update: { name: data.patientName },
@@ -1535,7 +1587,21 @@ export const services = {
         },
       });
 
+      let consultationFee = DEFAULT_CONSULTATION_FEE;
       if (data.doctorId) {
+        const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
+          where: {
+            doctorId: data.doctorId,
+            hospitalId,
+            isCurrent: true,
+            verificationStatus: 'VERIFIED',
+          },
+        });
+        if (!affiliation) {
+          throw new Error('Doctor is not approved for this hospital.');
+        }
+        consultationFee = toFee(affiliation.consultationFee);
+
         await prisma.appointment.create({
           data: {
             patientId: patient.id,
@@ -1543,6 +1609,7 @@ export const services = {
             date: new Date(data.date),
             slot: 'OPD',
             status: 'COMPLETED',
+            hospitalId,
           },
         });
       }
@@ -1553,7 +1620,7 @@ export const services = {
           patientName: data.patientName,
           patientPhone: data.patientMobile,
           diagnosis: 'OPD Visit',
-          amount: 500,
+          amount: consultationFee,
         },
       });
 
@@ -1688,12 +1755,19 @@ export const services = {
     },
 
     login: async (username: string, password?: string) => {
-      // Updated to use Bcrypt comparison for Admin
-      // Fallback to a hashed version of 'admin123' if env var is missing
-      const adminPassHash =
-        process.env.ADMIN_PASSWORD_HASH ||
-        '$2b$12$YwrNaShX3AbSpPDb7FtlFOilUoeGAmPX5pCfa6IAd48UYfF6B3X7e';
-      const adminUser = process.env.ADMIN_USERNAME || 'admin';
+      const adminPassHash = process.env.ADMIN_PASSWORD_HASH;
+      const adminUser = process.env.ADMIN_USERNAME;
+
+      if (!adminPassHash || !adminUser) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('ADMIN_PASSWORD_HASH and ADMIN_USERNAME must be set in production');
+        }
+        logger.warn(
+          { action: 'admin_login_unconfigured' },
+          'Admin login is disabled because credentials are not configured',
+        );
+        return null;
+      }
 
       if (password && username === adminUser && (await bcrypt.compare(password, adminPassHash))) {
         logger.info({ action: 'admin_login', username }, 'Admin logged in successfully');

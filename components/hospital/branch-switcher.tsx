@@ -9,7 +9,7 @@ export default function BranchSwitcher({
   activeBranchId,
 }: {
   branches: any[];
-  activeBranchId: string;
+  activeBranchId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();

@@ -41,9 +41,7 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
           hospitalId: session.user.hospitalId || null,
         });
         // Set the session context for Postgres RLS policies
-        await tx.$executeRawUnsafe(
-          `SET LOCAL request.jwt.claims = '${claims.replace(/'/g, "''")}'`,
-        );
+        await tx.$executeRawUnsafe('SELECT set_config($1, $2, true)', 'request.jwt.claims', claims);
       }
       return callback(tx);
     });

@@ -4,6 +4,7 @@
 
 import prisma from '../prisma';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import type {
   IPatientRepository,
   PatientRecord,
@@ -13,7 +14,7 @@ import type {
 
 export class PrismaPatientRepository implements IPatientRepository {
   async ensureExists(input: EnsurePatientInput): Promise<PatientRecord> {
-    const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
+    const hashedPassword = await bcrypt.hash(randomBytes(32).toString('base64url'), 12);
     return prisma.patient.upsert({
       where: { phone: input.mobile },
       update: { name: input.name },
@@ -58,9 +59,10 @@ export class PrismaPatientRepository implements IPatientRepository {
   }
 
   async updateProfile(id: string, updates: Partial<PatientRecord>): Promise<PatientRecord> {
+    const { id: _, phone: __, ...data } = updates;
     return prisma.patient.update({
       where: { id },
-      data: updates,
+      data: data as any,
     });
   }
 }

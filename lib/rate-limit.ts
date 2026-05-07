@@ -1,6 +1,36 @@
-import Redis from 'ioredis';
 import { headers } from 'next/headers';
 import redisClient from './redis';
+
+const fallbackHits = new Map<string, { count: number; resetAt: number }>();
+
+function checkFallbackLimit(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const resetAt = now + windowSeconds * 1000;
+  const current = fallbackHits.get(key);
+  const fallbackLimit = Math.max(1, Math.floor(limit / 2));
+
+  if (!current || current.resetAt <= now) {
+    fallbackHits.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: fallbackLimit - 1 };
+  }
+
+  current.count += 1;
+  const allowed = current.count <= fallbackLimit;
+  return { allowed, remaining: Math.max(0, fallbackLimit - current.count) };
+}
+
+function extractRateLimitIp(headerList: Pick<Headers, 'get'>): string {
+  const trustedProxy = process.env.TRUSTED_PROXY === 'true';
+  if (!trustedProxy) return '127.0.0.1';
+
+  const forwardedFor = headerList.get('x-forwarded-for');
+  const realIp = headerList.get('x-real-ip');
+  return forwardedFor?.split(',')[0]?.trim() || realIp || '127.0.0.1';
+}
 
 /**
  * Core rate limiter using Redis INCR + EXPIRE pattern (Fixed Window).
@@ -14,17 +44,17 @@ export async function rateLimiter(
   limit: number,
   windowSeconds: number,
 ): Promise<{ allowed: boolean; remaining: number }> {
-  if (!redisClient) {
-    // Fail-open: If Redis is unavailable, allow the request
-    return { allowed: true, remaining: limit };
+  const client = redisClient;
+  if (!client) {
+    return checkFallbackLimit(key, limit, windowSeconds);
   }
 
   try {
-    const count = await redisClient.incr(key);
+    const count = await client.incr(key);
 
     // Set expiry only on the first increment
     if (count === 1) {
-      await redisClient.expire(key, windowSeconds);
+      await client.expire(key, windowSeconds);
     }
 
     const allowed = count <= limit;
@@ -33,10 +63,9 @@ export async function rateLimiter(
     return { allowed, remaining };
   } catch (error) {
     console.error('[RATE-LIMIT] Redis error:', error);
-    return { allowed: true, remaining: limit };
+    return checkFallbackLimit(key, limit, windowSeconds);
   }
 }
-
 /**
  * Reusable wrapper for Next.js Server Actions to enforce rate limits.
  */
@@ -51,11 +80,7 @@ export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
   return (async (...args: any[]) => {
     // 1. Get Client IP (Next.js 14+ pattern)
     const headerList = await headers();
-    const forwardedFor = headerList.get('x-forwarded-for');
-    const realIp = headerList.get('x-real-ip');
-
-    // Use the first IP in forwarded-for or fallback to real-ip / localhost
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || '127.0.0.1';
+    const ip = extractRateLimitIp(headerList);
 
     const key = `rl:${options.actionName}:${ip}`;
 

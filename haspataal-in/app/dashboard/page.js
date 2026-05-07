@@ -21,7 +21,7 @@ export default async function HospitalDashboard() {
   // 1. Real-time Data (Recent Visits & Hospital Info)
   // We want these fresh.
   const [hospital, recentVisitsData] = await Promise.all([
-    prisma.hospital.findUnique({ where: { id: hospitalId } }),
+    prisma.hospitalsMaster.findUnique({ where: { id: hospitalId } }),
     prisma.visit.findMany({
       where: { hospitalId },
       orderBy: { date: 'desc' },
@@ -131,7 +131,7 @@ export default async function HospitalDashboard() {
           Dashboard
         </h1>
         <p style={{ color: 'var(--text-muted)' }}>
-          Welcome back, {user.name} • {hospital?.name}
+          Welcome back, {user.name} • {hospital?.displayName || hospital?.legalName}
         </p>
       </div>
 

@@ -12,9 +12,9 @@ export async function POST(req: Request) {
     }
 
     // 1. Create hospital via Prisma
-    // Required fields: legalName, registrationNumber
+    // Model: HospitalsMaster, required fields: legalName, registrationNumber
     const mockRegNumber = `REG-${Date.now()}`;
-    const hospital = await prisma.hospital.create({
+    const hospital = await prisma.hospitalsMaster.create({
       data: {
         legalName: hospital_name,
         displayName: hospital_name,

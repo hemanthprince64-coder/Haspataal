@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import {
@@ -19,7 +20,7 @@ const admissionSchema = z.object({
 
 function admissionNumber() {
   const now = new Date();
-  return `IPD-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  return `IPD-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
 export async function GET() {

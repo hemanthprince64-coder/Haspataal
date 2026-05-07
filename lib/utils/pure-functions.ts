@@ -11,7 +11,9 @@ export function computeAvailableSlots(
     let available = !bookedSlots.has(time);
 
     if (isToday) {
-      const [hours, minutes] = time.split(':').map(Number);
+      const parts = time.split(':').map(Number);
+      const hours = parts[0] ?? 0;
+      const minutes = parts[1] ?? 0;
       const slotDateTime = new Date(targetDate);
       slotDateTime.setHours(hours, minutes, 0, 0);
 

@@ -2,101 +2,92 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { rateLimiter, withRateLimit } from '../lib/rate-limit';
 import * as headersModule from 'next/headers';
 
-// Mock ioredis
-vi.mock('ioredis', () => {
-  return {
-    default: class RedisMock {
-      defineCommand = vi.fn();
-      slidingWindowRateLimit = vi.fn();
-    },
-  };
-});
+const mockRedis = vi.hoisted(() => ({
+  incr: vi.fn(),
+  expire: vi.fn(),
+  ttl: vi.fn(),
+}));
 
-// Mock next/headers
-vi.mock('next/headers', () => {
-  return {
-    headers: vi.fn(),
-  };
-});
+vi.mock('../lib/redis', () => ({
+  default: mockRedis,
+}));
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(),
+}));
 
 describe('Rate Limiter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.TRUSTED_PROXY;
   });
 
-  describe('sliding window check', () => {
-    it('should allow request when within limit', async () => {
-      // Mock the Lua script response: [1 (allowed), 5 (count)]
-      const mockRedisCheck = vi
-        .spyOn(rateLimiter['redis'] as any, 'slidingWindowRateLimit')
-        .mockResolvedValueOnce([1, 5]);
+  describe('fixed window check', () => {
+    it('allows requests within the limit', async () => {
+      mockRedis.incr.mockResolvedValueOnce(1);
+      mockRedis.expire.mockResolvedValueOnce(1);
 
-      const result = await rateLimiter.check('test-key', 10, 1000);
+      const result = await rateLimiter('test-key', 10, 60);
 
-      expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(5); // 10 - 5 = 5 remaining
-      expect(result.resetAt.getTime()).toBeGreaterThan(Date.now());
-      expect(mockRedisCheck).toHaveBeenCalledWith('test-key', 10, 1000, expect.any(Number));
+      expect(result).toEqual({ allowed: true, remaining: 9 });
+      expect(mockRedis.incr).toHaveBeenCalledWith('test-key');
+      expect(mockRedis.expire).toHaveBeenCalledWith('test-key', 60);
     });
 
-    it('should deny request when limit exceeded', async () => {
-      // Mock the Lua script response: [0 (denied), 10 (count)]
-      const mockRedisCheck = vi
-        .spyOn(rateLimiter['redis'] as any, 'slidingWindowRateLimit')
-        .mockResolvedValueOnce([0, 10]);
+    it('denies requests after the limit is exceeded', async () => {
+      mockRedis.incr.mockResolvedValueOnce(11);
 
-      const result = await rateLimiter.check('test-key', 10, 1000);
+      const result = await rateLimiter('test-key', 10, 60);
 
-      expect(result.allowed).toBe(false);
-      expect(result.remaining).toBe(0);
+      expect(result).toEqual({ allowed: false, remaining: 0 });
+      expect(mockRedis.expire).not.toHaveBeenCalled();
+    });
+
+    it('uses the stricter local fallback when Redis errors', async () => {
+      mockRedis.incr.mockRejectedValueOnce(new Error('redis down'));
+
+      const result = await rateLimiter('fallback-key', 4, 60);
+
+      expect(result).toEqual({ allowed: true, remaining: 1 });
     });
   });
 
   describe('withRateLimit HOC', () => {
-    it('should extract IP from headers and block on limit exceeded', async () => {
-      // Mock headers
+    it('extracts forwarded IP only when trusted proxy mode is enabled and blocks on limit exceeded', async () => {
+      process.env.TRUSTED_PROXY = 'true';
       (headersModule.headers as any).mockResolvedValue(
-        new Map([['x-forwarded-for', '192.168.1.1']]) as any,
+        new Map([['x-forwarded-for', '192.168.1.1, 10.0.0.2']]) as any,
       );
-
-      // Mock rate limiter to deny
-      vi.spyOn(rateLimiter, 'check').mockResolvedValueOnce({
-        allowed: false,
-        remaining: 0,
-        resetAt: new Date(Date.now() + 60000), // Reset in 60s
-      });
+      mockRedis.incr.mockResolvedValueOnce(6);
+      mockRedis.ttl.mockResolvedValueOnce(42);
 
       const mockAction = vi.fn().mockResolvedValue({ success: true });
       const wrappedAction = withRateLimit(mockAction, {
         actionName: 'testAction',
         limit: 5,
-        windowMs: 60000,
+        windowSeconds: 60,
       });
 
       const result = await wrappedAction();
 
-      expect(result.error).toBe('TOO_MANY_REQUESTS');
-      expect(result.retryAfter).toBeGreaterThan(0);
+      expect(result.error).toBe('RATE_LIMITED');
+      expect(result.retryAfter).toBe(42);
       expect(mockAction).not.toHaveBeenCalled();
-      expect(rateLimiter.check).toHaveBeenCalledWith('rl:testAction:192.168.1.1', 5, 60000);
+      expect(mockRedis.incr).toHaveBeenCalledWith('rl:testAction:192.168.1.1');
     });
 
-    it('should allow execution if rate limit is not exceeded', async () => {
+    it('does not trust spoofable forwarded headers by default', async () => {
       (headersModule.headers as any).mockResolvedValue(
         new Map([['x-forwarded-for', '10.0.0.1']]) as any,
       );
-
-      vi.spyOn(rateLimiter, 'check').mockResolvedValueOnce({
-        allowed: true,
-        remaining: 4,
-        resetAt: new Date(),
-      });
+      mockRedis.incr.mockResolvedValueOnce(1);
+      mockRedis.expire.mockResolvedValueOnce(1);
 
       const mockAction = vi.fn().mockResolvedValue({ success: true, message: 'Done' });
       const wrappedAction = withRateLimit(mockAction, {
         actionName: 'testAction',
         limit: 5,
-        windowMs: 60000,
+        windowSeconds: 60,
       });
 
       const result = await wrappedAction('arg1', 'arg2');
@@ -104,6 +95,7 @@ describe('Rate Limiter', () => {
       expect(result.success).toBe(true);
       expect(result.message).toBe('Done');
       expect(mockAction).toHaveBeenCalledWith('arg1', 'arg2');
+      expect(mockRedis.incr).toHaveBeenCalledWith('rl:testAction:127.0.0.1');
     });
   });
 });

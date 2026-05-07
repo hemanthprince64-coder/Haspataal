@@ -211,7 +211,7 @@ export default function HospitalIdentityPage() {
   const DRAFT_KEY = 'identity_draft_v2';
 
   const form = useForm<IdentityForm>({
-    resolver: zodResolver(identitySchema),
+    resolver: zodResolver(identitySchema) as any,
     defaultValues: {
       legalName: '',
       displayName: '',
@@ -313,7 +313,7 @@ export default function HospitalIdentityPage() {
         img.onload = () => {
           // Validation: Min dimensions for logo (512x512 recommended, but let's check min)
           if (field === 'logoUrl' && (img.width < 100 || img.height < 100)) {
-            toast.warn('Logo dimensions seem too small for high-quality printing.');
+            toast.warning('Logo dimensions seem too small for high-quality printing.');
           }
           setValue(field, reader.result as string);
         };
@@ -437,7 +437,7 @@ export default function HospitalIdentityPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
         {step === 1 ? (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             {/* Section A — Basic Details */}

@@ -27,7 +27,7 @@ test.describe('Appointment Booking', () => {
     await expect(page.locator('text=BOOKED')).toBeVisible();
 
     // 6. Patient dashboard shows the confirmed appointment
-    await hospitalPage.page.goto('/hospital/login');
+    await page.goto('/hospital/login');
     await patientPage.navigateToLogin();
     await patientPage.login('9000000001', '1234');
 

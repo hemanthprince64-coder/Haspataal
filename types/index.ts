@@ -6,6 +6,15 @@ export enum UserRole {
   PLATFORM_ADMIN = 'SUPER_ADMIN',
 }
 
+export interface SessionUser {
+  id: string;
+  name: string;
+  role: UserRole;
+  hospitalId?: string;
+  patientId?: string;
+  mobile?: string;
+}
+
 export enum BookingStatus {
   AWAITING_PAYMENT = 'AWAITING_PAYMENT',
   BOOKED = 'BOOKED',

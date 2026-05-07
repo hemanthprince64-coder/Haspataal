@@ -16,8 +16,6 @@ export async function GET(req: NextRequest) {
       invoicePrefix: true,
       nextInvoiceNumber: true,
       gstInclusivePricing: true,
-      bankAccountNo: true,
-      bankIfsc: true,
     },
   });
 
@@ -60,8 +58,6 @@ export async function PUT(req: NextRequest) {
         invoicePrefix: body.invoicePrefix,
         nextInvoiceNumber: body.nextInvoiceNumber,
         gstInclusivePricing: body.gstInclusivePricing,
-        bankAccountNo: body.bankAccountNumber, // Sync
-        bankIfsc: body.bankIfsc, // Sync
       },
     }),
   ]);

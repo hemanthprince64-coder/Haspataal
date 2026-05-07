@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Skeleton } from 'boneyard-js/react';
+import { Skeleton } from '@/lib/boneyard-react';
 import LabStatsGrid from '@/components/hospital/LabStatsGrid';
 import LabOrdersList from '@/components/hospital/LabOrdersList';
 import LabCatalogOverview from '@/components/hospital/LabCatalogOverview';

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Skeleton } from 'boneyard-js/react';
+import { Skeleton } from '@/lib/boneyard-react';
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid';
 import PlatformGrowthCard from '@/components/admin/PlatformGrowthCard';
 

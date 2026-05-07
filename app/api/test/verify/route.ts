@@ -20,21 +20,21 @@ export async function GET(req: NextRequest) {
   try {
     if (type === 'patient') {
       const patient = await prisma.patient.findUnique({
-        where: { mobile: mobile || '' },
-        select: { id: true, name: true, mobile: true },
+        where: { phone: mobile || '' },
+        select: { id: true, name: true, phone: true },
       });
       return NextResponse.json(patient);
     }
 
     if (type === 'hospital') {
-      const hospital = await prisma.hospital.findFirst({
-        where: { name: searchParams.get('name') || '' },
+      const hospital = await prisma.hospitalsMaster.findFirst({
+        where: { legalName: searchParams.get('name') || '' },
       });
       return NextResponse.json(hospital);
     }
 
     if (type === 'affiliation') {
-      const affiliation = await prisma.doctorHospital.findFirst({
+      const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
         where: {
           hospitalId: hospitalId || '',
           doctor: { mobile: mobile || '' },

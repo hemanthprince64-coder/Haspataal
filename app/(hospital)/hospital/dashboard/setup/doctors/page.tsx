@@ -465,7 +465,7 @@ function DoctorWizard({
                     >
                       <Checkbox
                         checked={form.deptIds.includes(d.id)}
-                        onCheckedChange={() => toggleDept(d.id)}
+                        onChange={() => toggleDept(d.id)}
                         className="rounded-md"
                       />
                       <span className="text-[11px] font-bold text-slate-700 truncate">
