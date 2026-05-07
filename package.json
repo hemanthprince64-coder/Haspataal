@@ -32,9 +32,9 @@
     }
   },
   "scripts": {
-    "dev": "turbo run dev --filter=haspataal",
+    "dev": "turbo run dev --filter=patient-portal",
     "dev:all": "turbo run dev",
-    "dev:patient": "turbo run dev --filter=haspataal",
+    "dev:patient": "turbo run dev --filter=patient-portal",
     "dev:admin": "turbo run dev --filter=haspataal-admin",
     "dev:gateway": "turbo run dev --filter=@haspataal/api-gateway",
     "build": "next build",
@@ -49,7 +49,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "audit": "npx tsx scripts/quality-audit.ts"
+    "audit": "npx tsx scripts/quality-audit.ts",
+    "clean": "turbo run clean && Remove-Item -Recurse -Force .next, apps/**/.next, packages/**/dist -ErrorAction SilentlyContinue"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
