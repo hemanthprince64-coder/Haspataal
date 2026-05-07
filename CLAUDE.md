@@ -252,6 +252,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Dashboard Branch Safety:** Server-side `getActiveBranchId()` returns `string | null`. Dashboard layouts and the `BranchSwitcher` component must explicitly handle the `null` state to prevent hydration mismatches and typing errors. _(Hardened 2026-05-06)_
 - **Monorepo Cleanup & Dev Target:** Following the Turborepo migration, legacy root directories (`app`, `lib`, `components`, etc.) were removed to prevent duplication and import errors. The root `npm run dev` script now correctly targets the `patient-portal` app (`patient-portal`) using Turborepo filters. Ensure `package.json` exists in each app for workspace recognition. _(Finalized 2026-05-07)_
 - **Turbopack Persistence (Windows):** If `npm run dev` shows `Access is denied (os error 5)`, this is a known Turbopack issue on Windows. The server is still functional. To resolve, ensure the terminal has full permissions to the workspace or run as Administrator. _(Noted 2026-05-07)_
+- **HMS UI Redesign:** Implemented a comprehensive Hospital Management System with modern medical aesthetic using shadcn/ui, Tailwind CSS, and Framer Motion. Features include patient management DataTable, appointment scheduling, electronic health records with tabs/accordions, inventory management with status badges, dark/light mode support, and full accessibility compliance. Located in the patient-portal app with modular component architecture. _(Implemented 2026-05-07)_
 
 ---
 
