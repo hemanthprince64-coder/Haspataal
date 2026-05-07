@@ -12,9 +12,14 @@ services:
   # ================================================================
   # FRONTENDS — Next.js portals
   # ================================================================
+  # ================================================================
+  # FRONTENDS — Next.js portals
+  # ================================================================
   patient-portal:
     image: haspataal/patient-portal:latest
-    build: .
+    build: 
+      context: .
+      dockerfile: apps/patient-portal/Dockerfile
     container_name: patient-portal
     restart: unless-stopped
     env_file: .env.local
@@ -32,9 +37,13 @@ services:
     networks:
       - haspataal_network
 
-  haspataal-in:
+  # haspataal-in and admin-panel would be updated similarly if they existed in apps/
+  # haspataal-in is likely hospital-hms now
+  hospital-hms:
     image: haspataal/hospital-hms:latest
-    build: ./hospital-hms
+    build:
+      context: .
+      dockerfile: apps/hospital-hms/Dockerfile
     container_name: hospital-hms
     restart: unless-stopped
     env_file: .env.local
@@ -46,9 +55,11 @@ services:
     networks:
       - haspataal_network
 
-  haspataal-admin:
+  admin-panel:
     image: haspataal/admin-panel:latest
-    build: ./haspataal-admin
+    build:
+      context: .
+      dockerfile: apps/admin-panel/Dockerfile
     container_name: admin-panel
     restart: unless-stopped
     env_file: .env.local
@@ -65,7 +76,7 @@ services:
   # ================================================================
   auth-service:
     image: haspataal/auth-service:latest
-    build: ./auth-service
+    build: ./services/auth
     container_name: auth-service
     restart: unless-stopped
     env_file: .env.local
@@ -85,7 +96,7 @@ services:
 
   api-gateway:
     image: haspataal/api-gateway:latest
-    build: ./api-gateway
+    build: ./services/gateway
     container_name: api-gateway
     restart: unless-stopped
     env_file: .env.local
@@ -165,8 +176,8 @@ services:
       - '80:80'
     depends_on:
       - patient-portal
-      - haspataal-in
-      - haspataal-admin
+      - hospital-hms
+      - admin-panel
       - api-gateway
       - auth-service
     networks:
