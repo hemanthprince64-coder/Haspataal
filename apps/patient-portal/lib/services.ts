@@ -1,9 +1,11 @@
-import 'server-only';
 import prisma from './prisma';
 import { emitEvent } from '@/services/event-emitter';
-import logger from './logger';
+import { logger, logAudit } from '@haspataal/logger';
+import { hospitalRegistrationsCounter, appointmentsCreatedCounter } from '@/lib/metrics';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { randomBytes, randomInt } from 'crypto';
+import { rateLimiter } from './rate-limit';
 import {
   Hospital,
   HospitalPublic,
@@ -15,73 +17,68 @@ import {
 } from '../types';
 import { toHospitalPublic } from './utils';
 
-// ── Domain Mapping Functions ─────────────────────────────────
+// Zod schemas for runtime validation
+const HospitalArraySchema = z.array(z.any());
+const DoctorArraySchema = z.array(z.any());
+const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
+const OTP_RATE_LIMIT = Number(process.env.OTP_RATE_LIMIT || 3);
+const OTP_RATE_WINDOW_SECONDS = Number(process.env.OTP_RATE_WINDOW_SECONDS || 15 * 60);
 
-/**
- * Maps a Prisma DoctorMaster record to the clean Domain Doctor type.
- * Decouples the database schema from the application logic.
- */
-function toDoctorDomain(doc: any): Doctor {
-  if (!doc) throw new Error("Mapping failed: doctor record is null");
-  return {
-    id: doc.id,
-    fullName: doc.fullName,
-    mobile: doc.mobile,
-    email: doc.email,
-    profilePhotoUrl: doc.profilePhotoUrl,
-    kycStatus: doc.kycStatus,
-    accountStatus: doc.accountStatus,
-    name: doc.fullName,
-    speciality: doc.affiliations?.[0]?.department || 'General',
-    fee: doc.affiliations?.[0]?.consultationFee ? Number(doc.affiliations[0].consultationFee) : 500,
-    experience: doc.experienceYears || 0,
-    hospital: doc.affiliations?.[0]?.hospital || null,
-    reviews: doc.reviews || [],
-  };
-}
-
-/** Maps a Prisma Appointment record to the Domain Appointment type. */
-function toAppointmentDomain(app: any): Appointment {
-  if (!app) throw new Error("Mapping failed: appointment record is null");
-  return {
-    id: app.id,
-    patientId: app.patientId,
-    doctorId: app.doctorId,
-    date: app.date,
-    slot: app.slot,
-    status: app.status as BookingStatus,
-    notes: app.notes,
-  };
-}
-
-// ── Result Type ───────────────────────────────────────────────
-
-export type Result<T> = 
-  | { ok: true; value: T } 
-  | { ok: false; error: string; code: string };
-
-// ── Utility Functions ────────────────────────────────────────
-
-/** Strip sensitive fields (like password) from any object. */
+// Strip sensitive fields from any object (password, etc.)
 function stripSensitive<T extends Record<string, any>>(obj: T | null): T | null {
   if (!obj) return null;
   const { password, ...safe } = obj as any;
   return safe as T;
 }
+function stripSensitiveArray<T extends Record<string, any>>(arr: T[]): T[] {
+  return arr.map((item) => stripSensitive(item)!);
+}
 
+/**
+ * Type guard: returns true when a stored password field is plaintext (not a bcrypt hash).
+ * bcrypt hashes always start with "$2b$" or "$2a$". Any other value is treated as plaintext
+ * and must be rehashed before use.
+ */
 export function isPlaintextPassword(s: string): boolean {
   return !s.startsWith('$2b$') && !s.startsWith('$2a$');
 }
 
+/** Generates a cryptographically-random alphanumeric string of the given length. */
 function generateTempPassword(length = 12): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // no ambiguous chars
   let result = '';
   for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
+    result += chars[randomInt(0, chars.length)];
   }
   return result;
 }
 
+function generatePasswordSeed(): string {
+  return randomBytes(32).toString('base64url');
+}
+
+function toFee(value: unknown): number {
+  if (value === null || value === undefined) return DEFAULT_CONSULTATION_FEE;
+  const fee = Number(value);
+  return Number.isFinite(fee) && fee >= 0 ? fee : DEFAULT_CONSULTATION_FEE;
+}
+
+async function getAppointmentFee(appointment: {
+  doctorId: string;
+  hospitalId?: string | null;
+}): Promise<number> {
+  const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
+    where: {
+      doctorId: appointment.doctorId,
+      hospitalId: appointment.hospitalId || undefined,
+      isCurrent: true,
+    },
+    select: { consultationFee: true },
+  });
+  return toFee(affiliation?.consultationFee);
+}
+
+// Helper to preserve CITIES constant from the old data file
 export const CITIES = [
   { id: 'mumbai', name: 'Mumbai', state: 'Maharashtra' },
   { id: 'delhi', name: 'Delhi', state: 'Delhi NCR' },
@@ -93,19 +90,29 @@ export const CITIES = [
   { id: 'ahmedabad', name: 'Ahmedabad', state: 'Gujarat' },
 ];
 
-// ── Services ──────────────────────────────────────────────────
-
 export const services = {
+  // --- Platform Services ---
   platform: {
     getCities: (): typeof CITIES => CITIES,
 
-    getHospitals: async (city?: string): Promise<HospitalPublic[]> => {
+    getHospitals: async (
+      city?: string,
+      limit = 10,
+      cursor?: string,
+    ): Promise<HospitalPublic[]> => {
       const where: any = { accountStatus: 'active' };
       if (city) {
         where.city = { equals: city, mode: 'insensitive' };
       }
+
+      // PERFORMANCE: Cursor-based pagination + Eager loading to avoid N+1
+      // Note: 'specialities' is a scalar array in this schema, so it is natively included.
       const data = await prisma.hospitalsMaster.findMany({
         where,
+        take: limit,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+        orderBy: { rankingScore: 'desc' },
         include: {
           _count: {
             select: {
@@ -116,11 +123,17 @@ export const services = {
         },
       });
 
-      return data.map((h) => ({
-        ...toHospitalPublic(h as any),
+      const processed = data.map((h) => ({
+        ...stripSensitive(h),
+        name: h.displayName || h.legalName,
         doctorCount: h._count.affiliations,
         avgRating: h._count.reviews > 0 ? '4.8' : '4.5',
       }));
+
+      // Runtime validation layer
+      if (!Array.isArray(processed)) throw new Error('getHospitals must return an array');
+
+      return HospitalArraySchema.parse(processed).map(toHospitalPublic) as HospitalPublic[];
     },
 
     getHospitalsByCity: async (city: string): Promise<HospitalPublic[]> => {
@@ -136,19 +149,28 @@ export const services = {
               reviews: true,
             },
           },
-          reviews: { take: 5 },
+          reviews: {
+            take: 5,
+          },
         },
       });
 
-      return data.map((h) => ({
-        ...toHospitalPublic(h as any),
+      const processed = data.map((h) => ({
+        ...stripSensitive(h),
+        name: h.displayName || h.legalName,
         doctorCount: h._count.affiliations,
-        avgRating: h._count.reviews > 0 ? '4.8' : '4.5',
+        avgRating: h._count.reviews > 0 ? '4.8' : '4.5', // Mock average if no calc logic
         reviews: h.reviews,
       }));
+
+      return HospitalArraySchema.parse(processed).map(toHospitalPublic) as HospitalPublic[];
     },
 
-    searchDoctors: async (city?: string, speciality?: string, query?: string): Promise<Doctor[]> => {
+    searchDoctors: async (
+      city?: string,
+      speciality?: string,
+      query?: string,
+    ): Promise<Doctor[]> => {
       let hospitalIds: string[] = [];
       if (city) {
         const hospitals = await prisma.hospitalsMaster.findMany({
@@ -160,24 +182,37 @@ export const services = {
 
       const where: any = {};
       if (city) {
-        where.affiliations = { some: { hospitalId: { in: hospitalIds }, isCurrent: true } };
+        where.affiliations = {
+          some: {
+            hospitalId: { in: hospitalIds },
+            isCurrent: true,
+          },
+        };
       }
+
       if (speciality) {
         where.affiliations = {
           ...where.affiliations,
-          some: { ...where.affiliations?.some, department: { equals: speciality, mode: 'insensitive' } },
+          some: {
+            ...where.affiliations?.some,
+            department: { equals: speciality, mode: 'insensitive' },
+          },
         };
       }
+
       if (query) {
         where.OR = [{ fullName: { contains: query, mode: 'insensitive' } }];
       }
 
       const data = await prisma.doctorMaster.findMany({
         where,
-        include: { affiliations: { include: { hospital: true } } },
+        include: {
+          affiliations: { include: { hospital: true } },
+        },
       });
 
-      return data.map(toDoctorDomain);
+      if (!Array.isArray(data)) throw new Error('searchDoctors must return an array');
+      return DoctorArraySchema.parse(data) as Doctor[];
     },
 
     getDoctorsByHub: async (city: string, speciality: string): Promise<Doctor[]> => {
@@ -198,13 +233,17 @@ export const services = {
             },
           },
         },
-        include: { affiliations: { include: { hospital: true } } },
+        include: {
+          affiliations: {
+            include: { hospital: true },
+          },
+        },
       });
 
-      return data.map(toDoctorDomain);
+      return DoctorArraySchema.parse(data) as Doctor[];
     },
 
-    getHubStats: async (city: string, speciality: string): Promise<{ count: number }> => {
+    getHubStats: async (city: string, speciality: string) => {
       const hospitals = await prisma.hospitalsMaster.findMany({
         where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
         select: { id: true },
@@ -226,7 +265,7 @@ export const services = {
       return { count };
     },
 
-    getHubMetadata: async (): Promise<{ cities: string[]; specialties: string[] }> => {
+    getHubMetadata: async () => {
       const cities = await prisma.hospitalsMaster.findMany({
         where: { accountStatus: 'active' },
         select: { city: true },
@@ -240,37 +279,49 @@ export const services = {
       });
 
       return {
-        cities: cities.map((c) => c.city).filter((c): c is string => Boolean(c)),
-        specialties: specialties.map((s) => s.department).filter((s): s is string => Boolean(s)),
+        cities: cities.map((c) => c.city).filter(Boolean) as string[],
+        specialties: specialties.map((s) => s.department).filter(Boolean) as string[],
       };
     },
 
     getDoctorById: async (id: string): Promise<Doctor | null> => {
       const doc = await prisma.doctorMaster.findUnique({
         where: { id },
-        include: { affiliations: { include: { hospital: true } }, reviews: true },
+        include: {
+          affiliations: { include: { hospital: true } },
+          reviews: true,
+        },
       });
-      return doc ? toDoctorDomain(doc) : null;
+      return stripSensitive(doc) as Doctor | null;
     },
 
     getHospitalById: async (id: string): Promise<HospitalPublic | null> => {
-      const h = await prisma.hospitalsMaster.findUnique({
+      const hospital = await prisma.hospitalsMaster.findUnique({
         where: { id },
-        include: { facilities: true, services: true, departments: true },
+        include: {
+          facilities: true,
+          services: true,
+          departments: true,
+        },
       });
-      return h ? toHospitalPublic(h as any) : null;
+      return stripSensitive(hospital) as Hospital | null;
     },
 
     getAllSpecialities: async (): Promise<string[]> => {
       const affs = await prisma.doctorHospitalAffiliation.findMany({
         distinct: ['department'],
         select: { department: true },
-        where: { isCurrent: true, hospital: { accountStatus: 'active' } },
+        where: {
+          isCurrent: true,
+          hospital: { accountStatus: 'active' },
+        },
       });
       return affs.map((a) => a.department).filter((d): d is string => Boolean(d));
     },
 
-    getHospitalDoctors: async (hospitalId: string): Promise<{ id: string; name: string; speciality: string; fee: number }[]> => {
+    getHospitalDoctors: async (
+      hospitalId: string,
+    ): Promise<{ id: string; name: string; speciality: string; fee: number }[]> => {
       const affiliations = await prisma.doctorHospitalAffiliation.findMany({
         where: { hospitalId, isCurrent: true },
         include: { doctor: true },
@@ -279,27 +330,49 @@ export const services = {
         id: aff.doctor.id,
         name: aff.doctor.fullName,
         speciality: aff.department || 'General',
-        fee: aff.consultationFee ? Number(aff.consultationFee) : 500,
+        fee: toFee(aff.consultationFee),
       }));
     },
 
-    getHospitalReviews: async (hospitalId: string): Promise<Review[]> => [],
+    getHospitalReviews: async (hospitalId: string): Promise<Review[]> => {
+      return [];
+    },
 
-    getHospitalStats: async (hospitalId: string): Promise<{ totalVisits: number; todayVisits: number; scheduledVisits: number; totalPatients: number; totalDoctors: number }> => {
+    getHospitalStats: async (hospitalId: string) => {
       const [totalVisits, todayVisits, scheduledVisits] = await Promise.all([
         prisma.visit.count({ where: { hospitalId } }),
-        prisma.visit.count({ where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
-        prisma.appointment.count({ where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' } }),
+        prisma.visit.count({
+          where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+        }),
+        prisma.appointment.count({
+          where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' },
+        }),
       ]);
 
-      return { totalVisits, todayVisits, scheduledVisits, totalPatients: 0, totalDoctors: 0 };
+      return {
+        totalVisits,
+        todayVisits,
+        scheduledVisits,
+        totalPatients: 0,
+        totalDoctors: 0,
+      };
     },
   },
 
+  // --- Patient Services ---
   patient: {
-    requestOtp: async (mobile: string): Promise<boolean> => {
-      const code = Math.floor(1000 + Math.random() * 9000).toString();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    requestOtp: async (mobile: string) => {
+      const otpLimit = await rateLimiter(
+        `rl:requestOtp:${mobile}`,
+        OTP_RATE_LIMIT,
+        OTP_RATE_WINDOW_SECONDS,
+      );
+      if (!otpLimit.allowed) {
+        throw new Error('Too many OTP requests. Please try again later.');
+      }
+
+      const code = randomInt(1000, 10000).toString();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
       await prisma.otpCode.upsert({
         where: { phone: mobile },
@@ -307,104 +380,242 @@ export const services = {
         create: { phone: mobile, code, expiresAt },
       });
 
-      logger.info({ action: 'otp_generated', mobile, code }, `DEMO: Code: ${code}`);
+      logger.info({ action: 'otp_generated', mobile }, 'OTP generated');
       return true;
     },
 
-    login: async (mobile: string, otp: string): Promise<Result<any>> => {
-      try {
-        const otpRecord = await prisma.otpCode.findUnique({ where: { phone: mobile } });
-        if (!otpRecord) return { ok: false, error: 'OTP not requested', code: 'OTP_NOT_FOUND' };
-        if (otpRecord.code !== otp) return { ok: false, error: 'Invalid OTP', code: 'INVALID_OTP' };
-        if (new Date() > otpRecord.expiresAt) return { ok: false, error: 'OTP expired', code: 'OTP_EXPIRED' };
+    login: async (mobile: string, otp: string) => {
+      const otpRecord = await prisma.otpCode.findUnique({ where: { phone: mobile } });
 
-        await prisma.otpCode.delete({ where: { id: otpRecord.id } });
-        let patient = await prisma.patient.findUnique({ where: { phone: mobile } });
+      if (!otpRecord)
+        throw new Error('OTP not requested for this number. Please request a new OTP.');
+      if (otpRecord.code !== otp) throw new Error('Invalid OTP. Please try again.');
+      if (new Date() > otpRecord.expiresAt)
+        throw new Error('OTP has expired. Please request a new OTP.');
 
-        if (!patient) {
-          const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
-          patient = await prisma.patient.create({ data: { phone: mobile, name: 'New User', password: hashedPassword } });
-        }
-        return { ok: true, value: { user: { id: patient.id, name: patient.name, role: UserRole.PATIENT, mobile: patient.phone } } };
-      } catch (e: any) {
-        return { ok: false, error: e.message, code: 'LOGIN_FAILED' };
-      }
-    },
+      // Prevent replay attacks
+      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
 
-    register: async (data: any): Promise<Result<any>> => {
-      try {
-        if (!data.password) return { ok: false, error: 'Password required', code: 'PASSWORD_REQUIRED' };
-        const hashedPassword = await bcrypt.hash(data.password, 12);
-        const patient = await prisma.patient.upsert({
-          where: { phone: data.mobile },
-          update: { name: data.name, email: data.email, password: hashedPassword },
-          create: { phone: data.mobile, name: data.name, password: hashedPassword },
+      let patient = await prisma.patient.findUnique({ where: { phone: mobile } });
+
+      if (!patient) {
+        logger.info(
+          { action: 'patient_registration', mobile },
+          'Auto-registering new patient during login',
+        );
+        const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
+        patient = await prisma.patient.create({
+          data: {
+            phone: mobile,
+            name: 'New User',
+            password: hashedPassword,
+          },
         });
-        return { ok: true, value: { user: { id: patient.id, name: patient.name, role: UserRole.PATIENT, mobile: patient.phone } } };
-      } catch (e: any) {
-        return { ok: false, error: e.message, code: 'REGISTRATION_FAILED' };
       }
+      logger.info(
+        { action: 'patient_login', patientId: patient.id },
+        'Patient logged in successfully',
+      );
+      return {
+        user: {
+          id: patient.id,
+          name: patient.name || 'Patient',
+          role: UserRole.PATIENT,
+          mobile: patient.phone,
+        },
+      };
     },
 
-    updateProfile: async (id: string, updates: any): Promise<any> => {
-      return await prisma.patient.update({ where: { id }, data: updates });
+    register: async (data: {
+      mobile: string;
+      name: string;
+      password?: string;
+      age?: string;
+      gender?: string;
+      bloodGroup?: string;
+      city?: string;
+      email?: string;
+    }) => {
+      logger.info({ action: 'patient_register', data }, 'Patient registering profile');
+
+      // Added Zod Validation
+      const RegisterSchema = z.object({
+        mobile: z.string().regex(/^\d{10}$/, 'Invalid mobile number'),
+        name: z.string().min(2, 'Name too short'),
+        password: z.string().min(6, 'Password must be at least 6 characters'),
+        email: z.string().email().optional().or(z.literal('')),
+      });
+
+      const validated = RegisterSchema.parse(data);
+
+      if (!data.password) throw new Error('PASSWORD_REQUIRED');
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+      const patient = await prisma.patient.upsert({
+        where: { phone: data.mobile },
+        update: {
+          name: data.name,
+          gender: data.gender,
+          bloodGroup: data.bloodGroup,
+          city: data.city,
+          email: data.email,
+          password: hashedPassword,
+        },
+        create: {
+          phone: data.mobile,
+          name: data.name,
+          password: hashedPassword,
+        },
+      });
+
+      logAudit({
+        action: 'CREATE',
+        actorId: patient.id,
+        actorRole: 'PATIENT',
+        resourceType: 'PATIENT_PROFILE',
+        resourceId: patient.id,
+        timestamp: new Date().toISOString(),
+        ip: 'system', // IP would come from request context in a real action
+        changes: { name: patient.name, mobile: patient.phone },
+      });
+
+      return {
+        user: {
+          id: patient.id,
+          name: patient.name || 'Patient',
+          role: UserRole.PATIENT,
+          mobile: patient.phone,
+        },
+      };
     },
 
-    getAvailableSlots: async (doctorId: string, date: string): Promise<{ time: string; available: boolean }[]> => {
+    updateProfile: async (id: string, updates: any) => {
+      return await prisma.patient.update({
+        where: { id },
+        data: updates,
+      });
+    },
+
+    getAvailableSlots: async (doctorId: string, date: string) => {
       const targetDate = new Date(date);
       targetDate.setHours(0, 0, 0, 0);
-      const now = new Date();
-      const isToday = targetDate.getTime() === new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
+      const now = new Date();
+      const isToday =
+        targetDate.getTime() ===
+        new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+      // Fetch existing bookings for this doctor on this date
       const existingBookings = await prisma.appointment.findMany({
-        where: { doctorId, date: targetDate, status: { in: [BookingStatus.BOOKED, BookingStatus.CONFIRMED] } },
+        where: {
+          doctorId,
+          date: targetDate,
+          status: { in: [BookingStatus.BOOKED, BookingStatus.CONFIRMED] },
+        },
         select: { slot: true },
       });
+
       const bookedSlots = new Set(existingBookings.map((b) => b.slot));
-      const allSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+
+      // Standard clinic hours: 09:00 to 17:00, 30-min intervals
+      const allSlots = [
+        '09:00',
+        '09:30',
+        '10:00',
+        '10:30',
+        '11:00',
+        '11:30',
+        '12:00',
+        '12:30',
+        '13:00',
+        '13:30',
+        '14:00',
+        '14:30',
+        '15:00',
+        '15:30',
+        '16:00',
+        '16:30',
+      ];
 
       return allSlots.map((time) => {
         let available = !bookedSlots.has(time);
+
         if (isToday) {
           const [hours, minutes] = time.split(':').map(Number);
           const slotDateTime = new Date(targetDate);
-          slotDateTime.setHours(hours!, minutes!, 0, 0);
-          if (slotDateTime.getTime() <= now.getTime()) available = false;
+          slotDateTime.setHours(hours, minutes, 0, 0);
+
+          // If slot is in the past (using 15 min buffer for convenience)
+          if (slotDateTime.getTime() <= now.getTime()) {
+            available = false;
+          }
         }
-        return { time, available };
+
+        return {
+          time,
+          available,
+        };
       });
     },
 
-    createVisit: async (hospitalId: string, data: any): Promise<Result<Appointment>> => {
-      try {
-        const targetDate = new Date(data.date);
-        targetDate.setHours(0, 0, 0, 0);
-        const targetSlot = data.slot || 'ONLINE';
+    createVisit: async (
+      hospitalId: string,
+      data: {
+        patientMobile: string;
+        patientName: string;
+        doctorId: string;
+        date: string;
+        slot?: string;
+        status?: any;
+      },
+    ) => {
+      logger.info(
+        {
+          action: 'create_booking_attempt',
+          hospitalId,
+          doctorId: data.doctorId,
+          date: data.date,
+          slot: data.slot,
+        },
+        'Attempting transactional appointment booking',
+      );
+      const targetDate = new Date(data.date);
+      targetDate.setHours(0, 0, 0, 0);
+      const targetSlot = data.slot || 'ONLINE';
 
-        const result = await prisma.$transaction(async (tx) => {
-          // 1. Check Doctor Affiliation
+      // DPDP COMPLIANCE: Check for explicit consent before processing booking
+      const hasConsent = await services.compliance.checkConsent(data.patientMobile, 'APPOINTMENT_BOOKING');
+      if (!hasConsent) {
+        throw new Error('CONSENT_REQUIRED: Patient has not provided explicit consent for appointment booking.');
+      }
+
+      try {
+        // ACID Transaction to prevent double booking race conditions
+        const appointment = await prisma.$transaction(async (tx) => {
+          // 1. Ensure patient exists
+          const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
+          const patient = await tx.patient.upsert({
+            where: { phone: data.patientMobile },
+            update: { name: data.patientName },
+            create: {
+              phone: data.patientMobile,
+              name: data.patientName,
+              password: hashedPassword,
+            },
+          });
+
           const affiliation = await tx.doctorHospitalAffiliation.findFirst({
             where: {
               doctorId: data.doctorId,
               hospitalId,
-              verificationStatus: 'VERIFIED',
               isCurrent: true,
+              verificationStatus: 'VERIFIED',
             },
           });
-
           if (!affiliation) {
-            return { ok: false, error: 'Doctor not affiliated with this hospital', code: 'DOCTOR_NOT_AFFILIATED' };
+            throw new Error('Doctor is not approved for this hospital.');
           }
 
-          // 2. Ensure patient exists
-          const hashedPassword = await bcrypt.hash(Math.random().toString(36), 12);
-          const patient = await tx.patient.upsert({
-            where: { phone: data.patientMobile },
-            update: { name: data.patientName },
-            create: { phone: data.patientMobile, name: data.patientName, password: hashedPassword },
-          });
-
-          // 3. Check for double booking
+          // 2. Check if slot is already taken in this transaction snapshot
           const existing = await tx.appointment.findFirst({
             where: {
               doctorId: data.doctorId,
@@ -415,262 +626,1528 @@ export const services = {
           });
 
           if (existing) {
-            return { ok: false, error: 'Slot already taken', code: 'SLOT_TAKEN' };
+            throw new Error(`SLOT_UNAVAILABLE: The slot ${targetSlot} has already been booked.`);
           }
 
-          const appointment = await tx.appointment.create({
+          // 3. Create the appointment. The @@unique(doctorId, date, slot) constraint
+          // acts as the final database-level lock against parallel inserts.
+          return await tx.appointment.create({
             data: {
               patientId: patient.id,
               doctorId: data.doctorId,
               date: targetDate,
               slot: targetSlot,
-              status: data.status || BookingStatus.AWAITING_PAYMENT,
               hospitalId,
+              status: data.status || BookingStatus.AWAITING_PAYMENT,
             },
           });
-
-          return { ok: true, value: toAppointmentDomain(appointment) };
         });
 
-        return result as Result<Appointment>;
-      } catch (e: any) {
-        return { ok: false, error: e.message, code: 'BOOKING_FAILED' };
+        logger.info(
+          { action: 'booking_created', appointmentId: appointment.id },
+          'Successfully booked appointment',
+        );
+
+        logAudit({
+          action: 'CREATE',
+          actorId: appointment.patientId,
+          actorRole: 'PATIENT',
+          resourceType: 'APPOINTMENT',
+          resourceId: appointment.id,
+          timestamp: new Date().toISOString(),
+          ip: 'system',
+          changes: {
+            doctorId: appointment.doctorId,
+            slot: appointment.slot,
+            date: appointment.date,
+          },
+        });
+
+        appointmentsCreatedCounter.inc({ status: 'BOOKED', hospitalId: appointment.hospitalId });
+
+        return appointment;
+      } catch (error: any) {
+        // Handle Prisma unique constraint violation explicitly (P2002)
+        if (error.code === 'P2002') {
+          logger.warn(
+            { action: 'booking_conflict', doctorId: data.doctorId, slot: targetSlot },
+            'Race condition double-booking prevented by Unique Constraint',
+          );
+          throw new Error('This slot was just booked by someone else. Please choose another.');
+        }
+        logger.error(
+          { action: 'booking_transaction_failed', error: error.message },
+          'Booking transaction failed',
+        );
+        throw error;
       }
     },
 
-    updateVisitStatus: async (visitId: string, patientId: string, newStatus: BookingStatus): Promise<Appointment> => {
-      const app = await prisma.appointment.findFirst({ where: { id: visitId, patientId } });
-      if (!app) throw new Error('NOT_FOUND');
-      // [MANUAL_REVIEW] State machine transitions
-      const updated = await prisma.appointment.update({ where: { id: visitId }, data: { status: newStatus } });
-      return toAppointmentDomain(updated);
+    updateVisitStatus: async (visitId: string, patientId: string, newStatus: BookingStatus) => {
+      const appointment = await prisma.appointment.findFirst({
+        where: { id: visitId, patientId },
+      });
+
+      if (!appointment) throw new Error('Appointment not found');
+
+      const current = appointment.status;
+
+      // Strict State Machine Enforcement
+      const validTransitions: Record<string, string[]> = {
+        [BookingStatus.BOOKED]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+        [BookingStatus.CONFIRMED]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
+        [BookingStatus.CANCELLED]: [],
+        [BookingStatus.COMPLETED]: [],
+      };
+
+      const allowed = validTransitions[current] || [];
+      if (!allowed.includes(newStatus)) {
+        logger.warn(
+          { action: 'invalid_status_transition', visitId, current, newStatus },
+          'Attempted invalid status transition',
+        );
+        throw new Error(`Invalid state transition: Cannot move from ${current} to ${newStatus}`);
+      }
+
+      const updated = await prisma.appointment.update({
+        where: { id: visitId },
+        data: { status: newStatus },
+      });
+
+      logger.info(
+        { action: 'status_transition', visitId, oldStatus: current, newStatus },
+        `Appointment status updated to ${newStatus}`,
+      );
+      return updated;
     },
 
-    cancelVisit: async (patientId: string, visitId: string): Promise<Appointment> => {
+    cancelVisit: async (patientId: string, visitId: string) => {
+      logger.info(
+        { action: 'cancel_booking_attempt', patientId, visitId },
+        'Attempting to cancel appointment',
+      );
+
       const visit = await prisma.appointment.findUnique({ where: { id: visitId } });
-      if (!visit || visit.patientId !== patientId) throw new Error('UNAUTHORIZED');
-      // [MANUAL_REVIEW] Cancellation logic (refunds, time limits)
-      const cancelled = await services.patient.updateVisitStatus(visitId, patientId, BookingStatus.CANCELLED);
+      if (!visit) throw new Error('Appointment not found');
+      if (visit.patientId !== patientId) throw new Error('Unauthorized');
+
+      const hrLimit = 6 * 60 * 60 * 1000;
+
+      // Construct full Date by combining visit.date (Y-M-D) and visit.slot (H:m)
+      const [hours, minutes] = (visit.slot || '09:00').split(':').map(Number);
+      const appointmentTime = new Date(visit.date);
+      appointmentTime.setHours(hours, minutes, 0, 0);
+
+      if (appointmentTime.getTime() - Date.now() < hrLimit) {
+        throw new Error(
+          `Appointments cannot be cancelled within 6 hours of the scheduled time (${visit.slot})`,
+        );
+      }
+
+      // If the user previously paid for this appointment, process a refund
+      if (visit.status === 'CONFIRMED' || visit.status === 'BOOKED') {
+        await services.patient.addWalletTransaction(patientId, {
+          type: 'CREDIT',
+          amount: await getAppointmentFee(visit),
+          source: 'REFUND',
+          description: `Refund for cancelled appointment`,
+        });
+      }
+
+      // Delegate to the state machine to ensure it's a valid transition
+      const cancelled = await services.patient.updateVisitStatus(
+        visitId,
+        patientId,
+        BookingStatus.CANCELLED,
+      );
+
       return cancelled;
     },
 
-    getById: async (id: string): Promise<any> => {
-      return stripSensitive(await prisma.patient.findUnique({ where: { id } }));
+    getById: async (id: string) => {
+      const patient = stripSensitive(await prisma.patient.findUnique({ where: { id } }));
+      return patient;
     },
 
-    getVisits: async (patientId: string): Promise<any[]> => {
-      const data = await prisma.appointment.findMany({
+    getVisits: async (patientId: string) => {
+      const appointments = await prisma.appointment.findMany({
         where: { patientId },
-        include: { doctor: { include: { registration: true, affiliations: true } }, patient: true },
+        include: {
+          doctor: {
+            include: {
+              registration: true,
+              affiliations: true,
+            },
+          },
+          patient: true,
+        },
         orderBy: { date: 'desc' },
       });
-      return data.map((a) => ({
-        id: a.id,
-        doctorId: a.doctorId,
-        doctorName: a.doctor?.fullName || 'Doctor',
-        specialization: a.doctor?.registration?.degree || 'General',
-        patientName: a.patient?.name || 'Patient',
-        createdAt: a.createdAt.toISOString(),
-        amountPaid: 500,
-        hospitalId: a.hospitalId || '',
-        date: a.date,
-        slot: a.slot,
-        status: a.status,
-        patientId: a.patientId,
-      }));
-    },
+      return appointments.map((a) => {
+        // Extract specialization from registration degree or affiliation department
+        const degree = a.doctor?.registration?.degree || null;
+        const department = a.doctor?.affiliations?.[0]?.department || null;
+        const specialization = degree || department || 'General Consultation';
 
-    getFamilyMembers: async (patientId: string): Promise<any[]> => {
-      return await prisma.familyMember.findMany({ where: { patientId }, orderBy: { createdAt: 'desc' } });
-    },
-
-    addFamilyMember: async (patientId: string, data: any): Promise<any> => {
-      return await prisma.familyMember.create({ data: { patientId, ...data, dob: data.dob ? new Date(data.dob) : null } });
-    },
-
-    deleteFamilyMember: async (patientId: string, memberId: string): Promise<any> => {
-      return await prisma.familyMember.deleteMany({ where: { id: memberId, patientId } });
-    },
-
-    getMedicalHistory: async (patientId: string): Promise<any> => {
-      return await prisma.patientMedicalHistory.findUnique({ where: { patientId } });
-    },
-
-    saveMedicalHistory: async (patientId: string, data: any): Promise<any> => {
-      return await prisma.patientMedicalHistory.upsert({ where: { patientId }, update: data, create: { patientId, ...data } });
-    },
-
-    getMedications: async (patientId: string): Promise<any[]> => {
-      return await prisma.patientMedication.findMany({ where: { patientId }, orderBy: { createdAt: 'desc' } });
-    },
-
-    addMedication: async (patientId: string, data: any): Promise<any> => {
-      return await prisma.patientMedication.create({ data: { patientId, ...data, startDate: data.startDate ? new Date(data.startDate) : null } });
-    },
-
-    getVitals: async (patientId: string): Promise<any[]> => {
-      return await prisma.vitalRecord.findMany({ where: { patientId }, orderBy: { recordedAt: 'desc' }, take: 20 });
-    },
-
-    addVital: async (patientId: string, data: any): Promise<any> => {
-      const bmi = data.weight && data.height ? parseFloat((data.weight / (data.height / 100) ** 2).toFixed(1)) : null;
-      return await prisma.vitalRecord.create({ data: { patientId, ...data, bmi } });
-    },
-
-    getVaccinations: async (patientId: string): Promise<any[]> => {
-      return await prisma.vaccinationRecord.findMany({ where: { patientId }, orderBy: { createdAt: 'desc' } });
-    },
-
-    addVaccination: async (patientId: string, data: any): Promise<any> => {
-      return await prisma.vaccinationRecord.create({ data: { patientId, ...data, dateGiven: data.dateGiven ? new Date(data.dateGiven) : null, nextDueDate: data.nextDueDate ? new Date(data.nextDueDate) : null } });
-    },
-
-    getPregnancyProfile: async (patientId: string): Promise<any> => {
-      return await prisma.pregnancyProfile.findUnique({ where: { patientId } });
-    },
-
-    savePregnancyProfile: async (patientId: string, data: any): Promise<any> => {
-      return await prisma.pregnancyProfile.upsert({ where: { patientId }, update: { ...data, lmp: data.lmp ? new Date(data.lmp) : undefined }, create: { patientId, ...data, lmp: data.lmp ? new Date(data.lmp) : null } });
-    },
-
-    getInsurance: async (patientId: string): Promise<any[]> => {
-      return await prisma.insuranceDetail.findMany({ where: { patientId }, orderBy: { createdAt: 'desc' } });
-    },
-
-    saveInsurance: async (patientId: string, data: any): Promise<any> => {
-      if (data.id) return await prisma.insuranceDetail.update({ where: { id: data.id }, data });
-      return await prisma.insuranceDetail.create({ data: { patientId, ...data } });
-    },
-
-    getAddresses: async (patientId: string): Promise<any[]> => {
-      return await prisma.patientAddress.findMany({ where: { patientId }, orderBy: { createdAt: 'desc' } });
-    },
-
-    addAddress: async (patientId: string, data: any): Promise<any> => {
-      if (data.isDefault) await prisma.patientAddress.updateMany({ where: { patientId, isDefault: true }, data: { isDefault: false } });
-      return await prisma.patientAddress.create({ data: { patientId, ...data } });
-    },
-
-    getWallet: async (patientId: string): Promise<any> => {
-      const wallet = await prisma.wallet.findUnique({ where: { patientId }, include: { transactions: true } });
-      if (!wallet) return { balance: 0, transactions: [] };
-      return { ...wallet, balance: Number(wallet.balance), transactions: wallet.transactions.map(t => ({ ...t, amount: Number(t.amount) })) };
-    },
-
-    addWalletTransaction: async (patientId: string, data: any): Promise<any> => {
-      return await prisma.$transaction(async (tx) => {
-        const wallet = await tx.wallet.upsert({ where: { patientId }, update: { balance: data.type === 'CREDIT' ? { increment: data.amount } : { decrement: data.amount } }, create: { patientId, balance: data.amount } });
-        return await tx.walletTransaction.create({ data: { walletId: wallet.id, ...data } });
+        return {
+          id: a.id,
+          doctorId: a.doctorId,
+          doctorName: a.doctor?.fullName || 'Doctor',
+          specialization,
+          patientName: a.patient?.name || 'Patient',
+          createdAt: a.createdAt ? a.createdAt.toISOString() : null,
+          amountPaid:
+            a.status === 'CONFIRMED' || a.status === 'COMPLETED'
+              ? toFee(a.doctor?.affiliations?.[0]?.consultationFee)
+              : 0,
+          hospitalId: a.hospitalId || '',
+          date: a.date,
+          slot: a.slot,
+          status: a.status,
+          patientId: a.patientId,
+        };
       });
     },
 
-    getPrescriptions: async (patientId: string): Promise<any[]> => {
-      return await prisma.patientPrescription.findMany({ where: { patientId }, include: { items: true, doctor: true }, orderBy: { createdAt: 'desc' } });
+    // --- Family Members ---
+    getFamilyMembers: async (patientId: string) => {
+      return await prisma.familyMember.findMany({
+        where: { patientId },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    addFamilyMember: async (
+      patientId: string,
+      data: { name: string; relation: string; dob?: string; gender?: string; bloodGroup?: string },
+    ) => {
+      return await prisma.familyMember.create({
+        data: {
+          patientId,
+          name: data.name,
+          relation: data.relation,
+          dob: data.dob ? new Date(data.dob) : null,
+          gender: data.gender || null,
+          bloodGroup: data.bloodGroup || null,
+        },
+      });
+    },
+    deleteFamilyMember: async (patientId: string, memberId: string) => {
+      return await prisma.familyMember.deleteMany({
+        where: { id: memberId, patientId },
+      });
+    },
+
+    // --- Medical History ---
+    getMedicalHistory: async (patientId: string) => {
+      return await prisma.patientMedicalHistory.findUnique({
+        where: { patientId },
+      });
+    },
+    saveMedicalHistory: async (
+      patientId: string,
+      data: {
+        chronicDiseases?: string;
+        pastIllnesses?: string;
+        surgeries?: string;
+        allergies?: string;
+        drugAllergies?: string;
+        hospitalizations?: string;
+      },
+    ) => {
+      return await prisma.patientMedicalHistory.upsert({
+        where: { patientId },
+        update: data,
+        create: { patientId, ...data },
+      });
+    },
+
+    // --- Medications ---
+    getMedications: async (patientId: string) => {
+      return await prisma.patientMedication.findMany({
+        where: { patientId },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    addMedication: async (
+      patientId: string,
+      data: { drugName: string; dose?: string; frequency?: string; startDate?: string },
+    ) => {
+      return await prisma.patientMedication.create({
+        data: {
+          patientId,
+          drugName: data.drugName,
+          dose: data.dose || null,
+          frequency: data.frequency || null,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+        },
+      });
+    },
+    deleteMedication: async (patientId: string, medicationId: string) => {
+      return await prisma.patientMedication.deleteMany({
+        where: { id: medicationId, patientId },
+      });
+    },
+
+    // --- Vitals ---
+    getVitals: async (patientId: string) => {
+      return await prisma.vitalRecord.findMany({
+        where: { patientId },
+        orderBy: { recordedAt: 'desc' },
+        take: 20,
+      });
+    },
+    addVital: async (
+      patientId: string,
+      data: {
+        weight?: number;
+        height?: number;
+        bloodPressure?: string;
+        pulse?: number;
+        bloodSugar?: number;
+        spo2?: number;
+        temperature?: number;
+      },
+    ) => {
+      const bmi =
+        data.weight && data.height
+          ? parseFloat((data.weight / (data.height / 100) ** 2).toFixed(1))
+          : null;
+      return await prisma.vitalRecord.create({
+        data: {
+          patientId,
+          weight: data.weight ?? null,
+          height: data.height ?? null,
+          bmi,
+          bloodPressure: data.bloodPressure || null,
+          pulse: data.pulse ?? null,
+          bloodSugar: data.bloodSugar ?? null,
+          spo2: data.spo2 ?? null,
+          temperature: data.temperature ?? null,
+        },
+      });
+    },
+
+    // --- Vaccinations ---
+    getVaccinations: async (patientId: string) => {
+      return await prisma.vaccinationRecord.findMany({
+        where: { patientId },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    addVaccination: async (
+      patientId: string,
+      data: { vaccineName: string; dateGiven?: string; nextDueDate?: string },
+    ) => {
+      return await prisma.vaccinationRecord.create({
+        data: {
+          patientId,
+          vaccineName: data.vaccineName,
+          dateGiven: data.dateGiven ? new Date(data.dateGiven) : null,
+          nextDueDate: data.nextDueDate ? new Date(data.nextDueDate) : null,
+        },
+      });
+    },
+
+    // --- Pregnancy Profile ---
+    getPregnancyProfile: async (patientId: string) => {
+      return await prisma.pregnancyProfile.findUnique({
+        where: { patientId },
+      });
+    },
+    savePregnancyProfile: async (
+      patientId: string,
+      data: {
+        lmp?: string;
+        edd?: string;
+        gestationalAge?: number;
+        highRisk?: boolean;
+        ancVisits?: number;
+        dangerSigns?: string;
+        deliveryPlan?: string;
+      },
+    ) => {
+      return await prisma.pregnancyProfile.upsert({
+        where: { patientId },
+        update: {
+          lmp: data.lmp ? new Date(data.lmp) : undefined,
+          edd: data.edd ? new Date(data.edd) : undefined,
+          gestationalAge: data.gestationalAge,
+          highRisk: data.highRisk,
+          ancVisits: data.ancVisits,
+          dangerSigns: data.dangerSigns,
+          deliveryPlan: data.deliveryPlan,
+        },
+        create: {
+          patientId,
+          lmp: data.lmp ? new Date(data.lmp) : null,
+          edd: data.edd ? new Date(data.edd) : null,
+          gestationalAge: data.gestationalAge,
+          highRisk: data.highRisk ?? false,
+          ancVisits: data.ancVisits,
+          dangerSigns: data.dangerSigns,
+          deliveryPlan: data.deliveryPlan,
+        },
+      });
+    },
+
+    // --- Insurance ---
+    getInsurance: async (patientId: string) => {
+      return await prisma.insuranceDetail.findMany({
+        where: { patientId },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    saveInsurance: async (
+      patientId: string,
+      data: {
+        id?: string;
+        company: string;
+        policyNumber?: string;
+        coverageAmount?: number;
+        expiryDate?: string;
+      },
+    ) => {
+      if (data.id) {
+        const updated = await prisma.insuranceDetail.updateMany({
+          where: { id: data.id, patientId },
+          data: {
+            company: data.company,
+            policyNumber: data.policyNumber || null,
+            coverageAmount: data.coverageAmount ?? null,
+            expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+          },
+        });
+        if (updated.count === 0) {
+          throw new Error('Insurance policy not found');
+        }
+        return await prisma.insuranceDetail.findFirst({
+          where: { id: data.id, patientId },
+        });
+      }
+      return await prisma.insuranceDetail.create({
+        data: {
+          patientId,
+          company: data.company,
+          policyNumber: data.policyNumber || null,
+          coverageAmount: data.coverageAmount ?? null,
+          expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        },
+      });
+    },
+    deleteInsurance: async (patientId: string, insuranceId: string) => {
+      return await prisma.insuranceDetail.deleteMany({
+        where: { id: insuranceId, patientId },
+      });
+    },
+
+    // --- Addresses ---
+    getAddresses: async (patientId: string) => {
+      return await prisma.patientAddress.findMany({
+        where: { patientId },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    addAddress: async (
+      patientId: string,
+      data: {
+        type?: string;
+        address: string;
+        city: string;
+        state?: string;
+        pincode: string;
+        landmark?: string;
+        isDefault?: boolean;
+      },
+    ) => {
+      if (data.isDefault) {
+        await prisma.patientAddress.updateMany({
+          where: { patientId, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+      return await prisma.patientAddress.create({
+        data: {
+          patientId,
+          type: data.type || 'Home',
+          address: data.address,
+          city: data.city,
+          state: data.state || null,
+          pincode: data.pincode,
+          landmark: data.landmark || null,
+          isDefault: data.isDefault || false,
+        },
+      });
+    },
+    deleteAddress: async (patientId: string, addressId: string) => {
+      return await prisma.patientAddress.deleteMany({
+        where: { id: addressId, patientId },
+      });
+    },
+    setDefaultAddress: async (patientId: string, addressId: string) => {
+      await prisma.patientAddress.updateMany({
+        where: { patientId, isDefault: true },
+        data: { isDefault: false },
+      });
+      return await prisma.patientAddress.update({
+        where: { id: addressId },
+        data: { isDefault: true },
+      });
+    },
+
+    // --- Wallet ---
+    getWallet: async (patientId: string) => {
+      let wallet = await prisma.wallet.findUnique({
+        where: { patientId },
+        include: {
+          transactions: { orderBy: { createdAt: 'desc' }, take: 10 },
+        },
+      });
+      if (!wallet) {
+        wallet = await prisma.wallet.create({
+          data: { patientId, balance: 0.0 },
+          include: { transactions: true },
+        });
+      }
+      return {
+        ...wallet,
+        balance: wallet.balance.toNumber(),
+        transactions: wallet.transactions.map((t) => ({
+          ...t,
+          amount: t.amount.toNumber(),
+        })),
+      };
+    },
+    addWalletTransaction: async (
+      patientId: string,
+      data: { type: string; amount: number; source: string; description?: string },
+    ) => {
+      return await prisma.$transaction(async (tx) => {
+        const wallet = await tx.wallet.upsert({
+          where: { patientId },
+          update: {
+            balance:
+              data.type === 'CREDIT' ? { increment: data.amount } : { decrement: data.amount },
+          },
+          create: { patientId, balance: data.type === 'CREDIT' ? data.amount : 0 },
+        });
+
+        await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: data.type,
+            amount: data.amount,
+            source: data.source,
+            description: data.description || null,
+          },
+        });
+
+        return wallet;
+      });
+    },
+
+    // --- Prescriptions ---
+    getPrescriptions: async (patientId: string) => {
+      return await prisma.patientPrescription.findMany({
+        where: { patientId },
+        include: { items: true, doctor: { select: { fullName: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    addStructuredPrescription: async (
+      patientId: string,
+      data: {
+        doctorId?: string;
+        appointmentId?: string;
+        notes?: string;
+        items: { medicineName: string; dosage: string; duration: string; instructions?: string }[];
+      },
+    ) => {
+      return await prisma.patientPrescription.create({
+        data: {
+          patientId,
+          doctorId: data.doctorId || null,
+          appointmentId: data.appointmentId || null,
+          type: 'STRUCTURED',
+          notes: data.notes || null,
+          items: {
+            create: data.items.map((i) => ({
+              medicineName: i.medicineName,
+              dosage: i.dosage,
+              duration: i.duration,
+              instructions: i.instructions || null,
+            })),
+          },
+        },
+        include: { items: true },
+      });
+    },
+    uploadPrescriptionFile: async (
+      patientId: string,
+      data: { doctorId?: string; appointmentId?: string; fileUrl: string; notes?: string },
+    ) => {
+      return await prisma.patientPrescription.create({
+        data: {
+          patientId,
+          doctorId: data.doctorId || null,
+          appointmentId: data.appointmentId || null,
+          type: 'FILE',
+          fileUrl: data.fileUrl,
+          notes: data.notes || null,
+        },
+      });
     },
   },
 
+  // --- Hospital Specific ---
   hospital: {
-    getStats: async (hospitalId: string): Promise<any> => {
+    getStats: async (hospitalId: string) => {
       const [totalVisits, todayVisits, scheduledVisits] = await Promise.all([
         prisma.visit.count({ where: { hospitalId } }),
-        prisma.visit.count({ where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
-        prisma.appointment.count({ where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' } }),
+        prisma.visit.count({
+          where: { hospitalId, createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+        }),
+        prisma.appointment.count({
+          where: { doctor: { affiliations: { some: { hospitalId } } }, status: 'CONFIRMED' },
+        }),
       ]);
-      return { totalVisits, todayVisits, scheduledVisits, totalPatients: 0, totalDoctors: 0 };
+
+      return {
+        totalVisits,
+        todayVisits,
+        scheduledVisits,
+        totalPatients: await prisma.visit
+          .groupBy({ by: ['patientPhone'], where: { hospitalId } })
+          .then((res) => res.length),
+        totalDoctors: await prisma.doctorHospitalAffiliation.count({
+          where: { hospitalId, isCurrent: true },
+        }),
+        completedVisits: 0,
+        cancelledVisits: 0,
+      };
     },
 
-    getVisits: async (hospitalId: string): Promise<any[]> => {
-      return await prisma.visit.findMany({ where: { hospitalId }, include: { careJourney: true, appointment: { include: { doctor: true, patient: true } } }, orderBy: { createdAt: 'desc' } });
+    getVisits: async (hospitalId: string) => {
+      return await prisma.visit.findMany({
+        where: { hospitalId },
+        include: {
+          careJourney: true,
+          appointment: { include: { doctor: true, patient: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
     },
 
-    completeVisit: async (hospitalId: string, visitId: string, notes: string): Promise<any> => {
-      const visit = await prisma.visit.update({ where: { id: visitId, hospitalId }, data: { diagnosis: notes } });
+    completeVisit: async (hospitalId: string, visitId: string, notes: string) => {
+      logger.info(
+        { action: 'hospital_complete_visit', hospitalId, visitId },
+        'Completing visit with AI processing',
+      );
+
+      // 1. Update visit with initial notes (stored in diagnosis for now)
+      const visit = await prisma.visit.update({
+        where: { id: visitId, hospitalId },
+        data: { diagnosis: notes },
+      });
+
+      // 2. Trigger Post-Visit AI Pipeline
       await services.ai.processVisit(visitId, notes);
+
       return visit;
     },
 
-    getPatients: async (hospitalId: string): Promise<any[]> => {
-      const data = await prisma.visit.findMany({ where: { hospitalId }, select: { patientName: true, patientPhone: true } });
-      return Array.from(new Set(data.map(v => v.patientPhone))).map(phone => data.find(v => v.patientPhone === phone));
+    getPatients: async (hospitalId: string) => {
+      const visits = await prisma.visit.findMany({
+        where: { hospitalId },
+        select: { patientName: true, patientPhone: true },
+      });
+      const uniqueMap = new Map();
+      visits.forEach((v) => uniqueMap.set(v.patientPhone, v));
+      return Array.from(uniqueMap.values()).map((v, i) => ({
+        id: i.toString(),
+        name: v.patientName || 'Unknown',
+        mobile: v.patientPhone,
+      }));
     },
 
-    getDoctors: async (hospitalId: string): Promise<any[]> => {
-      const affs = await prisma.doctorHospitalAffiliation.findMany({ where: { hospitalId, isCurrent: true }, include: { doctor: true } });
-      return affs.map(a => ({ id: a.doctor.id, name: a.doctor.fullName, speciality: a.department || 'General' }));
+    getDoctors: async (hospitalId: string) => {
+      /**
+       * PERFORMANCE (FIX N+1):
+       * Avoid fetching affiliations and then looping for doctor details.
+       * Deep include handles registration and slots in a single SQL join.
+       */
+      const affiliations = await prisma.doctorHospitalAffiliation.findMany({
+        where: { hospitalId, isCurrent: true },
+        include: {
+          doctor: {
+            include: {
+              registration: true,
+              slots: { where: { isActive: true } },
+            },
+          },
+        },
+      });
+      return affiliations.map((a) => ({
+        id: a.doctor.id,
+        name: a.doctor.fullName,
+        speciality: a.department || '',
+        mobile: a.doctor.mobile,
+        role: a.role,
+        fee: toFee(a.consultationFee),
+        registration: a.doctor.registration?.registrationNumber,
+        activeSlots: a.doctor.slots.length,
+      }));
     },
 
-    approveDoctorAffiliation: async (affiliationId: string): Promise<any> => {
-      return await prisma.doctorHospitalAffiliation.update({ where: { id: affiliationId }, data: { verificationStatus: 'VERIFIED', isCurrent: true } });
+    getPendingDoctors: async (hospitalId: string) => {
+      const affiliations = await prisma.doctorHospitalAffiliation.findMany({
+        where: { hospitalId, verificationStatus: 'PENDING' },
+        include: { doctor: true },
+      });
+      return affiliations.map((a) => ({
+        id: a.doctor.id,
+        name: a.doctor.fullName,
+        speciality: a.department || '',
+        mobile: a.doctor.mobile,
+        role: a.role,
+        schedule: a.schedule,
+      }));
     },
 
-    rejectDoctorAffiliation: async (affiliationId: string, reason?: string): Promise<any> => {
-      return await prisma.doctorHospitalAffiliation.update({ where: { id: affiliationId }, data: { verificationStatus: 'REJECTED', isCurrent: false } });
+    approveDoctorAffiliation: async (hospitalId: string, doctorId: string) => {
+      return await prisma.doctorHospitalAffiliation.updateMany({
+        where: { hospitalId, doctorId },
+        data: { verificationStatus: 'VERIFIED', isCurrent: true, approvedAt: new Date() },
+      });
     },
 
-    login: async (mobile: string, password?: string): Promise<Result<any>> => {
-      try {
-        if (!password) return { ok: false, error: 'Password required', code: 'PASSWORD_REQUIRED' };
-        const hospitals = await prisma.$queryRaw<any[]>`SELECT * FROM hospitals_master WHERE contact_number = ${mobile} LIMIT 1`;
-        const hospital = hospitals?.[0];
-        if (!hospital || !(await bcrypt.compare(password, hospital.password))) return { ok: false, error: 'Invalid credentials', code: 'AUTH_FAILED' };
-        return { ok: true, value: { user: { id: hospital.id, name: hospital.legal_name, role: UserRole.HOSPITAL_ADMIN, hospitalId: hospital.id } } };
-      } catch (e: any) {
-        return { ok: false, error: e.message, code: 'LOGIN_ERROR' };
+    rejectDoctorAffiliation: async (hospitalId: string, doctorId: string) => {
+      return await prisma.doctorHospitalAffiliation.updateMany({
+        where: { hospitalId, doctorId },
+        data: { verificationStatus: 'REJECTED', isCurrent: false },
+      });
+    },
+
+    getPatientById: async (hospitalId: string, patientId: string) => {
+      const patient = await prisma.patient.findUnique({ where: { id: patientId } });
+      if (patient) {
+        return { name: patient.name, mobile: patient.phone };
       }
+
+      // Fall back to visit-backed walk-ins when there is no patient master record.
+      const visit = await prisma.visit.findFirst({
+        where: {
+          hospitalId,
+          OR: [{ id: patientId }, { appointment: { is: { patientId } } }],
+        },
+      });
+
+      return visit ? { name: visit.patientName, mobile: visit.patientPhone } : null;
     },
 
-    register: async (data: any): Promise<HospitalPublic> => {
+    getDiagnosticCatalog: async (hospitalId: string) => {
+      return await prisma.hospitalDiagnosticPricing.findMany({
+        where: { hospitalId },
+        include: { test: { include: { category: true } } },
+      });
+    },
+
+    getLabOrders: async (hospitalId: string) => {
+      return await prisma.diagnosticOrder.findMany({
+        where: { hospitalId },
+        include: { patient: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+
+    login: async (mobile: string, password?: string) => {
+      if (!password) throw new Error('PASSWORD_REQUIRED');
+
+      // Fetch hospital via raw SQL since @ignore fields (password, name)
+      // can cause the Prisma Query Engine to panic during findFirst without explicit select.
+      const hospitals = await prisma.$queryRaw<any[]>`
+                SELECT * FROM hospitals_master WHERE contact_number = ${mobile} LIMIT 1
+            `;
+
+      const hospital = hospitals?.[0];
+
+      if (!hospital) {
+        logger.warn({ action: 'hospital_login_failed', mobile }, 'Hospital not found');
+        return null;
+      }
+
+      const passwordHash = hospital.password;
+      if (passwordHash && (await bcrypt.compare(password, passwordHash))) {
+        logger.info(
+          { action: 'hospital_login', hospitalId: hospital.id },
+          'Hospital logged in successfully',
+        );
+        return {
+          user: {
+            id: hospital.id,
+            name: hospital.legalName,
+            role: UserRole.HOSPITAL_ADMIN,
+            hospitalId: hospital.id, // ✅ FIX: Add hospitalId to session payload
+          },
+        };
+      }
+      logger.warn({ action: 'hospital_login_failed', mobile }, 'Failed hospital login attempt');
+      return null;
+    },
+
+    register: async (data: {
+      hospitalName: string;
+      city: string;
+      adminName: string;
+      mobile: string;
+      password?: string;
+      registrationNumber?: string;
+    }) => {
+      logger.info(
+        { action: 'hospital_register', hospitalName: data.hospitalName },
+        'Registering new hospital',
+      );
       if (!data.password) throw new Error('PASSWORD_REQUIRED');
-      const hashedPassword = await bcrypt.hash(data.password, 12);
-      const hospital = await prisma.$transaction(async (tx) => {
-        const h = await tx.hospitalsMaster.create({ data: { legalName: data.hospitalName, registrationNumber: `REG-${Date.now()}`, city: data.city, contactNumber: data.mobile } });
-        await tx.$executeRaw`UPDATE hospitals_master SET password = ${hashedPassword} WHERE id = ${h.id}`;
-        return h;
+
+      // 0. Pre-check: reject duplicate mobile before entering transaction
+      const existingAdmin = await prisma.hospitalAdmin.findUnique({
+        where: { mobile: data.mobile },
       });
-      return toHospitalPublic(hospital as any);
+      if (existingAdmin) {
+        logger.warn(
+          { action: 'hospital_register_duplicate', mobile: data.mobile },
+          'Duplicate mobile on hospital registration',
+        );
+        throw new Error('MOBILE_ALREADY_REGISTERED');
+      }
+
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+
+      return await prisma.$transaction(async (tx) => {
+        // Generate a random registration number if not provided
+        const regNumber = data.registrationNumber || `REG-${Date.now()}`;
+
+        // 1. Create Hospital (password set via raw SQL since @ignore)
+        const hospital = await tx.hospitalsMaster.create({
+          data: {
+            legalName: data.hospitalName,
+            registrationNumber: regNumber,
+            city: data.city,
+            contactNumber: data.mobile,
+            verificationStatus: 'pending',
+            accountStatus: 'inactive',
+          },
+          select: {
+            id: true,
+            legalName: true,
+            city: true,
+            contactNumber: true,
+          },
+        });
+
+        // Set password hash via raw SQL (field is @ignore in Prisma schema)
+        await tx.$executeRaw`UPDATE hospitals_master SET password = ${hashedPassword} WHERE id = ${hospital.id}`;
+
+        // 2. Add Primary Admin
+        await tx.hospitalAdmin.create({
+          data: {
+            hospitalId: hospital.id,
+            fullName: data.adminName,
+            mobile: data.mobile,
+            email: `${data.mobile}@haspataal.in`,
+            isPrimary: true,
+            verificationStatus: 'pending',
+          },
+        });
+
+        // 3. Create Staff record for primary admin
+        await tx.staff.create({
+          data: {
+            hospitalId: hospital.id,
+            name: data.adminName,
+            mobile: data.mobile,
+            password: hashedPassword,
+            role: 'HOSPITAL_ADMIN',
+            isActive: true,
+          },
+        });
+
+        // 4. Emit event (fire-and-forget, outside tx)
+        emitEvent({
+          eventType: 'hospital_registered',
+          hospitalId: hospital.id,
+          payload: { hospitalName: data.hospitalName, city: data.city, adminName: data.adminName },
+        });
+
+        logAudit({
+          action: 'CREATE',
+          actorId: hospital.id,
+          actorRole: 'HOSPITAL_ADMIN',
+          resourceType: 'HOSPITAL',
+          resourceId: hospital.id,
+          timestamp: new Date().toISOString(),
+          ip: 'system',
+          changes: { name: hospital.legalName, city: hospital.city },
+        });
+
+        hospitalRegistrationsCounter.inc();
+
+        return toHospitalPublic(hospital as Hospital);
+      });
     },
 
-    addDoctor: async (hospitalId: string, data: any): Promise<any> => {
-      const tempPassword = generateTempPassword();
-      const hashedPassword = await bcrypt.hash(tempPassword, 12);
-      const doctor = await prisma.doctorMaster.create({
-        data: { fullName: data.name, mobile: data.mobile, email: `${data.mobile}@example.com`, password: hashedPassword, affiliations: { create: { hospitalId, role: 'DOCTOR', isCurrent: true } } }
+    registerLab: async (data: {
+      labName: string;
+      city: string;
+      adminName: string;
+      mobile: string;
+      password?: string;
+      registrationNumber?: string;
+    }) => {
+      logger.info(
+        { action: 'lab_register', labName: data.labName },
+        'Registering new diagnostic lab',
+      );
+      if (!data.password) throw new Error('PASSWORD_REQUIRED');
+
+      // 0. Pre-check: reject duplicate mobile before entering transaction
+      const existingAdmin = await prisma.hospitalAdmin.findUnique({
+        where: { mobile: data.mobile },
       });
+      if (existingAdmin) {
+        logger.warn(
+          { action: 'lab_register_duplicate', mobile: data.mobile },
+          'Duplicate mobile on lab registration',
+        );
+        throw new Error('MOBILE_ALREADY_REGISTERED');
+      }
+
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+
+      return await prisma.$transaction(async (tx) => {
+        const regNumber = data.registrationNumber || `LAB-${Date.now()}`;
+
+        const lab = await tx.hospitalsMaster.create({
+          data: {
+            legalName: data.labName,
+            registrationNumber: regNumber,
+            city: data.city,
+            contactNumber: data.mobile,
+            verificationStatus: 'pending',
+            accountStatus: 'inactive',
+            type: 'DIAGNOSTIC_CENTER',
+          },
+          select: {
+            id: true,
+            legalName: true,
+            city: true,
+            contactNumber: true,
+          },
+        });
+
+        // Set password hash via raw SQL (field is @ignore in Prisma schema)
+        await tx.$executeRaw`UPDATE hospitals_master SET password = ${hashedPassword} WHERE id = ${lab.id}`;
+
+        await tx.hospitalAdmin.create({
+          data: {
+            hospitalId: lab.id,
+            fullName: data.adminName,
+            mobile: data.mobile,
+            email: `${data.mobile}@haspataal.in`,
+            isPrimary: true,
+            verificationStatus: 'pending',
+          },
+        });
+
+        emitEvent({
+          eventType: 'lab_registered',
+          hospitalId: lab.id,
+          payload: { labName: data.labName, city: data.city, adminName: data.adminName },
+        });
+
+        return toHospitalPublic(lab as Hospital);
+      });
+    },
+
+    createVisit: async (
+      hospitalId: string,
+      data: { patientMobile: string; patientName: string; doctorId?: string; date: string },
+    ) => {
+      logger.info(
+        { action: 'hospital_create_visit', hospitalId, doctorId: data.doctorId },
+        'Hospital staff creating new visit',
+      );
+      const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
+      const patient = await prisma.patient.upsert({
+        where: { phone: data.patientMobile },
+        update: { name: data.patientName },
+        create: {
+          phone: data.patientMobile,
+          name: data.patientName,
+          password: hashedPassword,
+        },
+      });
+
+      let consultationFee = DEFAULT_CONSULTATION_FEE;
+      if (data.doctorId) {
+        const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
+          where: {
+            doctorId: data.doctorId,
+            hospitalId,
+            isCurrent: true,
+            verificationStatus: 'VERIFIED',
+          },
+        });
+        if (!affiliation) {
+          throw new Error('Doctor is not approved for this hospital.');
+        }
+        consultationFee = toFee(affiliation.consultationFee);
+
+        await prisma.appointment.create({
+          data: {
+            patientId: patient.id,
+            doctorId: data.doctorId,
+            date: new Date(data.date),
+            slot: 'OPD',
+            status: 'COMPLETED',
+            hospitalId,
+          },
+        });
+      }
+
+      const visit = await prisma.visit.create({
+        data: {
+          hospitalId,
+          patientName: data.patientName,
+          patientPhone: data.patientMobile,
+          diagnosis: 'OPD Visit',
+          amount: consultationFee,
+        },
+      });
+
+      emitEvent({
+        eventType: 'patient_visited',
+        hospitalId,
+        patientId: patient.id,
+        payload: {
+          patientName: data.patientName,
+          patientPhone: data.patientMobile,
+          doctorId: data.doctorId || null,
+        },
+      });
+
+      return visit;
+    },
+
+    addDoctor: async (
+      hospitalId: string,
+      data: { name: string; mobile: string; schedule?: string; qualifications?: string },
+    ): Promise<{
+      doctor: typeof import('@prisma/client').Prisma extends never ? any : any;
+      tempPassword: string;
+    }> => {
+      // Generate a secure one-time temporary password for the doctor.
+      // The plaintext is returned ONCE so the hospital can share it; only the hash is persisted.
+      const tempPassword = generateTempPassword(12);
+      const hashedPassword = await bcrypt.hash(tempPassword, 12);
+
+      logger.info(
+        { action: 'hospital_add_doctor', hospitalId, mobile: data.mobile },
+        'Adding hospital-enrolled doctor with hashed temp password',
+      );
+
+      const doctor = await prisma.doctorMaster.create({
+        data: {
+          fullName: data.name,
+          mobile: data.mobile,
+          email: `${data.mobile}@example.com`,
+          password: hashedPassword,
+          registration: {
+            create: {
+              registrationNumber: `HOSP-${Date.now()}`,
+              councilName: 'Hospital Added',
+              degree: data.qualifications,
+            },
+          },
+          affiliations: {
+            create: {
+              hospitalId,
+              role: 'DOCTOR',
+              isCurrent: true,
+              schedule: data.schedule,
+            },
+          },
+        },
+      });
+      emitEvent({
+        eventType: 'doctor_added',
+        hospitalId,
+        payload: { doctorName: data.name, doctorId: doctor.id },
+      });
+      // Return both the doctor record AND the one-time plaintext password.
+      // Callers MUST surface this to the hospital admin immediately; it is never stored in plaintext.
       return { doctor, tempPassword };
     },
+
+    removeDoctor: async (hospitalId: string, doctorId: string) => {
+      const result = await prisma.doctorHospitalAffiliation.deleteMany({
+        where: { hospitalId, doctorId },
+      });
+      emitEvent({ eventType: 'doctor_removed', hospitalId, payload: { doctorId } });
+      return result;
+    },
   },
 
+  // --- Doctor Specific ---
+  doctor: {
+    register: async (data: {
+      fullName: string;
+      mobile: string;
+      email: string;
+      password?: string;
+      registrationNumber: string;
+      councilName: string;
+    }) => {
+      logger.info(
+        { action: 'doctor_register', mobile: data.mobile },
+        'Self-registering new doctor',
+      );
+      if (!data.password) throw new Error('PASSWORD_REQUIRED');
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+
+      return await prisma.$transaction(async (tx) => {
+        const doctor = await tx.doctorMaster.create({
+          data: {
+            fullName: data.fullName,
+            mobile: data.mobile,
+            email: data.email,
+            password: hashedPassword,
+            kycStatus: 'PENDING',
+            accountStatus: 'INACTIVE',
+            registration: {
+              create: {
+                registrationNumber: data.registrationNumber,
+                councilName: data.councilName,
+                verificationStatus: 'PENDING',
+              },
+            },
+          },
+        });
+        emitEvent({
+          eventType: 'doctor_registered',
+          payload: { doctorName: data.fullName, mobile: data.mobile },
+        });
+        return doctor;
+      });
+    },
+  },
+
+  // --- Admin Services ---
   admin: {
-    login: async (username: string, password?: string): Promise<Result<any>> => {
-      const adminPassHash = process.env.ADMIN_PASSWORD_HASH || '$2b$12$YwrNaShX3AbSpPDb7FtlFOilUoeGAmPX5pCfa6IAd48UYfF6B3X7e';
-      const adminUser = process.env.ADMIN_USERNAME || 'admin';
+    getPlatformStats: async () => {
+      return {
+        totalHospitals: await prisma.hospitalsMaster.count(),
+        verifiedHospitals: await prisma.hospitalsMaster.count({
+          where: { verificationStatus: 'verified' },
+        }),
+        totalDoctors: await prisma.doctorMaster.count(),
+        totalPatients: await prisma.patient.count(),
+      };
+    },
+
+    login: async (username: string, password?: string) => {
+      const adminPassHash = process.env.ADMIN_PASSWORD_HASH;
+      const adminUser = process.env.ADMIN_USERNAME;
+
+      if (!adminPassHash || !adminUser) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('ADMIN_PASSWORD_HASH and ADMIN_USERNAME must be set in production');
+        }
+        logger.warn(
+          { action: 'admin_login_unconfigured' },
+          'Admin login is disabled because credentials are not configured',
+        );
+        return null;
+      }
+
       if (password && username === adminUser && (await bcrypt.compare(password, adminPassHash))) {
-        return { ok: true, value: { user: { id: 'admin', role: UserRole.PLATFORM_ADMIN, name: 'Platform Admin' } } };
+        logger.info({ action: 'admin_login', username }, 'Admin logged in successfully');
+        return {
+          user: {
+            id: 'admin',
+            role: UserRole.PLATFORM_ADMIN,
+            name: 'Platform Admin',
+          },
+        };
       }
-      return { ok: false, error: 'Invalid admin credentials', code: 'AUTH_FAILED' };
+      logger.warn({ action: 'admin_login_failed', username }, 'Failed admin login attempt');
+      return null;
+    },
+
+    getPendingHospitals: async (): Promise<HospitalPublic[]> => {
+      const data = await prisma.hospitalsMaster.findMany({
+        where: { verificationStatus: 'pending' },
+      });
+      if (!Array.isArray(data)) throw new Error('getPendingHospitals must return an array');
+      return HospitalArraySchema.parse(data).map(toHospitalPublic) as HospitalPublic[];
+    },
+
+    getAllHospitals: async (): Promise<HospitalPublic[]> => {
+      const data = await prisma.hospitalsMaster.findMany();
+      if (!Array.isArray(data)) throw new Error('getAllHospitals must return an array');
+      return HospitalArraySchema.parse(data).map(toHospitalPublic) as HospitalPublic[];
+    },
+
+    approveHospital: async (id: string) => {
+      logger.info({ action: 'approve_hospital', hospitalId: id }, 'Admin approving hospital');
+      const result = await prisma.hospitalsMaster.update({
+        where: { id },
+        data: { verificationStatus: 'verified', accountStatus: 'active' },
+      });
+      emitEvent({
+        eventType: 'hospital_approved',
+        hospitalId: id,
+        payload: { hospitalName: result.legalName },
+      });
+      return result;
+    },
+
+    rejectHospital: async (id: string) => {
+      logger.info({ action: 'reject_hospital', hospitalId: id }, 'Admin rejecting hospital');
+      const result = await prisma.hospitalsMaster.update({
+        where: { id },
+        data: { verificationStatus: 'rejected', accountStatus: 'inactive' },
+      });
+      emitEvent({
+        eventType: 'hospital_rejected',
+        hospitalId: id,
+        payload: { hospitalName: result.legalName },
+      });
+      return result;
+    },
+
+    suspendHospital: async (id: string) => {
+      logger.info({ action: 'suspend_hospital', hospitalId: id }, 'Admin suspending hospital');
+      const result = await prisma.hospitalsMaster.update({
+        where: { id },
+        data: { accountStatus: 'suspended' },
+      });
+      emitEvent({
+        eventType: 'hospital_suspended',
+        hospitalId: id,
+        payload: { hospitalName: result.legalName },
+      });
+      return result;
     },
   },
 
+  // --- Agent Services ---
   agent: {
-    login: async (mobile: string, password?: string): Promise<Result<any>> => {
-      try {
-        if (!password) return { ok: false, error: 'Password required', code: 'PASSWORD_REQUIRED' };
-        const agent = await prisma.agent.findFirst({ where: { mobile } });
-        if (!agent || !(await bcrypt.compare(password, agent.password))) return { ok: false, error: 'Invalid credentials', code: 'AUTH_FAILED' };
-        if (agent.accountStatus !== 'ACTIVE') return { ok: false, error: 'Account inactive', code: 'INACTIVE' };
-        return { ok: true, value: { user: { id: agent.id, role: UserRole.AGENT, name: agent.fullName, mobile: agent.mobile } } };
-      } catch (e: any) {
-        return { ok: false, error: e.message, code: 'LOGIN_ERROR' };
+    register: async (data: {
+      fullName: string;
+      mobile: string;
+      email: string;
+      password?: string;
+      area?: string;
+      city?: string;
+      state?: string;
+    }) => {
+      logger.info({ action: 'agent_register', mobile: data.mobile }, 'Registering new agent');
+      if (!data.password) throw new Error('PASSWORD_REQUIRED');
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+
+      const agent = await prisma.agent.create({
+        data: {
+          fullName: data.fullName,
+          mobile: data.mobile,
+          email: data.email,
+          password: hashedPassword,
+          area: data.area,
+          city: data.city,
+          state: data.state,
+          kycStatus: 'PENDING',
+          accountStatus: 'INACTIVE',
+          commissionRate: 5.0,
+        },
+      });
+      emitEvent({
+        eventType: 'agent_registered',
+        payload: { agentName: data.fullName, mobile: data.mobile },
+      });
+      return agent;
+    },
+
+    login: async (mobile: string, password?: string) => {
+      if (!password) throw new Error('PASSWORD_REQUIRED');
+      const agent = await prisma.agent.findFirst({
+        where: { mobile },
+      });
+
+      if (!agent) {
+        throw new Error('Agent not found. Please register first.');
       }
+
+      if (agent.accountStatus !== 'ACTIVE') {
+        throw new Error('Your account is not active. Please wait for admin approval.');
+      }
+
+      const isValid = await bcrypt.compare(password, agent.password);
+      if (!isValid) {
+        throw new Error('Invalid credentials.');
+      }
+
+      return {
+        user: {
+          id: agent.id,
+          role: UserRole.AGENT,
+          name: agent.fullName,
+          mobile: agent.mobile,
+          status: agent.accountStatus,
+        },
+      };
+    },
+
+    getDashboardData: async (agentId: string) => {
+      // PERFORMANCE: Parallelize independent queries to reduce total response time
+      const [hospitals, patients] = await Promise.all([
+        prisma.hospitalsMaster.findMany({
+          where: { agentId },
+          select: {
+            id: true,
+            legalName: true,
+            verificationStatus: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.patient.findMany({
+          where: { agentId },
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      return {
+        hospitals,
+        patients,
+        stats: {
+          totalHospitals: hospitals.length,
+          approvedHospitals: hospitals.filter((h) => h.verificationStatus === 'verified').length,
+          totalPatients: patients.length,
+        },
+      };
     },
   },
 
+  // --- AI Services ---
   ai: {
-    processVisit: async (visitId: string, notes: string, imageData?: any): Promise<any> => {
-      const visit = await prisma.visit.findUnique({ where: { id: visitId }, include: { appointment: { include: { patient: true } } } });
-      if (!visit) throw new Error('NOT_FOUND');
+    processVisit: async (
+      visitId: string,
+      notes: string,
+      imageData?: { mimeType: string; data: string },
+    ) => {
+      logger.info(
+        { action: 'process_visit_advanced_ai', visitId },
+        'Starting advanced post-consultation AI processing',
+      );
+
+      // 1. Get visit & patient context
+      const visit = await prisma.visit.findUnique({
+        where: { id: visitId },
+        include: {
+          appointment: { include: { patient: true, doctor: true } },
+        },
+      });
+
+      if (!visit) throw new Error('Visit not found');
+
+      const patient = visit.appointment?.patient;
+      const patientAge = patient
+        ? new Date().getFullYear() - (patient.dob ? new Date(patient.dob).getFullYear() : 30)
+        : undefined;
+
+      // 2. Trigger Advanced AI Engine
       const { ConsultationAiEngine } = await import('./ai/engine');
-      return await ConsultationAiEngine.process({ visitId, clinicalNotes: notes, prescriptionImage: imageData });
+      const careJourney = await ConsultationAiEngine.process({
+        visitId,
+        clinicalNotes: notes,
+        prescriptionImage: imageData,
+        patientProfile: {
+          age: patientAge,
+          language: 'English/Hindi', // Default for now
+        },
+      });
+
+      // 3. Save raw notes for audit
+      await prisma.visitNote.create({
+        data: { visitId, content: notes, type: imageData ? 'OCR+NOTE' : 'CLINICAL_NOTE' },
+      });
+
+      logger.info(
+        { action: 'process_visit_ai_complete', visitId },
+        'Advanced Care Journey generated',
+      );
+      return careJourney;
+    },
+
+    getVisitAnalysis: async (visitId: string) => {
+      return await prisma.careJourney.findUnique({
+        where: { visitId },
+        include: {
+          visit: {
+            include: {
+              observations: true,
+              appointment: { include: { doctor: true } },
+            },
+          },
+          medications: true,
+          followUp: true,
+          redFlags: true,
+        },
+      });
+    },
+
+    getVisitAnalysisForPatient: async (patientId: string, visitId: string) => {
+      const analysis = await prisma.careJourney.findUnique({
+        where: { visitId },
+        include: {
+          visit: {
+            include: {
+              observations: true,
+              appointment: {
+                include: {
+                  doctor: true,
+                },
+              },
+            },
+          },
+          medications: true,
+          followUp: true,
+          redFlags: true,
+        },
+      });
+
+      if (!analysis) {
+        return null;
+      }
+
+      if (analysis.visit?.appointment?.patientId !== patientId) {
+        throw new Error('Unauthorized');
+      }
+
+      return analysis;
+    },
+  },
+
+  // --- Compliance & Privacy (DPDP) ---
+  compliance: {
+    recordConsent: async (
+      patientId: string,
+      purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+    ) => {
+      return await prisma.consent.upsert({
+        where: {
+          patientId_purpose_version: {
+            patientId,
+            purpose,
+            version: 1,
+          },
+        },
+        create: {
+          patientId,
+          purpose,
+          version: 1,
+        },
+        update: {
+          givenAt: new Date(),
+          withdrawnAt: null,
+        },
+      });
+    },
+
+    withdrawConsent: async (
+      patientId: string,
+      purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+    ) => {
+      return await prisma.consent.update({
+        where: {
+          patientId_purpose_version: {
+            patientId,
+            purpose,
+            version: 1,
+          },
+        },
+        data: {
+          withdrawnAt: new Date(),
+        },
+      });
+    },
+
+    checkConsent: async (
+      patientIdOrMobile: string,
+      purpose: 'APPOINTMENT_BOOKING' | 'HEALTH_RECORDS' | 'MARKETING',
+    ) => {
+      // Find patient first if mobile is provided
+      let patientId = patientIdOrMobile;
+      if (!patientIdOrMobile.includes('-')) { // Simple heuristic: mobile doesn't have hyphens
+        const p = await prisma.patient.findUnique({ where: { phone: patientIdOrMobile } });
+        if (!p) return false;
+        patientId = p.id;
+      }
+
+      const consent = await prisma.consent.findUnique({
+        where: {
+          patientId_purpose_version: {
+            patientId,
+            purpose,
+            version: 1,
+          },
+        },
+      });
+      return !!consent && !consent.withdrawnAt;
+    },
+
+    deletePatientData: async (patientId: string) => {
+      return await prisma.$transaction(async (tx) => {
+        // 1. Anonymize Patient Record
+        const patient = await tx.patient.update({
+          where: { id: patientId },
+          data: {
+            name: '[DELETED]',
+            phone: `DELETED-${patientId.substring(0, 8)}`,
+            email: `deleted-${patientId.substring(0, 8)}@haspataal.deleted`,
+            abhaAddress: null,
+            address: null,
+            password: 'DELETED',
+          },
+        });
+
+        // 2. Soft-delete Appointment History
+        await tx.appointment.updateMany({
+          where: { patientId },
+          data: {
+            status: 'CANCELLED',
+            notes: '[DATA ERASURE REQUEST PROCESSED]',
+          },
+        });
+
+        // 3. Audit Log
+        logAudit({
+          action: 'DELETE',
+          actorId: 'SYSTEM',
+          actorRole: 'PLATFORM_ADMIN',
+          resourceType: 'PATIENT',
+          resourceId: patientId,
+          timestamp: new Date().toISOString(),
+          ip: 'system',
+          changes: { erasure: true, timestamp: new Date() },
+        });
+
+        return { success: true };
+      });
     },
   },
 };

@@ -2,6 +2,7 @@
   "name": "haspataal",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "workspaces": [
     "apps/*",
     "packages/*",
@@ -10,21 +11,28 @@
   "turbo": {
     "pipeline": {
       "build": {
-        "dependsOn": ["^build"],
-        "outputs": [".next/**", "dist/**"]
+        "dependsOn": [
+          "^build"
+        ],
+        "outputs": [
+          ".next/**",
+          "dist/**"
+        ]
       },
       "dev": {
         "cache": false,
         "persistent": true
       },
       "test": {
-        "outputs": ["coverage/**"]
+        "outputs": [
+          "coverage/**"
+        ]
       },
       "lint": {}
     }
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "turbo run dev --filter=haspataal",
     "dev:all": "turbo run dev",
     "dev:patient": "turbo run dev --filter=haspataal",
     "dev:admin": "turbo run dev --filter=haspataal-admin",
@@ -63,7 +71,9 @@
     "@google/generative-ai": "0.24.1",
     "@hookform/resolvers": "5.2.2",
     "@prisma/client": "5.10.2",
+    "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "2.1.8",
     "@radix-ui/react-slot": "1.2.4",
     "@radix-ui/react-switch": "1.2.6",

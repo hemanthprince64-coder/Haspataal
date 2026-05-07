@@ -1,50 +1,98 @@
 import Redis from 'ioredis';
 
-const redisUrl = process.env.REDIS_URL;
-let hasLoggedRedisError = false;
+// Redis configuration
+const redis = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD || undefined,
+  db: parseInt(process.env.REDIS_DB || '0'),
+  retryDelayOnFailover: 100,
+  enableReadyCheck: false,
+  maxRetriesPerRequest: 3,
+  lazyConnect: true,
+  keyPrefix: 'haspataal:',
+});
 
-// Singleton Redis client
-let redis: Redis | null = null;
+// Handle connection events
+redis.on('connect', () => {
+  console.log('✅ Redis connected successfully');
+});
 
-// Only initialize if we have a valid URL and aren't in a build environment
-// Also skip if REDIS_URL is "undefined" string or "placeholder"
-const isValidUrl = redisUrl && redisUrl !== 'undefined' && !redisUrl.includes('placeholder');
-
-if (isValidUrl && !redis) {
-  try {
-    redis = new Redis(redisUrl as string, {
-      maxRetriesPerRequest: 1, // Minimize retries in case of failure
-      enableOfflineQueue: false,
-      lazyConnect: true, // Don't connect until first command
-      retryStrategy: (times) => {
-        // Stop retrying after 3 attempts to prevent log spam
-        if (times > 3) return null;
-        return Math.min(times * 500, 2000);
-      },
-    });
-
-    redis.on('error', (err) => {
-      if (!hasLoggedRedisError) {
-        hasLoggedRedisError = true;
-        console.warn(
-          '[REDIS] Redis is unavailable (ECONNREFUSED). Features will use fallback logic.',
-        );
-      }
-    });
-
-    redis.on('connect', () => {
-      hasLoggedRedisError = false;
-      console.log('[REDIS] Connected successfully.');
-    });
-  } catch (e) {
-    console.warn('[REDIS] Failed to initialize Redis client. Check your REDIS_URL.');
+redis.on('error', (error) => {
+  console.error('❌ Redis connection error:', error.message);
+  // Don't throw error in production - Redis is optional for rate limiting
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('⚠️  Redis is not available. Rate limiting will be disabled.');
   }
-}
+});
 
-if (!isValidUrl) {
-  if (process.env.NODE_ENV !== 'production' && !process.env.NEXT_PHASE) {
-    console.warn('[REDIS] Missing REDIS_URL. Rate limiting and caching are disabled.');
-  }
-}
+redis.on('ready', () => {
+  console.log('🚀 Redis is ready to receive commands');
+});
 
 export default redis;
+
+// Export Redis instance for direct usage
+export { redis };
+
+// Helper functions for common operations
+export const redisHelpers = {
+  // Set with expiry
+  async setEx(key: string, value: any, ttlSeconds: number) {
+    try {
+      await redis.setex(key, ttlSeconds, JSON.stringify(value));
+    } catch (error) {
+      console.error('Redis setEx error:', error);
+    }
+  },
+
+  // Get and parse JSON
+  async getJson(key: string) {
+    try {
+      const data = await redis.get(key);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Redis getJson error:', error);
+      return null;
+    }
+  },
+
+  // Delete key
+  async del(key: string) {
+    try {
+      await redis.del(key);
+    } catch (error) {
+      console.error('Redis del error:', error);
+    }
+  },
+
+  // Check if key exists
+  async exists(key: string): Promise<boolean> {
+    try {
+      const result = await redis.exists(key);
+      return result === 1;
+    } catch (error) {
+      console.error('Redis exists error:', error);
+      return false;
+    }
+  },
+
+  // Increment counter
+  async incr(key: string): Promise<number> {
+    try {
+      return await redis.incr(key);
+    } catch (error) {
+      console.error('Redis incr error:', error);
+      return 0;
+    }
+  },
+
+  // Set expiry on key
+  async expire(key: string, ttlSeconds: number) {
+    try {
+      await redis.expire(key, ttlSeconds);
+    } catch (error) {
+      console.error('Redis expire error:', error);
+    }
+  },
+};
