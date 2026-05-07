@@ -3,12 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
+    "apps/*",
     "packages/*",
-    "haspataal-in",
-    "haspataal-admin",
-    "haspataal-com",
-    "api-gateway"
+    "services/*"
   ],
+  "turbo": {
+    "pipeline": {
+      "build": {
+        "dependsOn": ["^build"],
+        "outputs": [".next/**", "dist/**"]
+      },
+      "dev": {
+        "cache": false,
+        "persistent": true
+      },
+      "test": {
+        "outputs": ["coverage/**"]
+      },
+      "lint": {}
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "dev:all": "turbo run dev",
@@ -31,11 +45,15 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix --max-warnings 0",
+      "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,css,scss,yaml,yml}": [
+    "*.{json,css,md}": [
       "prettier --write"
+    ],
+    "prisma/schema.prisma": [
+      "npx prisma validate",
+      "npx prisma format"
     ]
   },
   "dependencies": {
@@ -80,18 +98,22 @@
     "@commitlint/config-conventional": "20.5.3",
     "@playwright/test": "^1.59.1",
     "@testcontainers/postgresql": "11.14.0",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/bcryptjs": "2.4.6",
     "@types/express": "5.0.6",
     "@types/node": "25.6.0",
     "@types/pg": "8.20.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
     "@vitest/coverage-v8": "4.1.5",
     "autoprefixer": "10.4.27",
     "chalk": "^4.1.2",
     "dotenv": "17.3.1",
     "eslint": "9",
     "eslint-config-next": "16.1.6",
+    "eslint-plugin-local-rules": "^3.0.2",
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
     "pg": "8.20.0",

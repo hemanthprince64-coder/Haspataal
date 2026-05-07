@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 > ⚠️ **WAIT!** Are you modifying `schema.prisma`?
 > If so, you MUST run a dry-run and ensure no breaking changes (e.g. enum removals) affect existing code.
 
@@ -34,3 +35,48 @@ Provide a brief description of the changes introduced by this PR. Include any re
 ## Additional Notes
 
 Add any other context, screenshots, or videos here.
+=======
+## SECTION 1 — Summary (required)
+- **What does this PR do?** (1-3 sentences)
+  - 
+- **Ticket reference:** Closes #___
+- **Type:**
+  - [ ] feat
+  - [ ] fix
+  - [ ] refactor
+  - [ ] security
+  - [ ] chore
+  - [ ] docs
+
+---
+
+## SECTION 2 — Schema Change Checklist
+> [!IMPORTANT]
+> Show only if `prisma/schema.prisma` is touched.
+- [ ] I added a migration file in `prisma/migrations/` (never edit schema without a migration)
+- [ ] I ran `prisma migrate dev --name <name>` locally
+- [ ] If I renamed an enum value (like `BookingStatus`), I updated `CHANGE_AUDIT_REPORT.md`
+- [ ] I checked every file that references the changed model/enum with: `grep -r "ModelName" --include="*.ts" --include="*.js" .`
+
+---
+
+## SECTION 3 — Security Checklist (required for every PR)
+- [ ] This PR does **NOT** store passwords in plaintext
+- [ ] This PR does **NOT** log PHI (`patientId`, `phone`, `email`, `dateOfBirth`) to console or pino
+- [ ] This PR does **NOT** return `Hospital.password` in any API response
+- [ ] If this PR touches auth: a security reviewer has approved
+
+---
+
+## SECTION 4 — Testing
+- [ ] I added/updated tests for this change (link to test file: `_______________________` )
+- [ ] All existing tests pass: `npx vitest run`
+- [ ] If no tests added, explain why: 
+  - 
+
+---
+
+## SECTION 5 — Breaking Changes
+- [ ] This PR introduces **NO** breaking changes
+- [ ] **OR:** This PR introduces breaking change: `_______________________` and I have updated `CHANGE_AUDIT_REPORT.md`
+>>>>>>> Stashed changes

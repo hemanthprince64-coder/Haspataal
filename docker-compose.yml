@@ -17,10 +17,7 @@ services:
     build: .
     container_name: patient-portal
     restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
-      - NEXT_PUBLIC_AUTH_URL=http://auth-service:4001
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/haspataal?schema=public
+    env_file: .env.local
     ports:
       - '3000:3000'
     depends_on:
@@ -40,10 +37,7 @@ services:
     build: ./hospital-hms
     container_name: hospital-hms
     restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
-      - NEXT_PUBLIC_AUTH_URL=http://auth-service:4001
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/haspataal?schema=public
+    env_file: .env.local
     ports:
       - '3001:3000'
     depends_on:
@@ -57,9 +51,7 @@ services:
     build: ./haspataal-admin
     container_name: admin-panel
     restart: unless-stopped
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api-gateway:4002
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/haspataal?schema=public
+    env_file: .env.local
     ports:
       - '3002:3000'
     depends_on:
@@ -76,10 +68,7 @@ services:
     build: ./auth-service
     container_name: auth-service
     restart: unless-stopped
-    environment:
-      - AUTH_SERVICE_PORT=4001
-      - NEXTAUTH_SECRET=supersecretlocal
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/haspataal?schema=public
+    env_file: .env.local
     ports:
       - '4001:4001'
     depends_on:
@@ -99,11 +88,7 @@ services:
     build: ./api-gateway
     container_name: api-gateway
     restart: unless-stopped
-    environment:
-      - API_GATEWAY_PORT=4002
-      - NEXTAUTH_SECRET=supersecretlocal
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/haspataal?schema=public
-      - REDIS_URL=redis://redis:6379
+    env_file: .env.local
     ports:
       - '4002:4002'
     depends_on:
@@ -127,10 +112,7 @@ services:
     image: postgres:16-alpine
     container_name: haspataal-postgres
     restart: unless-stopped
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=haspataal
+    env_file: .env.local
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -165,8 +147,7 @@ services:
     working_dir: /app
     volumes:
       - .:/app
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/haspataal?schema=public
+    env_file: .env.local
     command: /bin/sh -c "npm install -g prisma && prisma generate && prisma migrate deploy"
     depends_on:
       postgres:

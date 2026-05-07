@@ -16,13 +16,20 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ---
 
-## 🏗️ Architecture (Monorepo + Event-Driven Micro-Architecture)
+## 🏗️ Architecture (Turborepo Monorepo)
 
 **Monorepo (npm Workspaces + Turborepo):**
 
 ```
-haspataal/                    ← Workspace root (patient-portal, port 3000)
+haspataal/
+├── apps/
+│   ├── patient-portal/       ← Primary app (port 3000)
+│   ├── hospital-hms/         ← Hospital Admin app (port 3001)
+│   ├── admin-panel/          ← Platform Admin panel (port 3002)
+│   ├── marketing/            ← Marketing site
+│   └── mobile/               ← React Native / Expo app
 ├── packages/
+<<<<<<< Updated upstream
 │   ├── types/                ← @haspataal/types — shared TypeScript types
 │   ├── db/                   ← @haspataal/db — shared Prisma client singleton
 │   ├── ui/                   ← @haspataal/ui — shared shadcn component library
@@ -33,22 +40,31 @@ haspataal/                    ← Workspace root (patient-portal, port 3000)
 ├── haspataal-com/            ← Next.js public site
 ├── api-gateway/              ← Express gateway (port 4002, jose JWT, Pino logging)
 ├── haspataal-mobile/         ← React Native/Expo (standalone, NOT in workspaces)
+=======
+│   ├── db/                   ← @haspataal/db — Prisma client singleton
+│   ├── types/                ← @haspataal/types — Shared domain types & Zod schemas
+│   ├── auth/                 ← @haspataal/auth — Shared session/auth logic
+│   ├── core/                 ← @haspataal/core — Clean Architecture Domain layer
+│   └── config/               ← @haspataal/config — Shared lint/TS/Tailwind
+├── services/
+│   ├── auth/                 ← Auth microservice (Go/Node)
+│   ├── gateway/              ← Express API Gateway
+│   └── medchat/              ← AI Service
+>>>>>>> Stashed changes
 └── turbo.json                ← Turborepo pipeline config
 ```
 
-**Domain Layer (Clean Architecture):**
+**Domain Layer (Clean Architecture in @haspataal/core):**
 
 ```
-lib/
-├── repositories/             ← Infrastructure: Prisma queries behind interfaces
-│   ├── interfaces/           ← IAppointmentRepository, IPatientRepository, IHospitalRepository
-│   ├── PrismaAppointmentRepository.ts
-│   ├── PrismaPatientRepository.ts
-│   └── PrismaHospitalRepository.ts
-├── use-cases/                ← Domain: Pure business logic, NO Prisma imports
-│   ├── appointment/          ← BookAppointment, CancelAppointment, GetAvailableSlots
-│   └── hospital/             ← RegisterHospital
-└── services.ts               ← Thin facade (backward-compatible, delegates to use-cases)
+packages/core/
+├── domain/
+│   ├── entities/             ← Pure logic: Appointment.ts, Patient.ts
+│   ├── repositories/         ← Interfaces: IAppointmentRepository.ts
+│   └── use-cases/            ← Orchestration: BookAppointmentUseCase.ts
+├── infrastructure/
+│   └── prisma/               ← Implementations: PrismaAppointmentRepository.ts
+└── index.ts                  ← Public API
 ```
 
 **Core Logic:**
@@ -56,7 +72,7 @@ lib/
 - **Single Source of Truth:** `EventLog` table. Every write in HMS emits an event.
 - **Event Bus:** Dual-write to PostgreSQL (`EventLog`) and Redis Streams for async processing.
 - **Multi-Tenancy:** Strict Row-Level Security (RLS) on EVERY table using `current_setting('app.hospital_id')`.
-- **Inter-Module Communication:** No direct calls. Modules communicate purely via events (e.g., `patient_visited` triggers `bill_generated`).
+- **Inter-Module Communication:** No direct calls. Modules communicate purely via events.
 
 **Key Modules:**
 
@@ -200,7 +216,11 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Zod Error Access Migration:** Standardized on `issues[0]` instead of the legacy `errors[0]` property when extracting validation error messages from Zod. This prevents runtime `undefined` errors and aligns with modern Zod patterns.
 - **Supabase Pooler vs. Direct Connect:** When port 6543 (PgBouncer) fails with "Can't reach database server", update `.env.local` to port 5432 and remove `pgbouncer=true`. This is the most reliable way to restore local dev connectivity.
 - **Automated RLS Policy Patching:** If the Supabase linter reports "RLS Enabled No Policy", use a dedicated SQL patch script (e.g., `fix_missing_rls_policies.sql`) to implement modular RBAC for all affected tables, ensuring multi-tenant isolation.
-- **CI/CD Node 20 Migration:** The GitHub Actions pipeline is updated to Node 20. Ensure the `build` job is set as a required status check in GitHub Branch Protection Rules for the `main` branch.
+- **Monorepo Migration (Turborepo):** Haspataal has moved to a full Turborepo structure. All shared logic must reside in `packages/`. Apps in `apps/` must consume shared packages via workspace protocol (`*`). Never copy `lib/` or `types/` between apps. _(Implemented 2026-05-05)_
+- **Strict Healthcare Linting:** ESLint is configured with healthcare-specific rules via `eslint-plugin-local-rules`. Direct Prisma access in pages/layouts is forbidden; use the service/core layer. Logging of PHI (patientId, phone, etc.) is blocked at the lint level. _(Implemented 2026-05-05)_
+- **Clean Architecture Transition:** Core business logic is migrating to `@haspataal/core`. Use-cases must be pure logic classes that depend on repository interfaces, ensuring 100% testability without a database. _(Implemented 2026-05-05)_
+- **PR & Security Guardrails:** All PRs must use the `PULL_REQUEST_TEMPLATE.md` and pass the CI test suite. Security checks are mandatory for any changes touching auth, PII, or schema. _(Implemented 2026-05-05)_
+- **Developer Workflow (Husky/lint-staged):** Pre-commit hooks enforce Prettier formatting and ESLint rules. Commit messages must follow Conventional Commits and are validated via `commitlint`. _(Implemented 2026-05-05)_
 
 - **Architectural Graphify Discovery:** Use `graphify` to map cross-module relationships. It identified an isolated "ghost" microservice (`medchat-ai-service`) and 55 `requireRole` guarded actions, helping bridge architectural knowledge gaps.
 - **AI Microservice Orchestration:** Offload heavy clinical reasoning (Gemini 2.5) to dedicated services (FastAPI). The JS engine (`triage-engine.js`) now prioritizes this service with a local fallback (Gemini 2.0) to ensure high availability and performance.
@@ -225,6 +245,11 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Performance Optimization (N+1 & Caching):** Eliminated N+1 query patterns in doctor and hospital fetching via Prisma `include` blocks. Parallelized independent agent dashboard queries using `Promise.all`. Implemented 1-hour ISR caching for public search routes and `revalidate: 0` for clinical dashboards to balance speed and data freshness. _(Implemented 2026-05-05)_
 - **Sentry Error Monitoring:** Integrated `@sentry/nextjs` across all apps. Implemented a mandatory `beforeSend` hook to recursively scrub PHI (passwords, tokens, medicalHistory) before reporting. Standardized Server Actions with `withErrorMonitoring()` HOF to return sanitized `errorId` for patient support. _(Implemented 2026-05-05)_
 - **Automated Quality Audit:** Created `scripts/quality-audit.ts` to verify 28 engineering standards across security, quality, structure, and excellence. Includes automated checks for plaintext passwords, test coverage (70%+), and compliance documentation. _(Implemented 2026-05-05)_
+- **SessionUser Type Consolidation:** Consistently use the `SessionUser` interface from the root `@/types` for all server actions and dashboard layouts. This ensures type safety for `hospitalId` and RBAC checks. Missing exports or local redeclarations cause cascading build failures. _(Fixed 2026-05-06)_
+- **Safe Zod Error Handling:** Always use optional chaining when accessing Zod issues (e.g., `validation.error.issues[0]?.message`). This prevents runtime "cannot read property message of undefined" errors in edge cases where validation fails but the issues array is unexpectedly shaped. _(Standardized 2026-05-06)_
+- **Prisma Update Filtering:** When performing profile updates from a `Partial<T>` object, explicitly destructure out non-updatable fields like `id` and `phone` before passing the data to `prisma.update()`. This prevents "property does not exist in type" errors and accidental primary key mutations. _(Fixed in PrismaPatientRepository)_
+- **Async Type Narrowing (Redis):** In async functions using singleton clients (like Redis), copy the client to a local constant before use. This helps TypeScript's control flow analysis maintain the "not-null" narrowing across `await` boundaries. _(Applied in rate-limit.ts)_
+- **Dashboard Branch Safety:** Server-side `getActiveBranchId()` returns `string | null`. Dashboard layouts and the `BranchSwitcher` component must explicitly handle the `null` state to prevent hydration mismatches and typing errors. _(Hardened 2026-05-06)_
 
 ---
 

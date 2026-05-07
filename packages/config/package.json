@@ -1,11 +1,10 @@
 {
   "name": "@haspataal/config",
   "version": "1.0.0",
-  "private": true,
-  "exports": {
-    "./eslint": "./eslint/index.js",
-    "./typescript/base": "./typescript/base.json",
-    "./typescript/nextjs": "./typescript/nextjs.json",
-    "./tailwind": "./tailwind/index.js"
-  }
+  "main": "./index.js",
+  "files": [
+    "tsconfig.base.json",
+    "eslint.base.mjs",
+    "tailwind.config.base.ts"
+  ]
 }

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream:lib/rate-limit.ts
 import { headers } from 'next/headers';
 import redisClient from './redis';
 
@@ -32,6 +33,12 @@ function extractRateLimitIp(headerList: Pick<Headers, 'get'>): string {
   return forwardedFor?.split(',')[0]?.trim() || realIp || '127.0.0.1';
 }
 
+=======
+import Redis from 'ioredis';
+import { headers } from 'next/headers';
+import redisClient from './redis';
+
+>>>>>>> Stashed changes:apps/patient-portal/lib/rate-limit.ts
 /**
  * Core rate limiter using Redis INCR + EXPIRE pattern (Fixed Window).
  *
@@ -44,6 +51,7 @@ export async function rateLimiter(
   limit: number,
   windowSeconds: number,
 ): Promise<{ allowed: boolean; remaining: number }> {
+<<<<<<< Updated upstream:lib/rate-limit.ts
   const client = redisClient;
   if (!client) {
     return checkFallbackLimit(key, limit, windowSeconds);
@@ -55,6 +63,19 @@ export async function rateLimiter(
     // Set expiry only on the first increment
     if (count === 1) {
       await client.expire(key, windowSeconds);
+=======
+  if (!redisClient) {
+    // Fail-open: If Redis is unavailable, allow the request
+    return { allowed: true, remaining: limit };
+  }
+
+  try {
+    const count = await redisClient.incr(key);
+
+    // Set expiry only on the first increment
+    if (count === 1) {
+      await redisClient.expire(key, windowSeconds);
+>>>>>>> Stashed changes:apps/patient-portal/lib/rate-limit.ts
     }
 
     const allowed = count <= limit;
@@ -63,9 +84,16 @@ export async function rateLimiter(
     return { allowed, remaining };
   } catch (error) {
     console.error('[RATE-LIMIT] Redis error:', error);
+<<<<<<< Updated upstream:lib/rate-limit.ts
     return checkFallbackLimit(key, limit, windowSeconds);
   }
 }
+=======
+    return { allowed: true, remaining: limit };
+  }
+}
+
+>>>>>>> Stashed changes:apps/patient-portal/lib/rate-limit.ts
 /**
  * Reusable wrapper for Next.js Server Actions to enforce rate limits.
  */
@@ -80,7 +108,15 @@ export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
   return (async (...args: any[]) => {
     // 1. Get Client IP (Next.js 14+ pattern)
     const headerList = await headers();
+<<<<<<< Updated upstream:lib/rate-limit.ts
     const ip = extractRateLimitIp(headerList);
+=======
+    const forwardedFor = headerList.get('x-forwarded-for');
+    const realIp = headerList.get('x-real-ip');
+
+    // Use the first IP in forwarded-for or fallback to real-ip / localhost
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || '127.0.0.1';
+>>>>>>> Stashed changes:apps/patient-portal/lib/rate-limit.ts
 
     const key = `rl:${options.actionName}:${ip}`;
 

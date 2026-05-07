@@ -1,14 +1,6 @@
-# Dependencies
-node_modules/
-
-# Build outputs
 .next/
-out/
-build/
-dist/
-
-# Generated files
 prisma/migrations/
+<<<<<<< Updated upstream
 lib/generated/
 
 # Sub-projects (each has own config)
@@ -29,3 +21,8 @@ pnpm-lock.yaml
 .kilo/
 .agent/
 .metagpt/
+=======
+node_modules/
+*.md
+public/
+>>>>>>> Stashed changes

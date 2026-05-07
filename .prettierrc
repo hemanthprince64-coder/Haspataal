@@ -3,9 +3,7 @@
   "singleQuote": true,
   "trailingComma": "all",
   "semi": true,
-  "tabWidth": 2,
-  "bracketSpacing": true,
-  "arrowParens": "always",
-  "endOfLine": "auto",
-  "plugins": []
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "importOrder": ["^react", "^next", "^@/", "^[./]"],
+  "importOrderSeparation": true
 }

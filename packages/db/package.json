@@ -1,20 +1,8 @@
 {
   "name": "@haspataal/db",
   "version": "1.0.0",
-  "private": true,
-  "main": "./src/client.ts",
-  "types": "./src/client.ts",
-  "exports": {
-    ".": "./src/client.ts",
-    "./client": "./src/client.ts"
-  },
-  "scripts": {
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
-  },
+  "main": "./index.ts",
+  "types": "./index.ts",
   "dependencies": {
     "@prisma/client": "5.10.2"
   },

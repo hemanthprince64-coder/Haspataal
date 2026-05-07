@@ -3,27 +3,15 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"],
-      "env": [
-        "DATABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        "NEXTAUTH_SECRET",
-        "REDIS_URL"
-      ]
+      "outputs": [".next/**", "dist/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^build"]
+    "test": {
+      "outputs": ["coverage/**"]
     },
-    "db:generate": {
-      "cache": false
-    },
-    "db:push": {
-      "cache": false
-    }
+    "lint": {}
   }
 }
