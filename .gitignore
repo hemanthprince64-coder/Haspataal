@@ -45,3 +45,4 @@ graphify-out/
 .kilo/
 .agent/
 .metagpt/
+.turbo/
