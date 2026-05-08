@@ -254,6 +254,11 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Turbopack Persistence (Windows):** If `npm run dev` shows `Access is denied (os error 5)`, this is a known Turbopack issue on Windows. The server is still functional. To resolve, ensure the terminal has full permissions to the workspace or run as Administrator. _(Noted 2026-05-07)_
 - **HMS UI Redesign:** Implemented a comprehensive Hospital Management System with modern medical aesthetic using shadcn/ui, Tailwind CSS, and Framer Motion. Features include patient management DataTable, appointment scheduling, electronic health records with tabs/accordions, inventory management with status badges, dark/light mode support, and full accessibility compliance. Located in the patient-portal app with modular component architecture. _(Implemented 2026-05-07)_
 
+- **Stabilization & Simplification (Phase 2):** Simplified core utilities in `apps/patient-portal` to reduce external dependency overhead and improve runtime stability. This includes moving to a `SimpleLogger`, internalizing basic metrics, and implementing a lightweight session manager using `jose`. _(Implemented 2026-05-08)_
+- **Internalized Local Types:** Migrated `patient-portal` to local TypeScript interfaces (`types.ts`) and a local Prisma singleton to isolate app logic from monorepo-level package drift during high-frequency development. _(Implemented 2026-05-08)_
+- **Lightweight `cn` Utility:** Replaced `clsx` and `tailwind-merge` with a native `cn` filter in `lib/utils.ts` to reduce bundle size and eliminate CSS-in-JS hydration overhead in the patient portal. _(Implemented 2026-05-08)_
+- **Local Event & Component Registry:** Introduced a lightweight `EventEmitter` service and a `bones/` registry in `patient-portal` to support decoupled component interaction and dynamic registration without the complexity of a full-scale event bus in early development. _(Implemented 2026-05-08)_
+
 ---
 
 ## 🤖 Agent Personality

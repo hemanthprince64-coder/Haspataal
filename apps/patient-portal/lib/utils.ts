@@ -1,6 +1,14 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { Hospital, HospitalPublic } from '../types';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+export function toHospitalPublic(hospital: Hospital): HospitalPublic {
+  return {
+    id: hospital.id,
+    name: hospital.name,
+    city: hospital.city,
+    state: hospital.state,
+  };
+}
+
+export function cn(...inputs: (string | undefined | null | boolean)[]): string {
+  return inputs.filter(Boolean).join(' ');
 }
