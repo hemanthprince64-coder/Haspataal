@@ -1,8 +1,5 @@
 'use client';
 
-import { useState, useActionState, useEffect } from 'react';
-import { patientLogin, requestOtpAction } from '@/app/actions';
-import Link from 'next/link';
 import {
   Smartphone,
   Phone,
@@ -11,16 +8,16 @@ import {
   Lock,
   ChevronLeft,
   Key,
-  Zap,
   CheckCircle2,
   AlertCircle,
   Loader2,
   Hospital,
 } from 'lucide-react';
+
+import { useState, useActionState } from 'react';
+
+import { patientLogin, requestOtpAction } from '@/app/actions';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -29,6 +26,8 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const initialState = {
   message: '',
@@ -162,7 +161,7 @@ export default function PatientLogin() {
                 <div className="flex items-center gap-2 px-2">
                   <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                    Check console for demo OTP code
+                    Check server terminal for demo OTP
                   </p>
                 </div>
               </div>

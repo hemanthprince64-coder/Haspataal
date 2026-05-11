@@ -45,6 +45,12 @@ export default [
     },
   },
   {
+    files: ['lib/services.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
     ignores: [
       '.next/**',
       'out/**',

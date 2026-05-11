@@ -1,11 +1,12 @@
-import prisma from './prisma';
-import { emitEvent } from '@/services/event-emitter';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { logger, logAudit } from '@haspataal/logger';
-import { hospitalRegistrationsCounter, appointmentsCreatedCounter } from '@/lib/metrics';
-import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
-import { rateLimiter } from './rate-limit';
+import { z } from 'zod';
+
+import { hospitalRegistrationsCounter, appointmentsCreatedCounter } from '@/lib/metrics';
+import { emitEvent } from '@/services/event-emitter';
+
 import {
   Hospital,
   HospitalPublic,
@@ -15,6 +16,8 @@ import {
   UserRole,
   BookingStatus,
 } from '../types';
+import prisma from './prisma';
+import { rateLimiter } from './rate-limit';
 import { toHospitalPublic } from './utils';
 
 // Zod schemas for runtime validation
@@ -95,11 +98,7 @@ export const services = {
   platform: {
     getCities: (): typeof CITIES => CITIES,
 
-    getHospitals: async (
-      city?: string,
-      limit = 10,
-      cursor?: string,
-    ): Promise<HospitalPublic[]> => {
+    getHospitals: async (city?: string, limit = 10, cursor?: string): Promise<HospitalPublic[]> => {
       const where: any = { accountStatus: 'active' };
       if (city) {
         where.city = { equals: city, mode: 'insensitive' };
@@ -380,7 +379,19 @@ export const services = {
         create: { phone: mobile, code, expiresAt },
       });
 
+      // Structured log for production monitoring
       logger.info({ action: 'otp_generated', mobile }, 'OTP generated');
+
+      // DEMO: Print OTP to server console in development
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log(
+          '%c[DEMO OTP]',
+          'background: #22c55e; color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px;',
+          `Mobile: ${mobile} | Code: ${code} | Expires: ${expiresAt.toISOString()}`,
+        );
+      }
+
       return true;
     },
 
@@ -583,9 +594,14 @@ export const services = {
       const targetSlot = data.slot || 'ONLINE';
 
       // DPDP COMPLIANCE: Check for explicit consent before processing booking
-      const hasConsent = await services.compliance.checkConsent(data.patientMobile, 'APPOINTMENT_BOOKING');
+      const hasConsent = await services.compliance.checkConsent(
+        data.patientMobile,
+        'APPOINTMENT_BOOKING',
+      );
       if (!hasConsent) {
-        throw new Error('CONSENT_REQUIRED: Patient has not provided explicit consent for appointment booking.');
+        throw new Error(
+          'CONSENT_REQUIRED: Patient has not provided explicit consent for appointment booking.',
+        );
       }
 
       try {
@@ -2092,7 +2108,8 @@ export const services = {
     ) => {
       // Find patient first if mobile is provided
       let patientId = patientIdOrMobile;
-      if (!patientIdOrMobile.includes('-')) { // Simple heuristic: mobile doesn't have hyphens
+      if (!patientIdOrMobile.includes('-')) {
+        // Simple heuristic: mobile doesn't have hyphens
         const p = await prisma.patient.findUnique({ where: { phone: patientIdOrMobile } });
         if (!p) return false;
         patientId = p.id;
