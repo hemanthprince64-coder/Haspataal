@@ -4,25 +4,29 @@ import pino from 'pino';
  * SEPARATE AUDIT LOGGER
  * Logs to an append-only stream for compliance and security auditing.
  */
-export const auditLogger = pino({
-  level: 'info',
-  base: {
-    service: 'haspataal-audit',
-    env: process.env.NODE_ENV,
+export const auditLogger = pino(
+  {
+    level: 'info',
+    base: {
+      service: 'haspataal-audit',
+      env: process.env.NODE_ENV,
+    },
+    redact: {
+      paths: ['password', 'token', 'secret', 'authorization'],
+      censor: '[REDACTED]',
+    },
   },
-  // Ensure audit logs are never pretty-printed in prod to maintain structured JSON integrity
-  transport:
-    process.env.NODE_ENV === 'development'
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'SYS:standard',
-            messageFormat: '[AUDIT] {action} by {actorId} on {resourceType}:{resourceId}',
-          },
-        }
-      : undefined,
-});
+  process.env.NODE_ENV === 'development'
+    ? pino.transport({
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'SYS:standard',
+          messageFormat: '[AUDIT] {action} by {actorId} on {resourceType}:{resourceId}',
+        },
+      })
+    : undefined,
+);
 
 export interface AuditLogEntry {
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'ACCESS';
@@ -32,8 +36,8 @@ export interface AuditLogEntry {
   resourceId: string;
   timestamp: string;
   ip: string; // Should be hashed in production
-  changes?: Record<string, any>;
-  metadata?: Record<string, any>;
+  changes?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 export const logAudit = (entry: AuditLogEntry) => {
