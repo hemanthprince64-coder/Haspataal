@@ -9,14 +9,10 @@
     "incremental": true,
     "module": "esnext",
     "esModuleInterop": true,
-<<<<<<< Updated upstream
-    "moduleResolution": "node",
-=======
     "moduleResolution": "bundler",
->>>>>>> Stashed changes
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"

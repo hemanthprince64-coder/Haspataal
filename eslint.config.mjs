@@ -1,8 +1,19 @@
-import { defineConfig, globalIgnores } from 'eslint/config';
-import nextVitals from 'eslint-config-next/core-web-vitals';
+import { FlatCompat } from '@eslint/eslintrc';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import js from '@eslint/js';
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+  recommendedConfig: js.configs.recommended,
+  allConfig: js.configs.all,
+});
+
+export default [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     rules: {
       'react/no-unescaped-entities': 'off',
@@ -12,22 +23,19 @@ const eslintConfig = defineConfig([
       'no-console': 'warn',
     },
   },
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    '.next/**',
-    'out/**',
-    'build/**',
-    'next-env.d.ts',
-    'lib/generated/**',
-    // Sub-project directories (each has its own lint config)
-    'haspataal-in/**',
-    'haspataal-admin/**',
-    'haspataal-com/**',
-    'haspataal-mobile/**',
-    'scripts/**',
-    '.kilo/**',
-  ]),
-]);
-
-export default eslintConfig;
+  {
+    ignores: [
+      'node_modules/',
+      '.next/',
+      'out/',
+      'build/',
+      'next-env.d.ts',
+      'haspataal-in/**',
+      'haspataal-admin/**',
+      'haspataal-com/**',
+      'haspataal-mobile/**',
+      'scripts/**',
+      '.kilo/**',
+    ],
+  },
+];

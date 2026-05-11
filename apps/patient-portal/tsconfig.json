@@ -13,12 +13,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@/hooks": ["../../hooks"],
+      "@/services/*": ["../../services/*"],
       "@haspataal/types": ["../../packages/types"],
       "@haspataal/db": ["../../packages/db"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"

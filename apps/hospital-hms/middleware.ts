@@ -1,4 +1,6 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+
 import { verifyToken } from './lib/auth/jwt';
 
 export async function middleware(req: Request) {
@@ -13,7 +15,8 @@ export async function middleware(req: Request) {
     return NextResponse.next();
   }
 
-  const token = req.headers.get('authorization')?.split(' ')[1];
+  const token =
+    req.headers.get('authorization')?.split(' ')[1] ?? (await cookies()).get('auth-token')?.value;
 
   if (!token) {
     // If accessing API routes, return JSON error

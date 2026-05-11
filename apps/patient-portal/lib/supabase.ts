@@ -1,13 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+function getSupabaseClient(): SupabaseClient {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey =
+    process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL or Anon Key is missing from environment variables.');
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Supabase URL or Anon Key is missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY (or NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY) in your environment variables.',
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Uploads a profile photo to the Supabase storage bucket and returns the public URL.
@@ -15,6 +20,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 export async function uploadProfilePhoto(file, patientId) {
   if (!file || !file.name) return null;
+
+  const supabase = getSupabaseClient();
 
   const fileExt = file.name.split('.').pop();
   const fileName = `${patientId}-${Date.now()}.${fileExt}`;

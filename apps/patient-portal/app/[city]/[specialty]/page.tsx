@@ -1,54 +1,67 @@
-export const revalidate = 3600; // Revalidate every 1 hour (ISR)
+// Revalidate every 1 hour (ISR)
 import type { Metadata } from 'next';
-import { services } from '@/lib/services';
-import { notFound } from 'next/navigation';
-import HubEmptyState from '@/app/components/HubEmptyState';
 
-interface DoctorPageProps {
-  params: { city: string; specialty: string };
-}
+import HubEmptyState from '@/app/components/HubEmptyState';
+import { services } from '@/lib/services';
+
+export const revalidate = 3600;
 
 function toTitle(slug: string) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export async function generateMetadata({ params }: DoctorPageProps): Promise<Metadata> {
-  const city = toTitle(params.city);
-  const specialty = toTitle(params.specialty);
+interface DoctorPageParams {
+  city: string;
+  specialty: string;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<DoctorPageParams>;
+}): Promise<Metadata> {
+  const { city, specialty } = await params;
+  const cityTitle = toTitle(city);
+  const specialtyTitle = toTitle(specialty);
 
   // Fetch count for metadata accuracy
-  const stats = await services.platform.getHubStats(params.city, params.specialty);
+  const stats = await services.platform.getHubStats(city, specialty);
 
   return {
-    title: `Best ${specialty} in ${city} | ${stats.count} Doctors Found | Haspataal`,
-    description: `Find top ${specialty} doctors in ${city}. ${stats.count} specialists available for instant online booking at Haspataal.`,
+    title: `Best ${specialtyTitle} in ${cityTitle} | ${stats.count} Doctors Found | Haspataal`,
+    description: `Find top ${specialtyTitle} doctors in ${cityTitle}. ${stats.count} specialists available for instant online booking at Haspataal.`,
     openGraph: {
-      title: `Best ${specialty} in ${city} | Haspataal`,
-      description: `Connect with ${stats.count} ${specialty} specialists in ${city} easily.`,
+      title: `Best ${specialtyTitle} in ${cityTitle} | Haspataal`,
+      description: `Connect with ${stats.count} ${specialtyTitle} specialists in ${cityTitle} easily.`,
       type: 'website',
-      url: `https://haspataal.com/${params.city}/${params.specialty}`,
+      url: `https://haspataal.com/${city}/${specialty}`,
     },
   };
 }
 
-export default async function DoctorDiscoveryPage({ params }: DoctorPageProps) {
-  const city = toTitle(params.city);
-  const specialty = toTitle(params.specialty);
+export default async function DoctorDiscoveryPage({
+  params,
+}: {
+  params: Promise<DoctorPageParams>;
+}) {
+  const { city, specialty } = await params;
+  const cityTitle = toTitle(city);
+  const specialtyTitle = toTitle(specialty);
 
   // Fetch real data from Prisma via services
-  const doctors = await services.platform.getDoctorsByHub(params.city, params.specialty);
+  const doctors = await services.platform.getDoctorsByHub(city, specialty);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       {/* SEO Heading */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">
-          Best <span className="text-cyan-400">{specialty}</span> in {city}
+          Best <span className="text-cyan-400">{specialtyTitle}</span> in {cityTitle}
         </h1>
         <p className="text-gray-400 text-sm">
           {doctors.length > 0
             ? `${doctors.length} verified specialists available — Book Instantly`
-            : `No specialists found in ${city} for ${specialty} yet. Try nearby cities.`}
+            : `No specialists found in ${cityTitle} for ${specialtyTitle} yet. Try nearby cities.`}
         </p>
       </div>
 
@@ -68,14 +81,14 @@ export default async function DoctorDiscoveryPage({ params }: DoctorPageProps) {
                   <h2 className="font-bold text-white text-lg">{doc.fullName}</h2>
                   <div className="flex flex-wrap gap-2 mt-1">
                     <span className="text-xs px-2 py-0.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full font-medium">
-                      {specialty}
+                      {specialtyTitle}
                     </span>
                     <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-full font-medium">
                       Verified
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    {doc.affiliations?.[0]?.hospital?.legalName || 'Private Practice'}, {city}
+                    {doc.affiliations?.[0]?.hospital?.legalName || 'Private Practice'}, {cityTitle}
                   </p>
                 </div>
               </div>
@@ -103,17 +116,17 @@ export default async function DoctorDiscoveryPage({ params }: DoctorPageProps) {
       {/* SEO Content Block */}
       <div className="mt-16 bg-gray-900/30 border border-gray-800/50 rounded-2xl p-8 backdrop-blur-sm">
         <h2 className="text-xl font-bold text-white mb-4">
-          Reliable {specialty} Consultation in {city}
+          Reliable {specialtyTitle} Consultation in {cityTitle}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-400 text-sm leading-relaxed">
           <p>
-            Searching for the best {specialty} in {city}? Haspataal simplifies your search by
-            providing a curated list of top-rated and verified specialists. Whether you&apos;re
+            Searching for the best {specialtyTitle} in {cityTitle}? Haspataal simplifies your search
+            by providing a curated list of top-rated and verified specialists. Whether you&apos;re
             looking for a routine check-up or specialized care, our platform ensures you connect
             with the right healthcare professional instantly.
           </p>
           <p>
-            Our partner hospitals in {city} are equipped with state-of-the-art facilities. By
+            Our partner hospitals in {cityTitle} are equipped with state-of-the-art facilities. By
             booking through Haspataal, you get priority access, verified reviews from real patients,
             and the convenience of managing your appointments digitally.
           </p>

@@ -4,12 +4,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const prisma =
+const prismaInstance =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: ['query'],
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaInstance;
 
-export default prisma;
+export const prisma = prismaInstance;
+export default prismaInstance;

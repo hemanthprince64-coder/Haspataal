@@ -1,28 +1,13 @@
 .next/
 prisma/migrations/
-<<<<<<< Updated upstream
 lib/generated/
-
-# Sub-projects (each has own config)
-haspataal-mobile/
-
-# Package manager
-package-lock.json
-pnpm-lock.yaml
-
-# Environment
-.env*
-
-# IDE
-.vscode/
-.idea/
-
-# Internal
-.kilo/
-.agent/
-.metagpt/
-=======
 node_modules/
 *.md
 public/
->>>>>>> Stashed changes
+.env*
+.vscode/
+.idea/
+.kilo/
+.agent/
+.metagpt/
+apps/common/db.json
