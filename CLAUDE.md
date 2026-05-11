@@ -261,6 +261,21 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Tailwind CSS Variable Overrides:** When using HSL variables in Tailwind (e.g. `hsl(var(--primary))`), ensure that legacy CSS overrides do not define these variables using HEX formats (like `--primary: #2563eb`). Tailwind cannot parse `hsl(#2563eb)`, which silently results in transparent backgrounds and invisible text. _(Fixed 2026-05-11)_
 - **CardContent Vertical Centering (shadcn/ui):** The `CardContent` component has a default `pt-0` class designed for use below a `CardHeader`. When using `CardContent` standalone for horizontal layouts, always explicitly add `pt-6` (matching the other sides) to prevent the icon and text from appearing pushed to the top of the card. _(Fixed 2026-05-11)_
 - **Standardized Dashboard Card Layout:** To achieve "perfect" visual synchronization across dashboard sections, use a rigid `grid-cols-[auto_1fr_auto]` structure within cards. This locks icons, text headers, and trailing chevrons onto identical horizontal axes across different card instances. _(Implemented 2026-05-11)_
+- **Project Documentation Alignment:** All architectural and design specifications have been consolidated in the `docs/` directory. This includes PRD, TRD, Backend Schema, UI/UX Brief, and Implementation Plans to ensure a single source of truth for engineering and design. _(Updated 2026-05-12)_
+
+---
+
+## 📄 Project Documentation Index
+
+The following documents provide detailed specifications for the Haspataal platform:
+
+- [PRD.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/PRD.md) — Product Requirements Document.
+- [TRD.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/TRD.md) — Technical Requirements Document.
+- [UIUX_Design_Brief.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/UIUX_Design_Brief.md) — Visual design language and component library specs.
+- [Backend_Schema.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/Backend_Schema.md) — Database schema and relationship mapping.
+- [Implementation_Plan.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/Implementation_Plan.md) — Roadmap and phased execution strategy.
+- [AppFlow.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/AppFlow.md) — User journey and navigation mapping.
+
 
 ---
 
