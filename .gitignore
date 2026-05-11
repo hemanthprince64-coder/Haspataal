@@ -40,7 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-**/lib/generated/prisma/
+# Dev mock DB
+apps/common/*.json
+
 graphify-out/
 .kilo/
 .agent/
