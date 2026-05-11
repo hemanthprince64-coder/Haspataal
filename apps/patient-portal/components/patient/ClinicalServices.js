@@ -1,5 +1,3 @@
-import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Hospital,
   FileText,
@@ -12,6 +10,10 @@ import {
   MessageSquareMore,
   ChevronRight,
 } from 'lucide-react';
+
+import Link from 'next/link';
+
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 const clinicalSections = [
   {
@@ -90,23 +92,25 @@ const clinicalSections = [
 
 export default function ClinicalServices() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {clinicalSections.map((s, i) => (
         <Link key={s.href} href={s.href} className="group no-underline">
-          <Card className="h-full border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 rounded-2xl overflow-hidden bg-white">
-            <CardContent className="p-5 flex items-center gap-4">
+          <Card className="h-full border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 rounded-[1.5rem] overflow-hidden bg-white">
+            <CardContent className="p-6 pt-6 grid grid-cols-[auto_1fr_auto] items-center gap-5">
               <div
                 className={`w-12 h-12 rounded-xl ${s.bg} ${s.color} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
               >
                 {s.icon}
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+              <div className="min-w-0">
+                <CardTitle className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate leading-tight mb-1">
                   {s.name}
-                </h3>
-                <p className="text-xs text-slate-500 font-medium truncate">{s.desc}</p>
+                </CardTitle>
+                <CardDescription className="text-sm text-slate-500 font-medium truncate leading-normal">
+                  {s.desc}
+                </CardDescription>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-400 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-blue-400 transition-colors shrink-0" />
             </CardContent>
           </Card>
         </Link>

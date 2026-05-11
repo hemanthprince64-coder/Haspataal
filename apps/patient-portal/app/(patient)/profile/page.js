@@ -1,7 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import {
   Search,
   Calendar,
@@ -16,12 +14,17 @@ import {
   Sparkles,
   ArrowUpRight,
 } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+
+import Link from 'next/link';
+
 import { getPatientFullProfile, patientLogout } from '@/app/actions';
-import ProfileCard from '@/components/patient/ProfileCard';
 import ClinicalServices from '@/components/patient/ClinicalServices';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import ProfileCard from '@/components/patient/ProfileCard';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const actionSections = [
@@ -111,31 +114,33 @@ export default function ProfilePage() {
       {/* Quick Actions */}
       <section className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
             <ArrowUpRight className="w-4 h-4 text-blue-600" />
           </div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Quick Actions</h2>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight leading-none">
+            Quick Actions
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {actionSections.map((s) => (
             <Link key={s.href} href={s.href} className="group no-underline">
-              <Card className="border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 rounded-[1.5rem] bg-white overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-5">
-                    <div
-                      className={`w-14 h-14 ${s.bg} ${s.color} rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
-                    >
-                      {s.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-                        {s.name}
-                      </h3>
-                      <p className="text-sm text-slate-500 font-medium truncate">{s.desc}</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-blue-400 transition-colors" />
+              <Card className="border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 rounded-[1.5rem] bg-white overflow-hidden h-full">
+                <CardContent className="p-6 pt-6 grid grid-cols-[auto_1fr_auto] items-center gap-5">
+                  <div
+                    className={`w-12 h-12 ${s.bg} ${s.color} rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    {s.icon}
                   </div>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate leading-tight mb-1">
+                      {s.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-slate-500 font-medium truncate leading-normal">
+                      {s.desc}
+                    </CardDescription>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-blue-400 transition-colors shrink-0" />
                 </CardContent>
               </Card>
             </Link>
@@ -146,10 +151,10 @@ export default function ProfilePage() {
       {/* Personal Data */}
       <section className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
             <UserCog className="w-4 h-4 text-emerald-600" />
           </div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight leading-none">
             Account & Personal
           </h2>
         </div>
@@ -161,22 +166,22 @@ export default function ProfilePage() {
                 .map((_, i) => <Skeleton key={i} className="h-24 rounded-[1.5rem]" />)
             : personalSections.map((s) => (
                 <Link key={s.href} href={s.href} className="group no-underline">
-                  <Card className="border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300 rounded-[1.5rem] bg-white overflow-hidden">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-5">
-                        <div
-                          className={`w-14 h-14 ${s.bg} ${s.color} rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
-                        >
-                          {s.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
-                            {s.name}
-                          </h3>
-                          <p className="text-sm text-slate-500 font-medium truncate">{s.desc}</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-emerald-400 transition-colors" />
+                  <Card className="border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all duration-300 rounded-[1.5rem] bg-white overflow-hidden h-full">
+                    <CardContent className="p-6 pt-6 grid grid-cols-[auto_1fr_auto] items-center gap-5">
+                      <div
+                        className={`w-12 h-12 ${s.bg} ${s.color} rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}
+                      >
+                        {s.icon}
                       </div>
+                      <div className="min-w-0">
+                        <CardTitle className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors truncate leading-tight mb-1">
+                          {s.name}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-slate-500 font-medium truncate leading-normal">
+                          {s.desc}
+                        </CardDescription>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-emerald-400 transition-colors shrink-0" />
                     </CardContent>
                   </Card>
                 </Link>
@@ -188,10 +193,10 @@ export default function ProfilePage() {
       <section className="space-y-6 pb-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
               <Sparkles className="w-4 h-4 text-indigo-600" />
             </div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight leading-none">
               Clinical Services
             </h2>
           </div>

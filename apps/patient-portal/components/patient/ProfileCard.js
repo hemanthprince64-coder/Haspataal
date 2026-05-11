@@ -1,9 +1,11 @@
-import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Edit2, LayoutDashboard, Crown, Sparkles } from 'lucide-react';
+
+import Link from 'next/link';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 export default function ProfileCard({ patient }) {
   const { name, phone, nickname, profilePhotoUrl } = patient || {};
@@ -21,7 +23,7 @@ export default function ProfileCard({ patient }) {
 
   return (
     <Card className="overflow-hidden border-slate-200 shadow-xl shadow-blue-900/5 rounded-[2rem] bg-white group transition-all duration-300">
-      <CardContent className="p-0">
+      <CardHeader className="p-0 space-y-0">
         <div className="flex flex-col md:flex-row items-center gap-8 p-8 relative">
           <div className="absolute top-0 right-0 p-8 opacity-5 transition-opacity group-hover:opacity-10 pointer-events-none">
             <Sparkles className="w-32 h-32 text-blue-600" />
@@ -30,7 +32,7 @@ export default function ProfileCard({ patient }) {
           <div className="relative">
             <Avatar className="w-24 h-24 rounded-3xl border-4 border-white shadow-2xl ring-1 ring-blue-100/50 overflow-hidden">
               <AvatarImage src={profilePhotoUrl} className="object-cover" />
-              <AvatarFallback className="text-3xl font-black text-blue-600 bg-blue-50">
+              <AvatarFallback className="text-3xl font-black text-blue-600 bg-blue-50 flex items-center justify-center leading-none">
                 {displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -43,17 +45,18 @@ export default function ProfileCard({ patient }) {
             <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
               <Badge
                 variant="secondary"
-                className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-0 px-3 py-1 font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5"
+                className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-0 px-3 py-1 font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5 leading-none"
               >
-                {greeting.icon} {greeting.text}
+                <span className="relative -top-[0.5px]">{greeting.icon}</span>
+                <span>{greeting.text}</span>
               </Badge>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight truncate">
+            <CardTitle className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight truncate leading-tight">
               {displayName}
-            </h1>
-            <p className="text-slate-500 text-lg font-semibold flex items-center justify-center md:justify-start gap-1.5">
+            </CardTitle>
+            <CardDescription className="text-slate-500 text-lg font-semibold flex items-center justify-center md:justify-start gap-1.5">
               {displayPhone}
-            </p>
+            </CardDescription>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto pt-4 md:pt-0">
@@ -76,7 +79,7 @@ export default function ProfileCard({ patient }) {
             </Button>
           </div>
         </div>
-      </CardContent>
+      </CardHeader>
     </Card>
   );
 }
