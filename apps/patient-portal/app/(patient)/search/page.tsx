@@ -1,7 +1,5 @@
 'use client';
 
-import { searchDoctorsAction, getCitiesAction, getAllSpecialitiesAction } from '@/app/actions';
-import Link from 'next/link';
 import {
   Search,
   MapPin,
@@ -14,24 +12,33 @@ import {
   Phone,
   Filter,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+
+import { useState, useEffect, Suspense } from 'react';
+
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+
+import { searchDoctorsAction, getCitiesAction, getAllSpecialitiesAction } from '@/app/actions';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useState, useEffect, use } from 'react';
+
 import DoctorCard from '../components/DoctorCard';
 
-export default function SearchPage({ searchParams }: { searchParams: Promise<any> }) {
-  const resolvedParams = use(searchParams);
+function SearchPageContent() {
+  const searchParams = useSearchParams();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [doctors, setDoctors] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [cities, setCities] = useState<any[]>([]);
   const [specialities, setSpecialities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const city = resolvedParams.city || 'Mumbai';
-  const speciality = resolvedParams.speciality || '';
-  const query = resolvedParams.q || '';
+  const city = searchParams.get('city') || 'Mumbai';
+  const speciality = searchParams.get('speciality') || '';
+  const query = searchParams.get('q') || '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,6 +59,7 @@ export default function SearchPage({ searchParams }: { searchParams: Promise<any
     fetchData();
   }, [city, speciality, query]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doctorsWithHospitals = doctors.map((doc: any) => {
     const aff = doc.affiliations?.[0];
     const hospital = aff?.hospital || null;
@@ -206,5 +214,13 @@ export default function SearchPage({ searchParams }: { searchParams: Promise<any
         </div>
       )}
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={null}>
+      <SearchPageContent />
+    </Suspense>
   );
 }

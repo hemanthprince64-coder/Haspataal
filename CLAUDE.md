@@ -258,7 +258,8 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Internalized Local Types:** Migrated `patient-portal` to local TypeScript interfaces (`types.ts`) and a local Prisma singleton to isolate app logic from monorepo-level package drift during high-frequency development. _(Implemented 2026-05-08)_
 - **Lightweight `cn` Utility:** Replaced `clsx` and `tailwind-merge` with a native `cn` filter in `lib/utils.ts` to reduce bundle size and eliminate CSS-in-JS hydration overhead in the patient portal. _(Implemented 2026-05-08)_
 - **Local Event & Component Registry:** Introduced a lightweight `EventEmitter` service and a `bones/` registry in `patient-portal` to support decoupled component interaction and dynamic registration without the complexity of a full-scale event bus in early development. _(Implemented 2026-05-08)_
-
+- **Next.js 15 Suspense & searchParams:** In Next.js 15, `searchParams` is passed as a Promise. Client Components should use `useSearchParams()` from `next/navigation` wrapped in a `<Suspense>` boundary. Using `use(searchParams)` inside a Client Component can cause Next.js to hang indefinitely on a `loading.tsx` skeleton. _(Fixed 2026-05-11)_
+- **Tailwind CSS Variable Overrides:** When using HSL variables in Tailwind (e.g. `hsl(var(--primary))`), ensure that legacy CSS overrides do not define these variables using HEX formats (like `--primary: #2563eb`). Tailwind cannot parse `hsl(#2563eb)`, which silently results in transparent backgrounds and invisible text. _(Fixed 2026-05-11)_
 ---
 
 ## 🤖 Agent Personality

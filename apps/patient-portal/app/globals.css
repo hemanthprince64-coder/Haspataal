@@ -189,15 +189,10 @@
   /* tertiary */
 
   /* Haspataal Brand Colors (Legacy mappings kept for safety) */
-  --primary: #2563eb;
   --primary-hover: #1d4ed8;
   --primary-light: #eff6ff;
-  --secondary: #475569;
-  --success: #059669;
   --success-light: #d1fae5;
-  --warning: #d97706;
   --warning-light: #fef3c7;
-  --danger: #dc2626;
   --danger-light: #fee2e2;
 
   --bg-main: #f8fafc;
