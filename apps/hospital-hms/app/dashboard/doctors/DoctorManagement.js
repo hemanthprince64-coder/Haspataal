@@ -2,6 +2,14 @@
 
 import { useState, useActionState } from 'react';
 import { addDoctorAction, removeDoctorAction } from '@/app/actions';
+import { Button } from '@haspataal/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@haspataal/ui';
+import { Input } from '@haspataal/ui';
+import { Label } from '@haspataal/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@haspataal/ui';
+import { Badge } from '@haspataal/ui';
+import { Avatar, AvatarFallback } from '@haspataal/ui';
+import { UserPlus, Trash2, UserCheck } from 'lucide-react';
 
 const addInitialState = { message: '', success: false };
 const removeInitialState = { message: '', success: false };
@@ -15,189 +23,151 @@ export default function DoctorManagement({ doctors: initialDoctors }) {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Add Doctor Section */}
-      <div style={{ marginBottom: '2rem' }}>
-        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
-          {showForm ? '✕ Close Form' : '➕ Add New Doctor'}
-        </button>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Doctor Management</h2>
+        <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'outline' : 'default'}>
+          {showForm ? 'Close Form' : <><UserPlus className="h-4 w-4 mr-2" /> Add New Doctor</>}
+        </Button>
       </div>
 
       {showForm && (
-        <div className="card animate-slide-down" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontWeight: '700', marginBottom: '1.25rem' }}>Add New Doctor</h3>
-          <form
-            action={addAction}
-            style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Doctor Name *</label>
-                <input
-                  name="name"
-                  type="text"
-                  required
-                  className="form-input"
-                  placeholder="Dr. Full Name"
+        <Card className="animate-slide-down">
+          <CardHeader>
+            <CardTitle className="text-lg">Add New Doctor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form action={addAction} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Doctor Name *</Label>
+                  <Input id="name" name="name" placeholder="Dr. Full Name" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mobile">Mobile *</Label>
+                  <Input
+                    id="mobile"
+                    name="mobile"
+                    type="tel"
+                    placeholder="10-digit mobile"
+                    maxLength={10}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="speciality">Speciality *</Label>
+                  <Select name="speciality" required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select speciality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="General Physician">General Physician</SelectItem>
+                      <SelectItem value="Gynecology">Gynecology</SelectItem>
+                      <SelectItem value="Dermatology">Dermatology</SelectItem>
+                      <SelectItem value="Pediatrics">Pediatrics</SelectItem>
+                      <SelectItem value="ENT">ENT</SelectItem>
+                      <SelectItem value="Cardiology">Cardiology</SelectItem>
+                      <SelectItem value="Orthopedics">Orthopedics</SelectItem>
+                      <SelectItem value="Neurology">Neurology</SelectItem>
+                      <SelectItem value="Ophthalmology">Ophthalmology</SelectItem>
+                      <SelectItem value="Psychiatry">Psychiatry</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="experience">Experience (yrs)</Label>
+                  <Input id="experience" name="experience" type="number" placeholder="Years" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fee">Fee (₹)</Label>
+                  <Input id="fee" name="fee" type="number" placeholder="500" defaultValue="500" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Default: 123"
                 />
               </div>
-              <div className="form-group">
-                <label className="form-label">Mobile *</label>
-                <input
-                  name="mobile"
-                  type="tel"
-                  required
-                  className="form-input"
-                  placeholder="10-digit mobile"
-                  maxLength="10"
-                />
-              </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Speciality *</label>
-                <select name="speciality" required className="form-input">
-                  <option value="">Select</option>
-                  <option value="General Physician">General Physician</option>
-                  <option value="Gynecology">Gynecology</option>
-                  <option value="Dermatology">Dermatology</option>
-                  <option value="Pediatrics">Pediatrics</option>
-                  <option value="ENT">ENT</option>
-                  <option value="Cardiology">Cardiology</option>
-                  <option value="Orthopedics">Orthopedics</option>
-                  <option value="Neurology">Neurology</option>
-                  <option value="Ophthalmology">Ophthalmology</option>
-                  <option value="Psychiatry">Psychiatry</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Experience (yrs)</label>
-                <input name="experience" type="number" className="form-input" placeholder="Years" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Fee (₹)</label>
-                <input
-                  name="fee"
-                  type="number"
-                  className="form-input"
-                  placeholder="500"
-                  defaultValue="500"
-                />
-              </div>
-            </div>
+              {addState?.message && (
+                <div className={`p-4 rounded-lg border ${addState.success ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                  {addState.success ? '✅' : '⚠️'} {addState.message}
+                </div>
+              )}
 
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input
-                name="password"
-                type="password"
-                className="form-input"
-                placeholder="Default: 123"
-              />
-            </div>
-
-            {addState?.message && (
-              <div className={`alert ${addState.success ? 'alert-success' : 'alert-error'}`}>
-                {addState.success ? '✅' : '⚠️'} {addState.message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isAdding}
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-            >
-              {isAdding ? '⏳ Adding...' : '✓ Add Doctor'}
-            </button>
-          </form>
-        </div>
+              <Button type="submit" disabled={isAdding} className="w-full">
+                {isAdding ? 'Adding...' : 'Add Doctor'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {/* Doctor List */}
-      <h3 style={{ fontWeight: '700', marginBottom: '1rem' }}>
-        Current Doctors{' '}
-        <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>
-          ({initialDoctors.length})
-        </span>
-      </h3>
+      <div className="space-y-4">
+        <h3 className="text-lg font-bold">
+          Current Doctors <span className="text-muted-foreground font-normal">({initialDoctors.length})</span>
+        </h3>
 
-      {initialDoctors.length === 0 ? (
-        <div className="card empty-state">
-          <div className="empty-state-icon">👨‍⚕️</div>
-          <p className="empty-state-title">No doctors added yet</p>
-          <p className="empty-state-text">Add your first doctor to the hospital.</p>
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '1rem',
-          }}
-        >
-          {initialDoctors.map((doc) => (
-            <div
-              key={doc.id}
-              className="card"
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-            >
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <div
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.5rem',
-                    flexShrink: 0,
-                  }}
-                >
-                  👨‍⚕️
-                </div>
-                <div>
-                  <div style={{ fontWeight: '700', fontSize: '0.95rem' }}>{doc.name}</div>
-                  <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
-                    {doc.speciality}
-                  </span>
-                  <div
-                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}
-                  >
-                    {doc.experience || 0} yrs • ₹{doc.fee}
+        {initialDoctors.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <div className="text-6xl mb-4">👨‍⚕️</div>
+              <CardTitle className="mb-2">No doctors added yet</CardTitle>
+              <p className="text-muted-foreground text-sm">Add your first doctor to the hospital.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {initialDoctors.map((doc) => (
+              <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex gap-3 items-center">
+                    <Avatar className="w-12 h-12 bg-gradient-to-br from-blue-100 to-cyan-100">
+                      <AvatarFallback className="text-lg">
+                        {doc.name?.charAt(0) || 'D'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-semibold text-sm">{doc.name}</div>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {doc.speciality}
+                      </Badge>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {doc.experience || 0} yrs • ₹{doc.fee}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <form action={removeAction}>
-                <input type="hidden" name="doctorId" value={doc.id} />
-                <button
-                  type="submit"
-                  disabled={isRemoving}
-                  className="btn btn-sm"
-                  style={{
-                    background: 'var(--danger-light)',
-                    color: 'var(--danger)',
-                    border: 'none',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                  }}
-                >
-                  ✕
-                </button>
-              </form>
-            </div>
-          ))}
-        </div>
-      )}
+                  <form action={removeAction}>
+                    <input type="hidden" name="doctorId" value={doc.id} />
+                    <Button
+                      type="submit"
+                      disabled={isRemoving}
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
       {removeState?.message && (
-        <div
-          className={`alert ${removeState.success ? 'alert-success' : 'alert-error'}`}
-          style={{ marginTop: '1rem' }}
-        >
+        <div className={`p-4 rounded-lg border mt-4 ${removeState.success ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
           {removeState.success ? '✅' : '⚠️'} {removeState.message}
         </div>
       )}

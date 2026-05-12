@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { getHospitalCatalog, updateDiagnosticPrice } from '@/app/actions/admin';
+import { Card, CardContent, CardHeader, CardTitle } from '@haspataal/ui';
+import { Input } from '@haspataal/ui';
+import { Button } from '@haspataal/ui';
+import { Checkbox } from '@haspataal/ui';
+import { Skeleton } from '@haspataal/ui';
+import { LabTest, Save } from 'lucide-react';
 
 export default function DiagnosticPricingPage() {
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Simulate getting hospital ID (In real app, from session)
-  // For testing, we'll fetch the first hospital from the DB or let user input
-  // But since this is client side, we can't fetch DB directly.
-  // We'll use a hardcoded valid ID from verified data for now or input field.
 
   useEffect(() => {
     fetchCatalog();
@@ -34,67 +35,83 @@ export default function DiagnosticPricingPage() {
     const res = await updateDiagnosticPrice(null, formData);
     if (res.success) {
       alert('Price Updated');
-      fetchCatalog(); // Refresh
+      fetchCatalog();
     } else {
       alert('Failed');
     }
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Diagnostic Pricing Manager</h1>
+    <div className="animate-fade-in p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+          <LabTest className="h-6 w-6 text-primary" />
+          Diagnostic Pricing Manager
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Manage your diagnostic test prices and availability
+        </p>
+      </div>
 
       {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2 border">Test Name</th>
-                <th className="p-2 border">Category</th>
-                <th className="p-2 border">Global TAT (Hrs)</th>
-                <th className="p-2 border">Your Price (₹)</th>
-                <th className="p-2 border">Available</th>
-                <th className="p-2 border">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {catalog.map((test) => (
-                <tr key={test.id} className="border-t">
-                  <td className="p-2">{test.testName}</td>
-                  <td className="p-2">{test.category?.name}</td>
-                  <td className="p-2">{test.turnaroundTimeHours}</td>
-                  <td className="p-2" colSpan="3">
-                    <form onSubmit={handleUpdate} className="flex gap-2 items-center">
-                      <input type="hidden" name="testId" value={test.id} />
-                      <input
-                        type="number"
-                        name="price"
-                        defaultValue={test.price || 0}
-                        className="p-1 border rounded w-24"
-                      />
-                      <label className="flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          name="isAvailable"
-                          defaultChecked={test.isAvailable}
-                        />
-                        Active
-                      </label>
-                      <button
-                        type="submit"
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                      >
-                        Save
-                      </button>
-                    </form>
-                  </td>
-                </tr>
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0 overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Test Name</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Category</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Global TAT (Hrs)</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Your Price (₹)</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Available</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {catalog.map((test) => (
+                  <tr key={test.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium">{test.testName}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{test.category?.name}</td>
+                    <td className="px-4 py-3">{test.turnaroundTimeHours}</td>
+                    <td className="px-4 py-3" colSpan="3">
+                      <form onSubmit={handleUpdate} className="flex items-center gap-3">
+                        <input type="hidden" name="testId" value={test.id} />
+                        <Input
+                          type="number"
+                          name="price"
+                          defaultValue={test.price || 0}
+                          className="w-24"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`avail-${test.id}`}
+                            name="isAvailable"
+                            defaultChecked={test.isAvailable}
+                          />
+                          <label htmlFor={`avail-${test.id}`} className="text-sm">Active</label>
+                        </div>
+                        <Button type="submit" size="sm">
+                          <Save className="h-4 w-4 mr-2" />
+                          Save
+                        </Button>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

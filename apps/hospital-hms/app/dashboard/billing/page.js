@@ -16,11 +16,9 @@ export default async function BillingPage() {
   });
 
   return (
-    <div className="page-enter">
-      <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.5rem' }}>
-        OPD & Billing
-      </h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+    <div className="animate-fade-in">
+      <h1 className="text-2xl font-bold mb-2">OPD & Billing</h1>
+      <p className="text-muted-foreground mb-6">
         Create a new OPD visit and generate billing
       </p>
       <BillingForm doctors={doctors} />

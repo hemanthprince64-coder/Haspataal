@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { logoutHospital } from '@/app/actions';
 import Image from 'next/image';
+import { Button } from '@haspataal/ui';
+import { LayoutDashboard, CreditCard, BarChart3, Users, LogOut } from 'lucide-react';
 
 export default async function DashboardLayout({ children }) {
   const session = await auth();
@@ -10,136 +12,82 @@ export default async function DashboardLayout({ children }) {
   const user = session.user;
 
   const navItems = [
-    { href: '/dashboard', label: 'Overview', icon: '📊' },
-    { href: '/dashboard/billing', label: 'OPD & Billing', icon: '💳' },
-    { href: '/dashboard/reports', label: 'Reports', icon: '📈' },
-    { href: '/dashboard/doctors', label: 'Manage Doctors', icon: '👨‍⚕️', adminOnly: true },
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/dashboard/billing', label: 'OPD & Billing', icon: CreditCard },
+    { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
+    ...(user.role === 'ADMIN'
+      ? [{ href: '/dashboard/doctors', label: 'Manage Doctors', icon: Users }]
+      : []),
   ];
 
-  const visibleItems = navItems.filter((item) => !item.adminOnly || user.role === 'ADMIN');
-
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 60px)' }}>
-      {/* Sidebar */}
-      <aside
-        style={{
-          width: '260px',
-          background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-          color: 'white',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '1.5rem 0',
-          flexShrink: 0,
-        }}
-      >
+    <div className="flex min-h-[calc(100vh-60px)]">
+      {/* Sidebar - Using shadcn/ui style with Tailwind */}
+      <aside className="w-[260px] bg-gradient-to-b from-slate-900 to-slate-800 text-white flex flex-col py-6 flex-shrink-0 hidden md:flex">
         {/* Hospital Info */}
-        <div style={{ padding: '0 1.25rem', marginBottom: '2rem' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              marginBottom: '0.75rem',
-            }}
-          >
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.25rem',
-                flexShrink: 0,
-              }}
-            >
-              🏥
+        <div className="px-5 mb-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">🏥</span>
             </div>
             <div>
-              <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>{user.name}</div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{user.role}</div>
+              <div className="font-bold text-sm">{user.name}</div>
+              <div className="text-xs text-slate-400">{user.role}</div>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2px',
-            padding: '0 0.75rem',
-          }}
-        >
-          {visibleItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius)',
-                color: '#e2e8f0',
-                textDecoration: 'none',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                transition: 'background 0.15s',
-              }}
-            >
-              <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex-1 flex flex-col gap-1 px-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-200 hover:bg-white/10 hover:text-white transition-all text-sm font-medium"
+              >
+                <Icon className="h-5 w-5" />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Bottom */}
-        <div
-          style={{
-            padding: '0 1rem',
-            borderTop: '1px solid #334155',
-            paddingTop: '1rem',
-            marginTop: '1rem',
-          }}
-        >
+        {/* Bottom - Logout */}
+        <div className="px-3 mt-auto pt-6 border-t border-slate-700">
           <form action={logoutHospital}>
-            <button
+            <Button
               type="submit"
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius)',
-                background: 'rgba(239,68,68,0.1)',
-                color: '#fca5a5',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-              }}
+              variant="ghost"
+              className="w-full justify-start gap-3 text-red-300 hover:bg-red-500/10 hover:text-red-300"
             >
-              🚪 Logout
-            </button>
+              <LogOut className="h-5 w-5" />
+              Logout
+            </Button>
           </form>
         </div>
       </aside>
 
+      {/* Mobile header (simplified - could be expanded) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 p-2 flex justify-around z-50">
+        {navItems.slice(0, 4).map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex flex-col items-center gap-1 p-2 text-slate-300"
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-xs">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+
       {/* Main Content */}
-      <main
-        style={{
-          flex: 1,
-          padding: '2rem',
-          background: '#f8fafc',
-          overflowY: 'auto',
-        }}
-      >
+      <main className="flex-1 p-6 bg-slate-50 overflow-y-auto md:pb-6 pb-20">
         {children}
       </main>
     </div>

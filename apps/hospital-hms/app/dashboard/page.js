@@ -1,8 +1,17 @@
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@haspataal/ui';
 import { redis } from '@/lib/redis';
+import {
+  Calendar,
+  Users,
+  UserRound,
+  Clock,
+  FileText,
+  CheckCircle2,
+  TrendingUp,
+} from 'lucide-react';
 
 export default async function HospitalDashboard() {
   const cookieStore = await cookies();
@@ -18,8 +27,7 @@ export default async function HospitalDashboard() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // 1. Real-time Data (Recent Visits & Hospital Info)
-  // We want these fresh.
+  // 1. Real-time Data
   const [hospital, recentVisitsData] = await Promise.all([
     prisma.hospitalsMaster.findUnique({ where: { id: hospitalId } }),
     prisma.visit.findMany({
@@ -41,7 +49,6 @@ export default async function HospitalDashboard() {
   }
 
   if (!stats) {
-    console.log('Cache Miss: Fetching Stats from DB');
     const [
       totalVisits,
       todayVisits,
@@ -71,189 +78,157 @@ export default async function HospitalDashboard() {
     };
 
     try {
-      await redis.set(cacheKey, stats, { ex: 60 }); // Cache for 60 seconds
+      await redis.set(cacheKey, stats, { ex: 60 });
     } catch (e) {
       console.error('Redis Set Error:', e);
     }
-  } else {
-    console.log('Cache Hit: Data from Redis');
   }
 
   const statCards = [
     {
       label: "Today's Visits",
       value: stats.todayVisits,
-      icon: '📅',
-      color: '#0284c7',
-      bg: '#e0f2fe',
+      icon: Calendar,
+      color: 'text-sky-600',
+      bg: 'bg-sky-50',
     },
     {
       label: 'Total Patients',
       value: stats.totalPatients,
-      icon: '👥',
-      color: '#0d9488',
-      bg: '#ccfbf1',
+      icon: Users,
+      color: 'text-teal-600',
+      bg: 'bg-teal-50',
     },
     {
       label: 'Total Doctors',
       value: stats.totalDoctors,
-      icon: '👨‍⚕️',
-      color: '#7c3aed',
-      bg: '#ede9fe',
+      icon: UserRound,
+      color: 'text-violet-600',
+      bg: 'bg-violet-50',
     },
     {
       label: 'Scheduled',
       value: stats.scheduledVisits,
-      icon: '⏰',
-      color: '#ea580c',
-      bg: '#fff7ed',
+      icon: Clock,
+      color: 'text-orange-600',
+      bg: 'bg-orange-50',
     },
     {
       label: 'Total Visits',
       value: stats.totalVisits,
-      icon: '📊',
-      color: '#0369a1',
-      bg: '#f0f9ff',
+      icon: FileText,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
     },
     {
       label: 'Completed',
       value: stats.completedVisits,
-      icon: '✅',
-      color: '#15803d',
-      bg: '#f0fdf4',
+      icon: CheckCircle2,
+      color: 'text-green-600',
+      bg: 'bg-green-50',
     },
   ];
 
   return (
-    <div className="page-enter">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.25rem' }}>
-          Dashboard
-        </h1>
-        <p style={{ color: 'var(--text-muted)' }}>
+    <div className="animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
+        <p className="text-muted-foreground text-sm">
           Welcome back, {user.name} • {hospital?.displayName || hospital?.legalName}
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem',
-        }}
-      >
-        {statCards.map((s) => (
-          <div
-            key={s.label}
-            className="card"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              padding: '1.25rem',
-            }}
-          >
-            <div
-              style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '12px',
-                background: s.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                flexShrink: 0,
-              }}
-            >
-              {s.icon}
-            </div>
-            <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: '800', color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '500' }}>
-                {s.label}
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
+        {statCards.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card key={s.label} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-lg ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                  <Icon className={`h-6 w-6 ${s.color}`} />
+                </div>
+                <div>
+                  <div className={`text-2xl font-extrabold ${s.color}`}>{s.value}</div>
+                  <div className="text-xs text-muted-foreground font-medium">{s.label}</div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
-        <Link href="/dashboard/billing" className="btn btn-primary">
-          ➕ New OPD Visit
-        </Link>
-        <Link href="/dashboard/reports" className="btn btn-outline">
-          📊 View Reports
-        </Link>
+      <div className="flex gap-3 flex-wrap mb-8">
+        <a href="/dashboard/billing" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors">
+          + New OPD Visit
+        </a>
+        <a href="/dashboard/reports" className="inline-flex items-center gap-2 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium rounded-lg transition-colors">
+          View Reports
+        </a>
         {user.role === 'ADMIN' && (
-          <Link href="/dashboard/doctors" className="btn btn-outline">
-            👨‍⚕️ Manage Doctors
-          </Link>
+          <a href="/dashboard/doctors" className="inline-flex items-center gap-2 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm font-medium rounded-lg transition-colors">
+            Manage Doctors
+          </a>
         )}
       </div>
 
       {/* Recent Visits */}
-      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-        <div
-          style={{
-            padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <h3 style={{ fontWeight: '700' }}>Recent Visits</h3>
-          <Link
-            href="/dashboard/reports"
-            style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: '600' }}
-          >
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-lg font-bold">Recent Visits</CardTitle>
+          <a href="/dashboard/reports" className="text-sm text-primary font-medium hover:underline">
             View All →
-          </Link>
-        </div>
-        {recentVisitsData.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <p>No visits yet. Create your first OPD visit.</p>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Patient</th>
-                  <th>Doctor</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentVisitsData.map((v) => (
-                  <tr key={v.id}>
-                    <td>
-                      {new Date(v.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </td>
-                    <td>{v.patientName || v.patientPhone}</td>
-                    <td>{v.doctor?.name || 'Dr. Unknown'}</td>
-                    <td>
-                      <span
-                        className={`badge ${v.status === 'COMPLETED' ? 'badge-success' : v.status === 'CANCELLED' ? 'badge-danger' : 'badge-primary'}`}
-                      >
-                        {v.status}
-                      </span>
-                    </td>
+          </a>
+        </CardHeader>
+        <CardContent className="p-0">
+          {recentVisitsData.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <p>No visits yet. Create your first OPD visit.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Date</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Patient</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Doctor</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody className="divide-y">
+                  {recentVisitsData.map((v) => {
+                    const statusColor =
+                      v.status === 'COMPLETED'
+                        ? 'bg-green-100 text-green-700'
+                        : v.status === 'CANCELLED'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-blue-100 text-blue-700';
+                    return (
+                      <tr key={v.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          {new Date(v.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </td>
+                        <td className="px-4 py-3 font-medium">{v.patientName || v.patientPhone}</td>
+                        <td className="px-4 py-3">{v.doctor?.name || 'Dr. Unknown'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColor}`}>
+                            {v.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

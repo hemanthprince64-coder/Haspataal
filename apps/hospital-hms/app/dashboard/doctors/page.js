@@ -12,9 +12,9 @@ export default async function DoctorsPage() {
 
   if (user.role !== 'ADMIN') {
     return (
-      <div className="page-enter" style={{ padding: '3rem', textAlign: 'center' }}>
-        <h2>Access Denied</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Only hospital admins can manage doctors.</p>
+      <div className="animate-fade-in p-8 text-center">
+        <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+        <p className="text-muted-foreground">Only hospital admins can manage doctors.</p>
       </div>
     );
   }
@@ -25,11 +25,9 @@ export default async function DoctorsPage() {
   });
 
   return (
-    <div className="page-enter">
-      <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.5rem' }}>
-        Manage Doctors
-      </h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+    <div className="animate-fade-in">
+      <h1 className="text-2xl font-bold mb-2">Manage Doctors</h1>
+      <p className="text-muted-foreground mb-6">
         Add, view, and manage your hospital's doctors
       </p>
       <DoctorManagement doctors={doctors} />

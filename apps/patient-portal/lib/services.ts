@@ -1394,7 +1394,7 @@ export const services = {
       const hospitals = await prisma.$queryRaw<any[]>`
                 SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
             `;
-
+      
       const hospital = hospitals?.[0];
 
       if (!hospital) {

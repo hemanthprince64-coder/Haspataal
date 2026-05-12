@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { CSPostHogProvider } from './providers';
 import PostHogPageView from './PostHogPageView';
+import { Button } from '@haspataal/ui';
 
 export const metadata = {
   title: 'Haspataal — Hospital Partner Portal',
@@ -28,31 +29,10 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <CSPostHogProvider>
-          <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <div className="min-h-screen flex flex-col">
             {/* Header */}
-            <header
-              style={{
-                height: '60px',
-                borderBottom: '1px solid var(--border)',
-                background: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 1.5rem',
-                position: 'sticky',
-                top: 0,
-                zIndex: 50,
-              }}
-            >
-              <Link
-                href="/"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  textDecoration: 'none',
-                }}
-              >
+            <header className="sticky top-0 z-50 h-[60px] border-b bg-white flex items-center justify-between px-6">
+              <Link href="/" className="flex items-center gap-2 no-underline">
                 <Image
                   src="/logo.svg"
                   alt="Haspataal"
@@ -60,36 +40,22 @@ export default function RootLayout({ children }) {
                   height={36}
                   style={{ objectFit: 'contain' }}
                 />
-                <span style={{ fontWeight: '700', color: 'var(--primary)', fontSize: '1.1rem' }}>
+                <span className="font-bold text-primary text-lg">
                   Haspataal
                 </span>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    fontWeight: '600',
-                    color: 'var(--text-muted)',
-                    background: '#f1f5f9',
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '99px',
-                  }}
-                >
+                <span className="text-[10px] font-semibold text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-full">
                   PARTNER
                 </span>
               </Link>
 
-              <nav
-                style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.85rem' }}
-              >
+              <nav className="flex items-center gap-4 text-sm">
                 <a
                   href="https://haspataal.com"
-                  style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   ← Patient Portal
                 </a>
-                <Link
-                  href="/"
-                  style={{ color: 'var(--primary)', fontWeight: '600', textDecoration: 'none' }}
-                >
+                <Link href="/" className="text-primary font-semibold hover:underline">
                   Hospital Home
                 </Link>
               </nav>
@@ -97,7 +63,7 @@ export default function RootLayout({ children }) {
 
             {/* Content */}
             <PostHogPageView />
-            <div style={{ flex: 1 }}>{children}</div>
+            <div className="flex-1">{children}</div>
           </div>
         </CSPostHogProvider>
         <Script
@@ -106,12 +72,11 @@ export default function RootLayout({ children }) {
         />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
-                    window.dataLayer = window.dataLayer || [];
-                    function gtag(){dataLayer.push(arguments);}
-                    gtag('js', new Date());
-
-                    gtag('config', 'G-XXXXXXXXXX');
-                    `}
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-XXXXXXXXXX');
+          `}
         </Script>
       </body>
     </html>

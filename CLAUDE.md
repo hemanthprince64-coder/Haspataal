@@ -266,6 +266,9 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Service-to-Model Field Mapping:** Service methods in `services.ts` now explicitly map Prisma fields (`fullName`, `legalName`) to common application properties (`name`) before returning data. This ensures that UI components consuming these types always find the expected data regardless of underlying DB column names. _(Fixed 2026-05-12)_
 - **Internalized Metrics API Alignment:** The `Counter` utility in `lib/metrics.ts` was updated to support the `.inc()` method and optional labels, bringing its API in line with standard `prom-client` patterns and resolving service-layer type errors. _(Fixed 2026-05-12)_
 - **Project Documentation Alignment:** All architectural and design specifications have been consolidated in the `docs/` directory. This includes PRD, TRD, Backend Schema, UI/UX Brief, and Implementation Plans to ensure a single source of truth for engineering and design. _(Updated 2026-05-12)_
+- **Hospital Login Normalization:** Mobile numbers in hospital login and registration MUST be normalized (e.g., using `.replace(/\D/g, '').slice(-10)`) before querying the database. This ensures that inputs with country codes or spaces match the stored records correctly. _(Fixed 2026-05-12)_
+- **Hospital Login Field Mapping (Raw SQL):** Raw SQL queries for the `hospitals_master` table return fields in `snake_case` (e.g., `legal_name`, `display_name`). The login service must explicitly map these to the `name` property in the returned user object to prevent `undefined` session values. _(Fixed 2026-05-12)_
+- **Environment Variable Overrides:** In a monorepo, app-level `.env` files (e.g., `apps/patient-portal/.env`) take precedence over root `.env`. Ensure critical variables like `DATABASE_URL` are synchronized to prevent "Invalid credentials" errors caused by connecting to the wrong database (e.g., localhost vs Supabase). _(Fixed 2026-05-12)_
 
 ---
 
