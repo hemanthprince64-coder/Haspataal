@@ -2,34 +2,44 @@
 // In production, this would integrate with a proper logging system
 
 interface Logger {
-  info: (message: string, meta?: any) => void;
-  error: (message: string, error?: any) => void;
-  warn: (message: string, meta?: any) => void;
-  debug: (message: string, meta?: any) => void;
+  info: (messageOrMeta: string | object, meta?: unknown) => void;
+  error: (messageOrMeta: string | object, error?: unknown) => void;
+  warn: (messageOrMeta: string | object, meta?: unknown) => void;
+  debug: (messageOrMeta: string | object, meta?: unknown) => void;
 }
 
 class SimpleLogger implements Logger {
-  private formatMessage(level: string, message: string, meta?: any): string {
+  private formatMessage(level: string, messageOrMeta: string | object, meta?: unknown): string {
     const timestamp = new Date().toISOString();
-    const metaStr = meta ? ` ${JSON.stringify(meta)}` : '';
+    let message = '';
+    let combinedMeta = meta;
+
+    if (typeof messageOrMeta === 'string') {
+      message = messageOrMeta;
+    } else {
+      message = (messageOrMeta as any).message || (messageOrMeta as any).action || 'no_message';
+      combinedMeta = { ...(messageOrMeta as object), ...(meta as object) };
+    }
+
+    const metaStr = combinedMeta ? ` ${JSON.stringify(combinedMeta)}` : '';
     return `[${timestamp}] ${level.toUpperCase()}: ${message}${metaStr}`;
   }
 
-  info(message: string, meta?: any): void {
-    console.log(this.formatMessage('info', message, meta));
+  info(messageOrMeta: string | object, meta?: unknown): void {
+    console.log(this.formatMessage('info', messageOrMeta, meta));
   }
 
-  error(message: string, error?: any): void {
-    console.error(this.formatMessage('error', message, error));
+  error(messageOrMeta: string | object, error?: unknown): void {
+    console.error(this.formatMessage('error', messageOrMeta, error));
   }
 
-  warn(message: string, meta?: any): void {
-    console.warn(this.formatMessage('warn', message, meta));
+  warn(messageOrMeta: string | object, meta?: unknown): void {
+    console.warn(this.formatMessage('warn', messageOrMeta, meta));
   }
 
-  debug(message: string, meta?: any): void {
+  debug(messageOrMeta: string | object, meta?: unknown): void {
     if (process.env.NODE_ENV === 'development') {
-      console.debug(this.formatMessage('debug', message, meta));
+      console.debug(this.formatMessage('debug', messageOrMeta, meta));
     }
   }
 }

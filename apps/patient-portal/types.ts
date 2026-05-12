@@ -1,4 +1,4 @@
-import { z } from 'zod';
+
 
 export enum UserRole {
   PATIENT = 'PATIENT',
@@ -27,33 +27,37 @@ export enum BookingStatus {
 
 export interface Hospital {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  city: string;
-  state: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
   address?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface HospitalPublic {
   id: string;
-  name: string;
-  city: string;
-  state: string;
+  name?: string;
+  legalName?: string;
+  displayName?: string;
+  city?: string;
+  state?: string;
 }
 
 export interface Doctor {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  specialization: string;
-  experience: number;
-  hospitalId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  name?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  specialization?: string;
+  experience?: number;
+  hospitalId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  affiliations?: unknown[];
 }
 
 export interface Appointment {

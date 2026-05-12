@@ -6,7 +6,7 @@ class Counter {
 
   constructor(private name: string) {}
 
-  increment(): void {
+  inc(_labels?: Record<string, string | number | undefined>): void {
     this.value++;
   }
 

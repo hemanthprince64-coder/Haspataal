@@ -91,9 +91,11 @@ async function _loginHospital(
   const result = await services.hospital.login(mobile, password);
 
   if (!result) {
+    logger.warn({ action: 'login_hospital_failed', mobile }, 'Invalid hospital login credentials');
     return { message: 'Invalid credentials.' };
   }
 
+  logger.info({ action: 'login_hospital_success', mobile, hospitalId: result.user.id }, 'Hospital login successful');
   await createSession('session_user', result);
   redirect('/hospital/dashboard');
 }
@@ -133,12 +135,12 @@ async function _registerHospital(
     const result = {
       user: {
         id: hospital.id,
-        name: hospital.legalName,
+        name: hospital.displayName || hospital.legalName || '',
         role: UserRole.HOSPITAL_ADMIN,
         hospitalId: hospital.id,
       },
     };
-    await createSession('session_user', result);
+    await createSession('session_user', result as any);
 
     // ✅ Redirect to setup wizard instead of showing success page
     redirect('/hospital/dashboard/setup');
@@ -168,7 +170,10 @@ export async function createVisitAction(
 ): Promise<ActionResult> {
   let user: SessionUser;
   try {
-    user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
   } catch (e: any) {
     return { success: false, message: 'Unauthorized' };
   }
@@ -204,7 +209,10 @@ export async function cancelVisitHospital(
 ): Promise<ActionResult> {
   let user: SessionUser;
   try {
-    user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
   } catch (e: any) {
     return { success: false, message: 'Unauthorized' };
   }
@@ -219,7 +227,10 @@ export async function completeVisitHospital(
 ): Promise<ActionResult> {
   let user: SessionUser;
   try {
-    user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
   } catch (e: any) {
     return { success: false, message: 'Unauthorized' };
   }
@@ -260,7 +271,7 @@ export async function addDoctorAction(
 ): Promise<ActionResult> {
   let user: SessionUser;
   try {
-    user = await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user');
+    user = (await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user')) as SessionUser;
   } catch (e: any) {
     return { success: false, message: 'Only hospital admins can add doctors.' };
   }

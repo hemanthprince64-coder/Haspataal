@@ -291,7 +291,7 @@ export const services = {
           reviews: true,
         },
       });
-      return stripSensitive(doc) as Doctor | null;
+      return stripSensitive(doc ? { ...doc, name: doc.fullName } : null) as Doctor | null;
     },
 
     getHospitalById: async (id: string): Promise<HospitalPublic | null> => {
@@ -303,7 +303,9 @@ export const services = {
           departments: true,
         },
       });
-      return stripSensitive(hospital) as Hospital | null;
+      return stripSensitive(
+        hospital ? { ...hospital, name: hospital.displayName || hospital.legalName } : null,
+      ) as Hospital | null;
     },
 
     getAllSpecialities: async (): Promise<string[]> => {
@@ -361,8 +363,11 @@ export const services = {
   // --- Patient Services ---
   patient: {
     requestOtp: async (mobile: string) => {
+      // Normalize mobile: remove any non-digit characters and take last 10 digits
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
       const otpLimit = await rateLimiter(
-        `rl:requestOtp:${mobile}`,
+        `rl:requestOtp:${normalizedMobile}`,
         OTP_RATE_LIMIT,
         OTP_RATE_WINDOW_SECONDS,
       );
@@ -374,13 +379,13 @@ export const services = {
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
       await prisma.otpCode.upsert({
-        where: { phone: mobile },
+        where: { phone: normalizedMobile },
         update: { code, expiresAt },
-        create: { phone: mobile, code, expiresAt },
+        create: { phone: normalizedMobile, code, expiresAt },
       });
 
       // Structured log for production monitoring
-      logger.info({ action: 'otp_generated', mobile }, 'OTP generated');
+      logger.info({ action: 'otp_generated', mobile: normalizedMobile }, 'OTP generated');
 
       // DEMO: Print OTP to server console in development
       if (process.env.NODE_ENV === 'development') {
@@ -396,7 +401,10 @@ export const services = {
     },
 
     login: async (mobile: string, otp: string) => {
-      const otpRecord = await prisma.otpCode.findUnique({ where: { phone: mobile } });
+      // Normalize mobile: remove any non-digit characters and take last 10 digits
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
+      const otpRecord = await prisma.otpCode.findUnique({ where: { phone: normalizedMobile } });
 
       if (!otpRecord)
         throw new Error('OTP not requested for this number. Please request a new OTP.');
@@ -407,17 +415,17 @@ export const services = {
       // Prevent replay attacks
       await prisma.otpCode.delete({ where: { id: otpRecord.id } });
 
-      let patient = await prisma.patient.findUnique({ where: { phone: mobile } });
+      let patient = await prisma.patient.findUnique({ where: { phone: normalizedMobile } });
 
       if (!patient) {
         logger.info(
-          { action: 'patient_registration', mobile },
+          { action: 'patient_registration', mobile: normalizedMobile },
           'Auto-registering new patient during login',
         );
         const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
         patient = await prisma.patient.create({
           data: {
-            phone: mobile,
+            phone: normalizedMobile,
             name: 'New User',
             password: hashedPassword,
           },
@@ -1378,16 +1386,19 @@ export const services = {
     login: async (mobile: string, password?: string) => {
       if (!password) throw new Error('PASSWORD_REQUIRED');
 
+      // Normalize mobile: remove any non-digit characters and take last 10 digits
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
       // Fetch hospital via raw SQL since @ignore fields (password, name)
       // can cause the Prisma Query Engine to panic during findFirst without explicit select.
       const hospitals = await prisma.$queryRaw<any[]>`
-                SELECT * FROM hospitals_master WHERE contact_number = ${mobile} LIMIT 1
+                SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
             `;
 
       const hospital = hospitals?.[0];
 
       if (!hospital) {
-        logger.warn({ action: 'hospital_login_failed', mobile }, 'Hospital not found');
+        logger.warn({ action: 'hospital_login_failed', mobile: normalizedMobile }, 'Hospital not found');
         return null;
       }
 
@@ -1400,13 +1411,13 @@ export const services = {
         return {
           user: {
             id: hospital.id,
-            name: hospital.legalName,
+            name: hospital.display_name || hospital.legal_name || 'Hospital Admin',
             role: UserRole.HOSPITAL_ADMIN,
-            hospitalId: hospital.id, // ✅ FIX: Add hospitalId to session payload
+            hospitalId: hospital.id,
           },
         };
       }
-      logger.warn({ action: 'hospital_login_failed', mobile }, 'Failed hospital login attempt');
+      logger.warn({ action: 'hospital_login_failed', mobile: normalizedMobile }, 'Failed hospital login attempt');
       return null;
     },
 
@@ -1507,7 +1518,7 @@ export const services = {
 
         hospitalRegistrationsCounter.inc();
 
-        return toHospitalPublic(hospital as Hospital);
+        return toHospitalPublic({ ...hospital, name: hospital.legalName } as any as Hospital);
       });
     },
 
@@ -1580,7 +1591,7 @@ export const services = {
           payload: { labName: data.labName, city: data.city, adminName: data.adminName },
         });
 
-        return toHospitalPublic(lab as Hospital);
+        return toHospitalPublic({ ...lab, name: lab.legalName } as any as Hospital);
       });
     },
 
@@ -1894,8 +1905,12 @@ export const services = {
 
     login: async (mobile: string, password?: string) => {
       if (!password) throw new Error('PASSWORD_REQUIRED');
+
+      // Normalize mobile: remove any non-digit characters and take last 10 digits
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
       const agent = await prisma.agent.findFirst({
-        where: { mobile },
+        where: { mobile: normalizedMobile },
       });
 
       if (!agent) {
