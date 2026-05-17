@@ -128,10 +128,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 no-underline border-l-[3px] focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none ${
+                    className={`flex items-center gap-3 pl-[calc(0.75rem+3px)] pr-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 no-underline border-l-[3px] border-transparent focus-visible:ring-4 focus-visible:ring-blue-500 focus-visible:outline-none ${
                       active
                         ? 'bg-medical-50 text-medical-700 font-semibold border-medical-600'
-                        : 'text-slate-600 border-transparent hover:bg-slate-50 hover:text-slate-800'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
                     }`}
                     onClick={onClose}
                   >

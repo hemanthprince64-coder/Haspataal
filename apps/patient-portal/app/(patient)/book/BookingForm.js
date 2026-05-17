@@ -39,6 +39,7 @@ const initialState = {
 
 export default function BookingForm({ doctorId, hospitalId }) {
   const [state, formAction, isPending] = useActionState(bookAppointment, initialState);
+  const [showRetry, setShowRetry] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);
@@ -120,7 +121,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
           </div>
 
           <p
-            className="mt-6 text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]"
+            className="mt-6 text-[10px] text-slate-400 font-semibold uppercase tracking-[0.2em]"
             suppressHydrationWarning
           >
             Ref: {mounted ? Math.random().toString(36).substring(7).toUpperCase() : '...'}
@@ -151,7 +152,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
           <div className="space-y-3">
             <Label
               htmlFor="date"
-              className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2"
+              className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2"
             >
               <CalendarIcon className="w-3 h-3" /> 1. Select Date
             </Label>
@@ -174,7 +175,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+              <Label className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
                 <Clock className="w-3 h-3" /> 2. Available Slots
               </Label>
               {isLoadingSlots && (
@@ -259,7 +260,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
               />
               <div className="space-y-0.5">
                 <div
-                  className={`font-black text-sm tracking-tight uppercase ${state?.message && !state?.success ? 'text-red-900' : 'text-emerald-900'}`}
+                  className={`font-bold text-sm tracking-tight uppercase ${state?.message && !state?.success ? 'text-red-900' : 'text-emerald-900'}`}
                 >
                   Pay with Wallet
                 </div>
@@ -273,9 +274,21 @@ export default function BookingForm({ doctorId, hospitalId }) {
           </div>
 
           {state?.message && !state.success && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 border border-red-100 rounded-xl">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <p className="font-bold text-xs">{state.message}</p>
+            <div className="flex flex-col gap-3 p-4 bg-red-50 text-red-700 border border-red-100 rounded-xl">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <p className="font-bold text-sm">{state.message}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRetry(true);
+                  formAction(new FormData(document.querySelector('form')));
+                }}
+                className="self-start text-xs font-bold text-red-600 hover:text-red-800 underline underline-offset-2"
+              >
+                Try Again
+              </button>
             </div>
           )}
 

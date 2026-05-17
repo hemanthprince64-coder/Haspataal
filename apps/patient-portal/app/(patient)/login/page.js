@@ -175,6 +175,13 @@ export default function PatientLogin() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
                     Check server terminal for demo OTP
                   </p>
+                  <span className="relative group/info">
+                    <Info className="w-3.5 h-3.5 text-slate-300 cursor-help" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg w-48">
+                      Development mode: OTP is printed to your server/terminal console for testing purposes.
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800" />
+                    </span>
+                  </span>
                 </div>
               </div>
 
@@ -220,10 +227,10 @@ export default function PatientLogin() {
                   <Hospital className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                     Medical Partner?
                   </div>
-                  <div className="text-xs font-black text-slate-700 group-hover:text-blue-600 transition-colors">
+                  <div className="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors">
                     Hospital HMS Access
                   </div>
                 </div>

@@ -267,7 +267,7 @@ export default function PatientHome() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href="/search" className="group no-underline">
           <Card className="h-full border-blue-100 hover:border-blue-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
+            <CardContent className="flex flex-col items-center justify-center p-8 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Stethoscope className="w-8 h-8" />
               </div>
@@ -277,7 +277,7 @@ export default function PatientHome() {
         </Link>
         <Link href="/hospitals" className="group no-underline">
           <Card className="h-full border-teal-100 hover:border-teal-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
+            <CardContent className="flex flex-col items-center justify-center p-8 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Building2 className="w-8 h-8" />
               </div>
@@ -289,7 +289,7 @@ export default function PatientHome() {
         </Link>
         <Link href="/lab-tests" className="group no-underline">
           <Card className="h-full border-purple-100 hover:border-purple-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
+            <CardContent className="flex flex-col items-center justify-center p-8 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Microscope className="w-8 h-8" />
               </div>
@@ -299,7 +299,7 @@ export default function PatientHome() {
         </Link>
         <Link href="/records" className="group no-underline">
           <Card className="h-full border-amber-100 hover:border-amber-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
+            <CardContent className="flex flex-col items-center justify-center p-8 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <ClipboardList className="w-8 h-8" />
               </div>
@@ -450,7 +450,7 @@ export default function PatientHome() {
           {infoSpecialities.map((spec) => (
             <Link href={`/search?speciality=${spec.name}`} key={spec.name} className="no-underline">
               <Card className="hover:border-teal-300 hover:shadow-md transition-all duration-200 h-full">
-                <CardContent className="p-6 flex flex-col items-center justify-center text-center min-h-[110px]">
+                <CardContent className="p-8 flex flex-col items-center justify-center text-center min-h-[130px]">
                   {spec.icon}
                   <div className="font-semibold text-slate-700 text-sm">{spec.name}</div>
                 </CardContent>
@@ -507,7 +507,7 @@ export default function PatientHome() {
           <Button
             asChild
             size="lg"
-            className="bg-white text-blue-700 hover:bg-blue-50 hover:text-blue-800 font-bold px-8 shadow-lg"
+            className="bg-white text-slate-900 hover:bg-slate-50 hover:shadow-xl hover:-translate-y-0.5 font-black px-8 shadow-lg border-2 border-slate-900 transition-all active:scale-95"
           >
             <Link href="/search">
               <Sparkles className="w-5 h-5 mr-2" /> Get Assistance Now

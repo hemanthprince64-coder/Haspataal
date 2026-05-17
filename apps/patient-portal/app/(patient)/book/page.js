@@ -73,7 +73,7 @@ export default async function BookingPage({ searchParams }) {
             <ShieldCheck className="w-3 h-3 mr-1.5" /> Secure Booking
           </Badge>
           <div className="h-px flex-1 bg-slate-100" />
-          <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+          <div className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest">
             Step 2
           </div>
         </div>
@@ -140,26 +140,26 @@ export default async function BookingPage({ searchParams }) {
           <div className="flex items-center justify-between px-6 py-3 bg-slate-50/50 border-t border-slate-100 group-hover:bg-blue-50/20 transition-colors">
             <div className="flex items-center gap-6">
               <div>
-                <div className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] mb-0.5">
+                <div className="text-[10px] text-slate-400 font-semibold tracking-wider mb-0.5">
                   Consultation Fee
                 </div>
-                <div className="text-lg font-black text-slate-900 tracking-tight leading-none">
+                <div className="text-lg font-bold text-slate-900 tracking-tight leading-none">
                   ₹{consultationFee}
                 </div>
               </div>
               <div className="h-6 w-px bg-slate-200" />
               <div>
-                <div className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] mb-0.5">
+                <div className="text-[10px] text-slate-400 font-semibold tracking-wider mb-0.5">
                   Insurance
                 </div>
-                <div className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">
+                <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
                   Accepted
                 </div>
               </div>
             </div>
             <Badge
               variant="outline"
-              className="bg-white border-slate-200 text-slate-400 font-black text-[8px] uppercase tracking-[0.15em] px-2 py-0.5 gap-1.5 h-6"
+              className="bg-white border-slate-200 text-slate-400 font-bold text-[10px] uppercase tracking-wide px-2 py-0.5 gap-1.5 h-6"
             >
               <Info className="w-2.5 h-2.5 text-blue-500" /> View Policy
             </Badge>

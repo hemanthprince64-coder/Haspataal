@@ -133,7 +133,7 @@ function SearchPageContent() {
       <div className="mb-6 overflow-hidden">
         <div className="flex items-center gap-2 mb-3">
           <MapPin className="w-3.5 h-3.5 text-slate-400" />
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
             Select City
           </div>
         </div>
@@ -157,7 +157,7 @@ function SearchPageContent() {
       <div className="mb-10 overflow-hidden">
         <div className="flex items-center gap-2 mb-3">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
             Filter by Speciality
           </div>
         </div>

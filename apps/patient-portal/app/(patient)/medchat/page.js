@@ -571,10 +571,14 @@ export default function MedChatPage() {
                     <Badge
                       key={spec}
                       variant="outline"
-                      title={`AI matched your symptoms to ${spec} for potential treatment.`}
-                      className="animate-in zoom-in-50 bg-indigo-50 border-indigo-100 text-indigo-600 font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[9px] flex items-center gap-2 cursor-help"
+                      className="animate-in zoom-in-50 bg-indigo-50 border-indigo-100 text-indigo-600 font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[9px] flex items-center gap-2 cursor-help group/tooltip relative"
+                      data-tooltip={`AI matched your symptoms to ${spec} — potential specialist for your condition.`}
                     >
                       <Sparkles className="w-3.5 h-3.5" /> High Match: {spec}
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                        AI matched your symptoms to {spec}
+                        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800" />
+                      </span>
                     </Badge>
                   ))}
                 </div>

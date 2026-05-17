@@ -13,6 +13,7 @@ import {
   UserCog,
   Sparkles,
   ArrowUpRight,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { useState, useEffect } from 'react';
@@ -26,6 +27,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const actionSections = [
   {
@@ -57,6 +66,7 @@ const actionSections = [
 export default function ProfilePage() {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     getPatientFullProfile()
@@ -225,18 +235,52 @@ export default function ProfilePage() {
 
       {/* Logout Action */}
       <div className="mt-8 mb-24 md:mb-0">
-        <form action={patientLogout}>
-          <Button
-            type="submit"
-            variant="destructive"
-            size="lg"
-            className="w-full h-14 md:h-12 rounded-[1.25rem] md:rounded-xl font-bold uppercase tracking-widest shadow-xl shadow-rose-500/10 transition-all active:scale-95 group"
-          >
-            <LogOut className="w-5 h-5 mr-3 group-hover:translate-x-1 transition-transform" />
-            Terminate Secured Session
-          </Button>
-        </form>
+        <Button
+          type="button"
+          variant="destructive"
+          size="lg"
+          onClick={() => setLogoutDialogOpen(true)}
+          className="w-full h-14 md:h-12 rounded-[1.25rem] md:rounded-xl font-bold uppercase tracking-widest shadow-xl shadow-rose-500/10 transition-all active:scale-95 group"
+        >
+          <LogOut className="w-5 h-5 mr-3 group-hover:translate-x-1 transition-transform" />
+          Terminate Secured Session
+        </Button>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Confirm Logout
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Are you sure you want to terminate your secured session? You will need to log in again
+              to access your health records.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setLogoutDialogOpen(false)}
+              className="rounded-xl"
+            >
+              Cancel
+            </Button>
+            <form action={patientLogout}>
+              <Button
+                type="submit"
+                variant="destructive"
+                className="rounded-xl bg-rose-600 hover:bg-rose-700"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Confirm Logout
+              </Button>
+            </form>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

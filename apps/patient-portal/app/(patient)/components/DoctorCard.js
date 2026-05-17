@@ -32,7 +32,7 @@ export default function DoctorCard({ doctor, className }) {
           <Avatar className="w-14 h-14 rounded-xl border-2 border-white shadow-sm group-hover:scale-105 transition-transform duration-500">
             <AvatarImage src={image || fallbackImage} alt={name} className="object-cover" />
             <AvatarFallback className="bg-blue-50 text-blue-600">
-              <User className="w-6 h-6 opacity-60" />
+              <User className="w-6 h-6 opacity-100" />
             </AvatarFallback>
           </Avatar>
           {matches && (

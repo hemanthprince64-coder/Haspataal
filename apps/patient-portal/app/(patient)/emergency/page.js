@@ -21,13 +21,23 @@ import { Card, CardContent } from '@/components/ui/card';
 export default function EmergencyPage() {
   const [calling, setCalling] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [sosError, setSosError] = useState(null);
 
   useEffect(() => {
     let interval;
     if (calling) {
-      fetch('/api/emergency/sos', { method: 'POST' }).catch((err) =>
-        console.log('Emergency dispatch failed', err),
-      );
+      setSosError(null);
+      fetch('/api/emergency/sos', { method: 'POST' })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`SOS request failed with status ${res.status}`);
+          }
+        })
+        .catch((err) => {
+          console.error('Emergency dispatch failed', err);
+          setSosError('Connection error. SOS could not be broadcast. Please try again or call 108 directly.');
+          setCalling(false);
+        });
       interval = setInterval(() => {
         setSeconds((s) => s + 1);
       }, 1000);
@@ -97,6 +107,16 @@ export default function EmergencyPage() {
               )}
             </button>
           </div>
+
+          {/* SOS Error State */}
+          {sosError && (
+            <div className="w-full max-w-sm mb-6 p-4 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+                <p className="text-white text-sm font-bold leading-relaxed">{sosError}</p>
+              </div>
+            </div>
+          )}
 
           <p className="text-white/80 text-center text-lg font-bold max-w-sm mb-12 leading-relaxed h-12">
             {calling
