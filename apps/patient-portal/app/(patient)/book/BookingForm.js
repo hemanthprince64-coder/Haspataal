@@ -39,7 +39,6 @@ const initialState = {
 
 export default function BookingForm({ doctorId, hospitalId }) {
   const [state, formAction, isPending] = useActionState(bookAppointment, initialState);
-  const [showRetry, setShowRetry] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);

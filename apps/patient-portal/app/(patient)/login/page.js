@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader2,
   Hospital,
+  Info,
 } from 'lucide-react';
 
 import { useState, useActionState } from 'react';
