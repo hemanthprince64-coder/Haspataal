@@ -1,6 +1,7 @@
+import { Home, Search, Bot, Activity, FileText, User } from 'lucide-react';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Bot, Activity, FileText, User } from 'lucide-react';
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ export default function BottomNav() {
           <Link
             key={item.name}
             href={item.href}
+            aria-label={item.name}
             className={`flex flex-col items-center justify-center flex-1 min-w-[60px] gap-1 transition-all duration-300 py-1 rounded-xl ${
               isActive
                 ? 'text-blue-600 bg-blue-50/80 scale-105'
@@ -33,9 +35,7 @@ export default function BottomNav() {
             <Icon
               className={`w-6 h-6 transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-100 opacity-70'}`}
             />
-            <span
-              className={`text-[10px] ${isActive ? 'font-black tracking-tight' : 'font-bold opacity-80'}`}
-            >
+            <span className={`text-[10px] font-bold ${isActive ? 'opacity-100' : 'opacity-80'}`}>
               {item.name}
             </span>
           </Link>

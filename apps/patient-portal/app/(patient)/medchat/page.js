@@ -1,10 +1,5 @@
 'use client';
 
-import { useActionState, useState, startTransition, useEffect, useMemo } from 'react';
-import { medchatTriageAction, getTopDoctorsBySpeciality } from '@/app/actions';
-import NextLink from 'next/link';
-import { detectSpecialities } from '@/lib/medchat/triage-engine';
-import { TRANSLATIONS } from '@/lib/medchat/translations';
 import {
   Bot,
   User,
@@ -27,9 +22,14 @@ import {
   ShieldCheck,
   Zap,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+
+import { useActionState, useState, startTransition, useEffect, useMemo } from 'react';
+
+import NextLink from 'next/link';
+
+import { medchatTriageAction, getTopDoctorsBySpeciality } from '@/app/actions';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -38,9 +38,9 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -48,7 +48,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { TRANSLATIONS } from '@/lib/medchat/translations';
+import { detectSpecialities } from '@/lib/medchat/triage-engine';
 
 const STEPS = (t) => [
   { label: t.step1Title, icon: <User className="w-4 h-4" /> },
@@ -365,10 +368,7 @@ export default function MedChatPage() {
   }
 
   return (
-    <main
-      className="container max-w-4xl mx-auto px-6 py-8 animate-fade-in text-slate-900 transition-all duration-500"
-      suppressHydrationWarning
-    >
+    <main className="container max-w-4xl mx-auto px-6 py-8 animate-fade-in text-slate-900 transition-all duration-500">
       {/* Header Area */}
       <div className="flex items-center justify-between mb-8">
         <Button
@@ -571,7 +571,8 @@ export default function MedChatPage() {
                     <Badge
                       key={spec}
                       variant="outline"
-                      className="animate-in zoom-in-50 bg-indigo-50 border-indigo-100 text-indigo-600 font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[9px] flex items-center gap-2"
+                      title={`AI matched your symptoms to ${spec} for potential treatment.`}
+                      className="animate-in zoom-in-50 bg-indigo-50 border-indigo-100 text-indigo-600 font-black px-4 py-1.5 rounded-xl uppercase tracking-widest text-[9px] flex items-center gap-2 cursor-help"
                     >
                       <Sparkles className="w-3.5 h-3.5" /> High Match: {spec}
                     </Badge>

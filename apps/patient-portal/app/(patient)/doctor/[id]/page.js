@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
 import {
   ChevronLeft,
   Star,
@@ -16,30 +14,119 @@ import {
   Share2,
   Heart,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+
+import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function DoctorProfile() {
   const params = useParams();
+  const [doctor, setDoctor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  // Static data matching prototype but enriched for premium UI
-  const doctor = {
-    name: 'Dr. Arvind Sharma',
-    speciality: 'Senior Cardiologist',
-    hospital: 'Apollo Spectra Hospital',
-    experience: '15+ Years',
-    patients: '8k+',
-    rating: '4.9',
-    reviewsCount: '124',
-    about:
-      'Dr. Arvind Sharma is a leading cardiologist with over 15 years of experience in interventional cardiology. He specializes in advanced heart failure management, coronary artery disease, and preventive cardiology. He has performed over 2,000 successful procedures.',
-    image:
-      'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop',
-    availability: 'Available Today',
-    fee: '₹800',
-  };
+  useEffect(() => {
+    // Simulate API fetch based on ID
+    const fetchDoctor = async () => {
+      setLoading(true);
+      setError(false);
+
+      try {
+        // Mock API delay
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        const id = params.id;
+
+        if (id === 'dr-sharma-123') {
+          setDoctor({
+            id: 'dr-sharma-123',
+            name: 'Dr. Arvind Sharma',
+            speciality: 'Senior Cardiologist',
+            hospital: 'Apollo Spectra Hospital',
+            experience: '15+ Years',
+            patients: '8k+',
+            rating: '4.9',
+            reviewsCount: '124',
+            about:
+              'Dr. Arvind Sharma is a leading cardiologist with over 15 years of experience in interventional cardiology. He specializes in advanced heart failure management, coronary artery disease, and preventive cardiology. He has performed over 2,000 successful procedures.',
+            image:
+              'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop',
+            availability: 'Available Today',
+            fee: '₹800',
+          });
+        } else if (id === 'dr-gupta-456') {
+          setDoctor({
+            id: 'dr-gupta-456',
+            name: 'Dr. Meera Gupta',
+            speciality: 'Pediatrician',
+            hospital: 'Fortis Escorts',
+            experience: '10+ Years',
+            patients: '5k+',
+            rating: '4.8',
+            reviewsCount: '89',
+            about:
+              'Dr. Meera Gupta is an expert pediatrician specializing in neonatal care and child development. With over 10 years of experience, she provides compassionate care to infants and children.',
+            image:
+              'https://images.unsplash.com/photo-1594824436998-38290fbb6948?q=80&w=2070&auto=format&fit=crop',
+            availability: 'Available Tomorrow',
+            fee: '₹600',
+          });
+        } else {
+          // Mock Not Found
+          setError(true);
+        }
+      } catch (err) {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params?.id) {
+      fetchDoctor();
+    }
+  }, [params]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50/50 pb-24 flex items-center justify-center">
+        <div className="flex flex-col items-center animate-pulse gap-4">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
+            Loading Profile...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !doctor) {
+    return (
+      <main className="min-h-screen bg-slate-50/50 pb-24 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center border-slate-200 shadow-sm rounded-2xl">
+          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Heart className="w-8 h-8 opacity-50" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">
+            Doctor Not Found
+          </h2>
+          <p className="text-slate-500 mb-8 font-medium">
+            We couldn&apos;t find the specialist you&apos;re looking for. They may have moved or the
+            link is invalid.
+          </p>
+          <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black">
+            <Link href="/search">Browse All Doctors</Link>
+          </Button>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50/50 pb-24 animate-fade-in">

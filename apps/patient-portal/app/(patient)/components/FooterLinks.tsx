@@ -1,8 +1,10 @@
 'use client';
 
+import { Hospital, MapPin, Phone, Mail, MessageCircle, Share2, Users } from 'lucide-react';
+
 import React from 'react';
+
 import Link from 'next/link';
-import { Hospital, Activity, ShieldCheck, MapPin, Phone, Mail } from 'lucide-react';
 
 export default function FooterLinks() {
   return (
@@ -20,10 +22,13 @@ export default function FooterLinks() {
         </p>
         <div className="flex gap-4">
           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors cursor-pointer">
-            <Activity className="w-4 h-4" />
+            <Users className="w-4 h-4" />
           </div>
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors cursor-pointer">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors cursor-pointer">
+            <MessageCircle className="w-4 h-4" />
+          </div>
+          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-pink-600 hover:text-white transition-colors cursor-pointer">
+            <Share2 className="w-4 h-4" />
           </div>
         </div>
       </div>

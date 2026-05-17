@@ -1,8 +1,5 @@
 'use client';
 
-import { useActionState, useState, useEffect, useRef } from 'react';
-import { bookAppointment, getAvailableSlotsAction } from '@/app/actions';
-import Link from 'next/link';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -15,6 +12,14 @@ import {
   ShieldCheck,
   CreditCard,
 } from 'lucide-react';
+
+import { useActionState, useState, useEffect, useRef } from 'react';
+
+import Link from 'next/link';
+
+import { bookAppointment, getAvailableSlotsAction } from '@/app/actions';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -23,11 +28,9 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 
 const initialState = {
   message: '',
@@ -244,19 +247,25 @@ export default function BookingForm({ doctorId, hospitalId }) {
             </div>
           </div>
 
-          <div className="group border border-emerald-100 bg-emerald-50/30 p-4 rounded-xl transition-all hover:bg-emerald-50/50 relative">
+          <div
+            className={`group border p-4 rounded-xl transition-all relative ${state?.message && !state?.success ? 'border-red-300 bg-red-50/30 hover:bg-red-50/50' : 'border-emerald-100 bg-emerald-50/30 hover:bg-emerald-50/50'}`}
+          >
             <label className="flex items-center gap-3 cursor-pointer select-none relative z-10">
               <Checkbox
                 id="payWithWallet"
                 name="payWithWallet"
                 value="true"
-                className="h-5 w-5 rounded-md data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                className={`h-5 w-5 rounded-md ${state?.message && !state?.success ? 'data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600 border-red-300' : 'data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600'}`}
               />
               <div className="space-y-0.5">
-                <div className="font-black text-emerald-900 text-sm tracking-tight uppercase">
+                <div
+                  className={`font-black text-sm tracking-tight uppercase ${state?.message && !state?.success ? 'text-red-900' : 'text-emerald-900'}`}
+                >
                   Pay with Wallet
                 </div>
-                <p className="text-[9px] text-emerald-600/80 font-black uppercase tracking-widest">
+                <p
+                  className={`text-[9px] font-black uppercase tracking-widest ${state?.message && !state?.success ? 'text-red-600/80' : 'text-emerald-600/80'}`}
+                >
                   Balance: ₹500
                 </p>
               </div>
@@ -272,7 +281,12 @@ export default function BookingForm({ doctorId, hospitalId }) {
 
           <Button
             type="submit"
-            disabled={isPending || isLoadingSlots || slots.filter((s) => s.available).length === 0}
+            disabled={
+              isPending ||
+              isLoadingSlots ||
+              slots.filter((s) => s.available).length === 0 ||
+              !selectedSlot
+            }
             className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-black shadow-lg shadow-blue-600/20 transition-all active:scale-95 uppercase tracking-widest"
           >
             {isPending ? (

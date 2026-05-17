@@ -81,12 +81,14 @@ export default function PatientLogin() {
               <div className="space-y-3">
                 <Label
                   htmlFor="mobile"
-                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
                 >
-                  📱 Mobile Number
+                  <Phone className="w-3.5 h-3.5" /> Mobile Number
                 </Label>
                 <div className="relative group">
-                  <Smartphone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                  <Smartphone
+                    className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${otpMessage ? 'text-red-400' : 'text-slate-300 group-focus-within:text-blue-600'}`}
+                  />
                   <Input
                     id="mobile"
                     name="mobile"
@@ -94,7 +96,11 @@ export default function PatientLogin() {
                     placeholder="10-digit mobile number"
                     required
                     maxLength="10"
-                    className="h-16 pl-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-blue-500/20 focus-visible:ring-4 font-black text-xl transition-all shadow-inner placeholder:text-slate-200"
+                    className={`h-16 pl-14 rounded-2xl bg-slate-50/50 font-black text-xl transition-all shadow-inner placeholder:text-slate-200 ${
+                      otpMessage
+                        ? 'border-red-300 focus-visible:ring-red-500/20 text-red-900'
+                        : 'border-slate-100 focus-visible:ring-blue-500/20 focus-visible:ring-4'
+                    }`}
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
                   />
@@ -128,8 +134,8 @@ export default function PatientLogin() {
             <form action={formAction} className="space-y-8">
               <input type="hidden" name="mobile" value={mobile} />
               <div className="space-y-3">
-                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                  📱 Mobile Number
+                <Label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
+                  <Phone className="w-3.5 h-3.5" /> Mobile Number
                 </Label>
                 <Input
                   readOnly
@@ -141,12 +147,14 @@ export default function PatientLogin() {
               <div className="space-y-3">
                 <Label
                   htmlFor="otp"
-                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
                 >
-                  🔑 Verification Code
+                  <Key className="w-3.5 h-3.5" /> Verification Code
                 </Label>
                 <div className="relative group">
-                  <Key className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                  <Key
+                    className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${state?.message ? 'text-red-400' : 'text-slate-300 group-focus-within:text-blue-600'}`}
+                  />
                   <Input
                     id="otp"
                     name="otp"
@@ -155,7 +163,11 @@ export default function PatientLogin() {
                     required
                     maxLength="4"
                     autoFocus
-                    className="h-16 pl-14 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-blue-500/20 focus-visible:ring-4 font-black text-2xl tracking-[0.5em] transition-all shadow-inner placeholder:text-slate-200 placeholder:tracking-normal"
+                    className={`h-16 pl-14 rounded-2xl bg-slate-50/50 font-black text-2xl tracking-[0.5em] transition-all shadow-inner placeholder:text-slate-200 placeholder:tracking-normal ${
+                      state?.message
+                        ? 'border-red-300 focus-visible:ring-red-500/20 text-red-900'
+                        : 'border-slate-100 focus-visible:ring-blue-500/20 focus-visible:ring-4'
+                    }`}
                   />
                 </div>
                 <div className="flex items-center gap-2 px-2">

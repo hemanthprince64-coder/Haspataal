@@ -94,7 +94,7 @@ export default function ProfilePage() {
       name: 'Haspataal Wallet',
       href: '/wallet',
       icon: <Wallet className="w-6 h-6" />,
-      desc: `Balance: ₹${formattedBalance}`,
+      desc: `Balance: ₹${formattedBalance} • Tap to top-up`,
       bg: 'bg-amber-50',
       color: 'text-amber-600',
     },
@@ -224,7 +224,7 @@ export default function ProfilePage() {
       </section>
 
       {/* Logout Action */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 z-10 md:static md:bg-transparent md:border-0 md:p-0">
+      <div className="mt-8 mb-24 md:mb-0">
         <form action={patientLogout}>
           <Button
             type="submit"

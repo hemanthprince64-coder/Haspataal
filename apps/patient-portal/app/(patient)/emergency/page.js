@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import {
   ChevronLeft,
   Phone,
@@ -11,9 +9,14 @@ import {
   AlertCircle,
   Heart,
 } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+
+import Link from 'next/link';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 export default function EmergencyPage() {
   const [calling, setCalling] = useState(false);
@@ -22,6 +25,9 @@ export default function EmergencyPage() {
   useEffect(() => {
     let interval;
     if (calling) {
+      fetch('/api/emergency/sos', { method: 'POST' }).catch((err) =>
+        console.log('Emergency dispatch failed', err),
+      );
       interval = setInterval(() => {
         setSeconds((s) => s + 1);
       }, 1000);

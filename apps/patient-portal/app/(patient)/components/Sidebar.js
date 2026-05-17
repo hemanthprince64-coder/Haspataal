@@ -1,9 +1,5 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
 import {
   Home,
   Search,
@@ -21,6 +17,12 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-react';
+
+import { useEffect, useRef } from 'react';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const pathname = usePathname() || '';
@@ -99,10 +101,9 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span className="text-lg font-extrabold text-medical-600 -ml-1">.</span>
           </Link>
           <button
-            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 focus-ring"
+            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
             onClick={onClose}
             aria-label="Close menu"
-            suppressHydrationWarning
           >
             <X className="w-5 h-5" />
           </button>
@@ -127,10 +128,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 no-underline ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 no-underline border-l-[3px] focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none ${
                       active
-                        ? 'bg-medical-50 text-medical-700 font-semibold border-l-[3px] border-medical-600 pl-[9px]'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                        ? 'bg-medical-50 text-medical-700 font-semibold border-medical-600'
+                        : 'text-slate-600 border-transparent hover:bg-slate-50 hover:text-slate-800'
                     }`}
                     onClick={onClose}
                   >
@@ -150,7 +151,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-3">
           <Link
             href="/emergency"
-            className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold py-2.5 rounded-xl transition-all duration-200 no-underline text-sm focus-ring"
+            className="flex items-center justify-center gap-2 w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-semibold py-2.5 rounded-xl transition-all duration-200 no-underline text-sm focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
             onClick={onClose}
           >
             <AlertTriangle className="w-5 h-5" />

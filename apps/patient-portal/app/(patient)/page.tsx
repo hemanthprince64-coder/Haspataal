@@ -1,11 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
-import { getPatientFullProfile } from '@/app/actions';
-
 import {
   Stethoscope,
   Building2,
@@ -27,6 +21,18 @@ import {
   CalendarCheck,
   Search,
 } from 'lucide-react';
+
+import { useState, useEffect } from 'react';
+
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import Link from 'next/link';
+
+import { getPatientFullProfile } from '@/app/actions';
+import { getCareTimelineAction } from '@/app/actions';
+import ContinuousCareHub from '@/app/components/ContinuousCareHub';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardHeader,
@@ -35,18 +41,15 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 const DoctorCard = dynamic(() => import('./components/DoctorCard'), {
   loading: () => <div className="h-32 w-full bg-slate-100 animate-pulse rounded-2xl"></div>,
 });
 
-import ContinuousCareHub from '@/app/components/ContinuousCareHub';
-import { getCareTimelineAction } from '@/app/actions';
-
 export default function PatientHome() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [patient, setPatient] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [recentAnalysis, setRecentAnalysis] = useState<any>(null);
 
   useEffect(() => {
@@ -264,7 +267,7 @@ export default function PatientHome() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link href="/search" className="group no-underline">
           <Card className="h-full border-blue-100 hover:border-blue-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
+            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Stethoscope className="w-8 h-8" />
               </div>
@@ -274,7 +277,7 @@ export default function PatientHome() {
         </Link>
         <Link href="/hospitals" className="group no-underline">
           <Card className="h-full border-teal-100 hover:border-teal-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
+            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Building2 className="w-8 h-8" />
               </div>
@@ -286,7 +289,7 @@ export default function PatientHome() {
         </Link>
         <Link href="/lab-tests" className="group no-underline">
           <Card className="h-full border-purple-100 hover:border-purple-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
+            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Microscope className="w-8 h-8" />
               </div>
@@ -296,7 +299,7 @@ export default function PatientHome() {
         </Link>
         <Link href="/records" className="group no-underline">
           <Card className="h-full border-amber-100 hover:border-amber-300 hover:shadow-md transition-all duration-200">
-            <CardContent className="flex flex-col items-center justify-center p-6 gap-4">
+            <CardContent className="flex flex-col items-center justify-center p-6 gap-4 min-h-[130px]">
               <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <ClipboardList className="w-8 h-8" />
               </div>
@@ -316,15 +319,30 @@ export default function PatientHome() {
       )}
 
       {/* ── STATS BAR ── */}
-      <Card className="overflow-hidden border-slate-200 shadow-sm mt-12 rounded-[2rem]">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+      <Card className="overflow-hidden border-slate-200 shadow-sm mt-16 rounded-[2rem]">
+        <div className="grid grid-cols-2 md:grid-cols-4">
           {[
-            { num: '12+', label: 'Hospitals', color: 'text-blue-600' },
-            { num: '21+', label: 'Doctors', color: 'text-teal-600' },
-            { num: '8', label: 'Cities', color: 'text-purple-600' },
-            { num: '24/7', label: 'Support', color: 'text-orange-600' },
+            {
+              num: '12+',
+              label: 'Hospitals',
+              color: 'text-blue-600',
+              border: 'border-b border-r md:border-b-0 border-slate-100',
+            },
+            {
+              num: '21+',
+              label: 'Doctors',
+              color: 'text-teal-600',
+              border: 'border-b md:border-b-0 md:border-r border-slate-100',
+            },
+            {
+              num: '8',
+              label: 'Cities',
+              color: 'text-purple-600',
+              border: 'border-r border-slate-100',
+            },
+            { num: '24/7', label: 'Support', color: 'text-orange-600', border: '' },
           ].map((stat) => (
-            <div key={stat.label} className="p-8 text-center">
+            <div key={stat.label} className={`p-8 text-center ${stat.border}`}>
               <div className={`text-4xl font-extrabold ${stat.color} mb-2 tracking-tight`}>
                 {stat.num}
               </div>
@@ -399,7 +417,7 @@ export default function PatientHome() {
               key={service.title}
               className="group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 border-slate-200 cursor-pointer h-full"
             >
-              <CardContent className="p-8 flex flex-col items-center text-center">
+              <CardContent className="p-8 flex flex-col items-center justify-center text-center min-h-[220px]">
                 <div
                   className={`w-20 h-20 rounded-2xl ${service.gradient} flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300`}
                 >
@@ -432,7 +450,7 @@ export default function PatientHome() {
           {infoSpecialities.map((spec) => (
             <Link href={`/search?speciality=${spec.name}`} key={spec.name} className="no-underline">
               <Card className="hover:border-teal-300 hover:shadow-md transition-all duration-200 h-full">
-                <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center min-h-[110px]">
                   {spec.icon}
                   <div className="font-semibold text-slate-700 text-sm">{spec.name}</div>
                 </CardContent>
@@ -456,17 +474,19 @@ export default function PatientHome() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {infoValues.map((value) => (
-            <div key={value.title} className="text-center flex flex-col items-center">
-              <div
-                className={`w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] border-4 ${value.color}`}
-              >
-                {value.icon}
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">{value.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed max-w-xs">{value.description}</p>
-            </div>
+            <Card key={value.title} className="border-slate-200 h-full shadow-sm">
+              <CardContent className="p-8 flex flex-col items-center justify-center text-center min-h-[260px]">
+                <div
+                  className={`w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] border-4 ${value.color}`}
+                >
+                  {value.icon}
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{value.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed">{value.description}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
