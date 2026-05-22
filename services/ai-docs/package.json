@@ -1,0 +1,30 @@
+{
+  "name": "@haspataal/ai-docs",
+  "version": "1.0.0",
+  "description": "AI Clinical Documentation Microservice — OPD notes, discharge summaries, prescription drafting",
+  "main": "main.py",
+  "scripts": {
+    "dev":       "uvicorn main:app --reload --port 4003 --host 0.0.0.0",
+    "start":     "uvicorn main:app --port 4003 --host 0.0.0.0 --workers 4",
+    "lint":      "ruff .",
+    "typecheck": "mypy main.py --ignore-missing-imports",
+    "test":      "pytest",
+    "test:cov":  "pytest --cov=main --cov-report=term-missing"
+  },
+  "dependencies": {
+    "fastapi":               "^0.115.0",
+    "uvicorn":               "^0.32.0",
+    "pydantic":              "^2.9.0",
+    "httpx":                 "^0.27.0",
+    "prometheus-client":     "^0.21.0",
+    "sentry-sdk":            "^2.16.0",
+    "python-dotenv":         "^1.0.0"
+  },
+  "devDependencies": {
+    "pytest":     "^8.3.0",
+    "pytest-asyncio": "^0.23.0",
+    "httpx":      "^0.27.0",
+    "ruff":       "^0.6.0",
+    "mypy":       "^1.11.0"
+  }
+}

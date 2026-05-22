@@ -166,6 +166,26 @@ services:
     networks:
       - haspataal_network
 
+  # AI Documentation Microservice (port 4003)
+  ai-docs:
+    build: ./services/ai-docs
+    container_name: ai-docs
+    restart: unless-stopped
+    env_file: .env.local
+    ports:
+      - '4003:4003'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - haspataal_network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4003/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   nginx:
     image: nginx:alpine
     container_name: haspataal-nginx
@@ -180,5 +200,26 @@ services:
       - admin-panel
       - api-gateway
       - auth-service
+      - escalation-worker
     networks:
       - haspataal_network
+
+  # ================================================================
+  # WORKERS — background / cron daemons
+  # ================================================================
+  escalation-worker:
+    image: haspataal/escalation-worker:latest
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
+    container_name: escalation-worker
+    restart: unless-stopped
+    env_file: .env.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - haspataal_network
+

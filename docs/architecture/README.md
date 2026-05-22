@@ -166,3 +166,47 @@ sequenceDiagram
     BQ->>BQ: Process Notification (Worker)
     BQ-->>P: WhatsApp / SMS: "Your appointment is confirmed!"
 ```
+
+---
+
+## 🚨 Diagram 5 — Sequence: Chronic Escalation Alert Flow
+
+When a patient misses 2 or more consecutive chronic-care follow-ups, the escalation engine fires an alert to the treating doctor and sends a WhatsApp/SMS notification. The doctor acknowledges the alert via the HMS Escalation Queue.
+
+```mermaid
+sequenceDiagram
+    participant FW as FollowUp Worker (nightly)
+    participant DB as PostgreSQL
+    participant EA as EscalationAlert table
+    participant EV as EventLog (Redis Stream)
+    participant EW as Escalation Worker (15-min)
+    participant Doc as Doctor (HMS)
+    participant WA as WhatsApp / SMS Gateway
+
+    %% 1. Nightly scan
+    FW->>DB: UPDATE FollowUp SET status='missed' WHERE due_date <= yesterday
+    DB-->>FW: N rows marked missed
+
+    loop For each chronic missed follow-up
+        FW->>DB: SELECT COUNT(*) missed chronic follow-ups (patient, hospital)
+        alt missed >= 2
+            FW->>EA: INSERT escalation_alerts ... ON CONFLICT DO NOTHING
+            EA-->>FW: OK (idempotent)
+            FW->>EV: Publish 'chronic_escalation_alert' event
+        end
+    end
+
+    %% 2. Notification dispatch
+    EW->>DB: SELECT * FROM escalation_alerts WHERE acknowledged=false AND notification_sent=false FOR UPDATE SKIP LOCKED
+    EA-->>EW: Alert rows (batch of 50)
+    EW->>EW: evaluateCurfew() — skip if outside 08:00–22:00 IST
+    EW->>WA: Send WhatsApp (primary) / SMS (fallback)
+    WA-->>EW: OK
+    EW->>EA: UPDATE notification_sent=true, sent_via='WHATSAPP'
+
+    %% 3. Doctor acknowledgement
+    Doc->>Doc: Open HMS → /hospital/escalations
+    Doc->>DB: GET /v1/escalations (unacknowledged alerts)
+    DB-->>Doc: Alert list with patient / doctor / hospital details
+    Doc->>DB: PATCH /v1/escalations/:id → is_acknowledged=true
+    DB-->>Doc: 204 No Content

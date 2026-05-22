@@ -275,6 +275,9 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **Lucide-react Brand Icons Removed:** `Facebook`, `Twitter`, `Instagram`, and `Linkedin` icons no longer exist in modern `lucide-react`. Replaced generic placeholder icons in FooterLinks with inline SVG brand icons for LinkedIn, Twitter/X, and WhatsApp. _(Fixed 2026-05-17)_
 - **Emergency SOS Error Handling:** The `/api/emergency/sos` fetch now validates `res.ok` and surfaces a visible amber error banner when the network request fails, stopping the calling state and prompting the user to call 108 directly instead of silently failing on console only. _(Implemented 2026-05-17)_
 - **Patient Portal — Logout Confirmation Dialog:** Profile page "Terminate Secured Session" button now triggers an `AlertTriangle`-flagged shadcn `Dialog` before submitting `patientLogout`, preventing accidental session termination on desktop and mobile. _(Implemented 2026-05-17)_
+- **Clinic Tier Data Model (NEW):** The `HospitalsMaster` table now has `facilityType` (FacilityType enum: HOSPITAL/CLINIC), `clinicTier` (ClinicTier enum: SINGLE_DOCTOR/MULTI_SPECIALITY), `gstExempt` (boolean), and `operatingHours` (JSON). New tables: `clinic_profiles` (1:1 with HospitalsMaster), `patient_acquisitions`, `ai_documents`, `referral_trackings`, `clinic_follow_up_configs`. Backwards-compatible — existing hospital records default to `HOSPITAL`. _(Implemented 2026-05-20)_
+- **Chronic Escalation Engine (NEW):** Patients with 2 or more consecutive missed CHRONIC_DISEASE follow-ups trigger a `chronic_escalation_alert` event. The `FollowUpWorker.checkChronicEscalation()` method inserts into `escalation_alerts` with an `ON CONFLICT (appointment_id, hospital_id) DO NOTHING` guard. The `EscalationWorker` dispatches WhatsApp → SMS fallback notifications every 15 minutes via `FOR UPDATE SKIP LOCKED` batch processing. Doctors acknowledge via `PATCH /v1/escalations/:id`. The escalation page is at `/hospital/escalations`. Backfill script: `lib/backfill-escalations.ts --dry-run --since YYYY-MM-DD`. _(Implemented 2026-05-20)_
+- **Prisma Migration Drift — CREATE TYPE idempotency:** The `20240520_clinic_and_escalation` migration originally used bare `CREATE TYPE` statements without `IF NOT EXISTS`, causing failures when re-running or when the database had been `db push`'d. Fixed by wrapping each `CREATE TYPE` in a `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object ... END $$;` block. Also removed the redundant `20240520_clinic_tier` migration (overlapping DDL). Added `migration_lock.toml` (provider = "postgresql") so `prisma migrate deploy` can track applied migrations. Added `npm run migrate` script to root `package.json` for convenience. _(Fixed 2026-05-22)_
 
 ---
 
@@ -288,6 +291,9 @@ The following documents provide detailed specifications for the Haspataal platfo
 - [Backend_Schema.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/Backend_Schema.md) — Database schema and relationship mapping.
 - [Implementation_Plan.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/Implementation_Plan.md) — Roadmap and phased execution strategy.
 - [AppFlow.md](file:///c:/Users/heman/.gemini/antigravity/scratch/haspataal/docs/AppFlow.md) — User journey and navigation mapping.
+- [OPENSPEC.md](./docs/OPENSPEC.md) — OpenSpec SDD integration guide (installation, workflow, maintenance).
+- [AI Docs Service](services/ai-docs/main.py) — FastAPI microservice: OPD notes, discharge summaries, prescription drafting.
+- [Escalation Alert Engine](workers/escalation.worker.ts) — Nightly worker that fires `CHRONIC_ESCALATION_REQUIRED` events when patients miss 2+ consecutive chronic follow-ups. Doctors review via `/hospital/escalations`. *(Implemented 2026-05-20)*
 
 
 ---

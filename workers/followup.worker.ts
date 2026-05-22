@@ -79,23 +79,42 @@ export class FollowUpWorker {
     }
   }
 
+  /**
+   * Patched 2025-05-20: persistence → EscalationAlert table.
+   * Now writes an alert record (idempotent trigger) instead of only emitting a volatile event.
+   */
   private static async checkChronicEscalation(client: any, hospitalId: string, patientId: string) {
     const res = await client.query(
-      `SELECT count(*) FROM "FollowUp" 
+      `SELECT count(*) FROM "FollowUp"
        WHERE hospital_id=$1 AND patient_id=$2 AND care_pathway='CHRONIC_DISEASE' AND status='missed'`,
       [hospitalId, patientId],
     );
+    const missedCount = parseInt(res.rows[0].count, 10);
+    if (missedCount < 2) return;   // threshold not yet reached
 
-    if (parseInt(res.rows[0].count, 10) >= 2) {
-      // Alert treating doctor
-      await EventService.publish(
-        'chronic_escalation_alert',
-        {
-          reason: 'Missed 2 chronic follow-ups',
-        },
-        hospitalId,
-        patientId,
-      );
-    }
+    // Idempotent insert — trigger on escalation_alerts prevents duplicates at DB level
+    await client.query(
+      `INSERT INTO "escalation_alerts"
+         (hospital_id, patient_id, doctor_id, follow_up_id, appointment_id,
+          missed_count, chronic_tag, is_acknowledged, created_at, updated_at)
+       SELECT
+         f."hospital_id", f."patient_id",
+         a."doctor_id", f."id", f."appointment_id",
+         $3, 'CHRONIC_DISEASE', false, now(), now()
+       FROM "FollowUp" f
+       LEFT JOIN "Appointment" a ON a."id" = f."appointment_id"
+       WHERE f."hospital_id" = $1 AND f."patient_id" = $2
+         AND f."care_pathway" = 'CHRONIC_DISEASE' AND f."status" = 'missed'
+       LIMIT 1
+       ON CONFLICT ("appointment_id", "hospital_id") DO NOTHING`,
+      [hospitalId, patientId, missedCount],
+    );
+
+    await EventService.publish(
+      'chronic_escalation_alert',
+      { reason: `Missed ${missedCount} chronic follow-ups`, missedCount },
+      hospitalId,
+      patientId,
+    );
   }
 }

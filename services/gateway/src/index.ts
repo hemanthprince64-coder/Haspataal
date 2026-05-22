@@ -446,6 +446,93 @@ app.get(
   },
 );
 
+// ── Escalation Alert Routes (add-retention-followup-escalation) ───────────────
+
+// GET /v1/escalations — list unacknowledged alerts for the logged-in doctor
+// PATCH /v1/escalations/:id/acknowledge — doctor marks alert as reviewed
+
+import { EscalationWorker } from '../../workers/escalation.worker';
+
+// Worker process runner (for `node workers/escalation.worker.js` or cron)
+EscalationWorker.processQueue().catch((e) => logger.error(e, 'EscalationWorker crash'));
+
+// :id = escalation alert UUID
+app.get(
+  '/v1/escalations',
+  requireAuth,
+  requireRole('doctor', 'DOCTOR', 'hospital_admin', 'HOSPITAL_ADMIN', 'super_admin', 'SUPER_ADMIN'),
+  rateLimiter,
+  async (req: any, res) => {
+    try {
+      const userId     = req.user?.sub || req.user?.userId;
+      const limit      = Math.min(parseInt((req.query.limit as string) || '50', 10), 200);
+      const acknowledged = req.query.acknowledged === 'true';
+
+      // Scope by doctor if not super-admin
+      const isSuper = ['super_admin', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(req.user?.role);
+      const where: any = { is_acknowledged: acknowledged };
+      if (!isSuper) {
+        where.doctor_id = userId;
+      }
+
+      const alerts = await prisma.escalationAlert.findMany({
+        where,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        include: {
+          patient:     { select: { name: true, phone: true } },
+          hospital:    { select: { display_name: true } },
+        },
+      });
+
+      res.json({ success: true, data: alerts, meta: { count: alerts.length, acknowledged } });
+    } catch (error: any) {
+      req.log.error({ error: error.message }, 'Escalation list failed');
+      res.status(500).json({ success: false, error: 'Failed to fetch escalations', code: 'INTERNAL_ERROR' });
+    }
+  },
+);
+
+// PATCH /v1/escalations/:id/acknowledge — doctor marks alert as reviewed
+app.patch(
+  '/v1/escalations/:id/acknowledge',
+  requireAuth,
+  requireRole('doctor', 'DOCTOR', 'hospital_admin', 'HOSPITAL_ADMIN', 'super_admin', 'SUPER_ADMIN'),
+  rateLimiter,
+  async (req: any, res) => {
+    const alertId = req.params.id;
+    try {
+      // Verify ownership unless super-admin
+      const isSuper = ['super_admin', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(req.user?.role);
+      if (!isSuper) {
+        const existing = await prisma.escalationAlert.findFirst({
+          where: { id: alertId, doctor_id: req.user?.sub || req.user?.userId },
+        });
+        if (!existing) {
+          return res.status(403).json({
+            success: false,
+            error: 'Escalation not found or not assigned to you',
+            code: 'NOT_FOUND',
+          });
+        }
+      }
+
+      await prisma.escalationAlert.update({
+        where:   { id: alertId },
+        data:    { is_acknowledged: true, acknowledged_at: new Date() },
+      });
+
+      res.status(204).send();
+    } catch {
+      res.status(404).json({
+        success: false,
+        error: 'Escalation not found',
+        code: 'NOT_FOUND',
+      });
+    }
+  },
+);
+
 // ── Error Handler ────────────────────────────────────────────
 
 app.use((err: any, req: any, res: any, _next: any) => {

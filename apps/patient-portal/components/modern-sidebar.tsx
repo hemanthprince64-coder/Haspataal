@@ -7,7 +7,7 @@ import {
     Home, Search, Bot, Building2, Microscope, FileText,
     User, Stethoscope, Pill, HeartPulse, Syringe,
     Baby, ShieldCheck, AlertTriangle, X, Command,
-    Calendar, Package
+    Calendar, Package, Siren
 } from "lucide-react";
 import {
     CommandDialog,
@@ -28,6 +28,7 @@ const ModernSidebar = ({ isOpen, onClose }) => {
 
     const navLinks = [
         { name: "Dashboard", href: "/dashboard", icon: Home, category: "Main" },
+        { name: "Escalations", href: "/hospital/escalations", icon: Siren, category: "Main", priority: true },
         { name: "Patient Management", href: "/patient", icon: User, category: "HMS Modules" },
         { name: "Appointments", href: "/patient/appointments", icon: Calendar, category: "HMS Modules" },
         { name: "EHR System", href: "/patient/ehr", icon: FileText, category: "HMS Modules" },
@@ -123,15 +124,20 @@ const ModernSidebar = ({ isOpen, onClose }) => {
                                                     active
                                                         ? "bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border-l-2 border-sky-600"
                                                         : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
-                                                }`}
+                                                } ${link.priority ? "bg-red-50/60" : ""}`}
                                                 onClick={onClose}
                                             >
                                                 <Icon className={`w-5 h-5 ${
                                                     active
                                                         ? "text-sky-600 dark:text-sky-400"
                                                         : "text-slate-400 dark:text-slate-500"
-                                                }`} />
+                                                } ${link.priority ? "text-red-500" : ""}`} />
                                                 <span>{link.name}</span>
+                                                {link.priority && (
+                                                  <span className="ml-auto inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold leading-none text-white bg-red-600 rounded-full">
+                                                    1
+                                                  </span>
+                                                )}
                                             </Link>
                                         );
                                     })}

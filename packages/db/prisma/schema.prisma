@@ -179,6 +179,16 @@ model HospitalsMaster {
   NotificationTemplate    NotificationTemplate[]
   NotificationEventMapping NotificationEventMapping[]
   Supplier                Supplier[]
+  // Clinic tier relations
+  clinicProfile           ClinicProfile?
+  patientAcquisitions     PatientAcquisition[]
+  aiDocuments             AIDocument[]
+  escalationAlerts        EscalationAlert[]
+  // Clinic Tier — new scalar fields
+  facilityType            FacilityType        @default(HOSPITAL)   @map("facility_type")
+  gstExempt               Boolean             @default(false)       @map("gst_exempt")
+  clinicTier              ClinicTier?         @map("clinic_tier")
+  operatingHours          Json?               @map("operating_hours") // { "open": "09:00", "close": "21:00" }
 
   @@index([city])
   @@map("hospitals_master")
@@ -1185,6 +1195,34 @@ model WaitlistEntry {
   @@map("waitlist_entries")
 }
 
+// ── Escalation Alert (add-retention-followup-escalation) ─────────────────────
+
+model EscalationAlert {
+  id               String      @id @default(uuid())
+  hospitalId       String      @map("hospital_id")
+  patientId        String      @map("patient_id")
+  doctorId         String      @map("doctor_id")
+  followUpId       String      @map("follow_up_id")        // the missed follow-up that triggered this
+  appointmentId    String      @map("appointment_id")      // FK to the original appointment
+  missedCount      Int         @default(2)                 // consecutive missed follow-ups at trigger time
+  chronicTag       String?     @map("chronic_tag")         // e.g. DIABETES, CANCER, CARDIAC
+  isAcknowledged   Boolean     @default(false) @map("is_acknowledged")
+  acknowledgedAt   DateTime?   @map("acknowledged_at")
+  notificationSent Boolean     @default(false) @map("notification_sent")
+  sentVia          String?     @map("sent_via")            // WHATSAPP | SMS | PENDING
+  sentAt           DateTime?   @map("sent_at")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, hospitalId])           // idempotency guard — one alert per missed sequence
+  @@index([hospitalId])
+  @@index([patientId])                            // retrieve full escalation history per patient
+  @@index([doctorId])                             // list escalations assigned to doctor
+  @@map("escalation_alerts")
+}
+
 model PatientConsent {
   id              String   @id @default(uuid())
   patientGlobalId String   @map("patient_global_id")
@@ -1589,6 +1627,16 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum FacilityType {
+  HOSPITAL
+  CLINIC
+}
+
+enum ClinicTier {
+  SINGLE_DOCTOR
+  MULTI_SPECIALITY
+}
+
 enum HospitalType {
   HOSPITAL
   CLINIC
@@ -1974,3 +2022,84 @@ model Consent {
   @@map("consents")
 }
 
+// --- Clinic Tier (Clinic Acquisition & HMS Growth) ---
+
+model ClinicProfile {
+  id              String            @id @default(uuid())
+  hospitalId      String            @unique @map("hospital_id")
+  tier            ClinicTier
+  doctorInCharge  String?           @map("doctor_in_charge")
+  specialization  String?
+  numDoctors      Int?              @map("num_doctors")
+  hasPharmacy     Boolean           @default(false) @map("has_pharmacy")
+  hasOwnLab       Boolean           @default(false) @map("has_own_lab")
+  avgDailyPatients Int?             @map("avg_daily_patients")
+  clinicMode      Boolean           @default(true) @map("clinic_mode")
+  allowedFeatures String[]          @default([]) @map("allowed_features")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  hospital        HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("clinic_profiles")
+}
+
+model PatientAcquisition {
+  id             String            @id @default(uuid())
+  hospitalId     String            @map("hospital_id")
+  patientId      String            @map("patient_id")
+  source         PatientAcquisitionSource
+  referrerId     String?           @map("referrer_id")
+  referrerType   String?           @map("referrer_type") // DOCTOR, CLINIC, HOSPITAL, AGENT
+  specialty      String?
+  bookedApptId   String?           @map("booked_appt_id")
+  converted      Boolean           @default(false) @map("converted")
+  revenueAtCents Decimal?          @map("revenue_at_cents")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  hospital       HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@index([source])
+  @@map("patient_acquisitions")
+}
+
+enum PatientAcquisitionSource {
+  DIRECT
+  SEO
+  WHATSAPP
+  REFERRAL_DOCTOR
+  REFERRAL_CLINIC
+  REFERRAL_HOSPITAL
+  AGENT
+  SOCIAL_MEDIA
+  WALK_IN
+  OTHER
+}
+
+model AIDocument {
+  id             String            @id @default(uuid())
+  hospitalId     String            @map("hospital_id")
+  patientId      String            @map("patient_id")
+  apptId         String?           @map("appt_id")
+  docType        AIDocumentType
+  inputPrompt    String?           @map("input_prompt") @db.Text // Stored for audit
+  generatedText  String            @map("generated_text") @db.Text
+  isAssisted     Boolean           @default(true) @map("is_assisted") // false = fully AI
+  doctorApproved Boolean           @default(false) @map("is_doctor_approved")
+  approvedAt     DateTime?         @map("approved_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  hospital       HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@index([apptId])
+  @@map("ai_documents")
+}
+
+enum AIDocumentType {
+  OPD_NOTE
+  DISCHARGE_SUMMARY
+  PRESCRIPTION_DRAFT
+  FOLLOW_UP_SUMMARY
+  CLINICAL_SUMMARY
+}
