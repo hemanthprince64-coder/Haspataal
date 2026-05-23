@@ -12,14 +12,16 @@
  *  - Prometheus escalation_events_total counter
  *  - Notification curfew integration
  */
-
 import { Pool } from 'pg';
-import { EventService } from './event.service';
-import redis from '../lib/redis';
+
 import { evaluateCurfew } from '../lib/notification-curfew';
+import redis from '../lib/redis';
+import { EventService } from '../services/event.service';
 
 // ---- Prometheus counter (best-effort; skip if prom-client not present) --------
+
 let escalationCounter: any = null;
+
 try {
   const prom = require('prom-client');
   escalationCounter = new prom.Counter({
@@ -31,11 +33,7 @@ try {
   // prom-client not installed — counter is a no-op stub
 }
 
-function recordMetric(
-  hospitalId: string,
-  chronicTag: string,
-  acknowledged: boolean,
-) {
+function recordMetric(hospitalId: string, chronicTag: string, acknowledged: boolean) {
   if (escalationCounter) {
     escalationCounter.inc({ hospitalId, chronicTag, acknowledged });
   }
@@ -63,10 +61,15 @@ const LOCK_TTL_SECONDS = 300; // 5 min lock — covers one worker cycle
 /** Batch size — process 50 alerts per run to keep execution under ~5 s */
 const BATCH_LIMIT = 50;
 
+// Pool is exposed as a static class member so tests can inject a mock pool
+// without touching module-scoped closures.
+const _pgPool = new Pool({ connectionString: process.env.DATABASE_URL });
+
 export class EscalationWorker {
+  static pool = _pgPool;
 
   public static async processQueue() {
-    const client = await pool.connect();
+    const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
       await client.query(`SET LOCAL app.hospital_id = '00000000-0000-0000-0000-000000000000'`);
@@ -108,7 +111,7 @@ export class EscalationWorker {
           if (!acquired) {
             console.warn(
               `[EscalationWorker] Skipping alert ${alert.id.slice(0, 8)} — ` +
-              `patient ${alert.patient_id} is already being processed in another cycle`,
+                `patient ${alert.patient_id} is already being processed in another cycle`,
             );
             continue;
           }
@@ -130,16 +133,26 @@ export class EscalationWorker {
     }
   }
 
-  private static async attemptEscalate(
-    client:   any,
-    alert:    Record<string, any>,
-  ) {
+  private static async attemptEscalate(client: import('pg').Pool, alert: Record<string, any>) {
     const {
-      id, hospitalId, patientId, missedCount, chronicTag,
-      patientName, doctorName, doctorPhone, hospitalName,
+      id,
+      hospitalId,
+      patientId,
+      missedCount,
+      chronicTag,
+      patientName,
+      doctorName,
+      doctorPhone,
+      hospitalName,
     } = alert;
 
-    const message = buildEscalationMessage(patientName, doctorName, hospitalName, missedCount, chronicTag);
+    const message = buildEscalationMessage(
+      patientName,
+      doctorName,
+      hospitalName,
+      missedCount,
+      chronicTag,
+    );
 
     // ── Curfew check ─────────────────────────────────────────────────
     const curfewDecision = evaluateCurfew(new Date());
@@ -157,11 +170,14 @@ export class EscalationWorker {
     try {
       const waOk = await this.mockProviderSend('whatsapp', doctorPhone, message);
       if (waOk) {
-        sent    = true;
+        sent = true;
         channel = 'whatsapp';
       } else {
         const smsOk = await this.mockProviderSend('sms', doctorPhone, message);
-        if (smsOk) { sent = true; channel = 'sms'; }
+        if (smsOk) {
+          sent = true;
+          channel = 'sms';
+        }
       }
 
       if (sent) {
@@ -187,7 +203,7 @@ export class EscalationWorker {
       } else {
         throw new Error('both WhatsApp and SMS failed');
       }
-    } catch (err: any) {
+    } catch (err) {
       const attempts = (alert.attempts ?? 0) + 1;
       if (attempts >= 3) {
         await client.query(
@@ -226,7 +242,7 @@ export class EscalationWorker {
    */
   private static async mockProviderSend(
     channel: string,
-    phone:   string,
+    phone: string,
     message: string,
   ): Promise<boolean> {
     const ok = Math.random() > 0.2;
@@ -239,10 +255,10 @@ export class EscalationWorker {
 
 /** Build human-readable escalation message for doctor notification */
 function buildEscalationMessage(
-  patientName:   string,
-  doctorName:    string,
-  hospitalName:  string,
-  missedCount:   number,
+  patientName: string,
+  doctorName: string,
+  hospitalName: string,
+  missedCount: number,
   chronicTag?: string,
 ): string {
   const tag = chronicTag ? ` [${chronicTag}]` : '';

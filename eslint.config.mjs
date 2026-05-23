@@ -21,6 +21,8 @@ export default [
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/immutability': 'off',
       'no-console': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {

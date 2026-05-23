@@ -1,22 +1,9 @@
-import { defineConfig } from 'vitest/config';
 import path from 'path';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     globals: true,
-<<<<<<< Updated upstream
-    include: ['tests/**/*.test.ts', 'scripts/tests/**/*.test.ts'],
-    exclude: [
-      '**/.git/**',
-      '**/.kilo/**',
-      '**/.next/**',
-      '**/node_modules/**',
-      '**/haspataal-in/**',
-    ],
-    alias: {
-      '@': path.resolve(__dirname, './'),
-    },
-=======
     environment: 'node',
     alias: {
       '@': path.resolve(__dirname, './'),
@@ -24,7 +11,6 @@ export default defineConfig({
     },
     include: ['**/*.test.ts', '**/*.spec.ts'],
     exclude: ['.next', 'node_modules', 'prisma'],
->>>>>>> Stashed changes
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
