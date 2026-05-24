@@ -136,14 +136,14 @@ export class EscalationWorker {
   private static async attemptEscalate(client: import('pg').Pool, alert: Record<string, any>) {
     const {
       id,
-      hospitalId,
-      patientId,
-      missedCount,
-      chronicTag,
-      patientName,
-      doctorName,
-      doctorPhone,
-      hospitalName,
+      hospital_id: hospitalId,
+      patient_id: patientId,
+      missed_count: missedCount,
+      chronic_tag: chronicTag,
+      patient_name: patientName,
+      doctor_name: doctorName,
+      doctor_phone: doctorPhone,
+      hospital_name: hospitalName,
     } = alert;
 
     const message = buildEscalationMessage(

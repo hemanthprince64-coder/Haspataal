@@ -10,9 +10,15 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { evaluateCurfew } from '../../lib/notification-curfew';
 import redis from '../../lib/redis';
 import { EventService } from '../../services/event.service';
 import { EscalationWorker } from '../escalation.worker';
+
+/** Mock evaluateCurfew to control curfew in tests – hoisted before worker import */
+vi.mock('../../lib/notification-curfew', () => ({
+  evaluateCurfew: vi.fn(),
+}));
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -70,6 +76,7 @@ const ENV_ID = '00000000-0000-0000-0000-000000000000';
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  evaluateCurfew.mockReset();
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -96,8 +103,17 @@ describe('EscalationWorker — no unprocessed alerts', () => {
 
 describe('EscalationWorker — transaction envelope', () => {
   it('should BEGIN → SET LOCAL app.hospital_id → SELECT → COMMIT', async () => {
-    const client = new FakePgClient([{ rows: [alertRow()], rowCount: 1 }, { rowCount: 0 }]);
+    const client = new FakePgClient([
+      { rows: [], rowCount: 0, command: 'BEGIN' },
+      { rows: [], rowCount: 0, command: 'SET LOCAL' },
+      { rows: [alertRow()], rowCount: 1 },
+      { rowCount: 0 },
+    ]);
     EscalationWorker.pool = makeMockPool(client);
+    // Defer curfew: attemptEscalate returns immediately → no extra DB calls
+    evaluateCurfew.mockReturnValue('DEFER');
+    // Acquire lock so we don't get Redis connection errors
+    vi.mocked(redis).eval = vi.fn().mockResolvedValue(1);
 
     await EscalationWorker.processQueue();
 
@@ -112,13 +128,20 @@ describe('EscalationWorker — transaction envelope', () => {
 describe('EscalationWorker — happy path', () => {
   it('should notify_sent=true and publish escalation_notification_sent', async () => {
     const pubSpy = vi.spyOn(EventService, 'publish').mockResolvedValue(void 0);
+    // Acquire Redis lock so processing proceeds
+    vi.mocked(redis).eval = vi.fn().mockResolvedValue(1);
+    // Force mock provider to succeed deterministically
+    (EscalationWorker as any).mockProviderSend = vi.fn().mockResolvedValue(true);
 
     const client = new FakePgClient([
-      { rows: [alertRow()], rowCount: 1 },
+      { rows: [], rowCount: 0, command: 'BEGIN' },
+      { rows: [], rowCount: 0, command: 'SET LOCAL' },
+      { rows: [alertRow()], rowCount: 1 }, // SELECT
       { rowCount: 1 }, // UPDATE notification_sent = true
       { rowCount: 0 }, // COMMIT
     ]);
     EscalationWorker.pool = makeMockPool(client);
+    evaluateCurfew.mockReturnValue('PROCEED');
 
     await EscalationWorker.processQueue();
 
@@ -168,26 +191,20 @@ describe('EscalationWorker — DLQ after retries exhausted', () => {
     // lock acquisition
     vi.mocked(redis).eval = vi.fn().mockResolvedValue(1);
 
-    // Stub attemptEscalate: simulate escalation failure (both channels fail)
-    const attemptStub = vi.fn(async (c: any, a: Record<string, any>) => {
-      // Simulate: both channels fail → catch in worker → DLQ branch
-      const newAttempts = (a.attempts ?? 0) + 1;
-      // The catch block in the worker will bump attempts and call again
-      await c.query(
-        `UPDATE "escalation_alerts" SET "sent_via" = 'FAILED', "updated_at" = now() WHERE id = $1`,
-        [a.id],
-      );
-    });
-    (EscalationWorker.prototype as any).attemptEscalate = attemptStub;
+    // Force provider to always fail → attemptEscalate catch → DLQ path
+    (EscalationWorker as any).mockProviderSend = vi.fn().mockResolvedValue(false);
 
     const pubSpy = vi.spyOn(EventService, 'publish').mockResolvedValue(void 0);
 
     const client = new FakePgClient([
+      { rows: [], rowCount: 0, command: 'BEGIN' },
+      { rows: [], rowCount: 0, command: 'SET LOCAL' },
       { rows: [alert], rowCount: 1 }, // SELECT
-      { rowCount: 1 }, // UPDATE FAILED
-      { rowCount: 0 }, // COMMIT (failed + DLQ paths both call this)
+      { rowCount: 1 }, // UPDATE FAILED (catch block)
+      { rowCount: 0 }, // COMMIT
     ]);
     EscalationWorker.pool = makeMockPool(client);
+    evaluateCurfew.mockReturnValue('PROCEED');
 
     await EscalationWorker.processQueue();
 
@@ -210,23 +227,20 @@ describe('EscalationWorker — retry path (attempts < 3)', () => {
 
     vi.mocked(redis).eval = vi.fn().mockResolvedValue(1);
 
-    const attemptStub = vi.fn(async (c: any, a: Record<string, any>) => {
-      // Simulate escalation failure → catch block bumps attempts and waits
-      await c.query(
-        `UPDATE "escalation_alerts" SET "attempts" = $1, "updated_at" = now() WHERE id = $2`,
-        [2, a.id],
-      );
-    });
-    (EscalationWorker.prototype as any).attemptEscalate = attemptStub;
+    // Force provider to always fail → attemptEscalate catch → retry path
+    (EscalationWorker as any).mockProviderSend = vi.fn().mockResolvedValue(false);
 
     const pubSpy = vi.spyOn(EventService, 'publish').mockResolvedValue(void 0);
 
     const client = new FakePgClient([
-      { rows: [alert], rowCount: 1 },
+      { rows: [], rowCount: 0, command: 'BEGIN' },
+      { rows: [], rowCount: 0, command: 'SET LOCAL' },
+      { rows: [alert], rowCount: 1 }, // SELECT
       { rowCount: 1 }, // UPDATE attempts → 2
       { rowCount: 0 }, // COMMIT
     ]);
     EscalationWorker.pool = makeMockPool(client);
+    evaluateCurfew.mockReturnValue('PROCEED');
 
     await EscalationWorker.processQueue();
 
