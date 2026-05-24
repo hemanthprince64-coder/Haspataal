@@ -1,5 +1,3 @@
-
-
 export enum UserRole {
   PATIENT = 'PATIENT',
   DOCTOR = 'DOCTOR',
@@ -44,6 +42,12 @@ export interface HospitalPublic {
   displayName?: string;
   city?: string;
   state?: string;
+  verificationStatus?: string;
+  accountStatus?: string;
+  registrationNumber?: string;
+  medicalCouncilNumber?: string;
+  googleLocationUrl?: string;
+  approvalDocumentUrl?: string;
 }
 
 export interface Doctor {

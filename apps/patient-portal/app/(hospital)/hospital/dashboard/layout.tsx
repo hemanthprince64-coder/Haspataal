@@ -1,12 +1,3 @@
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { logoutHospital } from '@/app/actions';
-import { requireRole } from '@/lib/auth/requireRole';
-import { UserRole, SessionUser } from '@/types';
-import { computeSetupCompletion } from '@/lib/setup/completion-engine';
-import { getActiveBranchId } from '@/lib/branch';
-import { prisma } from '@/lib/prisma';
-import BranchSwitcher from '@/components/hospital/branch-switcher';
 import {
   LayoutDashboard,
   CreditCard,
@@ -23,6 +14,17 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+
+import { logoutHospital } from '@/app/actions';
+import BranchSwitcher from '@/components/hospital/branch-switcher';
+import { requireRole } from '@/lib/auth/requireRole';
+import { getActiveBranchId } from '@/lib/branch';
+import { prisma } from '@/lib/prisma';
+import { computeSetupCompletion } from '@/lib/setup/completion-engine';
+import { UserRole, SessionUser } from '@/types';
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
@@ -30,7 +32,10 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   let user: SessionUser;
   try {
-    user = (await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user')) as SessionUser;
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
   } catch (e) {
     redirect('/hospital/login');
   }
@@ -40,6 +45,26 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   let branches: any[] = [];
   let activeBranchId: string | null = null;
   let hasCriticalWarnings = false;
+
+  // ── Setup Gate ───────────────────────────────────────────────────────────────
+  // If the hospital has not yet gone live (accountStatus !== 'active'),
+  // redirect to the full-screen setup wizard. This prevents access to any
+  // dashboard module until onboarding is complete.
+  if (hospitalId) {
+    try {
+      const hospitalStatus = await prisma.hospitalsMaster.findUnique({
+        where: { id: hospitalId },
+        select: { accountStatus: true },
+      });
+      if (hospitalStatus && hospitalStatus.accountStatus !== 'active') {
+        redirect('/hospital/setup');
+      }
+    } catch (gateErr) {
+      // If we can't read the DB, let them through rather than hard-block
+      console.error('Setup gate check failed:', gateErr);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
 
   try {
     if (hospitalId) {

@@ -11,9 +11,14 @@ import { Input } from '@/components/ui/input';
 interface WorkflowConfigProps {
   onNext: () => void;
   onPrev: () => void;
+  label?: string;
 }
 
-export default function WorkflowConfig({ onNext, onPrev }: WorkflowConfigProps) {
+export default function WorkflowConfig({
+  onNext,
+  onPrev,
+  label = 'Workflow Configuration',
+}: WorkflowConfigProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     appointmentFlow: 'token',

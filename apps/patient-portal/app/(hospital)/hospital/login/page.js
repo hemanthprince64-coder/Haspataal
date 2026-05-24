@@ -1,6 +1,17 @@
 'use client';
 
-import { Building2, Phone, Lock, LogIn, Sparkles, Key, Send, Loader2 } from 'lucide-react';
+import {
+  Building2,
+  Phone,
+  Lock,
+  LogIn,
+  Sparkles,
+  Key,
+  Send,
+  Loader2,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import React, { useState, useTransition } from 'react';
@@ -28,6 +39,7 @@ export default function HospitalLogin() {
   const [otpSent, setOtpSent] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const [otpError, setOtpError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isOtpPending, startOtpTransition] = useTransition();
   const [isOtpLoginPending, startOtpLoginTransition] = useTransition();
   const [isPasswordPending, startPasswordTransition] = useTransition();
@@ -169,11 +181,18 @@ export default function HospitalLogin() {
                     <Input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       required
-                      className="pl-11 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all"
+                      className="pl-11 pr-10 h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50 text-[15px] transition-all"
                       placeholder="Enter password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
               </div>

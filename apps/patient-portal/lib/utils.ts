@@ -1,11 +1,19 @@
 import { Hospital, HospitalPublic } from '../types';
 
-export function toHospitalPublic(hospital: Hospital): HospitalPublic {
+export function toHospitalPublic(hospital: any): HospitalPublic {
   return {
     id: hospital.id,
-    name: hospital.name,
+    name: hospital.name || hospital.displayName || hospital.legalName,
+    legalName: hospital.legalName,
+    displayName: hospital.displayName,
     city: hospital.city,
     state: hospital.state,
+    verificationStatus: hospital.verificationStatus,
+    accountStatus: hospital.accountStatus,
+    registrationNumber: hospital.registrationNumber,
+    medicalCouncilNumber: hospital.medicalCouncilNumber,
+    googleLocationUrl: hospital.googleLocationUrl,
+    approvalDocumentUrl: hospital.approvalDocumentUrl,
   };
 }
 

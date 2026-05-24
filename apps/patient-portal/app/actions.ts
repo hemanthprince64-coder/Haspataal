@@ -195,17 +195,17 @@ async function _registerHospital(
       : [];
 
     const data = {
-      hospitalName: formData.get('hospitalName') as string,
-      city: formData.get('city') as string,
-      adminName: formData.get('adminName') as string,
-      mobile: formData.get('mobile') as string,
-      password: formData.get('password') as string,
+      hospitalName: (formData.get('hospitalName') as string) || '',
+      city: (formData.get('city') as string) || '',
+      adminName: (formData.get('adminName') as string) || '',
+      mobile: (formData.get('mobile') as string) || '',
+      password: (formData.get('password') as string) || '',
       facilityType: (formData.get('facilityType') as any) || 'HOSPITAL',
-      registrationNumber: formData.get('registrationNumber') as string,
-      googleLocationUrl: formData.get('googleLocationUrl') as string,
-      medicalCouncilNumber: formData.get('medicalCouncilNumber') as string,
+      registrationNumber: (formData.get('registrationNumber') as string) || '',
+      googleLocationUrl: (formData.get('googleLocationUrl') as string) || undefined,
+      medicalCouncilNumber: (formData.get('medicalCouncilNumber') as string) || undefined,
       specialities,
-      approvalDocumentUrl,
+      approvalDocumentUrl: approvalDocumentUrl || '',
     };
 
     // ✅ Validate all required fields using RegisterHospitalSchema
@@ -2014,5 +2014,38 @@ export async function loginHospitalWithOtp(
     redirect('/hospital/dashboard');
   } catch (e: any) {
     return { success: false, message: e.message || 'Login failed.' };
+  }
+}
+
+export async function detectClinicTypeAction(): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user')) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized. Please log in first.' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  try {
+    const profile = await prisma.clinicOperationalProfile.findUnique({
+      where: { hospitalId: user.hospitalId },
+    });
+
+    if (!profile) {
+      return { success: true, data: 'SINGLE_DOCTOR' };
+    }
+
+    const clinicType = profile.isSingleDoctor
+      ? 'SINGLE_DOCTOR'
+      : profile.admitsPatients
+        ? 'MULTISPECIALTY_HOSPITAL'
+        : 'MULTISPECIALTY_CLINIC';
+
+    return { success: true, data: clinicType };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Detection failed.' };
   }
 }

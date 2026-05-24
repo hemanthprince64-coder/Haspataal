@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     if (hospital.accountStatus === 'active') {
-      return NextResponse.json({ stage: 8 });
+      return NextResponse.json({ stage: 8, hospitalId: access.hospitalId });
     }
 
     // Check operational profile (Stage 2 completion)
@@ -34,7 +34,11 @@ export async function GET() {
     });
 
     if (!profile) {
-      return NextResponse.json({ stage: 1, hospitalName: hospital.verificationStatus }); // default welcome stage
+      return NextResponse.json({
+        stage: 1,
+        hospitalName: hospital.verificationStatus,
+        hospitalId: access.hospitalId,
+      }); // default welcome stage
     }
 
     // Check staff count (Stage 4)
@@ -43,7 +47,7 @@ export async function GET() {
     });
 
     if (staffCount === 0) {
-      return NextResponse.json({ stage: 4 });
+      return NextResponse.json({ stage: 4, hospitalId: access.hospitalId });
     }
 
     // Check opd config (Stage 5)
@@ -52,12 +56,12 @@ export async function GET() {
     });
 
     if (!opdConfig) {
-      return NextResponse.json({ stage: 5 });
+      return NextResponse.json({ stage: 5, hospitalId: access.hospitalId });
     }
 
     // Check if patient list is not empty (e.g. they skipped or completed migration)
     // We can default to Stage 7 Training if they completed everything else but are not active yet
-    return NextResponse.json({ stage: 7 });
+    return NextResponse.json({ stage: 7, hospitalId: access.hospitalId });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 550 });
   }
@@ -74,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     const { stage } = await req.json();
 
-    if (stage === 8) {
+    if (stage === 8 || stage === 9 || stage === 10 || stage === 14) {
       // Mark hospital active!
       await prisma.hospitalsMaster.update({
         where: { id: access.hospitalId },

@@ -1,116 +1,316 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Loader2, Sparkles, Building, Settings, ShieldAlert, Cpu } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  Building2,
+  Users,
+  Stethoscope,
+  Pill,
+  TestTube,
+  MessageSquare,
+  Calendar,
+  CreditCard,
+  ChevronRight,
+} from 'lucide-react';
 
 import React, { useState, useEffect } from 'react';
 
-import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+type ClinicType = 'SINGLE_DOCTOR' | 'MULTISPECIALTY_CLINIC' | 'MULTISPECIALTY_HOSPITAL' | null;
 
 interface SetupWizardAutoProps {
+  clinicType?: ClinicType;
   onComplete: () => void;
 }
 
-export default function SetupWizardAuto({ onComplete }: SetupWizardAutoProps) {
-  const [currentTask, setCurrentTask] = useState(0);
-  const [completedTasks, setCompletedTasks] = useState<number[]>([]);
+interface ProvisioningStep {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  durationMs: number;
+}
 
-  const tasks = [
-    { label: 'Initializing hospital secure workspace...', key: 'workspace' },
+function getProvisioningSteps(clinicType: ClinicType): ProvisioningStep[] {
+  const common: ProvisioningStep[] = [
     {
-      label: 'Provisioning default clinical departments (OPD, General Ward)...',
-      key: 'departments',
+      id: 'workspace',
+      label: 'Creating secure workspace',
+      description: 'Isolated database schema with encryption at rest',
+      icon: <Building2 className="h-4 w-4" />,
+      durationMs: 800,
     },
-    { label: 'Configuring access control profiles (Doctor, Reception, Nurse)...', key: 'roles' },
-    { label: 'Tuning module engine settings (Pharmacy/Lab/Billing)...', key: 'modules' },
-    { label: 'Setting up automated communication nodes...', key: 'comm' },
+    {
+      id: 'roles',
+      label: 'Configuring staff roles & permissions',
+      description: 'Hospital Admin, Doctor, Receptionist, Nurse roles',
+      icon: <Users className="h-4 w-4" />,
+      durationMs: 700,
+    },
+    {
+      id: 'opd',
+      label: 'Setting up OPD workflow',
+      description: 'Token queue, slot management, patient check-in flow',
+      icon: <Calendar className="h-4 w-4" />,
+      durationMs: 900,
+    },
+    {
+      id: 'billing',
+      label: 'Initialising billing engine',
+      description: 'Invoice sequences, GST config, payment modes',
+      icon: <CreditCard className="h-4 w-4" />,
+      durationMs: 600,
+    },
+    {
+      id: 'notifications',
+      label: 'Preparing notification templates',
+      description: 'WhatsApp, SMS, and email templates ready',
+      icon: <MessageSquare className="h-4 w-4" />,
+      durationMs: 500,
+    },
   ];
 
+  if (clinicType === 'SINGLE_DOCTOR') {
+    return [
+      ...common,
+      {
+        id: 'prescription',
+        label: 'Enabling digital prescription pad',
+        description: 'Auto-filled templates with doctor signature',
+        icon: <Stethoscope className="h-4 w-4" />,
+        durationMs: 700,
+      },
+    ];
+  }
+
+  if (clinicType === 'MULTISPECIALTY_CLINIC' || clinicType === 'MULTISPECIALTY_HOSPITAL') {
+    return [
+      ...common,
+      {
+        id: 'departments',
+        label: 'Provisioning department structure',
+        description: 'Multi-speciality OPD + IPD department scaffold',
+        icon: <Building2 className="h-4 w-4" />,
+        durationMs: 800,
+      },
+      {
+        id: 'pharmacy',
+        label: 'Activating pharmacy module',
+        description: 'Drug catalog, stock management, expiry alerts',
+        icon: <Pill className="h-4 w-4" />,
+        durationMs: 700,
+      },
+      {
+        id: 'lab',
+        label: 'Activating diagnostics lab',
+        description: 'Test catalog, pricing engine, report upload',
+        icon: <TestTube className="h-4 w-4" />,
+        durationMs: 600,
+      },
+    ];
+  }
+
+  return common;
+}
+
+function getClinicTypeLabel(clinicType: ClinicType): {
+  label: string;
+  emoji: string;
+  color: string;
+} {
+  if (clinicType === 'SINGLE_DOCTOR')
+    return { label: 'Solo Doctor Clinic', emoji: '🩺', color: 'text-teal-600' };
+  if (clinicType === 'MULTISPECIALTY_CLINIC')
+    return { label: 'Multispecialty Clinic', emoji: '🏥', color: 'text-blue-600' };
+  if (clinicType === 'MULTISPECIALTY_HOSPITAL')
+    return { label: 'Hospital', emoji: '🏨', color: 'text-purple-600' };
+  return { label: 'Your Clinic', emoji: '🏥', color: 'text-teal-600' };
+}
+
+export default function SetupWizardAuto({ clinicType = null, onComplete }: SetupWizardAutoProps) {
+  const steps = getProvisioningSteps(clinicType);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState<string | null>(steps[0]?.id || null);
+  const [allDone, setAllDone] = useState(false);
+  const { label, emoji, color } = getClinicTypeLabel(clinicType);
+
   useEffect(() => {
-    if (currentTask >= tasks.length) {
-      const timer = setTimeout(() => {
-        onComplete();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
+    let cancelled = false;
+    const delay = 400;
 
-    const interval = setTimeout(() => {
-      setCompletedTasks((prev) => [...prev, currentTask]);
-      setCurrentTask((prev) => prev + 1);
-    }, 1200);
+    const runSteps = async () => {
+      for (const step of steps) {
+        if (cancelled) break;
+        setCurrentStep(step.id);
+        await new Promise((r) => setTimeout(r, step.durationMs));
+        if (cancelled) break;
+        setCompletedSteps((prev) => [...prev, step.id]);
+      }
+      if (!cancelled) {
+        setCurrentStep(null);
+        await new Promise((r) => setTimeout(r, 500));
+        setAllDone(true);
+      }
+    };
 
-    return () => clearTimeout(interval);
-  }, [currentTask, tasks.length, onComplete]);
+    const timer = setTimeout(runSteps, delay);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const totalSteps = steps.length;
+  const progress = (completedSteps.length / totalSteps) * 100;
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <Card className="p-8 border border-teal-100 bg-gradient-to-br from-white via-slate-50/50 to-teal-50/10 rounded-3xl shadow-xl shadow-teal-900/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5 text-teal-600">
-          <Cpu className="h-32 w-32 animate-pulse" />
-        </div>
+    <div className="max-w-2xl mx-auto py-8 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm overflow-hidden relative"
+      >
+        {/* Subtle background glow */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
 
-        <div className="flex flex-col items-center text-center mb-8 relative">
-          <div className="relative mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-teal-100/50 text-teal-600 flex items-center justify-center animate-spin duration-3000">
-              <Settings className="h-8 w-8" />
-            </div>
-            <div className="absolute inset-0 w-16 h-16 rounded-2xl bg-teal-500/10 animate-ping" />
+        {/* Header */}
+        <div className="relative flex items-start gap-4 mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-2xl flex-shrink-0">
+            {emoji}
           </div>
-
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 mb-2">
-            <Sparkles className="h-3.5 w-3.5" /> Haspataal Intelligent Configuration
-          </span>
-          <h2 className="text-2xl font-bold text-slate-800">Auto-Configuring Workspace</h2>
-          <p className="text-slate-500 text-sm mt-1.5 max-w-md">
-            Our operational engine is analyzing your clinic discovery profile to dynamically enable
-            relevant features and establish standard settings.
-          </p>
+          <div>
+            <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
+              Auto-Configuration
+            </span>
+            <h2 className="text-xl font-black text-slate-900 mt-0.5">Provisioning your {label}</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Setting up your workspace with the right modules based on your answers.
+            </p>
+          </div>
         </div>
 
-        {/* Task list with animation */}
-        <div className="space-y-3.5 max-w-lg mx-auto">
-          {tasks.map((task, idx) => {
-            const isCompleted = completedTasks.includes(idx);
-            const isActive = currentTask === idx;
-            const isPending = idx > currentTask;
+        {/* Progress bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-semibold text-slate-500">
+              {allDone
+                ? 'Complete!'
+                : `${completedSteps.length} of ${totalSteps} modules configured`}
+            </span>
+            <span className="text-sm font-bold text-teal-600">{Math.round(progress)}%</span>
+          </div>
+          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            />
+          </div>
+        </div>
+
+        {/* Steps list */}
+        <div className="space-y-3 mb-8">
+          {steps.map((step) => {
+            const isDone = completedSteps.includes(step.id);
+            const isRunning = currentStep === step.id;
+            const isPending = !isDone && !isRunning;
 
             return (
               <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl border transition-all duration-300
-                  ${isActive ? 'border-teal-200 bg-teal-50/40 shadow-sm' : isCompleted ? 'border-slate-100 bg-slate-50/50 opacity-90' : 'border-transparent opacity-40'}`}
+                key={step.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all
+                  ${
+                    isDone
+                      ? 'bg-teal-50/60 border-teal-100'
+                      : isRunning
+                        ? 'bg-blue-50/60 border-blue-100 shadow-sm'
+                        : 'bg-slate-50 border-slate-100'
+                  }`}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors
-                    ${isCompleted ? 'bg-teal-500 text-white' : isActive ? 'bg-teal-100 text-teal-700 animate-pulse' : 'bg-slate-100 text-slate-400'}`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all
+                    ${
+                      isDone
+                        ? 'bg-teal-500 text-white'
+                        : isRunning
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-slate-200 text-slate-400'
+                    }`}
                 >
-                  {isCompleted ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : isActive ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {isDone ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : isRunning ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    idx + 1
+                    step.icon
                   )}
                 </div>
-                <span
-                  className={`text-sm font-medium transition-colors
-                    ${isActive ? 'text-teal-900 font-semibold' : isCompleted ? 'text-slate-500 line-through decoration-slate-300' : 'text-slate-500'}`}
-                >
-                  {task.label}
-                </span>
+
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`text-sm font-semibold leading-tight
+                      ${isDone ? 'text-teal-800' : isRunning ? 'text-blue-800' : 'text-slate-400'}`}
+                  >
+                    {step.label}
+                  </p>
+                  <p
+                    className={`text-xs mt-0.5 ${isDone || isRunning ? 'text-slate-500' : 'text-slate-400'}`}
+                  >
+                    {step.description}
+                  </p>
+                </div>
+
+                {isDone && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="text-teal-500 flex-shrink-0"
+                  >
+                    <CheckCircle2 className="h-5 w-5" />
+                  </motion.div>
+                )}
               </motion.div>
             );
           })}
         </div>
 
-        {/* Informational Footer box */}
-        <div className="mt-8 text-center text-xs text-slate-400 flex items-center justify-center gap-1.5 max-w-sm mx-auto">
-          <Building className="h-4 w-4" /> Configured profiles are fully customizable later inside
-          setup settings.
-        </div>
-      </Card>
+        {/* Done state */}
+        {allDone ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="text-center mb-6 p-5 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-100">
+              <div className="text-3xl mb-2">🎉</div>
+              <h3 className="font-black text-slate-900 text-lg">Workspace Ready!</h3>
+              <p className="text-sm text-slate-600 mt-1">
+                All {totalSteps} modules have been configured for your {label.toLowerCase()}.
+              </p>
+            </div>
+            <Button
+              onClick={onComplete}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold h-13 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-teal-600/20 text-base"
+            >
+              <Sparkles className="h-4 w-4" />
+              Continue to Setup
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-sm text-slate-400">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Please wait while we configure your workspace...
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }

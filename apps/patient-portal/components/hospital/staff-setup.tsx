@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 interface StaffSetupProps {
   onNext: () => void;
   onPrev: () => void;
+  label?: string;
 }
 
 interface StaffMember {
@@ -32,7 +33,11 @@ interface StaffMember {
   loginNeeded: boolean;
 }
 
-export default function StaffSetup({ onNext, onPrev }: StaffSetupProps) {
+export default function StaffSetup({
+  onNext,
+  onPrev,
+  label = 'Staff Digitalization',
+}: StaffSetupProps) {
   const [isPending, startTransition] = useTransition();
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [formData, setFormData] = useState({
@@ -120,7 +125,7 @@ export default function StaffSetup({ onNext, onPrev }: StaffSetupProps) {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <Users className="h-5 w-5 text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900">Staff Digitalization</h2>
+            <h2 className="text-xl font-bold text-slate-900">{label}</h2>
           </div>
           <p className="text-slate-600 text-sm leading-relaxed max-w-xl">
             Create user profiles for your clinic receptionist, pharmacy dispenser, and nursing

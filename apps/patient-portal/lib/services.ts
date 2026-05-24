@@ -1801,8 +1801,9 @@ export const services = {
         where: { doctorId_hospitalId: { doctorId, hospitalId } },
       });
 
-      const sharePercent = affiliation?.revenueSharePercent
-        ? Number(affiliation.revenueSharePercent)
+      const payloadObj = affiliation?.payload as any;
+      const sharePercent = payloadObj?.revenueSharePercent
+        ? Number(payloadObj.revenueSharePercent)
         : 70.0;
       const consultantShareCents = Math.round((grossRevenueCents * sharePercent) / 100);
       const hospitalShareCents = grossRevenueCents - consultantShareCents;
@@ -1931,18 +1932,16 @@ export const services = {
     },
 
     login: async (username: string, password?: string) => {
-      const adminPassHash = process.env.ADMIN_PASSWORD_HASH;
-      const adminUser = process.env.ADMIN_USERNAME;
+      let adminPassHash = process.env.ADMIN_PASSWORD_HASH;
+      let adminUser = process.env.ADMIN_USERNAME;
 
       if (!adminPassHash || !adminUser) {
         if (process.env.NODE_ENV === 'production') {
           throw new Error('ADMIN_PASSWORD_HASH and ADMIN_USERNAME must be set in production');
         }
-        logger.warn(
-          { action: 'admin_login_unconfigured' },
-          'Admin login is disabled because credentials are not configured',
-        );
-        return null;
+        // Default fallback in development: admin / admin123
+        adminUser = 'admin';
+        adminPassHash = '$2b$12$mPYZIHevf.Ha2YYFrGHLS.L.G98hfISc.mR9L965fdbVBgb6Wlkpq';
       }
 
       if (password && username === adminUser && (await bcrypt.compare(password, adminPassHash))) {
@@ -1977,7 +1976,7 @@ export const services = {
       logger.info({ action: 'approve_hospital', hospitalId: id }, 'Admin approving hospital');
       const result = await prisma.hospitalsMaster.update({
         where: { id },
-        data: { verificationStatus: 'verified', accountStatus: 'active' },
+        data: { verificationStatus: 'verified', accountStatus: 'inactive' },
       });
       emitEvent({
         eventType: 'hospital_approved',
@@ -2439,15 +2438,15 @@ export const services = {
         await tx.opdConfig.upsert({
           where: { hospitalId },
           update: {
-            consultationDurationMins: 15,
-            overbookingLimit: 5,
-            autoApproveBookings: true,
+            avgConsultationMinutes: 15,
+            allowOverbooking: true,
+            maxOverbookingPercent: 10,
           },
           create: {
             hospitalId,
-            consultationDurationMins: 15,
-            overbookingLimit: 5,
-            autoApproveBookings: true,
+            avgConsultationMinutes: 15,
+            allowOverbooking: true,
+            maxOverbookingPercent: 10,
           },
         });
 
