@@ -222,6 +222,7 @@ export default function SetupWizardPage() {
   const [clinicType, setClinicType] = useState<ClinicType>(null);
   const [hospitalName, setHospitalName] = useState<string>('Your Clinic');
   const [hospitalId, setHospitalId] = useState<string>('');
+  const [contactNumber, setContactNumber] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   // Fetch initial stage from DB
@@ -235,6 +236,7 @@ export default function SetupWizardPage() {
         if (stageRes.ok) {
           const data = await stageRes.json();
           if (data.hospitalId) setHospitalId(data.hospitalId);
+          if (data.contactNumber) setContactNumber(data.contactNumber);
           if (data.clinicType) {
             setClinicType(data.clinicType);
             setStage(data.stage || 5);
@@ -374,7 +376,13 @@ export default function SetupWizardPage() {
             {stage === 1 && <WelcomeScreen hospitalName={hospitalName} onStart={() => goTo(2)} />}
 
             {/* Stage 2 — Discovery Questionnaire (6 sections) */}
-            {stage === 2 && <DiscoveryWizard onComplete={handleDiscoveryComplete} />}
+            {stage === 2 && (
+              <DiscoveryWizard
+                hospitalId={hospitalId}
+                contactNumber={contactNumber}
+                onComplete={handleDiscoveryComplete}
+              />
+            )}
 
             {/* Stage 3 — Clinic Type Result / Analysis */}
             {stage === 3 && (

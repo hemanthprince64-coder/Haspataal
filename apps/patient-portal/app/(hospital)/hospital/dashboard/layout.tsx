@@ -50,6 +50,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   // If the hospital has not yet gone live (accountStatus !== 'active'),
   // redirect to the full-screen setup wizard. This prevents access to any
   // dashboard module until onboarding is complete.
+  let needsRedirect = false;
   if (hospitalId) {
     try {
       const hospitalStatus = await prisma.hospitalsMaster.findUnique({
@@ -57,12 +58,16 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
         select: { accountStatus: true },
       });
       if (hospitalStatus && hospitalStatus.accountStatus !== 'active') {
-        redirect('/hospital/setup');
+        needsRedirect = true;
       }
     } catch (gateErr) {
       // If we can't read the DB, let them through rather than hard-block
       console.error('Setup gate check failed:', gateErr);
     }
+  }
+
+  if (needsRedirect) {
+    redirect('/hospital/setup');
   }
   // ─────────────────────────────────────────────────────────────────────────────
 

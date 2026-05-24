@@ -2450,10 +2450,10 @@ export const services = {
           },
         });
 
-        // 4. Update HospitalsMaster verification status and accountStatus
+        // 4. Do not mark the hospital active yet. They must complete the setup stages.
         await tx.hospitalsMaster.update({
           where: { id: hospitalId },
-          data: { accountStatus: 'active' }, // Fully configure & activate
+          data: { accountStatus: 'inactive' },
         });
 
         return { success: true };

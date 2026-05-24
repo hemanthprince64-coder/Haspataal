@@ -17,6 +17,8 @@ export async function GET() {
       select: {
         accountStatus: true,
         verificationStatus: true,
+        contactNumber: true,
+        legalName: true,
       },
     });
 

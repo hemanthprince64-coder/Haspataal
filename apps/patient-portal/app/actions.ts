@@ -2030,6 +2030,7 @@ export async function detectClinicTypeAction(): Promise<ActionResult> {
   }
 
   try {
+    const prisma = require('@/lib/prisma').default;
     const profile = await prisma.clinicOperationalProfile.findUnique({
       where: { hospitalId: user.hospitalId },
     });
@@ -2047,5 +2048,318 @@ export async function detectClinicTypeAction(): Promise<ActionResult> {
     return { success: true, data: clinicType };
   } catch (e: any) {
     return { success: false, message: e.message || 'Detection failed.' };
+  }
+}
+
+export async function verifySetupVerificationAction(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const method = formData.get('method') as 'password' | 'otp';
+  const hospitalId = formData.get('hospitalId') as string;
+  const val = formData.get('value') as string;
+
+  if (!hospitalId || !val) {
+    return { success: false, message: 'Missing hospital ID or verification code/password.' };
+  }
+
+  try {
+    const prisma = require('@/lib/prisma').default;
+    const hospital = await prisma.hospitalsMaster.findUnique({
+      where: { id: hospitalId },
+    });
+
+    if (!hospital) {
+      return { success: false, message: 'Hospital not found.' };
+    }
+
+    if (method === 'password') {
+      const bcrypt = require('bcryptjs');
+      const isPlain =
+        !hospital.password?.startsWith('$2b$') && !hospital.password?.startsWith('$2a$');
+      const matches = isPlain
+        ? hospital.password === val
+        : await bcrypt.compare(val, hospital.password);
+      if (!matches) {
+        return { success: false, message: 'Incorrect account password.' };
+      }
+    } else {
+      // OTP verification
+      const normalizedMobile = hospital.contactNumber.replace(/\D/g, '').slice(-10);
+      const otpRecord = await prisma.otpCode.findUnique({
+        where: { phone: normalizedMobile },
+      });
+
+      if (!otpRecord) {
+        return { success: false, message: 'OTP has expired or was not requested.' };
+      }
+      if (otpRecord.code !== val) {
+        return { success: false, message: 'Invalid OTP code.' };
+      }
+      // Delete OTP on success
+      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
+    }
+
+    return { success: true, message: 'Verified successfully!' };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Verification failed.' };
+  }
+}
+
+export async function getGoLiveDashboardDataAction(hospitalId: string): Promise<ActionResult> {
+  try {
+    const prisma = require('@/lib/prisma').default;
+    const [hospital, departments, billingProfile, opdConfig, visits, doctors] = await Promise.all([
+      prisma.hospitalsMaster.findUnique({
+        where: { id: hospitalId },
+        select: { legalName: true, displayName: true, contactNumber: true },
+      }),
+      prisma.hospitalDepartment.findMany({
+        where: { hospitalId },
+        select: { id: true, departmentName: true },
+      }),
+      prisma.hospitalBillingProfile.findUnique({
+        where: { hospitalId },
+      }),
+      prisma.opdConfig.findUnique({
+        where: { hospitalId },
+      }),
+      prisma.visit.findMany({
+        where: { hospitalId },
+        include: {
+          appointment: {
+            include: {
+              doctor: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.doctorHospitalAffiliation.findMany({
+        where: { hospitalId, isCurrent: true, verificationStatus: 'VERIFIED' },
+        include: {
+          doctor: true,
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        hospital,
+        departments,
+        billingProfile,
+        opdConfig,
+        visits: visits.map((v: any) => ({
+          id: v.id,
+          appointmentId: v.appointmentId,
+          patientName: v.patientName,
+          patientPhone: v.patientPhone,
+          diagnosis: v.diagnosis,
+          amount: v.amount,
+          createdAt: v.createdAt.toISOString(),
+          currentStage: v.currentStage,
+          doctorName: v.appointment?.doctor?.fullName || 'N/A',
+        })),
+        doctors: doctors.map((d: any) => ({
+          id: d.doctor.id,
+          name: d.doctor.fullName,
+          speciality: d.department || 'General Medicine',
+          revenueSharePercent:
+            d.payload && typeof d.payload === 'object'
+              ? (d.payload as any).revenueSharePercent || 70
+              : 70,
+        })),
+      },
+    };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Failed to fetch dashboard data.' };
+  }
+}
+
+export async function getPatientTimelineEventsAction(
+  patientPhone: string,
+  hospitalId: string,
+): Promise<ActionResult> {
+  try {
+    const prisma = require('@/lib/prisma').default;
+    const patient = await prisma.patient.findUnique({
+      where: { phone: patientPhone },
+    });
+    if (!patient) {
+      return { success: true, data: [] };
+    }
+
+    const patientId = patient.id;
+
+    const [visits, labOrders, prescriptions, pharmacyDispenses] = await Promise.all([
+      prisma.visit.findMany({
+        where: { hospitalId, patientPhone },
+        include: { appointment: { include: { doctor: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.labOrder.findMany({
+        where: { hospitalId, patientId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.patientPrescription.findMany({
+        where: { patientId, doctor: { affiliations: { some: { hospitalId } } } },
+        include: { doctor: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.pharmacyDispense.findMany({
+        where: { hospitalId, patientId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const events: any[] = [];
+
+    visits.forEach((v: any) => {
+      events.push({
+        id: `v-opd-${v.id}`,
+        date:
+          v.createdAt.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }) +
+          ' ' +
+          v.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        type: 'opd',
+        title: 'Outpatient Consultation',
+        subtitle: v.appointment?.doctor?.fullName
+          ? `Dr. ${v.appointment.doctor.fullName}`
+          : 'Clinic Physician',
+        notes: v.diagnosis || 'General check-up',
+        details: [
+          { label: 'Stage', value: v.currentStage },
+          { label: 'Amount Charged', value: `₹${v.amount}` },
+        ],
+      });
+
+      if (v.currentStage === 'BILLING' || v.amount > 0) {
+        events.push({
+          id: `v-bill-${v.id}`,
+          date:
+            v.createdAt.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }) +
+            ' ' +
+            v.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          type: 'billing',
+          title: 'OPD Consultation Bill',
+          subtitle: 'Billing Desk',
+          notes: `Consultation Fee of ₹${v.amount} registered.`,
+          details: [
+            { label: 'Status', value: v.currentStage === 'BILLING' ? 'Pending Payment' : 'Paid' },
+            { label: 'Amount', value: `₹${v.amount}` },
+          ],
+        });
+      }
+    });
+
+    labOrders.forEach((lo: any) => {
+      events.push({
+        id: `lo-${lo.id}`,
+        date:
+          lo.createdAt.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }) +
+          ' ' +
+          lo.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        type: 'lab',
+        title: `Laboratory Order #${lo.orderNumber || lo.id.slice(0, 6).toUpperCase()}`,
+        subtitle: 'Pathology Lab',
+        notes: `Lab status: ${lo.status}`,
+        details: [
+          { label: 'Status', value: lo.status },
+          { label: 'Bill Amount', value: lo.totalAmount ? `₹${lo.totalAmount}` : 'N/A' },
+        ],
+      });
+    });
+
+    prescriptions.forEach((pr: any) => {
+      events.push({
+        id: `pr-${pr.id}`,
+        date:
+          pr.createdAt.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }) +
+          ' ' +
+          pr.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        type: 'opd',
+        title: 'Prescription Issued',
+        subtitle: pr.doctor?.fullName ? `Dr. ${pr.doctor.fullName}` : 'Prescribing Doctor',
+        notes: pr.notes || 'Medication list prescribed.',
+      });
+    });
+
+    pharmacyDispenses.forEach((pd: any) => {
+      events.push({
+        id: `pd-${pd.id}`,
+        date:
+          pd.createdAt.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }) +
+          ' ' +
+          pd.createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        type: 'pharmacy',
+        title: 'Pharmacy Dispense',
+        subtitle: 'In-house Pharmacy',
+        notes: `Status: ${pd.status}`,
+      });
+    });
+
+    return { success: true, data: events };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Failed to fetch timeline.' };
+  }
+}
+
+export async function registerWalkInVisitAction(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  const patientName = formData.get('patientName') as string;
+  const patientMobile = formData.get('patientMobile') as string;
+  const doctorId = formData.get('doctorId') as string;
+
+  if (!patientName || !patientMobile) {
+    return { success: false, message: 'Patient Name and Mobile number are required.' };
+  }
+
+  try {
+    const res = await services.hospital.createVisit(user.hospitalId, {
+      patientName,
+      patientMobile,
+      doctorId: doctorId || undefined,
+      date: new Date().toISOString(),
+    });
+    return { success: true, message: 'Walk-in visit created successfully!', data: res };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Failed to create walk-in visit.' };
   }
 }

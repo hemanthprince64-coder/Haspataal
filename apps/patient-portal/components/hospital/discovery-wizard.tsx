@@ -18,10 +18,16 @@ import { toast } from 'sonner';
 
 import React, { useState, useTransition } from 'react';
 
-import { submitDiscoveryQuestionnaireAction } from '@/app/actions';
+import {
+  submitDiscoveryQuestionnaireAction,
+  verifySetupVerificationAction,
+  requestOtpAction,
+} from '@/app/actions';
 import { Button } from '@/components/ui/button';
 
 interface DiscoveryWizardProps {
+  hospitalId?: string;
+  contactNumber?: string;
   onComplete: (
     clinicType: 'SINGLE_DOCTOR' | 'MULTISPECIALTY_CLINIC' | 'MULTISPECIALTY_HOSPITAL',
   ) => void;
@@ -34,6 +40,7 @@ const STEPS = [
   { label: 'Revenue Flow', num: 4 },
   { label: 'Digital Depth', num: 5 },
   { label: 'Engagement', num: 6 },
+  { label: 'Review & Verify', num: 7 },
 ];
 
 function InfoHelp({ text }: { text: string }) {
@@ -109,9 +116,50 @@ function SectionHeader({
   );
 }
 
-export default function DiscoveryWizard({ onComplete }: DiscoveryWizardProps) {
+export default function DiscoveryWizard({
+  hospitalId = '',
+  contactNumber = '',
+  onComplete,
+}: DiscoveryWizardProps) {
   const [step, setStep] = useState(1);
   const [isPending, startTransition] = useTransition();
+  const [verifyMethod, setVerifyMethod] = useState<'password' | 'otp'>('password');
+  const [verifyValue, setVerifyValue] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [isOtpSending, setIsOtpSending] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
+  React.useEffect(() => {
+    if (otpCooldown > 0) {
+      const timer = setTimeout(() => setOtpCooldown(otpCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpCooldown]);
+
+  const handleSendOtp = async () => {
+    if (!contactNumber) {
+      toast.error('Contact number is not registered or missing.');
+      return;
+    }
+    setIsOtpSending(true);
+    try {
+      const fd = new FormData();
+      fd.append('mobile', contactNumber);
+      const res = await requestOtpAction(null, fd);
+      if (res.success) {
+        toast.success(res.message || 'OTP sent successfully!');
+        setOtpRequested(true);
+        setOtpCooldown(60);
+      } else {
+        toast.error(res.message || 'Failed to send OTP.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send OTP.');
+    } finally {
+      setIsOtpSending(false);
+    }
+  };
 
   const [formData, setFormData] = useState({
     // Section A: Clinic Structure
@@ -185,18 +233,47 @@ export default function DiscoveryWizard({ onComplete }: DiscoveryWizardProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    startTransition(async () => {
-      const data = new FormData();
-      Object.entries(formData).forEach(([key, val]) => data.append(key, val));
+    if (step < 7) {
+      setStep(step + 1);
+      return;
+    }
 
-      const res = await submitDiscoveryQuestionnaireAction(null, data);
-      if (res.success) {
-        toast.success('Discovery profile saved! Configuring your workspace...');
-        onComplete(detectClinicType());
-      } else {
-        toast.error(res.message || 'Failed to submit discovery questionnaire.');
+    if (!verifyValue) {
+      toast.error('Please enter your verification details.');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const verifyFd = new FormData();
+      verifyFd.append('method', verifyMethod);
+      verifyFd.append('hospitalId', hospitalId);
+      verifyFd.append('value', verifyValue);
+
+      const verifyRes = await verifySetupVerificationAction(null, verifyFd);
+      if (!verifyRes.success) {
+        toast.error(verifyRes.message || 'Verification failed. Please check credentials.');
+        setIsVerifying(false);
+        return;
       }
-    });
+
+      startTransition(async () => {
+        const data = new FormData();
+        Object.entries(formData).forEach(([key, val]) => data.append(key, val));
+
+        const res = await submitDiscoveryQuestionnaireAction(null, data);
+        if (res.success) {
+          toast.success('Discovery profile verified & saved!');
+          onComplete(detectClinicType());
+        } else {
+          toast.error(res.message || 'Failed to submit discovery questionnaire.');
+        }
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Submission failed.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const slideVariants = {
@@ -908,6 +985,418 @@ export default function DiscoveryWizard({ onComplete }: DiscoveryWizardProps) {
                   </div>
                 </motion.div>
               )}
+
+              {/* ── SECTION G: Review & Verify ────────────────────── */}
+              {step === 7 && (
+                <motion.div
+                  key="s7"
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.2 }}
+                >
+                  <SectionHeader
+                    title="Review & Verify Details"
+                    subtitle="Review your responses carefully before finalizing the setup."
+                    icon={<CheckCircle2 className="h-5 w-5 text-teal-600" />}
+                  />
+
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {/* Section 1: Clinic Structure */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <Building2 className="h-4 w-4 text-teal-600" /> Clinic Structure
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(1)}
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold text-slate-700">Practice Type:</span>{' '}
+                            {formData.isSingleDoctor === 'true'
+                              ? 'Solo Practice (Single Doctor)'
+                              : 'Multi-Doctor Practice'}
+                          </p>
+                          {formData.isSingleDoctor === 'false' && (
+                            <p>
+                              <span className="font-semibold text-slate-700">
+                                Visiting Consultants:
+                              </span>{' '}
+                              {formData.hasConsultants === 'true' ? 'Yes' : 'No'}
+                            </p>
+                          )}
+                          <p>
+                            <span className="font-semibold text-slate-700">Admissions (IPD):</span>{' '}
+                            {formData.admitsPatients === 'true'
+                              ? `Yes (${formData.numberOfBeds} Beds)`
+                              : 'No (OPD only)'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">In-house Pharmacy:</span>{' '}
+                            {formData.hasOwnPharmacy === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Diagnostics Lab:</span>{' '}
+                            {formData.hasOwnLab === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Daily OPD Patients:
+                            </span>{' '}
+                            {formData.avgDailyPatients}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Staff Structure */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <Users className="h-4 w-4 text-teal-600" /> Staff Structure
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(2)}
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold text-slate-700">Receptionist:</span>{' '}
+                            {formData.hasReceptionist === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Nursing Staff:</span>{' '}
+                            {formData.hasNursingStaff === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Pharmacist:</span>{' '}
+                            {formData.hasPharmacist === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Lab Technician:</span>{' '}
+                            {formData.hasLabTechnician === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Daily Staff Count:</span>{' '}
+                            {formData.dailyStaffCount}
+                          </p>
+                          {formData.staffingChallenge && (
+                            <p>
+                              <span className="font-semibold text-slate-700">Challenge:</span>{' '}
+                              {formData.staffingChallenge}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 3: Operations & Workflow */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <Stethoscope className="h-4 w-4 text-teal-600" /> Operations & Workflow
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(3)}
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Appointment Booking:
+                            </span>{' '}
+                            {formData.workflowAppointments === 'walk_in'
+                              ? 'Walk-in only'
+                              : formData.workflowAppointments === 'phone'
+                                ? 'Phone'
+                                : formData.workflowAppointments === 'both'
+                                  ? 'Both'
+                                  : 'Online'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Prescriptions:</span>{' '}
+                            {formData.workflowRecords === 'paper'
+                              ? 'Handwritten'
+                              : formData.workflowRecords === 'word'
+                                ? 'MS Word'
+                                : formData.workflowRecords === 'hms'
+                                  ? 'Legacy HMS'
+                                  : 'No records'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Wait Time:</span>{' '}
+                            {formData.avgWaitTime} minutes
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Payments:</span>{' '}
+                            {formData.workflowBilling}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Follow-up:</span>{' '}
+                            {formData.workflowFollowups}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 4: Revenue Flow */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <IndianRupee className="h-4 w-4 text-teal-600" /> Revenue Flow
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(4)}
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold text-slate-700">Primary Revenue:</span>{' '}
+                            {formData.primaryRevenue}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Monthly Revenue:</span>{' '}
+                            {formData.avgMonthlyRevenue
+                              ? `₹${formData.avgMonthlyRevenue}`
+                              : 'Not provided'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Insurance:</span>{' '}
+                            {formData.hasInsurance === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Credit Patients:</span>{' '}
+                            {formData.hasCreditPatients === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Auto Billing:</span>{' '}
+                            {formData.wantsBillingAutomation === 'true' ? 'Enabled' : 'Disabled'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 5: Digital Depth */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <Laptop className="h-4 w-4 text-teal-600" /> Digital Depth
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(5)}
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold text-slate-700">Staff Comfort:</span>{' '}
+                            {formData.staffComfort}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Device Preference:</span>{' '}
+                            {formData.preferredDevice}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Internet:</span>{' '}
+                            {formData.internetReliability}
+                          </p>
+                          {formData.prevSoftware &&
+                            formData.prevSoftware.toLowerCase() !== 'none' && (
+                              <>
+                                <p>
+                                  <span className="font-semibold text-slate-700">
+                                    Prev Software:
+                                  </span>{' '}
+                                  {formData.prevSoftware}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-slate-700">Why Stopped:</span>{' '}
+                                  {formData.whyStopped}
+                                </p>
+                              </>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 6: Engagement */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <HeartPulse className="h-4 w-4 text-teal-600" /> Engagement
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => setStep(6)}
+                            className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                          <p>
+                            <span className="font-semibold text-slate-700">WhatsApp Opt-in:</span>{' '}
+                            {formData.whatsappOptIn === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          {formData.whatsappOptIn === 'true' && (
+                            <p>
+                              <span className="font-semibold text-slate-700">WhatsApp Number:</span>{' '}
+                              {formData.whatsappNumber}
+                            </p>
+                          )}
+                          <p>
+                            <span className="font-semibold text-slate-700">
+                              Online Booking Page:
+                            </span>{' '}
+                            {formData.onlineBooking === 'true' ? 'Yes' : 'No'}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">SMS Language:</span>{' '}
+                            {formData.preferredLanguage}
+                          </p>
+                          <p>
+                            <span className="font-semibold text-slate-700">Chronic Reminders:</span>{' '}
+                            {formData.remindersMethod}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Verification Form Section */}
+                  <div className="mt-8 border-t border-slate-200 pt-6">
+                    <h3 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                      🔒 Authorize Questionnaire Submission
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-4">
+                      To secure your configuration setup, verify using your account password or
+                      confirm with an OTP sent to your registered number:{' '}
+                      <span className="font-semibold text-slate-700">
+                        {contactNumber || 'registered number'}
+                      </span>
+                      .
+                    </p>
+
+                    {/* Tabs for Verification Method */}
+                    <div className="flex gap-2 mb-4 bg-slate-100 p-1 rounded-xl w-fit">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod('password');
+                          setVerifyValue('');
+                          setOtpRequested(false);
+                        }}
+                        className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
+                          verifyMethod === 'password'
+                            ? 'bg-white text-teal-700 shadow-sm border border-slate-200/50'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Verify by Password
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerifyMethod('otp');
+                          setVerifyValue('');
+                          setOtpRequested(false);
+                        }}
+                        className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
+                          verifyMethod === 'otp'
+                            ? 'bg-white text-teal-700 shadow-sm border border-slate-200/50'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        Verify by OTP
+                      </button>
+                    </div>
+
+                    <div className="space-y-4 max-w-md">
+                      {verifyMethod === 'password' ? (
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold text-slate-700">
+                            Account Password
+                          </label>
+                          <input
+                            type="password"
+                            value={verifyValue}
+                            onChange={(e) => setVerifyValue(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Button
+                              type="button"
+                              onClick={handleSendOtp}
+                              disabled={isOtpSending || (otpRequested && otpCooldown > 0)}
+                              variant="outline"
+                              className="text-xs font-bold text-teal-600 border-teal-200 rounded-xl h-11 px-4 hover:bg-teal-50"
+                            >
+                              {isOtpSending
+                                ? 'Sending...'
+                                : otpRequested
+                                  ? `Resend OTP (${otpCooldown}s)`
+                                  : 'Send OTP Code'}
+                            </Button>
+                          </div>
+
+                          {otpRequested && (
+                            <motion.div
+                              className="space-y-2"
+                              initial={{ opacity: 0, y: -5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                            >
+                              <label className="text-xs font-semibold text-slate-700">
+                                6-Digit OTP Code
+                              </label>
+                              <input
+                                type="text"
+                                value={verifyValue}
+                                onChange={(e) => setVerifyValue(e.target.value)}
+                                placeholder="Enter OTP"
+                                maxLength={6}
+                                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 tracking-widest text-center font-bold"
+                              />
+                            </motion.div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
 
@@ -934,18 +1423,26 @@ export default function DiscoveryWizard({ onComplete }: DiscoveryWizardProps) {
               >
                 Continue <ChevronRight className="h-4 w-4" />
               </Button>
+            ) : step === 6 ? (
+              <Button
+                type="button"
+                onClick={() => setStep(7)}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl px-6 h-12 flex items-center gap-1.5 shadow-sm shadow-teal-600/20"
+              >
+                Review Answers <ChevronRight className="h-4 w-4" />
+              </Button>
             ) : (
               <Button
                 type="submit"
-                disabled={isPending}
-                className="bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl px-8 h-12 flex items-center gap-2 shadow-md shadow-teal-600/10"
+                disabled={isPending || isVerifying || !verifyValue}
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl px-8 h-12 flex items-center gap-2 shadow-md shadow-teal-600/10 disabled:opacity-50"
               >
-                {isPending ? (
+                {isPending || isVerifying ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Analysing your clinic...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Submitting...
                   </>
                 ) : (
-                  'Analyse & Configure Workspace →'
+                  'Verify & Submit →'
                 )}
               </Button>
             )}
