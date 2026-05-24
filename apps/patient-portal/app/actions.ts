@@ -1,11 +1,23 @@
 'use server';
 
+import { z } from 'zod';
+
+import { cookies } from 'next/headers';
+// ── Imports ──────────────────────────────────────────────────
+
+import { redirect } from 'next/navigation';
+
+import logger from '@/lib/logger';
+// ==================== MEDCHAT AI TRIAGE ====================
+
+import { MedChatInputSchema } from '@/lib/medchat/schemas';
+import { triagePatient } from '@/lib/medchat/triage-engine';
+import { withErrorMonitoring } from '@/lib/monitoring';
+import { withRateLimit } from '@/lib/rate-limit';
 import { services } from '@/lib/services';
 import { CareLifecycleService } from '@/lib/services/care-lifecycle';
-import { z } from 'zod';
-import logger from '@/lib/logger';
-import { withErrorMonitoring } from '@/lib/monitoring';
-
+import { createSession, deleteSession, decrypt } from '@/lib/session';
+import { uploadProfilePhoto } from '@/lib/supabase';
 import {
   RegisterDoctorSchema,
   RegisterAgentSchema,
@@ -14,7 +26,13 @@ import {
   BookAppointmentSchema,
   PasswordSchema,
   MobileSchema,
+  ClinicOperationalProfileSchema,
+  InternalReferralSchema,
+  ConsultantSettlementSchema,
 } from '@/lib/validations';
+
+import { requireRole } from '../lib/auth/requireRole';
+import { UserRole, SessionUser } from '../types';
 
 // ── Result Types ─────────────────────────────────────────────
 
@@ -26,15 +44,6 @@ type ActionResult = {
   error?: string;
   retryAfter?: number;
 };
-
-// ── Imports ──────────────────────────────────────────────────
-
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { createSession, deleteSession, decrypt } from '@/lib/session';
-import { requireRole } from '../lib/auth/requireRole';
-import { UserRole, SessionUser } from '../types';
-import { withRateLimit } from '@/lib/rate-limit';
 
 const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
 
@@ -95,7 +104,10 @@ async function _loginHospital(
     return { message: 'Invalid credentials.' };
   }
 
-  logger.info({ action: 'login_hospital_success', mobile, hospitalId: result.user.id }, 'Hospital login successful');
+  logger.info(
+    { action: 'login_hospital_success', mobile, hospitalId: result.user.id },
+    'Hospital login successful',
+  );
   await createSession('session_user', result);
   redirect('/hospital/dashboard');
 }
@@ -106,17 +118,94 @@ export const loginHospital = withRateLimit(_loginHospital, {
   windowSeconds: 15 * 60, // 15 mins
 });
 
+async function saveUploadedFile(file: File, bucketName: string): Promise<string> {
+  if (!file || file.size === 0 || !file.name) return '';
+
+  // 1. Attempt Supabase upload
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey =
+      process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseAnonKey) {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error } = await supabase.storage.from(bucketName).upload(filePath, buffer, {
+        upsert: true,
+        contentType: file.type,
+      });
+
+      if (!error) {
+        const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+        return data.publicUrl;
+      }
+    }
+  } catch (e: any) {
+    logger.warn(
+      { action: 'supabase_upload_failed', error: e.message },
+      'Supabase upload failed, using local disk fallback',
+    );
+  }
+
+  // 2. Local fallback
+  try {
+    const fs = require('fs').promises;
+    const path = require('path');
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    await fs.mkdir(uploadDir, { recursive: true });
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+    const filePath = path.join(uploadDir, fileName);
+    await fs.writeFile(filePath, buffer);
+    return `/uploads/${fileName}`;
+  } catch (e: any) {
+    logger.error({ action: 'file_save_failed', error: e.message }, 'Failed to save uploaded file');
+    throw new Error(`Failed to save uploaded file: ${e.message}`);
+  }
+}
+
 async function _registerHospital(
   prevState: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   try {
+    const approvalDocFile = formData.get('approvalDocument') as File;
+    let approvalDocumentUrl = '';
+    if (approvalDocFile && approvalDocFile.size > 0) {
+      approvalDocumentUrl = await saveUploadedFile(
+        approvalDocFile,
+        'hospital-registration-documents',
+      );
+    }
+
+    // Process specialties comma separated or multi-select array
+    const specialitiesRaw = formData.get('specialities') as string;
+    const specialities = specialitiesRaw
+      ? specialitiesRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+
     const data = {
       hospitalName: formData.get('hospitalName') as string,
       city: formData.get('city') as string,
       adminName: formData.get('adminName') as string,
       mobile: formData.get('mobile') as string,
       password: formData.get('password') as string,
+      facilityType: (formData.get('facilityType') as any) || 'HOSPITAL',
+      registrationNumber: formData.get('registrationNumber') as string,
+      googleLocationUrl: formData.get('googleLocationUrl') as string,
+      medicalCouncilNumber: formData.get('medicalCouncilNumber') as string,
+      specialities,
+      approvalDocumentUrl,
     };
 
     // ✅ Validate all required fields using RegisterHospitalSchema
@@ -128,25 +217,11 @@ async function _registerHospital(
       };
     }
 
-    // ✅ Register hospital and get the returned hospital object
-    const hospital = await services.hospital.register(data);
+    // ✅ Register hospital using extended service
+    await services.hospital.register(data);
 
-    // ✅ Create session automatically
-    const result = {
-      user: {
-        id: hospital.id,
-        name: hospital.displayName || hospital.legalName || '',
-        role: UserRole.HOSPITAL_ADMIN,
-        hospitalId: hospital.id,
-      },
-    };
-    await createSession('session_user', result as any);
-
-    // ✅ Redirect to setup wizard instead of showing success page
-    redirect('/hospital/dashboard/setup');
-
-    // Return never reached due to redirect, but TypeScript requires it
-    return { success: true, message: 'Registration successful' };
+    // Return success to trigger verification pending screen in UI
+    return { success: true, message: 'PENDING_APPROVAL' };
   } catch (e: any) {
     return { success: false, message: e.message || 'Registration failed.' };
   }
@@ -162,7 +237,6 @@ export async function logoutHospital() {
   await deleteSession('session_user');
   redirect('/hospital/login');
 }
-
 
 export async function createVisitAction(
   prevState: ActionResult | null,
@@ -738,8 +812,6 @@ export async function getPatientFullProfile() {
   }
 }
 
-import { uploadProfilePhoto } from '@/lib/supabase';
-
 const MAX_PROFILE_PHOTO_SIZE = 2 * 1024 * 1024;
 const ALLOWED_PROFILE_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -1204,69 +1276,67 @@ export async function logoutPatient() {
 
 export const bookAppointment = withErrorMonitoring(
   'bookAppointment',
-  async (
-    prevState: ActionResult | null,
-    formData: FormData,
-  ): Promise<ActionResult> => {
-  let patient;
-  try {
-    patient = await requireRole(UserRole.PATIENT, 'session_patient');
-  } catch (e: any) {
-    return { message: 'Please login to book an appointment.' };
-  }
-
-  const doctorId = formData.get('doctorId') as string;
-  const hospitalId = formData.get('hospitalId') as string;
-  const date = formData.get('date') as string;
-  const slot = formData.get('slot') as string;
-
-  if (!doctorId || !hospitalId || !date || !slot) {
-    return { success: false, message: 'Please fill in all booking details.' };
-  }
-
-  try {
-    const payWithWallet = formData.get('payWithWallet') === 'true';
-    let assignedStatus = 'BOOKED';
-
-    if (payWithWallet) {
-      const wallet = await services.patient.getWallet(patient.id);
-      if (wallet.balance < DEFAULT_CONSULTATION_FEE) {
-        return {
-          success: false,
-          message: 'Insufficient wallet balance. Please top up your wallet.',
-        };
-      }
-      await services.patient.addWalletTransaction(patient.id, {
-        type: 'DEBIT',
-        amount: DEFAULT_CONSULTATION_FEE,
-        source: 'APPOINTMENT',
-        description: `Payment for appointment on ${date} at ${slot}`,
-      });
-      assignedStatus = 'CONFIRMED';
+  async (prevState: ActionResult | null, formData: FormData): Promise<ActionResult> => {
+    let patient;
+    try {
+      patient = await requireRole(UserRole.PATIENT, 'session_patient');
+    } catch (e: any) {
+      return { message: 'Please login to book an appointment.' };
     }
 
-    const visitData = {
-      doctorId,
-      patientName: patient.name || patient.mobile,
-      patientMobile: patient.mobile,
-      age: 0,
-      gender: 'O',
-      date: date,
-      slot: slot,
-      status: assignedStatus,
-    };
+    const doctorId = formData.get('doctorId') as string;
+    const hospitalId = formData.get('hospitalId') as string;
+    const date = formData.get('date') as string;
+    const slot = formData.get('slot') as string;
 
-    await services.patient.createVisit(hospitalId, visitData);
-    return {
-      success: true,
-      message: payWithWallet
-        ? 'Appointment confirmed and paid via wallet!'
-        : 'Appointment booked successfully! (Awaiting Payment)',
-    };
-  } catch (e: any) {
-    return { success: false, message: e.message };
-  }
-});
+    if (!doctorId || !hospitalId || !date || !slot) {
+      return { success: false, message: 'Please fill in all booking details.' };
+    }
+
+    try {
+      const payWithWallet = formData.get('payWithWallet') === 'true';
+      let assignedStatus = 'BOOKED';
+
+      if (payWithWallet) {
+        const wallet = await services.patient.getWallet(patient.id);
+        if (wallet.balance < DEFAULT_CONSULTATION_FEE) {
+          return {
+            success: false,
+            message: 'Insufficient wallet balance. Please top up your wallet.',
+          };
+        }
+        await services.patient.addWalletTransaction(patient.id, {
+          type: 'DEBIT',
+          amount: DEFAULT_CONSULTATION_FEE,
+          source: 'APPOINTMENT',
+          description: `Payment for appointment on ${date} at ${slot}`,
+        });
+        assignedStatus = 'CONFIRMED';
+      }
+
+      const visitData = {
+        doctorId,
+        patientName: patient.name || patient.mobile,
+        patientMobile: patient.mobile,
+        age: 0,
+        gender: 'O',
+        date: date,
+        slot: slot,
+        status: assignedStatus,
+      };
+
+      await services.patient.createVisit(hospitalId, visitData);
+      return {
+        success: true,
+        message: payWithWallet
+          ? 'Appointment confirmed and paid via wallet!'
+          : 'Appointment booked successfully! (Awaiting Payment)',
+      };
+    } catch (e: any) {
+      return { success: false, message: e.message };
+    }
+  },
+);
 
 export async function cancelAppointmentPatient(
   prevState: ActionResult | null,
@@ -1381,11 +1451,6 @@ export async function getAvailableSlotsAction(doctorId: string, date: string) {
     return [];
   }
 }
-
-// ==================== MEDCHAT AI TRIAGE ====================
-
-import { MedChatInputSchema } from '@/lib/medchat/schemas';
-import { triagePatient } from '@/lib/medchat/triage-engine';
 
 export async function medchatTriageAction(
   prevState: ActionResult | null,
@@ -1582,5 +1647,372 @@ export async function deletePatientDataAction(patientId: string) {
   } catch (e: any) {
     logger.error({ action: 'delete_patient_data_failed', patientId, error: e.message });
     return { success: false, error: e.message };
+  }
+}
+
+// ==================== ONBOARDING & SETUP ACTIONS ====================
+
+export async function sendRegistrationOtp(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mobile = formData.get('mobile') as string;
+  if (!mobile || mobile.length < 10) {
+    return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
+  }
+
+  try {
+    // Reuses requestOtp logic which generates and saves the OTP in prisma.otpCode
+    await services.patient.requestOtp(mobile);
+    return { success: true, message: 'OTP sent successfully!' };
+  } catch (e: any) {
+    return { success: false, message: `Failed to send OTP: ${e.message}` };
+  }
+}
+
+export async function verifyRegistrationOtp(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mobile = formData.get('mobile') as string;
+  const code = formData.get('code') as string;
+
+  if (!mobile || !code) {
+    return { success: false, message: 'Mobile and OTP code are required.' };
+  }
+
+  try {
+    const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+    const otpRecord = await services.platform.getCities(); // dummy call or direct prisma access since shared
+    const prisma = require('@/lib/prisma').default;
+    const otp = await prisma.otpCode.findUnique({
+      where: { phone: normalizedMobile },
+    });
+
+    if (!otp) {
+      return { success: false, message: 'OTP has expired or was not requested.' };
+    }
+    if (otp.code !== code) {
+      return { success: false, message: 'Invalid OTP code. Please try again.' };
+    }
+
+    return { success: true, message: 'OTP verified successfully!' };
+  } catch (e: any) {
+    return { success: false, message: `OTP validation failed: ${e.message}` };
+  }
+}
+
+export async function submitDiscoveryQuestionnaireAction(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user')) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized. Please log in first.' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  try {
+    // Collect data
+    const data = {
+      isSingleDoctor: formData.get('isSingleDoctor') === 'true',
+      hasConsultants: formData.get('hasConsultants') === 'true',
+      dailyStaffCount: Number(formData.get('dailyStaffCount') || 1),
+      hasReceptionist: formData.get('hasReceptionist') === 'true',
+      hasNursingStaff: formData.get('hasNursingStaff') === 'true',
+      hasPharmacy: formData.get('hasPharmacy') === 'true',
+      hasOwnLab: formData.get('hasOwnLab') === 'true',
+      admitsPatients: formData.get('admitsPatients') === 'true',
+      avgDailyPatients: Number(formData.get('avgDailyPatients') || 10),
+      opdOnly: formData.get('opdOnly') === 'true',
+      currentWorkflow: {
+        appointments: formData.get('workflowAppointments') as string,
+        records: formData.get('workflowRecords') as string,
+        billing: formData.get('workflowBilling') as string,
+        followups: formData.get('workflowFollowups') as string,
+        biggestProblem: formData.get('workflowProblem') as string,
+      },
+      digitalMaturity: {
+        prevSoftware: formData.get('prevSoftware') as string,
+        whyStopped: formData.get('whyStopped') as string,
+        comfortLevel: formData.get('staffComfort') as string,
+        preferredDevice: formData.get('preferredDevice') as string,
+        internetReliability: formData.get('internetReliability') as string,
+      },
+      retentionLeaks: {
+        remindersMethod: formData.get('remindersMethod') as string,
+        chronicLost: formData.get('chronicLost') as string,
+        whatsappOptIn: formData.get('whatsappOptIn') === 'true',
+      },
+      pharmacyConfig: {
+        stockManual: formData.get('stockManual') === 'true',
+        expiryTracked: formData.get('expiryTracked') === 'true',
+      },
+      labConfig: {
+        ownLab: formData.get('ownLab') === 'true',
+        digitalUpload: formData.get('digitalUpload') === 'true',
+      },
+      communicationPrefs: {
+        whatsappNumber: formData.get('whatsappNumber') as string,
+        smsRequired: formData.get('smsRequired') === 'true',
+        preferredLanguage: (formData.get('preferredLanguage') as string) || 'English',
+        onlineBooking: formData.get('onlineBooking') === 'true',
+      },
+    };
+
+    // Save profile
+    await services.hospitalSetup.saveOperationalProfile(user.hospitalId, data);
+
+    // Auto-configure
+    await services.hospitalSetup.autoConfigureClinic(user.hospitalId);
+
+    return { success: true, message: 'Questionnaire submitted and clinic configured!' };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Submission failed.' };
+  }
+}
+
+export async function addStaffWithAccessAction(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user')) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized.' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  const name = formData.get('name') as string;
+  const mobile = formData.get('mobile') as string;
+  const roleStr = formData.get('role') as string;
+  const loginNeeded = formData.get('loginNeeded') === 'true';
+
+  if (!name || !mobile || !roleStr) {
+    return { success: false, message: 'Name, Mobile, and Role are required.' };
+  }
+
+  try {
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(mobile, 12); // Default password is the mobile number
+    const prisma = require('@/lib/prisma').default;
+
+    await prisma.staff.create({
+      data: {
+        hospitalId: user.hospitalId,
+        name,
+        mobile,
+        password: hashedPassword,
+        role: roleStr as any,
+        isActive: true,
+      },
+    });
+
+    return { success: true, message: 'Staff added successfully!' };
+  } catch (e: any) {
+    if (e.code === 'P2002') {
+      return { success: false, message: 'A staff member with this mobile number already exists.' };
+    }
+    return { success: false, message: e.message || 'Failed to add staff.' };
+  }
+}
+
+export async function submitReferralAction(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  const data = {
+    patientId: formData.get('patientId') as string,
+    fromDoctorId: formData.get('fromDoctorId') as string,
+    toDoctorId: formData.get('toDoctorId') as string,
+    reason: formData.get('reason') as string,
+    priority: (formData.get('priority') as any) || 'ROUTINE',
+    notes: formData.get('notes') as string,
+  };
+
+  const validation = InternalReferralSchema.safeParse(data);
+  if (!validation.success) {
+    return { success: false, message: validation.error.issues[0]?.message || 'Validation failed' };
+  }
+
+  try {
+    await services.hospital.createReferral(user.hospitalId, data);
+    return { success: true, message: 'Internal referral created successfully!' };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Failed to create referral.' };
+  }
+}
+
+export async function calculateConsultantPayoutsAction(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(UserRole.HOSPITAL_ADMIN, 'session_user')) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  const doctorId = formData.get('doctorId') as string;
+  const startStr = formData.get('settlementPeriodStart') as string;
+  const endStr = formData.get('settlementPeriodEnd') as string;
+
+  const validation = ConsultantSettlementSchema.safeParse({
+    doctorId,
+    settlementPeriodStart: startStr,
+    settlementPeriodEnd: endStr,
+  });
+  if (!validation.success) {
+    return { success: false, message: validation.error.issues[0]?.message || 'Validation failed' };
+  }
+
+  try {
+    const settlement = await services.hospital.payoutConsultant(
+      user.hospitalId,
+      doctorId,
+      new Date(startStr),
+      new Date(endStr),
+    );
+    return {
+      success: true,
+      message: 'Payout settlement generated successfully!',
+      data: settlement,
+    };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Failed to calculate settlements.' };
+  }
+}
+
+export async function advancePatientStageAction(formData: FormData): Promise<ActionResult> {
+  let user: SessionUser;
+  try {
+    user = (await requireRole(
+      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
+      'session_user',
+    )) as SessionUser;
+  } catch (e: any) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  if (!user.hospitalId) {
+    return { success: false, message: 'Hospital context missing.' };
+  }
+
+  const visitId = formData.get('visitId') as string;
+  const fromStage = formData.get('fromStage') as any;
+  const toStage = formData.get('toStage') as any;
+  const staffId = (formData.get('assignedStaffId') as string) || undefined;
+  const notes = (formData.get('notes') as string) || undefined;
+
+  if (!visitId || !fromStage || !toStage) {
+    return { success: false, message: 'Visit ID and stages are required.' };
+  }
+
+  try {
+    await services.hospital.handoffPatient(
+      visitId,
+      user.hospitalId,
+      fromStage,
+      toStage,
+      staffId,
+      notes,
+    );
+    return { success: true, message: `Patient successfully advanced to ${toStage}!` };
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Handoff failed.' };
+  }
+}
+
+export async function loginHospitalWithOtp(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mobile = formData.get('mobile') as string;
+  const code = formData.get('otp') as string;
+
+  if (!mobile || !code) {
+    return { success: false, message: 'Mobile number and OTP are required.' };
+  }
+
+  try {
+    const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+    const prisma = require('@/lib/prisma').default;
+
+    // 1. Verify OTP
+    const otpRecord = await prisma.otpCode.findUnique({
+      where: { phone: normalizedMobile },
+    });
+
+    if (!otpRecord) {
+      return { success: false, message: 'OTP has expired or was not requested.' };
+    }
+    if (otpRecord.code !== code) {
+      return { success: false, message: 'Invalid OTP code. Please request a new one.' };
+    }
+
+    // Prevent replay
+    await prisma.otpCode.delete({ where: { id: otpRecord.id } });
+
+    // 2. Find Hospital by Mobile
+    // Raw SQL to fetch name and ignored password fields safely
+    const hospitals = await prisma.$queryRaw<any[]>`
+      SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
+    `;
+    const hospital = hospitals?.[0];
+
+    if (!hospital) {
+      return {
+        success: false,
+        message: 'No clinic found with this mobile number. Please register.',
+      };
+    }
+
+    // 3. Create Session
+    const result = {
+      user: {
+        id: hospital.id,
+        name: hospital.display_name || hospital.legal_name || 'Hospital Admin',
+        role: UserRole.HOSPITAL_ADMIN,
+        hospitalId: hospital.id,
+      },
+    };
+
+    logger.info(
+      { action: 'magic_login_hospital_success', hospitalId: hospital.id },
+      'Hospital Magic Login Successful',
+    );
+    await createSession('session_user', result as any);
+
+    redirect('/hospital/dashboard');
+  } catch (e: any) {
+    return { success: false, message: e.message || 'Login failed.' };
   }
 }

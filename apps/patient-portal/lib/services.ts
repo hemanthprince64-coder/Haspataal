@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { logger, logAudit } from '@haspataal/logger';
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
@@ -1394,11 +1393,14 @@ export const services = {
       const hospitals = await prisma.$queryRaw<any[]>`
                 SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
             `;
-      
+
       const hospital = hospitals?.[0];
 
       if (!hospital) {
-        logger.warn({ action: 'hospital_login_failed', mobile: normalizedMobile }, 'Hospital not found');
+        logger.warn(
+          { action: 'hospital_login_failed', mobile: normalizedMobile },
+          'Hospital not found',
+        );
         return null;
       }
 
@@ -1417,7 +1419,10 @@ export const services = {
           },
         };
       }
-      logger.warn({ action: 'hospital_login_failed', mobile: normalizedMobile }, 'Failed hospital login attempt');
+      logger.warn(
+        { action: 'hospital_login_failed', mobile: normalizedMobile },
+        'Failed hospital login attempt',
+      );
       return null;
     },
 
@@ -1428,6 +1433,11 @@ export const services = {
       mobile: string;
       password?: string;
       registrationNumber?: string;
+      facilityType?: 'HOSPITAL' | 'CLINIC';
+      approvalDocumentUrl?: string;
+      googleLocationUrl?: string;
+      medicalCouncilNumber?: string;
+      specialities?: string[];
     }) => {
       logger.info(
         { action: 'hospital_register', hospitalName: data.hospitalName },
@@ -1462,6 +1472,11 @@ export const services = {
             contactNumber: data.mobile,
             verificationStatus: 'pending',
             accountStatus: 'inactive',
+            facilityType: data.facilityType || 'HOSPITAL',
+            approvalDocumentUrl: data.approvalDocumentUrl || null,
+            googleLocationUrl: data.googleLocationUrl || null,
+            medicalCouncilNumber: data.medicalCouncilNumber || null,
+            specialities: data.specialities || [],
           },
           select: {
             id: true,
@@ -1713,6 +1728,140 @@ export const services = {
       // Return both the doctor record AND the one-time plaintext password.
       // Callers MUST surface this to the hospital admin immediately; it is never stored in plaintext.
       return { doctor, tempPassword };
+    },
+
+    createReferral: async (
+      hospitalId: string,
+      data: {
+        patientId: string;
+        fromDoctorId: string;
+        toDoctorId: string;
+        reason: string;
+        priority?: 'ROUTINE' | 'URGENT' | 'EMERGENCY';
+        notes?: string;
+      },
+    ) => {
+      logger.info(
+        {
+          action: 'hospital_create_referral',
+          hospitalId,
+          fromDoctorId: data.fromDoctorId,
+          toDoctorId: data.toDoctorId,
+          patientId: data.patientId,
+        },
+        'Creating internal referral',
+      );
+      return await prisma.internalReferral.create({
+        data: {
+          hospitalId,
+          patientId: data.patientId,
+          fromDoctorId: data.fromDoctorId,
+          toDoctorId: data.toDoctorId,
+          reason: data.reason,
+          priority: data.priority || 'ROUTINE',
+          notes: data.notes || null,
+        },
+      });
+    },
+
+    getReferralTimeline: async (patientId: string) => {
+      return await prisma.internalReferral.findMany({
+        where: { patientId },
+        include: {
+          fromDoctor: { select: { fullName: true } },
+          toDoctor: { select: { fullName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+
+    payoutConsultant: async (
+      hospitalId: string,
+      doctorId: string,
+      periodStart: Date,
+      periodEnd: Date,
+    ) => {
+      logger.info(
+        { action: 'hospital_consultant_payout', hospitalId, doctorId },
+        'Calculating consultant settlement',
+      );
+
+      const visits = await prisma.visit.findMany({
+        where: {
+          hospitalId,
+          createdAt: { gte: periodStart, lte: periodEnd },
+          appointment: { doctorId },
+        },
+      });
+
+      const totalConsultations = visits.length;
+      const grossRevenueCents = visits.reduce((sum, v) => sum + v.amount * 100, 0);
+
+      const affiliation = await prisma.doctorHospitalAffiliation.findUnique({
+        where: { doctorId_hospitalId: { doctorId, hospitalId } },
+      });
+
+      const sharePercent = affiliation?.revenueSharePercent
+        ? Number(affiliation.revenueSharePercent)
+        : 70.0;
+      const consultantShareCents = Math.round((grossRevenueCents * sharePercent) / 100);
+      const hospitalShareCents = grossRevenueCents - consultantShareCents;
+
+      return await prisma.consultantSettlement.create({
+        data: {
+          hospitalId,
+          doctorId,
+          settlementPeriodStart: periodStart,
+          settlementPeriodEnd: periodEnd,
+          totalConsultations,
+          grossRevenueCents,
+          revenueSharePercent: sharePercent,
+          consultantShareCents,
+          hospitalShareCents,
+          status: 'PENDING',
+        },
+      });
+    },
+
+    handoffPatient: async (
+      visitId: string,
+      hospitalId: string,
+      fromStage: any,
+      toStage: any,
+      staffId?: string,
+      notes?: string,
+    ) => {
+      logger.info(
+        { action: 'hospital_handoff_patient', visitId, fromStage, toStage },
+        'Executing patient handoff',
+      );
+
+      // Update prior handoffs as completed
+      await prisma.departmentHandoff.updateMany({
+        where: { visitId, toStage: fromStage, status: 'PENDING' },
+        data: { status: 'COMPLETED', completedAt: new Date() },
+      });
+
+      // Create new handoff
+      const handoff = await prisma.departmentHandoff.create({
+        data: {
+          visitId,
+          hospitalId,
+          fromStage,
+          toStage,
+          status: 'PENDING',
+          assignedStaffId: staffId || null,
+          notes: notes || null,
+        },
+      });
+
+      // Update visit current stage
+      await prisma.visit.update({
+        where: { id: visitId },
+        data: { currentStage: toStage },
+      });
+
+      return handoff;
     },
 
     removeDoctor: async (hospitalId: string, doctorId: string) => {
@@ -2180,6 +2329,180 @@ export const services = {
 
         return { success: true };
       });
+    },
+  },
+
+  // --- Hospital Setup / Onboarding Services (Discovery, Auto-Configuration, Data Migration) ---
+  hospitalSetup: {
+    saveOperationalProfile: async (hospitalId: string, data: any) => {
+      logger.info(
+        { action: 'setup_save_operational_profile', hospitalId },
+        'Saving operational questionnaire profile',
+      );
+      return await prisma.clinicOperationalProfile.upsert({
+        where: { hospitalId },
+        update: {
+          isSingleDoctor: data.isSingleDoctor,
+          hasConsultants: data.hasConsultants,
+          dailyStaffCount: Number(data.dailyStaffCount || 1),
+          hasReceptionist: data.hasReceptionist,
+          hasNursingStaff: data.hasNursingStaff,
+          hasPharmacy: data.hasPharmacy,
+          hasOwnLab: data.hasOwnLab,
+          admitsPatients: data.admitsPatients,
+          avgDailyPatients: Number(data.avgDailyPatients || 10),
+          opdOnly: data.opdOnly,
+          currentWorkflow: data.currentWorkflow || null,
+          digitalMaturity: data.digitalMaturity || null,
+          retentionLeaks: data.retentionLeaks || null,
+          pharmacyConfig: data.pharmacyConfig || null,
+          labConfig: data.labConfig || null,
+          communicationPrefs: data.communicationPrefs || null,
+        },
+        create: {
+          hospitalId,
+          isSingleDoctor: data.isSingleDoctor,
+          hasConsultants: data.hasConsultants,
+          dailyStaffCount: Number(data.dailyStaffCount || 1),
+          hasReceptionist: data.hasReceptionist,
+          hasNursingStaff: data.hasNursingStaff,
+          hasPharmacy: data.hasPharmacy,
+          hasOwnLab: data.hasOwnLab,
+          admitsPatients: data.admitsPatients,
+          avgDailyPatients: Number(data.avgDailyPatients || 10),
+          opdOnly: data.opdOnly,
+          currentWorkflow: data.currentWorkflow || null,
+          digitalMaturity: data.digitalMaturity || null,
+          retentionLeaks: data.retentionLeaks || null,
+          pharmacyConfig: data.pharmacyConfig || null,
+          labConfig: data.labConfig || null,
+          communicationPrefs: data.communicationPrefs || null,
+        },
+      });
+    },
+
+    autoConfigureClinic: async (hospitalId: string) => {
+      logger.info(
+        { action: 'setup_autoconfigure_clinic', hospitalId },
+        'Running automatic workspace provisioning',
+      );
+
+      const profile = await prisma.clinicOperationalProfile.findUnique({
+        where: { hospitalId },
+      });
+
+      if (!profile) {
+        throw new Error('OPERATIONAL_PROFILE_MISSING');
+      }
+
+      return await prisma.$transaction(async (tx) => {
+        // 1. Create Default Departments based on Profile
+        const depts = [];
+        if (profile.opdOnly) {
+          depts.push('Outpatient Department (OPD)');
+        } else {
+          depts.push('Outpatient Department (OPD)');
+          depts.push('Inpatient Department (IPD)');
+        }
+
+        if (profile.hasPharmacy) {
+          depts.push('Pharmacy Dispensary');
+        }
+        if (profile.hasOwnLab) {
+          depts.push('Diagnostic Laboratory');
+        }
+
+        // Clean existing depts first to be idempotent
+        await tx.hospitalDepartment.deleteMany({
+          where: { hospitalId },
+        });
+
+        for (const deptName of depts) {
+          await tx.hospitalDepartment.create({
+            data: { hospitalId, departmentName: deptName },
+          });
+        }
+
+        // 2. Set Default Billing Profiles
+        await tx.hospitalBillingProfile.upsert({
+          where: { hospitalId },
+          update: { gstApplicable: !profile.hasPharmacy },
+          create: {
+            hospitalId,
+            gstApplicable: !profile.hasPharmacy,
+            bankAccountNumber: '1234567890',
+            bankIfsc: 'IFSC000123',
+          },
+        });
+
+        // 3. Configure Default OPD Config
+        await tx.opdConfig.upsert({
+          where: { hospitalId },
+          update: {
+            consultationDurationMins: 15,
+            overbookingLimit: 5,
+            autoApproveBookings: true,
+          },
+          create: {
+            hospitalId,
+            consultationDurationMins: 15,
+            overbookingLimit: 5,
+            autoApproveBookings: true,
+          },
+        });
+
+        // 4. Update HospitalsMaster verification status and accountStatus
+        await tx.hospitalsMaster.update({
+          where: { id: hospitalId },
+          data: { accountStatus: 'active' }, // Fully configure & activate
+        });
+
+        return { success: true };
+      });
+    },
+
+    importLegacyData: async (hospitalId: string, data: { patients: any[] }) => {
+      logger.info(
+        { action: 'setup_import_legacy_data', hospitalId, count: data.patients.length },
+        'Importing legacy clinic records',
+      );
+
+      const results = [];
+      const hashedPassword = await bcrypt.hash('pass123', 12);
+
+      for (const p of data.patients) {
+        try {
+          const patient = await prisma.patient.upsert({
+            where: { phone: p.phone },
+            update: { name: p.name, email: p.email || null },
+            create: {
+              name: p.name,
+              phone: p.phone,
+              email: p.email || null,
+              password: hashedPassword,
+            },
+          });
+
+          // Record acquisition as Direct/Walkin
+          await prisma.patientAcquisition.create({
+            data: {
+              hospitalId,
+              patientId: patient.id,
+              source: 'WALK_IN',
+              converted: true,
+            },
+          });
+
+          results.push(patient);
+        } catch (e: any) {
+          logger.error(
+            { action: 'setup_import_patient_failed', phone: p.phone, error: e.message },
+            'Failed to import patient',
+          );
+        }
+      }
+
+      return { count: results.length };
     },
   },
 };

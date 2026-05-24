@@ -14,16 +14,23 @@ const redis = new Redis({
 });
 
 // Handle connection events
+let redisConnectionErrorLogged = false;
+
 redis.on('connect', () => {
   console.log('✅ Redis connected successfully');
+  redisConnectionErrorLogged = false; // reset so we can log again if connection drops later
 });
 
 redis.on('error', (error) => {
-  console.error('❌ Redis connection error:', error.message);
-  // Don't throw error in production - Redis is optional for rate limiting
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('⚠️  Redis is not available. Rate limiting will be disabled.');
+  if (!redisConnectionErrorLogged) {
+    console.error('❌ Redis connection error:', error.message);
+    // Don't throw error in production - Redis is optional for rate limiting
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️  Redis is not available. Rate limiting will be disabled.');
+    }
+    redisConnectionErrorLogged = true;
   }
+  // Subsequent errors (repeated reconnect attempts) are silent to avoid log spam
 });
 
 redis.on('ready', () => {

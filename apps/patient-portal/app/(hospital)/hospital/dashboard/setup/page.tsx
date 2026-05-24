@@ -1,822 +1,212 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import React from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Hospital,
-  Users,
-  Stethoscope,
-  Calendar,
-  ClipboardList,
-  BedDouble,
-  CreditCard,
-  Pill,
-  TestTube,
-  Bell,
-  Plug,
-  RefreshCw,
-  Store,
-  CheckCircle2,
-  Clock,
-  Lock,
-  AlertTriangle,
-  ChevronRight,
-  ArrowRight,
-  Settings,
-  MapPin,
-  Shield,
-  AlertCircle,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { HelpCircle, ChevronRight, Activity, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
-// ─── Step Definitions ─────────────────────────────────────────────────────────
+import React, { useState, useEffect } from 'react';
 
-const STEPS = [
-  {
-    id: 'identity',
-    title: 'Hospital Identity',
-    subtitle: 'Legal name, address, logo, branding, compliance',
-    icon: Hospital,
-    href: '/hospital/dashboard/setup/identity',
-    weight: 2,
-    critical: true,
-    depends: [],
-    warning: 'Missing identity or address → compliance and invoicing risk',
-  },
-  {
-    id: 'branches',
-    title: 'Multi-Branch Support',
-    subtitle: 'Satellite clinics, campuses, locations',
-    icon: MapPin,
-    href: '/hospital/dashboard/setup/branches',
-    weight: 0.5,
-    critical: false,
-    depends: ['identity'],
-    warning: 'No branches configured → only main campus active',
-  },
-  {
-    id: 'departments',
-    title: 'Clinical Architecture',
-    subtitle: 'Departments, units, and bed inventory',
-    icon: ClipboardList,
-    href: '/hospital/dashboard/setup/departments',
-    weight: 1.5,
-    critical: true,
-    depends: ['identity'],
-    warning: 'No departments → clinical workflow cannot be established',
-  },
-  {
-    id: 'staff',
-    title: 'Staff & Roles',
-    subtitle: 'RBAC, permissions, invite team',
-    icon: Users,
-    href: '/hospital/dashboard/setup/staff',
-    weight: 2,
-    critical: true,
-    depends: ['identity'],
-    warning: 'No staff configured → system cannot operate',
-  },
-  {
-    id: 'doctors',
-    title: 'Doctor Configuration',
-    subtitle: 'Fees, slots, specialities, marketplace',
-    icon: Stethoscope,
-    href: '/hospital/dashboard/setup/doctors',
-    weight: 2,
-    critical: true,
-    depends: ['departments', 'staff'],
-    warning: 'No doctors configured → OPD bookings will fail',
-  },
-  {
-    id: 'opd',
-    title: 'OPD Workflow',
-    subtitle: 'Token system, queue, overbooking rules',
-    icon: Calendar,
-    href: '/hospital/dashboard/setup/opd',
-    weight: 1,
-    critical: true,
-    depends: ['doctors'],
-    warning: 'OPD workflow unconfigured → front desk impaired',
-  },
-  {
-    id: 'billing',
-    title: 'Billing System',
-    subtitle: 'Service catalog, GST, bank profiles',
-    icon: CreditCard,
-    href: '/hospital/dashboard/setup/billing',
-    weight: 2,
-    critical: true,
-    depends: ['identity'],
-    warning: 'No billing configured → revenue loss risk',
-  },
-  {
-    id: 'pharmacy',
-    title: 'Pharmacy Setup',
-    subtitle: 'Drug catalog, stock, dispensing rules',
-    icon: Pill,
-    weight: 1,
-    critical: false,
-    depends: ['billing'],
-    href: '/hospital/dashboard/setup/pharmacy',
-    warning: 'No pharmacy → in-house dispensing unavailable',
-  },
-  {
-    id: 'diagnostics',
-    title: 'Diagnostics Setup',
-    subtitle: 'Lab tests, imaging, pricing',
-    icon: TestTube,
-    href: '/hospital/dashboard/setup/diagnostics',
-    weight: 1,
-    critical: false,
-    depends: ['billing'],
-    warning: 'No diagnostics priced → lab revenue inactive',
-  },
-  {
-    id: 'integrations',
-    title: 'Nodes & Integrations',
-    subtitle: 'WhatsApp, SMS, gateways, ABDM',
-    icon: Plug,
-    href: '/hospital/dashboard/setup/integrations',
-    weight: 1.5,
-    critical: false,
-    depends: ['billing'],
-    warning: 'No integrations → payment and messaging unavailable',
-  },
-  {
-    id: 'retention',
-    title: 'Retention Engine',
-    subtitle: 'Follow-up rules, chronic tracking, AI recall',
-    icon: RefreshCw,
-    href: '/hospital/dashboard/setup/retention',
-    weight: 0.5,
-    critical: false,
-    depends: ['integrations'],
-    warning: 'No retention rules → patient recall revenue uncaptured',
-  },
-  {
-    id: 'marketplace',
-    title: 'Marketplace Setup',
-    subtitle: 'Public listing on Haspataal.com',
-    icon: Store,
-    href: '/hospital/dashboard/setup/marketplace',
-    weight: 0.5,
-    critical: false,
-    depends: ['identity', 'doctors'],
-    warning: 'Not listed → missing patient acquisition channel',
-  },
-  {
-    id: 'activation',
-    title: 'Final Review & Activation',
-    subtitle: 'Validate critical setup and activate production',
-    icon: CheckCircle2,
-    href: '/hospital/dashboard/setup',
-    weight: 1,
-    critical: true,
-    depends: ['identity', 'staff', 'doctors', 'opd', 'billing'],
-    warning: 'Activation blocked until critical configuration is complete',
-  },
-];
+import DataMigration from '@/components/hospital/data-migration';
+import DiscoveryWizard from '@/components/hospital/discovery-wizard';
+import GoLiveDashboard from '@/components/hospital/go-live-dashboard';
+import SetupWizardAuto from '@/components/hospital/setup-wizard-auto';
+import StaffSetup from '@/components/hospital/staff-setup';
+import TrainingSim from '@/components/hospital/training-sim';
+// Import Sub-Wizard Components
+import WelcomeScreen from '@/components/hospital/welcome-screen';
+import WorkflowConfig from '@/components/hospital/workflow-config';
 
-type StepState = 'complete' | 'in_progress' | 'locked';
+export default function SetupPage() {
+  const [stage, setStage] = useState<number>(1);
+  const [hospitalName, setHospitalName] = useState<string>('Your Clinic');
+  const [hospitalId, setHospitalId] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
 
-// ─── Weighted Completion ───────────────────────────────────────────────────────
-
-function computeWeightedScore(completion: Record<string, boolean>): number {
-  const totalWeight = STEPS.reduce((s, step) => s + step.weight, 0);
-  const earned = STEPS.reduce((s, step) => s + (completion[step.id] ? step.weight : 0), 0);
-  return Math.round((earned / totalWeight) * 100);
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export default function SetupWizardPage() {
-  const router = useRouter();
-  const [activeStep, setActiveStep] = useState<string>(STEPS[0].id);
-  const [stepHistory, setStepHistory] = useState<string[]>([STEPS[0].id]);
-  const [completion, setCompletion] = useState<Record<string, boolean>>({});
-  const [serverWarnings, setServerWarnings] = useState<Record<string, string[]>>({});
-  const [verificationStatus, setVerificationStatus] = useState<string>('pending');
-  const [activationError, setActivationError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [showActivateDialog, setShowActivateDialog] = useState(false);
-
-  // Keeps track of previous completion state per step for auto-progression
-  const prevCompletionRef = useRef<Record<string, boolean>>({});
-
-  // Navigate to a step, recording it in history stack
-  const navigateToStep = useCallback((stepId: string) => {
-    setActiveStep(stepId);
-    setStepHistory((prev) => {
-      const existingIndex = prev.indexOf(stepId);
-      if (existingIndex !== -1) {
-        // Truncate forward history when navigating back to earlier step
-        return prev.slice(0, existingIndex + 1);
+  const fetchStage = async () => {
+    try {
+      const res = await fetch('/api/hospital/setup/stage');
+      if (res.ok) {
+        const data = await res.json();
+        setStage(data.stage || 1);
       }
-      return [...prev, stepId];
-    });
-  }, []);
-
-  // Go back to previous step
-  const goBack = useCallback(() => {
-    if (stepHistory.length > 1) {
-      const newHistory = stepHistory.slice(0, -1);
-      const previousStep = newHistory[newHistory.length - 1];
-      setStepHistory(newHistory);
-      setActiveStep(previousStep);
+    } catch (e) {
+      console.error('Failed to fetch stage:', e);
+    } finally {
+      setLoading(false);
     }
-  }, [stepHistory]);
-  useEffect(() => {
-    fetch('/api/hospital/setup/completion')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.stepStatuses) {
-          const map: Record<string, boolean> = {};
-          const warnings: Record<string, string[]> = {};
-          for (const [id, status] of Object.entries(
-            data.stepStatuses as Record<string, { complete: boolean; warnings?: string[] }>,
-          )) {
-            map[id] = status.complete;
-            warnings[id] = status.warnings ?? [];
-          }
-          setCompletion(map);
-          setServerWarnings(warnings);
-          setVerificationStatus(data.verificationStatus || 'pending');
+  };
+
+  const fetchHospitalInfo = async () => {
+    try {
+      const res = await fetch('/api/hospital/setup/completion');
+      if (res.ok) {
+        const data = await res.json();
+        // Since legalName isn't returned directly, we can fetch from a generic endpoint
+        // or default to a friendly name
+        setHospitalId(data.hospitalId || '');
+      }
+
+      const resInfo = await fetch('/api/hospital/setup/workflow');
+      if (resInfo.ok) {
+        const dataInfo = await resInfo.json();
+        if (dataInfo.printHeader) {
+          setHospitalName(dataInfo.printHeader);
         }
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchStage();
+    fetchHospitalInfo();
   }, []);
 
-  const weightedScore = computeWeightedScore(completion);
-
-  const getStepState = useCallback(
-    (step: (typeof STEPS)[number]): StepState => {
-      if (completion[step.id]) return 'complete';
-
-      // If hospital is approved (verified), unlock all modules regardless of dependencies
-      if (verificationStatus === 'verified') return 'in_progress';
-
-      const depsComplete = step.depends.every((dep) => completion[dep]);
-      if (!depsComplete) return 'locked';
-      return 'in_progress';
-    },
-    [completion, verificationStatus],
-  );
-
-  const activeStepDef = STEPS.find((s) => s.id === activeStep) ?? STEPS[0];
-  const activeState = getStepState(activeStepDef);
-
-  const criticalWarnings = STEPS.filter((s) => s.critical && !completion[s.id]);
-
-  const progressColor =
-    weightedScore >= 80 ? '#22c55e' : weightedScore >= 50 ? '#f59e0b' : '#ef4444';
-
-  // ── Auto-progression: advance to next unlocked step when current completes ──
-  useEffect(() => {
-    if (isLoading) return;
-
-    const wasComplete = prevCompletionRef.current[activeStep] ?? false;
-    const isComplete = !!completion[activeStep];
-
-    if (isComplete && !wasComplete) {
-      // Current step just became complete — find next unlocked step
-      const nextStep = STEPS.find((s) => {
-        if (completion[s.id]) return false;
-        return s.depends.every((dep) => completion[dep]);
+  const handleUpdateStage = async (nextStage: number) => {
+    setStage(nextStage);
+    try {
+      await fetch('/api/hospital/setup/stage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: nextStage }),
       });
-      if (nextStep) {
-        navigateToStep(nextStep.id);
-      }
+    } catch (e) {
+      console.error('Failed to update stage in DB:', e);
     }
-
-    // Update the ref for future comparisons
-    prevCompletionRef.current = {
-      ...prevCompletionRef.current,
-      [activeStep]: isComplete,
-    };
-  }, [completion, activeStep, isLoading, navigateToStep]);
-
-  const handleConfigure = async () => {
-    setActivationError('');
-    if (activeStepDef.id !== 'activation') {
-      // Show a toast that we're navigating to configure the step
-      // The step itself will handle its own save & toast
-      router.push(activeStepDef.href);
-      return;
-    }
-
-    // Show confirmation dialog before activation
-    setShowActivateDialog(true);
   };
 
-  const confirmActivation = async () => {
-    setShowActivateDialog(false);
-    const response = await fetch('/api/hospital/setup/activate', { method: 'POST' });
-    const data = await response.json();
-    if (!response.ok) {
-      const missing = Array.isArray(data.missing) ? data.missing.join(', ') : 'critical steps';
-      const security =
-        Array.isArray(data.security) && data.security.length ? ` ${data.security.join(', ')}` : '';
-      setActivationError(`Activation blocked: ${missing}.${security}`);
-      toast.error(`Activation failed: ${missing}`);
-      return;
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-2">
+          <Activity className="h-8 w-8 text-teal-600 animate-pulse" />
+          <span className="text-sm font-semibold text-slate-600">Loading your clinic setup...</span>
+        </div>
+      </div>
+    );
+  }
 
-    setCompletion((current) => ({ ...current, activation: true }));
-    toast.success('🎉 Hospital activated successfully! Redirecting to dashboard...');
-    setTimeout(() => {
-      router.push('/hospital/dashboard');
-    }, 2000);
-  };
+  // Define Stage Step list for top tracker
+  const stagesList = [
+    { label: 'Welcome', num: 1 },
+    { label: 'Discovery', num: 2 },
+    { label: 'Auto-Config', num: 3 },
+    { label: 'Staffing', num: 4 },
+    { label: 'Workflows', num: 5 },
+    { label: 'Migration', num: 6 },
+    { label: 'Training', num: 7 },
+    { label: 'Live Portal', num: 8 },
+  ];
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
-      {/* ── Sidebar Stepper (hidden on mobile; breadcrumb used instead) ── */}
-      <aside className="hidden md:flex w-72 flex-shrink-0 sticky top-0 h-screen bg-white border-r border-slate-200 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="px-5 py-5 border-b border-slate-100">
-          <div className="flex items-center gap-2 mb-1">
-            <Settings className="h-5 w-5 text-blue-600" />
-            <h1 className="text-base font-bold text-slate-900">Setup Wizard</h1>
-          </div>
-          <p className="text-xs text-slate-500">Configure your HMS in 14 steps</p>
-        </div>
-
-        {/* Weighted Progress */}
-        <div className="px-5 py-4 border-b border-slate-100">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold text-slate-600">Overall Completion</span>
-            <span className="text-sm font-bold" style={{ color: progressColor }}>
-              {isLoading ? '...' : `${weightedScore}%`}
-            </span>
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-2 rounded-full transition-all duration-700"
-              style={{ width: `${weightedScore}%`, background: progressColor }}
-            />
-          </div>
-          <div className="flex gap-3 mt-2">
-            <span className="text-xs text-slate-400">
-              {STEPS.filter((s) => completion[s.id]).length}/{STEPS.length} steps
-            </span>
-            {criticalWarnings.length > 0 && (
-              <span className="text-xs font-medium text-red-500 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {criticalWarnings.length} critical
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Steps List */}
-        <nav className="flex-1 overflow-y-auto py-2">
-          {STEPS.map((step, idx) => {
-            const state = getStepState(step);
-            const isActive = activeStep === step.id;
-            const Icon = step.icon;
-            return (
-              <button
-                key={step.id}
-                onClick={() => {
-                  if (state !== 'locked') setActiveStep(step.id);
-                }}
-                disabled={state === 'locked'}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all group
-                  ${isActive ? 'bg-blue-50 border-r-2 border-blue-500' : 'hover:bg-slate-50'}
-                  ${state === 'locked' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                {/* Step number / icon */}
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold
-                    ${state === 'complete' ? 'bg-green-100 text-green-700' : isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}
-                >
-                  {state === 'complete' ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`text-xs font-semibold truncate
-                        ${isActive ? 'text-blue-700' : state === 'complete' ? 'text-green-700' : 'text-slate-700'}`}
-                    >
-                      {step.title}
-                    </span>
-                    {step.critical && (
-                      <span className="text-[9px] bg-red-100 text-red-600 font-bold px-1 rounded">
-                        CRITICAL
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {state === 'complete' ? (
-                      <Badge variant="default" className="text-[9px] px-1 py-0 bg-green-500">
-                        Complete
-                      </Badge>
-                    ) : state === 'locked' ? (
-                      <span className="flex items-center gap-0.5 text-[9px] text-slate-400">
-                        <Lock className="h-2.5 w-2.5" /> Locked
-                      </span>
-                    ) : (
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                        In Progress
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* ── Main Content ── */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Critical Warnings Banner */}
-        {criticalWarnings.length > 0 && (
-          <div className="m-6 mb-0 bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <span className="text-sm font-bold text-red-700">
-                {criticalWarnings.length} Critical Configuration
-                {criticalWarnings.length > 1 ? 's' : ''} Missing
-              </span>
-            </div>
-            <ul className="space-y-1">
-              {criticalWarnings.map((s) => (
-                <li key={s.id} className="text-xs text-red-600 flex items-center gap-1.5">
-                  <ChevronRight className="h-3 w-3" />
-                  {s.warning}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Breadcrumb Navigation */}
-        <div className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50/50 pb-12">
+      {/* Premium Top Navigation header */}
+      <header className="sticky top-0 bg-white border-b border-slate-100 z-10 py-4 px-6 shadow-sm">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* Back button */}
-            {stepHistory.length > 1 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={goBack}
-                className="flex items-center gap-1 text-slate-600 hover:text-slate-900 -ml-2"
-              >
-                <ChevronRight className="h-4 w-4 rotate-180" />
-                <span className="text-xs font-medium">Back</span>
-              </Button>
-            )}
-            <nav className="flex items-center gap-1 overflow-x-auto pb-1">
-              {STEPS.map((step, idx) => {
-                const stepState = getStepState(step);
-                const isActive = activeStep === step.id;
-                const Icon = step.icon;
-                const isLast = idx === STEPS.length - 1;
-
-                return (
-                  <React.Fragment key={step.id}>
-                    <button
-                      onClick={() => stepState !== 'locked' && navigateToStep(step.id)}
-                      disabled={stepState === 'locked'}
-                      title={`${step.title}: ${stepState === 'complete' ? 'Completed' : stepState === 'locked' ? 'Locked - complete prerequisites first' : 'In progress'}`}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap
-                      ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : stepState === 'complete'
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                            : stepState === 'locked'
-                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }
-                      ${stepState !== 'locked' ? 'cursor-pointer' : 'cursor-not-allowed'}
-                    `}
-                    >
-                      <span
-                        className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold
-                      ${isActive ? 'bg-white/20' : stepState === 'complete' ? 'bg-green-200 text-green-700' : 'bg-slate-200 text-slate-500'}
-                    `}
-                      >
-                        {stepState === 'complete' ? '✓' : idx + 1}
-                      </span>
-                      <span className="max-w-[120px] truncate">{step.title}</span>
-                    </button>
-                    {!isLast && <ChevronRight className="h-3 w-3 text-slate-300 flex-shrink-0" />}
-                  </React.Fragment>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-
-        {/* Step Content */}
-        <div className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeStep}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.2 }}
-            >
-              <StepContent
-                step={activeStepDef}
-                state={activeState}
-                completion={completion}
-                allSteps={STEPS}
-                warnings={serverWarnings[activeStep] ?? []}
-                activationError={activationError}
-                onNavigate={navigateToStep}
-                onConfigure={handleConfigure}
-                onBack={stepHistory.length > 1 ? goBack : undefined}
-              />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </main>
-
-      {/* Activation Confirmation Dialog */}
-      <Dialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-blue-600" />
-              Confirm Hospital Activation
-            </DialogTitle>
-            <DialogDescription>
-              Once activated, your hospital will go live on the platform. Patients will be able to:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 my-2">
-            <p className="text-sm text-slate-600">• Search and view your hospital profile</p>
-            <p className="text-sm text-slate-600">• Book OPD appointments with doctors</p>
-            <p className="text-sm text-slate-600">• Receive SMS/WhatsApp notifications</p>
-            <p className="text-sm text-slate-600">• Access billing and pharmacy services</p>
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 my-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
-              <p className="text-xs text-amber-800">
-                This action is irreversible. Please ensure all critical configurations are complete
-                before proceeding.
+            <div className="bg-teal-600 text-white p-2 rounded-xl">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-800">{hospitalName}</h1>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                Haspataal HMS Setup
               </p>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowActivateDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmActivation} className="bg-blue-600 hover:bg-blue-700">
-              Yes, Activate Hospital
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
 
-// ─── Step Content Panel ───────────────────────────────────────────────────────
-
-function StepContent({
-  step,
-  state,
-  completion,
-  allSteps,
-  warnings,
-  activationError,
-  onNavigate,
-  onConfigure,
-  onBack,
-}: {
-  step: (typeof STEPS)[number];
-  state: StepState;
-  completion: Record<string, boolean>;
-  allSteps: typeof STEPS;
-  warnings: string[];
-  activationError: string;
-  onNavigate: (id: string) => void;
-  onConfigure: () => void;
-  onBack?: () => void;
-}) {
-  const Icon = step.icon;
-  const lockedDeps = step.depends.filter((dep) => !completion[dep]);
-  const nextSteps = allSteps.filter((s) => s.depends.includes(step.id) && !completion[s.id]);
-
-  const stateColors = {
-    complete: {
-      bg: 'bg-green-50',
-      border: 'border-green-200',
-      badge: 'text-green-700 bg-green-100',
-      icon: 'text-green-600 bg-green-100',
-    },
-    in_progress: {
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      badge: 'text-blue-700 bg-blue-100',
-      icon: 'text-blue-600 bg-blue-100',
-    },
-    locked: {
-      bg: 'bg-slate-50',
-      border: 'border-slate-200',
-      badge: 'text-slate-500 bg-slate-100',
-      icon: 'text-slate-400 bg-slate-100',
-    },
-  };
-  const colors = stateColors[state];
-
-  return (
-    <div className="max-w-2xl">
-      {/* Header Card */}
-      <div className={`rounded-2xl border-2 ${colors.border} ${colors.bg} p-6 mb-6`}>
-        <div className="flex items-start gap-4">
-          <div className={`p-3 rounded-xl ${colors.icon}`}>
-            <Icon className="h-7 w-7" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-xl font-bold text-slate-900">{step.title}</h2>
-              {step.critical && (
-                <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">
-                  CRITICAL
-                </span>
-              )}
+          {stage < 8 && (
+            <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3.5 py-1.5 border border-slate-200">
+              <Sparkles className="h-3.5 w-3.5 text-teal-600" /> Stage {stage} of 8
             </div>
-            <p className="text-sm text-slate-500 mb-3">{step.subtitle}</p>
-            <div className="flex items-center gap-2">
-              {state === 'complete' ? (
-                <Badge className="bg-green-500 text-white">✓ Complete</Badge>
-              ) : state === 'locked' ? (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Lock className="h-3 w-3" /> Locked
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="flex items-center gap-1 border-blue-300 text-blue-600"
-                >
-                  <Clock className="h-3 w-3" /> In Progress
-                </Badge>
-              )}
-              <span className="text-xs text-slate-400">Weight: {step.weight}x</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Locked Dependencies */}
-      {state === 'locked' && lockedDeps.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Lock className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-800">
-              Complete these steps first:
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {lockedDeps.map((depId) => {
-              const dep = allSteps.find((s) => s.id === depId);
-              if (!dep) return null;
-              return (
-                <button
-                  key={depId}
-                  onClick={() => onNavigate(depId)}
-                  className="px-3 py-1.5 text-xs font-semibold bg-white border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 transition-colors flex items-center gap-1"
-                >
-                  {dep.title} <ArrowRight className="h-3 w-3" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Warning (if not complete) */}
-      {state !== 'complete' && state !== 'locked' && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4 flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-orange-700">{warnings[0] ?? step.warning}</span>
-        </div>
-      )}
-
-      {activationError && step.id === 'activation' && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-red-700">{activationError}</span>
-        </div>
-      )}
-
-      {/* CTA */}
-      {state !== 'locked' && (
-        <div className="flex gap-3">
-          {onBack && (
-            <Button
-              variant="outline"
-              onClick={onBack}
-              className="flex-1 py-6 text-sm font-semibold rounded-xl border-slate-300 hover:bg-slate-50"
-            >
-              <ChevronRight className="h-4 w-4 mr-1 rotate-180" />
-              Back
-            </Button>
           )}
-          <Button
-            onClick={onConfigure}
-            className={`${onBack ? 'flex-2' : 'w-full'} py-6 text-sm font-semibold rounded-xl transition-all ${
-              state === 'complete'
-                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200'
-            }`}
-          >
-            {step.id === 'activation'
-              ? 'Activate Hospital'
-              : state === 'complete'
-                ? 'Review & Update Configuration'
-                : 'Configure →'}
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
         </div>
-      )}
+      </header>
 
-      {/* Next Unlocks */}
-      {state === 'complete' && nextSteps.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">
-            Completing this unlocks:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {nextSteps.map((s) => {
-              const SIcon = s.icon;
+      {/* Top stage checklist progress bar (only shown if not Go-Live Dashboard) */}
+      {stage < 8 && (
+        <div className="bg-white border-b border-slate-200 py-4 px-6 mb-8 shadow-sm">
+          <div className="max-w-6xl mx-auto overflow-x-auto flex items-center justify-between gap-4 pb-2">
+            {stagesList.map((item) => {
+              const isCompleted = stage > item.num;
+              const isActive = stage === item.num;
               return (
-                <button
-                  key={s.id}
-                  onClick={() => onNavigate(s.id)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all"
-                >
-                  <SIcon className="h-3.5 w-3.5" />
-                  {s.title}
-                  <ChevronRight className="h-3 w-3" />
-                </button>
+                <div key={item.num} className="flex items-center gap-2 flex-shrink-0">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold transition-all
+                      ${isCompleted ? 'bg-teal-500 text-white' : isActive ? 'bg-teal-600 text-white ring-4 ring-teal-100' : 'bg-slate-100 text-slate-400'}`}
+                  >
+                    {isCompleted ? '✓' : item.num}
+                  </div>
+                  <span
+                    className={`text-xs font-bold transition-all
+                      ${isActive ? 'text-teal-700' : 'text-slate-500'}`}
+                  >
+                    {item.label}
+                  </span>
+                  {item.num < 8 && (
+                    <ChevronRight className="h-3 w-3 text-slate-300 ml-1 flex-shrink-0" />
+                  )}
+                </div>
               );
             })}
           </div>
         </div>
       )}
 
-      {/* All Steps Overview Grid */}
-      <div className="mt-8">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-          All Steps
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          {allSteps.map((s) => {
-            const sState = s.depends.every((d) => completion[d])
-              ? completion[s.id]
-                ? 'complete'
-                : 'in_progress'
-              : 'locked';
-            const SIcon = s.icon;
-            return (
-              <button
-                key={s.id}
-                onClick={() => sState !== 'locked' && onNavigate(s.id)}
-                disabled={sState === 'locked'}
-                className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all
-                  ${s.id === step.id ? 'border-blue-300 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}
-                  ${sState === 'locked' ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0
-                    ${sState === 'complete' ? 'bg-green-100' : sState === 'locked' ? 'bg-slate-100' : 'bg-blue-100'}`}
-                >
-                  <SIcon
-                    className={`h-3.5 w-3.5 ${sState === 'complete' ? 'text-green-600' : sState === 'locked' ? 'text-slate-400' : 'text-blue-600'}`}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-800 truncate">{s.title}</div>
-                  <div className="text-[10px] text-slate-400">
-                    {sState === 'complete' ? '✓ Done' : sState === 'locked' ? 'Locked' : 'Pending'}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      {/* Content wrapper */}
+      <div className="pt-4">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={stage}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25 }}
+          >
+            {stage === 1 && (
+              <WelcomeScreen hospitalName={hospitalName} onStart={() => handleUpdateStage(2)} />
+            )}
+            {stage === 2 && <DiscoveryWizard onComplete={() => handleUpdateStage(3)} />}
+            {stage === 3 && <SetupWizardAuto onComplete={() => handleUpdateStage(4)} />}
+            {stage === 4 && (
+              <StaffSetup onNext={() => handleUpdateStage(5)} onPrev={() => handleUpdateStage(3)} />
+            )}
+            {stage === 5 && (
+              <WorkflowConfig
+                onNext={() => handleUpdateStage(6)}
+                onPrev={() => handleUpdateStage(4)}
+              />
+            )}
+            {stage === 6 && (
+              <DataMigration
+                onNext={() => handleUpdateStage(7)}
+                onPrev={() => handleUpdateStage(5)}
+              />
+            )}
+            {stage === 7 && (
+              <TrainingSim
+                onComplete={() => handleUpdateStage(8)}
+                onPrev={() => handleUpdateStage(6)}
+              />
+            )}
+            {stage === 8 && <GoLiveDashboard hospitalId={hospitalId} />}
+          </motion.div>
+        </AnimatePresence>
       </div>
+
+      {/* Support floating button */}
+      {stage < 8 && (
+        <div className="fixed bottom-6 right-6 z-20">
+          <button
+            onClick={() => alert('Call 1800-Haspataal for instant onboarding assistance!')}
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-full px-5 py-3 shadow-lg shadow-slate-900/10 transition-all text-xs"
+          >
+            <HelpCircle className="h-4 w-4 text-teal-400" /> Assisted Onboarding Help
+          </button>
+        </div>
+      )}
     </div>
   );
 }

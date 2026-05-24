@@ -36,6 +36,9 @@ model DoctorMaster {
   records             PatientRecord[]
   reviews             Review[]
   slots               Slot[]
+  referralsSent       InternalReferral[]          @relation("ReferralsSent")
+  referralsReceived   InternalReferral[]          @relation("ReferralsReceived")
+  consultantSettlements ConsultantSettlement[]
 
   @@index([email])
   @@map("doctors_master")
@@ -189,6 +192,16 @@ model HospitalsMaster {
   gstExempt               Boolean             @default(false)       @map("gst_exempt")
   clinicTier              ClinicTier?         @map("clinic_tier")
   operatingHours          Json?               @map("operating_hours") // { "open": "09:00", "close": "21:00" }
+  // Onboarding Redesign Fields
+  approvalDocumentUrl     String?             @map("approval_document_url")
+  medicalCouncilNumber    String?             @map("medical_council_number")
+  latitude                Float?              @map("latitude")
+  longitude               Float?              @map("longitude")
+  googleLocationUrl       String?             @map("google_location_url")
+  clinicOperationalProfile ClinicOperationalProfile?
+  internalReferrals       InternalReferral[]
+  consultantSettlements   ConsultantSettlement[]
+  departmentHandoffs      DepartmentHandoff[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -383,6 +396,7 @@ model Staff {
   branch          Branch?          @relation(fields: [branchId], references: [id])
   hospital        HospitalsMaster  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   rolePermissions RolePermission[]
+  departmentHandoffs DepartmentHandoff[]
 
   @@index([hospitalId])
   @@index([role])
@@ -445,6 +459,7 @@ model Patient {
   vaccinationRecords       VaccinationRecord[]
   vitalRecords             VitalRecord[]
   wallet                   Wallet?
+  internalReferrals        InternalReferral[]
 
   @@index([city])
   @@index([email])
@@ -774,6 +789,8 @@ model Visit {
   notes         VisitNote[]
   appointment   Appointment?          @relation(fields: [appointmentId], references: [id])
   hospital      HospitalsMaster       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  currentStage  HandoffStage          @default(RECEPTION) @map("current_stage")
+  departmentHandoffs DepartmentHandoff[]
 
   @@index([hospitalId])
   @@index([appointmentId])
@@ -2102,4 +2119,134 @@ enum AIDocumentType {
   PRESCRIPTION_DRAFT
   FOLLOW_UP_SUMMARY
   CLINICAL_SUMMARY
+}
+
+// 1. Clinic Operational Profile (Stage 2 Questionnaire Answers)
+model ClinicOperationalProfile {
+  id                 String          @id @default(uuid())
+  hospitalId         String          @unique @map("hospital_id")
+  isSingleDoctor     Boolean         @default(true) @map("is_single_doctor")
+  hasConsultants     Boolean         @default(false) @map("has_consultants")
+  dailyStaffCount    Int             @default(1) @map("daily_staff_count")
+  hasReceptionist    Boolean         @default(false) @map("has_receptionist")
+  hasNursingStaff    Boolean         @default(false) @map("has_nursing_staff")
+  hasPharmacy        Boolean         @default(false) @map("has_pharmacy")
+  hasOwnLab          Boolean         @default(false) @map("has_own_lab")
+  admitsPatients     Boolean         @default(false) @map("admits_patients")
+  avgDailyPatients   Int             @default(10) @map("avg_daily_patients")
+  opdOnly            Boolean         @default(true) @map("opd_only")
+  currentWorkflow    Json?           @map("current_workflow") // appointments, records, billing, followups
+  digitalMaturity    Json?           @map("digital_maturity") // prev_software, comfort_level, preferred_device
+  retentionLeaks     Json?           @map("retention_leaks") // missed_appointments, WhatsApp_reminders
+  pharmacyConfig     Json?           @map("pharmacy_config") // stock_mgmt, billing, expiry_alert
+  labConfig          Json?           @map("lab_config") // reports_mgmt, upload_req
+  communicationPrefs Json?           @map("communication_prefs") // WhatsApp_no, reminders_req, preferred_lang
+  createdAt          DateTime        @default(now()) @map("created_at")
+  hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@map("clinic_operational_profiles")
+}
+
+// 2. Internal Referral Tracker (Multi-speciality Engine 4)
+model InternalReferral {
+  id             String          @id @default(uuid())
+  hospitalId     String          @map("hospital_id")
+  patientId      String          @map("patient_id")
+  fromDoctorId   String          @map("from_doctor_id")
+  toDoctorId     String          @map("to_doctor_id")
+  reason         String?
+  status         ReferralStatus  @default(PENDING)
+  priority       ReferralPriority @default(ROUTINE)
+  notes          String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  completedAt    DateTime?       @map("completed_at")
+  hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient        Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  fromDoctor     DoctorMaster    @relation("ReferralsSent", fields: [fromDoctorId], references: [id], onDelete: Cascade)
+  toDoctor       DoctorMaster    @relation("ReferralsReceived", fields: [toDoctorId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@map("internal_referrals")
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum ReferralPriority {
+  ROUTINE
+  URGENT
+  EMERGENCY
+}
+
+// 3. Consultant Revenue Share & Settlements (Multi-speciality Engine 2)
+model ConsultantSettlement {
+  id                  String          @id @default(uuid())
+  hospitalId          String          @map("hospital_id")
+  doctorId            String          @map("doctor_id")
+  settlementPeriodStart DateTime       @map("settlement_period_start")
+  settlementPeriodEnd   DateTime       @map("settlement_period_end")
+  totalConsultations  Int             @map("total_consultations")
+  grossRevenueCents   Int             @map("gross_revenue_cents")
+  revenueSharePercent Decimal         @map("revenue_share_percent")
+  consultantShareCents Int            @map("consultant_share_cents")
+  hospitalShareCents  Int             @map("hospital_share_cents")
+  status              SettlementStatus @default(PENDING)
+  paidAt              DateTime?       @map("paid_at")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  doctor              DoctorMaster    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([doctorId])
+  @@map("consultant_settlements")
+}
+
+enum SettlementStatus {
+  PENDING
+  APPROVED
+  SETTLED
+}
+
+// 4. Department Handoff / Patient Flow Tracking (Multi-speciality Engine 1)
+model DepartmentHandoff {
+  id              String          @id @default(uuid())
+  visitId         String          @map("visit_id")
+  hospitalId      String          @map("hospital_id")
+  fromStage       HandoffStage    @map("from_stage")
+  toStage         HandoffStage    @map("to_stage")
+  status          HandoffStatus   @default(PENDING)
+  notes           String?
+  assignedStaffId String?         @map("assigned_staff_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  completedAt     DateTime?       @map("completed_at")
+  visit           Visit           @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  hospital        HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  assignedStaff   Staff?          @relation(fields: [assignedStaffId], references: [id])
+
+  @@index([visitId])
+  @@index([hospitalId])
+  @@map("department_handoffs")
+}
+
+enum HandoffStage {
+  RECEPTION
+  TRIAGE
+  CONSULTATION
+  INVESTIGATION_LAB
+  INVESTIGATION_RAD
+  DISPENSARY_PHARMACY
+  BILLING
+  DISCHARGE
+}
+
+enum HandoffStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BYPASSED
 }

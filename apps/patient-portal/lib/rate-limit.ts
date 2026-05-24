@@ -61,8 +61,9 @@ export async function rateLimiter(
     const remaining = Math.max(0, limit - count);
 
     return { allowed, remaining };
-  } catch (error) {
-    console.error('[RATE-LIMIT] Redis error:', error);
+  } catch {
+    // Redis unavailable (already announced once by lib/redis.ts on first error).
+    // Silently fall back to in-memory limiter for this request and all future ones in this process.
     return checkFallbackLimit(key, limit, windowSeconds);
   }
 }
