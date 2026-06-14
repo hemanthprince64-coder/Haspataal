@@ -1,7 +1,7 @@
-import prisma from '../prisma';
-import logger from '../logger';
-import { CareLifecycleService } from './care-lifecycle';
 import { BookingStatus } from '../../types';
+import logger from '../logger';
+import prisma from '../util/prisma-singleton';
+import { CareLifecycleService } from './care-lifecycle';
 
 export class SmsUssdService {
   /**
@@ -79,7 +79,13 @@ export class SmsUssdService {
         if (journey) {
           const visitDate = new Date(journey.createdAt);
           const now = new Date();
-          const currentDay = Math.min(Math.max(Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1), 14);
+          const currentDay = Math.min(
+            Math.max(
+              Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+              1,
+            ),
+            14,
+          );
 
           // Interpret '1' or 'YES' as 'BETTER'
           await CareLifecycleService.submitCheckIn(journey.id, currentDay, 'BETTER');
@@ -94,7 +100,9 @@ export class SmsUssdService {
         const appointment = await prisma.appointment.findFirst({
           where: {
             patientId: patient.id,
-            status: { in: [BookingStatus.AWAITING_PAYMENT, BookingStatus.BOOKED, BookingStatus.CONFIRMED] },
+            status: {
+              in: [BookingStatus.AWAITING_PAYMENT, BookingStatus.BOOKED, BookingStatus.CONFIRMED],
+            },
           },
           orderBy: { createdAt: 'desc' },
         });
@@ -123,7 +131,13 @@ export class SmsUssdService {
         if (journey) {
           const visitDate = new Date(journey.createdAt);
           const now = new Date();
-          const currentDay = Math.min(Math.max(Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1), 14);
+          const currentDay = Math.min(
+            Math.max(
+              Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+              1,
+            ),
+            14,
+          );
 
           await CareLifecycleService.submitCheckIn(journey.id, currentDay, 'SAME');
           return `Haspataal: Recorded day ${currentDay} check-in as SAME. If symptoms worsen, contact the clinic.`;
@@ -149,7 +163,13 @@ export class SmsUssdService {
         if (journey) {
           const visitDate = new Date(journey.createdAt);
           const now = new Date();
-          const currentDay = Math.min(Math.max(Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1), 14);
+          const currentDay = Math.min(
+            Math.max(
+              Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+              1,
+            ),
+            14,
+          );
 
           await CareLifecycleService.submitCheckIn(journey.id, currentDay, 'WORSE');
           return `Haspataal Alert: Check-in recorded as WORSE. An escalation notice has been sent to your doctor. Please visit the OPD immediately.`;
@@ -232,13 +252,22 @@ export class SmsUssdService {
       let classification = 'Mild symptoms.';
       let urgency = 'Routine';
 
-      if (symptoms.includes('cough') && (symptoms.includes('week') || symptoms.includes('blood') || symptoms.includes('chest'))) {
+      if (
+        symptoms.includes('cough') &&
+        (symptoms.includes('week') || symptoms.includes('blood') || symptoms.includes('chest'))
+      ) {
         classification = 'Suspected Tuberculosis. Chronic cough.';
         urgency = 'Urgent';
-      } else if (symptoms.includes('fever') && (symptoms.includes('chill') || symptoms.includes('shiver'))) {
+      } else if (
+        symptoms.includes('fever') &&
+        (symptoms.includes('chill') || symptoms.includes('shiver'))
+      ) {
         classification = 'Suspected Malaria. High fever with chills.';
         urgency = 'Urgent';
-      } else if (symptoms.includes('fever') && (symptoms.includes('week') || symptoms.includes('dark') || symptoms.includes('weight'))) {
+      } else if (
+        symptoms.includes('fever') &&
+        (symptoms.includes('week') || symptoms.includes('dark') || symptoms.includes('weight'))
+      ) {
         classification = 'Suspected Kala-azar. Prolonged fever.';
         urgency = 'Critical';
       }
@@ -302,7 +331,7 @@ export class SmsUssdService {
         return `CON Select Date for Dr. ${doctor.fullName}:\n1. Today\n2. Tomorrow`;
       }
 
-      let date = new Date();
+      const date = new Date();
       if (path[2] === '2') {
         date.setDate(date.getDate() + 1);
       }
@@ -411,7 +440,10 @@ export class SmsUssdService {
 
       const visitDate = new Date(journey.createdAt);
       const now = new Date();
-      const currentDay = Math.min(Math.max(Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1), 14);
+      const currentDay = Math.min(
+        Math.max(Math.floor((now.getTime() - visitDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1),
+        14,
+      );
 
       if (path.length === 1) {
         return `CON Recovery Plan (Day ${currentDay}):\n1. Feeling Better\n2. Feeling Same\n3. Feeling Worse`;
