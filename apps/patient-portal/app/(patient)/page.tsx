@@ -27,6 +27,16 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { getPatientFullProfile } from '@/app/actions';
 import DoctorCard from './components/DoctorCard';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
 
 export default function PatientHome() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
