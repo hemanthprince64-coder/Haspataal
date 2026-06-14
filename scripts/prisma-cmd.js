@@ -1,9 +1,11 @@
+const prepareSchema = require('./prepare-schema');
+
+// 1. Regenerate SQLite schema if sqlite mode is active so the Prisma
+//    datasource validator can read the correct file: URL path.
+prepareSchema.prepareSchema();
+
 const { execSync } = require('child_process');
 const path = require('path');
-
-// 1. Run prepare-schema first to ensure the SQLite schema is generated if active
-require('./prepare-schema');
-
 const provider = process.env.DATABASE_PROVIDER || 'postgres';
 
 // 2. Determine which schema file to use
