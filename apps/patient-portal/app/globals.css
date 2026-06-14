@@ -1159,3 +1159,131 @@ h4 {
     gap: 24px;
   }
 }
+
+/* ═══════════════════════════════════════
+   PRINT MEDIA AND HARDENING WORKFLOWS
+   ═══════════════════════════════════════ */
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  nav,
+  header,
+  footer,
+  aside,
+  button,
+  .btn,
+  .no-print * {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12pt;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+  }
+
+  /* Force page breaks */
+  .page-break {
+    page-break-after: always;
+    break-after: always;
+  }
+
+  /* 80mm ESC/POS Thermal Receipt Layout */
+  .print-thermal {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    padding: 2mm !important;
+    margin: 0 auto !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .print-thermal h1,
+  .print-thermal h2,
+  .print-thermal h3,
+  .print-thermal h4 {
+    font-family: 'Courier New', Courier, monospace !important;
+    text-align: center !important;
+    margin: 4px 0 !important;
+    font-weight: bold !important;
+  }
+
+  .print-thermal .divider {
+    border-top: 1px dashed #000 !important;
+    margin: 6px 0 !important;
+    height: 0 !important;
+    background: none !important;
+  }
+
+  .print-thermal table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+  }
+
+  .print-thermal th,
+  .print-thermal td {
+    padding: 2px !important;
+    border-bottom: 1px dashed #000 !important;
+    text-align: left !important;
+  }
+
+  .print-thermal .qr-code {
+    display: block !important;
+    margin: 8px auto !important;
+    width: 40mm !important;
+    height: 40mm !important;
+    filter: grayscale(100%) contrast(200%) !important;
+  }
+
+  /* 132-Column Continuous-Feed Dot-Matrix Printer Layout */
+  .print-dotmatrix {
+    width: 132ch !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 9pt !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0px !important;
+    white-space: pre-wrap !important;
+    color: #000 !important;
+    background: #fff !important;
+    padding: 10px !important;
+  }
+
+  .print-dotmatrix h1,
+  .print-dotmatrix h2,
+  .print-dotmatrix h3 {
+    font-family: 'Courier New', Courier, monospace !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-dotmatrix .ascii-border {
+    font-family: 'Courier New', Courier, monospace !important;
+    letter-spacing: 0px !important;
+  }
+
+  .print-dotmatrix table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-family: 'Courier New', Courier, monospace !important;
+  }
+
+  .print-dotmatrix th,
+  .print-dotmatrix td {
+    border: 1px solid #000 !important;
+    padding: 4px !important;
+    font-size: 9pt !important;
+  }
+
+  /* Hindi and bilingual support readability overrides */
+  .lang-hi {
+    font-family: 'Noto Sans Devanagari', 'Inter', sans-serif !important;
+    font-weight: 500 !important;
+  }
+}

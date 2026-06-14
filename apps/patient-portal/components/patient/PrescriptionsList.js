@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import PrescriptionReadback from '@/components/PrescriptionReadback';
 
 export default function PrescriptionsList({ prescriptions }) {
   if (!prescriptions || prescriptions.length === 0) {
@@ -103,11 +104,13 @@ export default function PrescriptionsList({ prescriptions }) {
               )}
 
               {pres.type === 'STRUCTURED' && pres.items && pres.items.length > 0 && (
-                <div className="space-y-3 mb-8">
-                  <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 px-1">
-                    <NotebookTabs className="w-3.5 h-3.5" /> Medication List
-                  </div>
-                  {pres.items.map((item, idx) => (
+                <>
+                  <PrescriptionReadback doctorName={pres.doctor?.fullName} items={pres.items} />
+                  <div className="space-y-3 mb-8">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 px-1">
+                      <NotebookTabs className="w-3.5 h-3.5" /> Medication List
+                    </div>
+                    {pres.items.map((item, idx) => (
                     <div
                       key={idx}
                       className="flex justify-between items-center p-4 bg-slate-50/50 border border-slate-100 rounded-2xl group/med hover:bg-white hover:border-blue-100 transition-all"
@@ -132,7 +135,8 @@ export default function PrescriptionsList({ prescriptions }) {
                     </div>
                   ))}
                 </div>
-              )}
+              </>
+            )}
 
               {isFileUpload && pres.fileUrl ? (
                 <Button

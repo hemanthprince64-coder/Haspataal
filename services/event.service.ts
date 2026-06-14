@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { Pool } from 'pg';
+import { prisma } from '@haspataal/db';
 import { EventType, CreateEventInput } from '../types/events';
 import redis from '../lib/redis';
 
@@ -22,6 +23,8 @@ export class EventService {
     return createHash('sha256').update(raw).digest('hex');
   }
 
+  private static processedKeys = new Set<string>();
+
   /**
    * Publishes an event to the EventLog (PostgreSQL) and Redis Stream.
    * Implements strict idempotency.
@@ -34,6 +37,38 @@ export class EventService {
     resourceId: string = 'global', // defaults to 'global' if no specific resource
   ): Promise<boolean> {
     const idempotencyKey = this.generateIdempotencyKey(hospitalId, eventType, resourceId);
+    const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+
+    if (isSqlite) {
+      if (this.processedKeys.has(idempotencyKey)) {
+        console.log(`[EventService] Skipped duplicate event: ${eventType} (${idempotencyKey})`);
+        return true;
+      }
+      this.processedKeys.add(idempotencyKey);
+      
+      // Keep in-memory cache pruned
+      if (this.processedKeys.size > 1000) {
+        const iterator = this.processedKeys.values();
+        for (let i = 0; i < 200; i++) {
+          const val = iterator.next().value;
+          if (val) this.processedKeys.delete(val);
+        }
+      }
+
+      try {
+        await prisma.eventLog.create({
+          data: {
+            eventType,
+            payload: payload || {},
+            hospitalId,
+            patientId,
+          },
+        });
+      } catch (err) {
+        console.error('[EventService] SQLite event log create failed:', err);
+      }
+      return true;
+    }
 
     const client = await pool.connect();
     try {

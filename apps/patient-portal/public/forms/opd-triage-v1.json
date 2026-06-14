@@ -1,0 +1,117 @@
+{
+  "formId": "opd-triage-v1",
+  "title": "OPD Triage Form",
+  "description": "Standardized Clinical Triage form for OPD check-ins (Resource-Constrained Bihar Settings)",
+  "fields": [
+    {
+      "id": "chief_complaint",
+      "label": "Chief Complaint",
+      "type": "textarea",
+      "placeholder": "Describe main symptoms (e.g. fever, cough, chest pain)...",
+      "required": true,
+      "conceptCode": "1000-9",
+      "conceptSource": "CIEL",
+      "validation": {
+        "minLength": 3,
+        "maxLength": 1000
+      }
+    },
+    {
+      "id": "systolic_bp",
+      "label": "Systolic Blood Pressure (mmHg)",
+      "type": "number",
+      "placeholder": "e.g. 120",
+      "required": true,
+      "conceptCode": "8480-6",
+      "conceptSource": "LOINC",
+      "validation": {
+        "min": 40,
+        "max": 300
+      }
+    },
+    {
+      "id": "diastolic_bp",
+      "label": "Diastolic Blood Pressure (mmHg)",
+      "type": "number",
+      "placeholder": "e.g. 80",
+      "required": true,
+      "conceptCode": "8462-4",
+      "conceptSource": "LOINC",
+      "validation": {
+        "min": 30,
+        "max": 200
+      }
+    },
+    {
+      "id": "temperature",
+      "label": "Body Temperature (°F)",
+      "type": "number",
+      "placeholder": "e.g. 98.6",
+      "required": true,
+      "conceptCode": "8310-5",
+      "conceptSource": "LOINC",
+      "validation": {
+        "min": 90,
+        "max": 115
+      }
+    },
+    {
+      "id": "heart_rate",
+      "label": "Heart Rate (bpm)",
+      "type": "number",
+      "placeholder": "e.g. 72",
+      "required": false,
+      "conceptCode": "8867-4",
+      "conceptSource": "LOINC",
+      "validation": {
+        "min": 30,
+        "max": 250
+      }
+    },
+    {
+      "id": "oxygen_saturation",
+      "label": "SpO2 Oxygen Saturation (%)",
+      "type": "number",
+      "placeholder": "e.g. 98",
+      "required": false,
+      "conceptCode": "2708-6",
+      "conceptSource": "LOINC",
+      "validation": {
+        "min": 50,
+        "max": 100
+      }
+    },
+    {
+      "id": "triage_priority",
+      "label": "Triage Priority Level",
+      "type": "select",
+      "placeholder": "Assign triage color",
+      "required": true,
+      "options": [
+        {
+          "label": "RED - Emergency (Immediate Care Required)",
+          "value": "RED"
+        },
+        {
+          "label": "YELLOW - Urgent (Should be seen soon)",
+          "value": "YELLOW"
+        },
+        {
+          "label": "GREEN - Non-Urgent (Standard OPD Queue)",
+          "value": "GREEN"
+        }
+      ],
+      "conceptCode": "11222-3",
+      "conceptSource": "CIEL"
+    },
+    {
+      "id": "has_red_flags",
+      "label": "Patient exhibits severe respiratory distress or unconsciousness?",
+      "type": "checkbox",
+      "placeholder": "Check if yes",
+      "required": false,
+      "conceptCode": "13422-9",
+      "conceptSource": "CIEL"
+    }
+  ]
+}

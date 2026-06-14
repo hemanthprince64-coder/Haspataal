@@ -4,9 +4,32 @@
  * No Redis dependency — works immediately with just PostgreSQL.
  */
 
-import prisma from '@/lib/prisma';
-import logger from '@/lib/logger';
-import type { EventType } from '@/types/events';
+import prisma from '../apps/patient-portal/lib/prisma';
+import logger from '../apps/patient-portal/lib/logger';
+
+export type EventType =
+  | 'APPOINTMENT_BOOKED'
+  | 'APPOINTMENT_CONFIRMED'
+  | 'APPOINTMENT_CANCELLED'
+  | 'APPOINTMENT_COMPLETED'
+  | 'PATIENT_REGISTERED'
+  | 'PATIENT_UPDATED'
+  | 'HOSPITAL_REGISTERED'
+  | 'HOSPITAL_APPROVED'
+  | 'VISIT_CREATED'
+  | 'VISIT_COMPLETED'
+  | 'BILL_CREATED'
+  | 'BILL_PAID'
+  | 'PRESCRIPTION_ISSUED'
+  | 'LAB_ORDER_CREATED'
+  | 'LAB_RESULT_UPLOADED'
+  | 'AGENT_COMMISSION_EARNED'
+  | 'ANC_VISIT_RECORDED'
+  | 'ANC_HIGH_RISK_FLAGGED'
+  | 'RETENTION_ALERT_TRIGGERED'
+  | 'SYNC_REPLAY_APPLIED'
+  | 'SETTLEMENT_CALCULATED'
+  | 'DATA_MIGRATION_QUEUED';
 
 interface EmitEventInput {
   eventType: EventType;
@@ -28,7 +51,7 @@ export async function emitEvent(input: EmitEventInput): Promise<void> {
         hospitalId: input.hospitalId || null,
         patientId: input.patientId || null,
         executedBy: input.executedBy || null,
-        payload: input.payload,
+        payload: input.payload as any,
       },
     });
     logger.info(

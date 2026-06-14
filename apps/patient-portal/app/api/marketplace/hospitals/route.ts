@@ -7,7 +7,11 @@ export async function GET(req: NextRequest) {
     where: {
       accountStatus: 'active',
       isListedOnMarketplace: true,
-      ...(city ? { city: { equals: city, mode: 'insensitive' } } : {}),
+      ...(city
+        ? process.env.DATABASE_PROVIDER === 'sqlite'
+          ? { city: { equals: city } }
+          : { city: { equals: city } }
+        : {}),
     },
     select: {
       id: true,

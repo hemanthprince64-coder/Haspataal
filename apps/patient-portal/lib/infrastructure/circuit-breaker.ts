@@ -13,6 +13,17 @@ export class CircuitBreaker {
   ) {}
 
   async execute<T>(action: () => Promise<T>): Promise<T> {
+    const isOffline =
+      process.env.DEPLOYMENT_MODE === 'LOCAL' ||
+      process.env.OFFLINE_ENABLED === 'true' ||
+      process.env.DATABASE_PROVIDER === 'sqlite';
+
+    if (isOffline) {
+      this.state = 'OPEN';
+      this.lastFailureTime = Date.now();
+      throw new Error('Circuit is OPEN: External service disabled in offline/local mode.');
+    }
+
     if (this.state === 'OPEN') {
       if (Date.now() - (this.lastFailureTime || 0) > this.resetTimeout) {
         this.state = 'HALF_OPEN';

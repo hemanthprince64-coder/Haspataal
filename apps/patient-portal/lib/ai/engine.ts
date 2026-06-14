@@ -27,6 +27,76 @@ export class ConsultationAiEngine {
   }
 
   /**
+   * Helper to determine if we should bypass the cloud API
+   */
+  private static isOfflineMode(): boolean {
+    const hasKey = !!process.env.GEMINI_API_KEY;
+    const offlineProfile = process.env.NETWORK_STATUS === 'offline';
+    return !hasKey || offlineProfile;
+  }
+
+  /**
+   * Unified AI Completion Router supporting Gemini, local Ollama, and rule-based fallbacks.
+   */
+  private static async generateCompletion(
+    prompt: string,
+    imagePart: any | null,
+    fallbackData: any,
+  ): Promise<any> {
+    const isOffline = this.isOfflineMode();
+
+    if (!isOffline) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          generationConfig: { responseMimeType: 'application/json' },
+        });
+
+        const contentParts: any[] = [{ text: prompt }];
+        if (imagePart) {
+          contentParts.push(imagePart);
+        }
+
+        const result = await model.generateContent(contentParts);
+        const responseText = result.response.text();
+        return JSON.parse(responseText);
+      } catch (err: any) {
+        logger.warn({ err: err.message }, 'Gemini API failed. Falling back to local AI.');
+      }
+    }
+
+    // Try Local Ollama Fallback
+    try {
+      const ollamaPrompt = prompt + '\nIMPORTANT: Your output MUST be a valid JSON object matching the requested schema. Return raw JSON only, no markdown formatting.';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+
+      const res = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3',
+          prompt: ollamaPrompt,
+          stream: false,
+          format: 'json',
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data: any = await res.json();
+        return JSON.parse(data.response);
+      }
+    } catch (err: any) {
+      logger.info({ err: err.message }, 'Local Ollama not available. Using rule-based fallback.');
+    }
+
+    // Return deterministic fallback data
+    return fallbackData;
+  }
+
+  /**
    * Main orchestration pipeline for the Post Consultation AI
    */
   static async process(input: ConsultationInput) {
@@ -60,6 +130,8 @@ export class ConsultationAiEngine {
         followUpPlan,
         recoveryRoadmap,
         input.patientProfile,
+        this.isOfflineMode(),
+        input.clinicalNotes,
       );
     } catch (error: any) {
       logger.error(
@@ -71,13 +143,8 @@ export class ConsultationAiEngine {
   }
 
   private static async ingestMedications(input: ConsultationInput) {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: { responseMimeType: 'application/json' },
-    });
-
     const promptBase = this.getPromptContent();
-    let promptSnippet = promptBase.split('---')[0]; // Medication Structurer section
+    const promptSnippet = promptBase.split('---')[0];
 
     const prompt = `
             ${promptSnippet}
@@ -88,29 +155,46 @@ export class ConsultationAiEngine {
             ${input.prescriptionImage ? 'An image of the prescription is attached.' : ''}
         `;
 
-    const contentParts: any[] = [{ text: prompt }];
+    let imagePart = null;
     if (input.prescriptionImage) {
-      contentParts.push({
+      imagePart = {
         inlineData: {
           mimeType: input.prescriptionImage.mimeType,
           data: input.prescriptionImage.data,
         },
-      });
+      };
     }
 
-    const result = await model.generateContent(contentParts);
-    const response = result.response.text();
-    return JSON.parse(response).medications || [];
+    const notes = (input.clinicalNotes || '').toLowerCase();
+    const isFever = notes.includes('fever') || notes.includes('malaria') || notes.includes('temp');
+
+    const fallbackMeds = isFever
+      ? [
+          {
+            name: 'Paracetamol',
+            dosage: '500mg',
+            duration: '5 days',
+            instructions: 'After food',
+            schedule: { morning: true, afternoon: true, night: true, beforeFood: false },
+          },
+        ]
+      : [
+          {
+            name: 'Multivitamin',
+            dosage: '1 tablet',
+            duration: '10 days',
+            instructions: 'Once daily',
+            schedule: { morning: true, afternoon: false, night: false, beforeFood: false },
+          },
+        ];
+
+    const result = await this.generateCompletion(prompt, imagePart, { medications: fallbackMeds });
+    return result.medications || fallbackMeds;
   }
 
   private static async generateCareInsights(input: ConsultationInput, medications: any[]) {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: { responseMimeType: 'application/json' },
-    });
-
     const promptBase = this.getPromptContent();
-    let promptSnippet = promptBase.split('---')[2]; // Patient Localization section
+    const promptSnippet = promptBase.split('---')[2];
 
     const prompt = `
             ${promptSnippet}
@@ -122,18 +206,28 @@ export class ConsultationAiEngine {
             isPediatric: ${(input.patientProfile?.age || 0) < 13}
         `;
 
-    const result = await model.generateContent(prompt);
-    return JSON.parse(result.response.text());
+    const notes = (input.clinicalNotes || '').toLowerCase();
+    const isFever = notes.includes('fever') || notes.includes('malaria') || notes.includes('temp');
+
+    const fallbackInsights = {
+      conditionSimple: isFever ? 'Acute Fever / Suspected Malaria' : 'General Care Plan',
+      explanation: isFever
+        ? 'A general care plan to manage body temperature and recover strength.'
+        : 'Standard patient monitoring and health support program.',
+      seriousness: isFever ? 'URGENT' : 'ROUTINE',
+      timeline: isFever ? '3-5 days' : '7 days',
+      redFlags: [
+        { symptom: 'Fever above 103 F', action: 'CONTACT_HOSPITAL' },
+        { symptom: 'Difficulty breathing', action: 'CONTACT_HOSPITAL' },
+      ],
+    };
+
+    return await this.generateCompletion(prompt, null, fallbackInsights);
   }
 
   private static async optimizeFollowUp(input: ConsultationInput, meds: any[], insights: any) {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: { responseMimeType: 'application/json' },
-    });
-
     const promptBase = this.getPromptContent();
-    let promptSnippet = promptBase.split('---')[1]; // Conversion Optimizer section
+    const promptSnippet = promptBase.split('---')[1];
 
     const prompt = `
             ${promptSnippet}
@@ -143,8 +237,15 @@ export class ConsultationAiEngine {
             Therapy Duration: ${meds.length > 0 ? meds[0].duration : 'N/A'}
         `;
 
-    const result = await model.generateContent(prompt);
-    return JSON.parse(result.response.text()).followUp;
+    const fallbackFollowUp = {
+      followUp: {
+        recommendedDays: 7,
+        reason: 'Routine post-consultation recovery checkup.',
+      },
+    };
+
+    const result = await this.generateCompletion(prompt, null, fallbackFollowUp);
+    return result.followUp || fallbackFollowUp.followUp;
   }
 
   private static async generateRecoveryRoadmap(
@@ -152,13 +253,8 @@ export class ConsultationAiEngine {
     insights: any,
     meds: any[],
   ) {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      generationConfig: { responseMimeType: 'application/json' },
-    });
-
     const promptBase = this.getPromptContent();
-    let promptSnippet = promptBase.split('---')[3]; // Recovery Roadmap section
+    const promptSnippet = promptBase.split('---')[3];
 
     const prompt = `
             ${promptSnippet}
@@ -169,8 +265,29 @@ export class ConsultationAiEngine {
             Patient Profile: ${JSON.stringify(input.patientProfile)}
         `;
 
-    const result = await model.generateContent(prompt);
-    return JSON.parse(result.response.text()).roadmap || [];
+    const fallbackRoadmap = [
+      {
+        dayNumber: 1,
+        expectedSymptoms: 'Mild fatigue or resting phase',
+        markers: 'Rest and hydration',
+        guidance: 'Take easy digestable food and plenty of water.',
+      },
+      {
+        dayNumber: 3,
+        expectedSymptoms: 'Symptoms start to clear',
+        markers: 'Activity return',
+        guidance: 'Slowly resume daily routines.',
+      },
+      {
+        dayNumber: 7,
+        expectedSymptoms: 'Expected fully recovered',
+        markers: 'Checkup',
+        guidance: 'Visit the clinic if symptoms return.',
+      },
+    ];
+
+    const result = await this.generateCompletion(prompt, null, { roadmap: fallbackRoadmap });
+    return result.roadmap || fallbackRoadmap;
   }
 
   private static async persistCareJourney(
@@ -180,8 +297,11 @@ export class ConsultationAiEngine {
     followUp: any,
     roadmap: any[],
     profile?: any,
+    isOffline = false,
+    clinicalNotes?: string,
   ) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (txRaw) => {
+      const tx = txRaw as any;
       // Create the root CareJourney
       const journey = await tx.careJourney.create({
         data: {
@@ -258,6 +378,20 @@ export class ConsultationAiEngine {
           messageType: 'DAY_CHECKIN',
         })),
       });
+
+      // Queue an outbox event to recompute when back online
+      if (isOffline) {
+        await tx.outboxEvent.create({
+          data: {
+            eventType: 'AI_RECOMPUTE_REQUIRED',
+            payload: {
+              visitId,
+              clinicalNotes,
+              patientProfile: profile,
+            },
+          },
+        });
+      }
 
       return journey;
     });

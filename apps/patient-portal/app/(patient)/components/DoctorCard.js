@@ -1,16 +1,40 @@
 'use client';
 
-import { Star, MapPin, Building2, User } from 'lucide-react';
+import { Star, MapPin, Building2, User, Bookmark } from 'lucide-react';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toggleDoctorBookmark, getOfflineItem } from '@/lib/infrastructure/offline-db';
 
 export default function DoctorCard({ doctor, className }) {
   const { id, name, speciality, hospital, distance, fees, matches, stars, image, gender } = doctor;
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      getOfflineItem('bookmarkedDoctors', id)
+        .then((item) => {
+          setIsBookmarked(!!item);
+        })
+        .catch((err) => console.error('Error fetching bookmark status', err));
+    }
+  }, [id]);
+
+  const handleBookmark = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const status = await toggleDoctorBookmark(doctor);
+      setIsBookmarked(status);
+    } catch (err) {
+      console.error('Failed to toggle bookmark', err);
+    }
+  };
 
   // Fallback images based on gender
   const fallbackImage =
@@ -21,12 +45,26 @@ export default function DoctorCard({ doctor, className }) {
   return (
     <div
       className={cn(
-        'group bg-white border border-slate-100 rounded-xl p-3 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300',
+        'group relative bg-white border border-slate-100 rounded-xl p-3 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-100 transition-all duration-300',
         className,
       )}
     >
+      {/* Bookmark Button */}
+      <button
+        onClick={handleBookmark}
+        className={cn(
+          'absolute top-3 right-3 p-1.5 rounded-lg border transition-all duration-200 z-10',
+          isBookmarked
+            ? 'bg-rose-50 border-rose-100 text-rose-500 hover:bg-rose-100'
+            : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600',
+        )}
+        title={isBookmarked ? 'Remove Bookmark' : 'Bookmark Doctor'}
+      >
+        <Bookmark className={cn('w-4 h-4', isBookmarked && 'fill-rose-500')} />
+      </button>
+
       {/* Top Row: Info & Avatar */}
-      <div className="flex gap-3 mb-3">
+      <div className="flex gap-3 mb-3 pr-8">
         {/* Avatar with Match Badge */}
         <div className="relative flex-shrink-0">
           <Avatar className="w-14 h-14 rounded-xl border-2 border-white shadow-sm group-hover:scale-105 transition-transform duration-500">

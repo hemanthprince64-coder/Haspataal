@@ -44,7 +44,7 @@ export async function notifyNextInWaitlist(doctorId: string, slotTime: Date) {
           patientId: nextInLine.patientGlobalId,
           doctorId,
           slotTime,
-        },
+        } as any,
       },
     });
 

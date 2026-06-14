@@ -1,0 +1,125 @@
+{
+  "formId": "opd-anc-triage-v1",
+  "title": "ANC Triage Form",
+  "description": "Standardized ANC check-in form for Bihar PHC (Resource-Constrained Settings)",
+  "fields": [
+    {
+      "id": "gestational_age",
+      "label": "Gestational Age (weeks)",
+      "type": "number",
+      "placeholder": "e.g. 24",
+      "required": true,
+      "conceptCode": "GA",
+      "conceptSource": "CIEL",
+      "validation": { "min": 4, "max": 42 }
+    },
+    {
+      "id": "bp_systolic",
+      "label": "Blood Pressure - Systolic (mmHg)",
+      "type": "number",
+      "placeholder": "e.g. 120",
+      "required": true,
+      "conceptCode": "8480-6",
+      "conceptSource": "LOINC",
+      "validation": { "min": 40, "max": 300 }
+    },
+    {
+      "id": "bp_diastolic",
+      "label": "Blood Pressure - Diastolic (mmHg)",
+      "type": "number",
+      "placeholder": "e.g. 80",
+      "required": true,
+      "conceptCode": "8462-4",
+      "conceptSource": "LOINC",
+      "validation": { "min": 30, "max": 200 }
+    },
+    {
+      "id": "weight",
+      "label": "Weight (kg)",
+      "type": "number",
+      "placeholder": "e.g. 62",
+      "required": true,
+      "conceptCode": "29463-7",
+      "conceptSource": "LOINC",
+      "validation": { "min": 20, "max": 200 }
+    },
+    {
+      "id": "fundal_height",
+      "label": "Symphysiofundal Height (cm)",
+      "type": "number",
+      "placeholder": "e.g. 24",
+      "required": false,
+      "conceptCode": "11818-1",
+      "conceptSource": "LOINC",
+      "validation": { "min": 10, "max": 40 }
+    },
+    {
+      "id": "fetal_heart_rate",
+      "label": "Fetal Heart Rate (bpm)",
+      "type": "number",
+      "placeholder": "e.g. 140",
+      "required": false,
+      "conceptCode": "8867-4",
+      "conceptSource": "LOINC",
+      "validation": { "min": 60, "max": 200 }
+    },
+    {
+      "id": "edema",
+      "label": "Edema",
+      "type": "select",
+      "placeholder": "Select grade",
+      "required": false,
+      "options": [
+        { "label": "None", "value": "NONE" },
+        { "label": "Mild (ankle only)", "value": "MILD" },
+        { "label": "Moderate (ankle + knee)", "value": "MODERATE" },
+        { "label": "Severe (generalized)", "value": "SEVERE" }
+      ],
+      "conceptCode": "EDEMA",
+      "conceptSource": "CIEL"
+    },
+    {
+      "id": "hemoglobin",
+      "label": "Hemoglobin (g/dL)",
+      "type": "number",
+      "placeholder": "e.g. 11.5",
+      "required": false,
+      "conceptCode": "718-7",
+      "conceptSource": "LOINC",
+      "validation": { "min": 4, "max": 20 }
+    },
+    {
+      "id": "urine_albumin",
+      "label": "Urine Albumin",
+      "type": "select",
+      "placeholder": "Select result",
+      "required": false,
+      "options": [
+        { "label": "Negative", "value": "NEGATIVE" },
+        { "label": "Trace (+)", "value": "TRACE" },
+        { "label": "1+", "value": "ONE_PLUS" },
+        { "label": "2+", "value": "TWO_PLUS" },
+        { "label": "3+", "value": "THREE_PLUS" }
+      ],
+      "conceptCode": "5794-2",
+      "conceptSource": "LOINC"
+    },
+    {
+      "id": "blood_sugar",
+      "label": "Blood Sugar (DIPSI) - mg/dL",
+      "type": "number",
+      "placeholder": "Result from DIPSI test",
+      "required": false,
+      "conceptCode": "1558-6",
+      "conceptSource": "LOINC",
+      "validation": { "min": 50, "max": 500 }
+    },
+    {
+      "id": "high_risk_notes",
+      "label": "High-Risk Notes",
+      "type": "textarea",
+      "placeholder": "Any concerns or risk factors observed...",
+      "required": false
+    }
+  ]
+}

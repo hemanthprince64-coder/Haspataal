@@ -23,14 +23,10 @@ import {
 } from 'lucide-react';
 
 import { useState, useEffect } from 'react';
-
-import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import Link from 'next/link';
-
+import Image from 'next/image';
 import { getPatientFullProfile } from '@/app/actions';
-import { getCareTimelineAction } from '@/app/actions';
-import ContinuousCareHub from '@/app/components/ContinuousCareHub';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

@@ -6,11 +6,11 @@ const redis = new Redis({
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD || undefined,
   db: parseInt(process.env.REDIS_DB || '0'),
-  retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: 3,
   lazyConnect: true,
   keyPrefix: 'haspataal:',
+  retryStrategy: (times: number) => Math.min(times * 100, 3000),
 });
 
 // Handle connection events

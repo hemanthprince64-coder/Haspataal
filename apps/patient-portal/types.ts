@@ -23,6 +23,14 @@ export enum BookingStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export const VALID_STATUS_TRANSITIONS: Record<string, BookingStatus[]> = {
+  [BookingStatus.AWAITING_PAYMENT]: [BookingStatus.BOOKED, BookingStatus.CANCELLED],
+  [BookingStatus.BOOKED]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
+  [BookingStatus.CONFIRMED]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
+  [BookingStatus.COMPLETED]: [],
+  [BookingStatus.CANCELLED]: [],
+};
+
 export interface Hospital {
   id: string;
   name?: string;

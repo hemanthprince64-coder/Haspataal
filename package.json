@@ -6,7 +6,8 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "services/*"
+    "services/auth",
+    "services/gateway"
   ],
   "turbo": {
     "pipeline": {
@@ -39,11 +40,11 @@
     "dev:gateway": "turbo run dev --filter=@haspataal/api-gateway",
     "build": "next build",
     "build:all": "turbo run build",
-    "postinstall": "prisma generate",
-    "migrate": "prisma migrate deploy --schema=packages/db/prisma/schema.prisma",
-    "migrate:status": "prisma migrate status --schema=packages/db/prisma/schema.prisma",
-    "migrate:resolve": "prisma migrate resolve --schema=packages/db/prisma/schema.prisma",
-    "db:push": "prisma db push --schema=packages/db/prisma/schema.prisma",
+    "postinstall": "node scripts/prisma-cmd.js generate",
+    "migrate": "node scripts/prisma-cmd.js migrate deploy",
+    "migrate:status": "node scripts/prisma-cmd.js migrate status",
+    "migrate:resolve": "node scripts/prisma-cmd.js migrate resolve",
+    "db:push": "node scripts/prisma-cmd.js db push",
     "start": "next start",
     "lint": "eslint",
     "lint:all": "turbo run lint",

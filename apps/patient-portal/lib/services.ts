@@ -100,7 +100,7 @@ export const services = {
     getHospitals: async (city?: string, limit = 10, cursor?: string): Promise<HospitalPublic[]> => {
       const where: any = { accountStatus: 'active' };
       if (city) {
-        where.city = { equals: city, mode: 'insensitive' };
+        where.city = { equals: city };
       }
 
       // PERFORMANCE: Cursor-based pagination + Eager loading to avoid N+1
@@ -135,9 +135,9 @@ export const services = {
     },
 
     getHospitalsByCity: async (city: string): Promise<HospitalPublic[]> => {
-      const data = await prisma.hospitalsMaster.findMany({
+      const data = (await prisma.hospitalsMaster.findMany({
         where: {
-          city: { equals: city, mode: 'insensitive' },
+          city: { equals: city },
           accountStatus: 'active',
         },
         include: {
@@ -151,13 +151,13 @@ export const services = {
             take: 5,
           },
         },
-      });
+      })) as any[];
 
-      const processed = data.map((h) => ({
+      const processed = data.map((h: any) => ({
         ...stripSensitive(h),
         name: h.displayName || h.legalName,
-        doctorCount: h._count.affiliations,
-        avgRating: h._count.reviews > 0 ? '4.8' : '4.5', // Mock average if no calc logic
+        doctorCount: h._count?.affiliations,
+        avgRating: (h._count?.reviews ?? 0) > 0 ? '4.8' : '4.5',
         reviews: h.reviews,
       }));
 
@@ -172,7 +172,7 @@ export const services = {
       let hospitalIds: string[] = [];
       if (city) {
         const hospitals = await prisma.hospitalsMaster.findMany({
-          where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
+          where: { city: { equals: city }, accountStatus: 'active' },
           select: { id: true },
         });
         hospitalIds = hospitals.map((h) => h.id);
@@ -193,13 +193,13 @@ export const services = {
           ...where.affiliations,
           some: {
             ...where.affiliations?.some,
-            department: { equals: speciality, mode: 'insensitive' },
+            department: { equals: speciality },
           },
         };
       }
 
       if (query) {
-        where.OR = [{ fullName: { contains: query, mode: 'insensitive' } }];
+        where.OR = [{ fullName: { contains: query } }];
       }
 
       const data = await prisma.doctorMaster.findMany({
@@ -215,7 +215,7 @@ export const services = {
 
     getDoctorsByHub: async (city: string, speciality: string): Promise<Doctor[]> => {
       const hospitals = await prisma.hospitalsMaster.findMany({
-        where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
+        where: { city: { equals: city }, accountStatus: 'active' },
         select: { id: true },
       });
       const hospitalIds = hospitals.map((h) => h.id);
@@ -226,7 +226,7 @@ export const services = {
           affiliations: {
             some: {
               hospitalId: { in: hospitalIds },
-              department: { equals: speciality, mode: 'insensitive' },
+              department: { equals: speciality },
               isCurrent: true,
             },
           },
@@ -243,7 +243,7 @@ export const services = {
 
     getHubStats: async (city: string, speciality: string) => {
       const hospitals = await prisma.hospitalsMaster.findMany({
-        where: { city: { equals: city, mode: 'insensitive' }, accountStatus: 'active' },
+        where: { city: { equals: city }, accountStatus: 'active' },
         select: { id: true },
       });
       const hospitalIds = hospitals.map((h) => h.id);
@@ -254,7 +254,7 @@ export const services = {
           affiliations: {
             some: {
               hospitalId: { in: hospitalIds },
-              department: { equals: speciality, mode: 'insensitive' },
+              department: { equals: speciality },
               isCurrent: true,
             },
           },
@@ -1476,7 +1476,7 @@ export const services = {
             approvalDocumentUrl: data.approvalDocumentUrl || null,
             googleLocationUrl: data.googleLocationUrl || null,
             medicalCouncilNumber: data.medicalCouncilNumber || null,
-            specialities: data.specialities || [],
+            specialities: (data.specialities || []) as any,
           },
           select: {
             id: true,

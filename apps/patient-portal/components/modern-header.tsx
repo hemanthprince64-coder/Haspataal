@@ -47,9 +47,9 @@ const ModernHeader = ({ onMenuClick, patient }: ModernHeaderProps) => {
     const [searchQuery, setSearchQuery] = useState("");
 
     // Generate breadcrumbs from pathname
-    const generateBreadcrumbs = () => {
+    const generateBreadcrumbs = (): Array<{ name: string; href: string; isLast?: boolean }> => {
         const pathSegments = pathname.split('/').filter(Boolean);
-        const breadcrumbs = [{ name: 'Dashboard', href: '/dashboard' }];
+        const breadcrumbs: Array<{ name: string; href: string; isLast?: boolean }> = [{ name: 'Dashboard', href: '/dashboard' }];
 
         let currentPath = '';
         pathSegments.forEach((segment, index) => {

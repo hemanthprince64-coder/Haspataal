@@ -5,7 +5,9 @@ export async function GET(req: NextRequest) {
   const city = req.nextUrl.searchParams.get('city') ?? undefined;
   const speciality = req.nextUrl.searchParams.get('speciality') ?? undefined;
 
-  const doctors = await prisma.doctorHospitalAffiliation.findMany({
+  const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+
+  const doctors = (await prisma.doctorHospitalAffiliation.findMany({
     where: {
       isCurrent: true,
       doctor: { accountStatus: 'ACTIVE' },
@@ -13,9 +15,9 @@ export async function GET(req: NextRequest) {
         accountStatus: 'active',
         isListedOnMarketplace: true,
         allowOnlineBooking: true,
-        ...(city ? { city: { equals: city, mode: 'insensitive' } } : {}),
+        ...(city ? { city: { equals: city } } : {}),
       },
-      ...(speciality ? { department: { equals: speciality, mode: 'insensitive' } } : {}),
+      ...(speciality ? { department: { equals: speciality } } : {}),
     },
     include: {
       doctor: {
@@ -34,15 +36,15 @@ export async function GET(req: NextRequest) {
     },
     orderBy: { createdAt: 'desc' },
     take: 100,
-  });
+  })) as any[];
 
   return NextResponse.json({
-    doctors: doctors.map((affiliation) => ({
+    doctors: doctors.map((affiliation: any) => ({
       id: affiliation.doctor.id,
       fullName: affiliation.doctor.fullName,
       gender: affiliation.doctor.gender,
       profilePhotoUrl: affiliation.doctor.profilePhotoUrl,
-      speciality: affiliation.department ?? (affiliation.payload as any)?.speciality ?? 'General',
+      speciality: affiliation.department ?? affiliation.payload?.speciality ?? 'General',
       consultationFee: affiliation.hospital.showConsultationFees
         ? affiliation.consultationFee
         : null,

@@ -3,7 +3,6 @@
 // ============================================================
 
 import prisma from '../prisma';
-import { HospitalType } from '@prisma/client';
 import type {
   IHospitalRepository,
   HospitalRecord,
@@ -32,7 +31,7 @@ export class PrismaHospitalRepository implements IHospitalRepository {
     const where: any = {};
     if (filters?.accountStatus) where.accountStatus = filters.accountStatus;
     if (filters?.city) {
-      where.city = { equals: filters.city, mode: 'insensitive' };
+      where.city = { equals: filters.city };
     }
     return prisma.hospitalsMaster.findMany({ where }) as any;
   }
@@ -55,7 +54,7 @@ export class PrismaHospitalRepository implements IHospitalRepository {
           contactNumber: input.mobile,
           verificationStatus: 'pending',
           accountStatus: 'inactive',
-          ...(input.type ? { type: input.type as HospitalType } : {}),
+          ...(input.type ? { type: input.type as any } : {}),
         },
       });
 

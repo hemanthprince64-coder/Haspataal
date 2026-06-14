@@ -1,0 +1,14 @@
+{
+  "name": "@haspataal/queue",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "bullmq": "5.76.5",
+    "ioredis": "5.10.1",
+    "pg-boss": "^9.0.3"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

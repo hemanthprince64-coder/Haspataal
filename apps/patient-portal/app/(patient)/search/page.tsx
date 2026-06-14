@@ -11,6 +11,7 @@ import {
   Award,
   Phone,
   Filter,
+  Bookmark,
 } from 'lucide-react';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -36,6 +37,8 @@ function SearchPageContent() {
   const [specialities, setSpecialities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [viewBookmarks, setViewBookmarks] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const city = searchParams.get('city') || 'Mumbai';
   const speciality = searchParams.get('speciality') || '';
@@ -44,62 +47,154 @@ function SearchPageContent() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(false);
+
+      if (viewBookmarks) {
+        if (typeof window !== 'undefined') {
+          try {
+            const { getBookmarkedDoctors } = await import('@/lib/infrastructure/offline-db');
+            const bookmarked = await getBookmarkedDoctors();
+            setDoctors(bookmarked);
+            setIsOffline(true);
+          } catch (err) {
+            console.error('Error fetching bookmarks', err);
+            setError(true);
+          } finally {
+            setLoading(false);
+          }
+        }
+        return;
+      }
+
       try {
         const drs = await searchDoctorsAction(city, speciality, query);
         setDoctors(drs);
+        setIsOffline(false);
+
+        if (drs && drs.length > 0 && typeof window !== 'undefined') {
+          const { cacheDoctors } = await import('@/lib/infrastructure/offline-db');
+          await cacheDoctors(drs).catch((err) => console.error('Cache doctors failed', err));
+        }
+
         const cts = await getCitiesAction();
         setCities(cts);
         const specs = await getAllSpecialitiesAction();
         setSpecialities(specs);
       } catch (e) {
-        console.error(e);
-        setError(true);
+        console.warn('Network request failed, attempting offline database fallback...', e);
+        if (typeof window !== 'undefined') {
+          try {
+            const { getCachedDoctors } = await import('@/lib/infrastructure/offline-db');
+            const cached = await getCachedDoctors();
+            
+            // Filter offline doctors
+            const filtered = cached.filter((doc: any) => {
+              const aff = doc.affiliations?.[0];
+              const docCity = doc.hospital?.city || aff?.hospital?.city || '';
+              const docSpec = doc.speciality || aff?.department || '';
+              const docName = doc.fullName || doc.name || '';
+              
+              const cityMatch = !city || docCity.toLowerCase() === city.toLowerCase();
+              const specMatch = !speciality || docSpec.toLowerCase() === speciality.toLowerCase();
+              const queryMatch = !query || 
+                docName.toLowerCase().includes(query.toLowerCase()) || 
+                docSpec.toLowerCase().includes(query.toLowerCase());
+                
+              return cityMatch && specMatch && queryMatch;
+            });
+            setDoctors(filtered);
+            setIsOffline(true);
+            
+            setCities([
+              { id: '1', name: 'Patna' },
+              { id: '2', name: 'Gaya' },
+              { id: '3', name: 'Muzaffarpur' },
+              { id: '4', name: 'Mumbai' },
+            ]);
+            setSpecialities(['General Medicine', 'Pediatrics', 'Obstetrics', 'Ophthalmology']);
+          } catch (offlineErr) {
+            console.error('Offline lookup failed', offlineErr);
+            setError(true);
+          }
+        } else {
+          setError(true);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [city, speciality, query]);
+  }, [city, speciality, query, viewBookmarks]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doctorsWithHospitals = doctors.map((doc: any) => {
     const aff = doc.affiliations?.[0];
-    const hospital = aff?.hospital || null;
+    const hospital = doc.hospital || aff?.hospital || null;
     return {
       id: doc.id,
-      name: doc.fullName,
-      speciality: aff?.department || 'General Specialist',
-      fees: doc.fee || 800,
-      hospitalId: aff?.hospitalId || '',
-      image: doc.profilePicture,
+      name: doc.fullName || doc.name,
+      speciality: doc.speciality || aff?.department || 'General Specialist',
+      fees: doc.fee || doc.fees || doc.consultationFee || 500,
+      hospitalId: doc.hospitalId || aff?.hospitalId || '',
+      image: doc.profilePhotoUrl || doc.profilePicture || doc.image,
       gender: doc.gender || 'male',
       hospital: hospital
-        ? hospital.legalName || hospital.displayName || 'Hospital'
+        ? hospital.legalName || hospital.displayName || hospital || 'Hospital'
         : 'Private Clinic',
-      stars: '4.9',
-      matches: 98,
-      distance: '2.4 km', // Mock distance for parity with homepage
+      stars: doc.stars || '4.9',
+      matches: doc.matches || 98,
+      distance: doc.distance || '2.4 km',
     };
   });
 
   return (
     <main className="container max-w-5xl mx-auto px-4 py-8 animate-fade-in">
-      <div className="mb-8">
-        <Badge
-          variant="secondary"
-          className="mb-3 text-blue-700 bg-blue-100 hover:bg-blue-100 px-3 py-1 font-bold uppercase tracking-widest text-xs border-blue-200"
-        >
-          <Search className="w-3 h-3 mr-2" />
-          Doctor Directory
-        </Badge>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2 leading-tight uppercase">
-          {speciality ? `${speciality} Specialists` : 'Specialists'}{' '}
-          <span className="text-blue-600">in {city}</span>
-        </h1>
-        <p className="text-slate-500 text-base font-medium max-w-2xl leading-relaxed">
-          {doctorsWithHospitals.length} verified specialists are currently available for immediate
-          booking.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Badge
+              variant="secondary"
+              className="text-blue-700 bg-blue-100 hover:bg-blue-100 px-3 py-1 font-bold uppercase tracking-widest text-xs border-blue-200"
+            >
+              <Search className="w-3 h-3 mr-2" />
+              Doctor Directory
+            </Badge>
+            {isOffline && (
+              <Badge
+                variant="destructive"
+                className="text-rose-700 bg-rose-50 border-rose-200 px-3 py-1 font-bold uppercase tracking-widest text-xs animate-pulse"
+              >
+                Offline Cache
+              </Badge>
+            )}
+          </div>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2 leading-tight uppercase">
+            {speciality ? `${speciality} Specialists` : 'Specialists'}{' '}
+            <span className="text-blue-600">in {city}</span>
+          </h1>
+          <p className="text-slate-500 text-base font-medium max-w-2xl leading-relaxed">
+            {doctorsWithHospitals.length} verified specialists are currently available.
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant={viewBookmarks ? 'outline' : 'default'}
+            size="sm"
+            onClick={() => setViewBookmarks(false)}
+            className="text-xs font-black uppercase tracking-wider rounded-xl"
+          >
+            All Doctors
+          </Button>
+          <Button
+            variant={viewBookmarks ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewBookmarks(true)}
+            className="text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-1.5"
+          >
+            <Bookmark className="w-3.5 h-3.5 fill-current" /> Bookmarked ({doctorsWithHospitals.length})
+          </Button>
+        </div>
       </div>
 
       <Card className="mb-8 p-1.5 border-slate-200/60 shadow-xl shadow-slate-200/10 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-xl sticky top-4 z-50 ring-1 ring-slate-200/50">

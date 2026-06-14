@@ -105,7 +105,7 @@ export class CareLifecycleService {
       data: {
         careJourneyId,
         type: 'MED_TAKEN',
-        metadata: { medName, schedule, recordedAt: new Date().toISOString() },
+        metadata: { medName, schedule, recordedAt: new Date().toISOString() } as any,
       },
     });
   }
@@ -201,7 +201,7 @@ export class CareLifecycleService {
                 messageType: nudge.messageType,
                 scheduledAt: nudge.scheduledAt.toISOString(),
                 sentAt: new Date().toISOString(),
-              },
+              } as any,
             },
           });
         });

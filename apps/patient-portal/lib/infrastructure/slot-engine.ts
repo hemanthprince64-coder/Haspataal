@@ -8,7 +8,7 @@ import { withRetry } from '../util/safe-transaction';
  * ─── Layers of protection ───────────────────────────────────────────────
  *  1. Redlock (distributed) → prevents duplicate processing across nodes
  *  2. SERIALIZABLE transaction → prevents phantom reads & race conditions
- *  3. SELECT FOR UPDATE → row-level lock on the specific slot
+ *  3. SELECT FOR UPDATE / Advisory Lock → row-level lock on the specific slot
  *  4. Idempotency key → prevents duplicate bookings from retried requests
  */
 export async function bookSmartSlot(data: {
@@ -19,6 +19,7 @@ export async function bookSmartSlot(data: {
   idempotencyKey: string;
 }) {
   const { hospitalId, doctorId, patientGlobalId, slotTime, idempotencyKey } = data;
+  const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
 
   // 1. Acquire distributed lock via Redlock (M2 Fix - replaces simple SETNX)
   const lockResource = `slot:${doctorId}:${slotTime.toISOString()}`;
@@ -33,13 +34,21 @@ export async function bookSmartSlot(data: {
     return await withRetry(async () => {
       return await prisma.$transaction(
         async (tx: Prisma.TransactionClient) => {
-          // A. Idempotency check — prevents duplicate bookings from client retries
+          // A. Advisory Lock for Postgres transaction-level locking
+          if (!isSqlite) {
+            await tx.$executeRawUnsafe(
+              `SELECT pg_advisory_xact_lock(hashtext($1))`,
+              lockResource
+            );
+          }
+
+          // B. Idempotency check — prevents duplicate bookings from client retries
           const existing = await tx.appointment.findUnique({
             where: { idempotencyKey: idempotencyKey },
           });
           if (existing) return existing;
 
-          // B. Emergency block check — doctor marked unavailable (emergency/leave)
+          // C. Emergency block check — doctor marked unavailable (emergency/leave)
           const isBlocked = await tx.doctorSlotBlock.findFirst({
             where: {
               doctorId: doctorId,
@@ -49,12 +58,28 @@ export async function bookSmartSlot(data: {
           });
           if (isBlocked) throw new Error('Doctor is currently unavailable (Emergency Block).');
 
-          // C. Row-level capacity lock — SELECT FOR UPDATE on the slot record
-          const [slot]: Array<{ id: string; capacity: number }> = await tx.$queryRaw`
-          SELECT id, capacity FROM doctor_slots 
-          WHERE doctor_id = ${doctorId}::uuid AND start_time = ${slotTime}
-          FOR UPDATE
-        `;
+          // D. Row-level capacity lock — SELECT FOR UPDATE on the slot record
+          let slot: { id: string; capacity: number } | null = null;
+          if (isSqlite) {
+            slot = await tx.doctorSlot.findFirst({
+              where: {
+                doctorId: doctorId,
+                startTime: slotTime,
+              },
+              select: {
+                id: true,
+                capacity: true,
+              },
+            });
+          } else {
+            const rawSlots = await tx.$queryRaw<Array<{ id: string; capacity: number }>>`
+              SELECT id, capacity FROM doctor_slots 
+              WHERE doctor_id = ${doctorId}::uuid AND start_time = ${slotTime}
+              FOR UPDATE
+            `;
+            slot = rawSlots[0] || null;
+          }
+          
           if (!slot) throw new Error('Slot not found.');
 
           const currentBookings = await tx.appointment.count({
@@ -69,7 +94,19 @@ export async function bookSmartSlot(data: {
             throw new Error(`Slot is at full capacity (${slot.capacity} patients).`);
           }
 
-          // D. Atomic booking creation
+          // E. Offline slot numbers using an auto-incrementing local daily counter
+          const dateOnly = new Date(Date.UTC(slotTime.getUTCFullYear(), slotTime.getUTCMonth(), slotTime.getUTCDate()));
+          const dailyCount = await tx.appointment.count({
+            where: {
+              doctorId: doctorId,
+              date: dateOnly,
+              status: { not: 'CANCELLED' },
+            },
+          });
+          const offlineSlotNumber = dailyCount + 1;
+          const slotValue = isSqlite ? String(offlineSlotNumber) : slotTime.toISOString();
+
+          // F. Atomic booking creation
           const appointment = await tx.appointment.create({
             data: {
               hospitalId,
@@ -78,15 +115,15 @@ export async function bookSmartSlot(data: {
               slotTime,
               idempotencyKey,
               status: 'AWAITING_PAYMENT',
-              date: slotTime,
-              slot: slotTime.toISOString(),
+              date: dateOnly,
+              slot: slotValue,
               // patientId is required by the base Appointment model (existing app flow)
               // For smart-slot bookings, patientGlobalId acts as the patient identifier
               patientId: patientGlobalId,
             },
           });
 
-          // E. Transactional outbox — guarantees async notification delivery
+          // G. Transactional outbox — guarantees async notification delivery
           await tx.outboxEvent.create({
             data: {
               eventType: 'APPOINTMENT_BOOKED',
@@ -94,11 +131,11 @@ export async function bookSmartSlot(data: {
                 appointmentId: appointment.id,
                 patientId: patientGlobalId,
                 doctorId,
-              },
+              } as any,
             },
           });
 
-          // F. Audit log — legal traceability, MUST be in same transaction
+          // H. Audit log — legal traceability, MUST be in same transaction
           await tx.auditLog.create({
             data: {
               userId: patientGlobalId,

@@ -46,7 +46,7 @@ const ModernSidebar = ({ isOpen, onClose }) => {
     ];
 
     // Group navigation items by category
-    const groupedLinks = navLinks.reduce((acc, link) => {
+    const groupedLinks = navLinks.reduce((acc: Record<string, typeof navLinks>, link) => {
         if (!acc[link.category]) {
             acc[link.category] = [];
         }

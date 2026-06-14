@@ -23,7 +23,7 @@ export async function requireRole(allowedRoles: UserRole | UserRole[], sessionCo
   const { user } = session;
   const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
 
-  if (!rolesArray.includes(user.role)) {
+  if (!rolesArray.includes(user.role as UserRole)) {
     logger.warn(
       {
         action: 'role_denied',

@@ -1,40 +1,48 @@
 import Redlock from 'redlock';
 import IORedis from 'ioredis';
 
-/**
- * Shared Redis connection for Redlock.
- * Using a single connection prevents connection pool exhaustion.
- */
-const redisConnection = new IORedis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  maxRetriesPerRequest: null,
-});
+const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+const hasRedis = !!process.env.REDIS_HOST;
 
-redisConnection.on('error', (err) => {
-  // Silent fail - redlock handles its own retry logic
-});
+let redisConnection: IORedis | null = null;
+let redlock: Redlock | null = null;
 
-/**
- * REDLOCK instance for multi-node distributed locking (M2 Fix)
- * Replaces the simple SETNX approach in redis-lock.ts with
- * the Redlock algorithm for true multi-node safety.
- */
-export const redlock = new Redlock([redisConnection], {
-  driftFactor: 0.01,
-  retryCount: 10,
-  retryDelay: 200,
-  retryJitter: 200,
-  automaticExtensionThreshold: 500,
-});
+if (!isSqlite && hasRedis) {
+  /**
+   * Shared Redis connection for Redlock.
+   * Using a single connection prevents connection pool exhaustion.
+   */
+  redisConnection = new IORedis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    maxRetriesPerRequest: null,
+  });
 
-redlock.on('error', (err) => {
-  // Suppress "Unable to fully release lock" warnings which are expected
-  // when the lock expires before explicit release (e.g., process crash)
-  if (!String(err).includes('Unable to fully release lock')) {
-    console.error('[Redlock] Error:', err);
-  }
-});
+  redisConnection.on('error', (err) => {
+    // Silent fail - redlock handles its own retry logic
+  });
+
+  /**
+   * REDLOCK instance for multi-node distributed locking (M2 Fix)
+   * Replaces the simple SETNX approach in redis-lock.ts with
+   * the Redlock algorithm for true multi-node safety.
+   */
+  redlock = new Redlock([redisConnection], {
+    driftFactor: 0.01,
+    retryCount: 10,
+    retryDelay: 200,
+    retryJitter: 200,
+    automaticExtensionThreshold: 500,
+  });
+
+  redlock.on('error', (err) => {
+    // Suppress "Unable to fully release lock" warnings which are expected
+    // when the lock expires before explicit release (e.g., process crash)
+    if (!String(err).includes('Unable to fully release lock')) {
+      console.error('[Redlock] Error:', err);
+    }
+  });
+}
 
 /**
  * Acquire a named distributed lock.
@@ -43,6 +51,13 @@ redlock.on('error', (err) => {
  * @returns Lock instance or null if acquisition failed
  */
 export async function acquireDistributedLock(resource: string, ttlMs: number = 30_000) {
+  if (isSqlite || !redlock) {
+    // Return a dummy lock for local/offline modes
+    return {
+      release: async () => {}
+    };
+  }
+
   try {
     return await redlock.acquire([`lock:${resource}`], ttlMs);
   } catch {
@@ -51,4 +66,5 @@ export async function acquireDistributedLock(resource: string, ttlMs: number = 3
   }
 }
 
-export { redisConnection };
+export { redisConnection, redlock };
+

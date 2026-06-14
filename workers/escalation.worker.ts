@@ -13,6 +13,7 @@
  *  - Notification curfew integration
  */
 import { Pool } from 'pg';
+import { prisma } from '@haspataal/db';
 
 import { evaluateCurfew } from '../lib/notification-curfew';
 import redis from '../lib/redis';
@@ -69,6 +70,46 @@ export class EscalationWorker {
   static pool = _pgPool;
 
   public static async processQueue() {
+    const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+
+    if (isSqlite) {
+      try {
+        const alerts = await prisma.escalationAlert.findMany({
+          where: {
+            isAcknowledged: false,
+            notificationSent: false,
+            sentVia: null,
+          },
+          take: BATCH_LIMIT,
+          orderBy: { createdAt: 'asc' },
+          include: {
+            hospital: { select: { displayName: true } },
+            patient: { select: { name: true, phone: true } },
+            doctor: { select: { fullName: true, mobile: true } },
+          },
+        });
+
+        if (alerts.length === 0) {
+          console.log('[EscalationWorker] No unprocessed escalation alerts.');
+          return;
+        }
+
+        console.log(`[EscalationWorker] Processing ${alerts.length} alert(s)…`);
+
+        for (const alert of alerts) {
+          // Bypassing Redis locking for in-process SQLite
+          try {
+            await this.attemptEscalatePrisma(alert);
+          } catch (err) {
+            console.error(`[EscalationWorker] Alert ${alert.id} failed:`, err);
+          }
+        }
+      } catch (err) {
+        console.error('[EscalationWorker] Run failed:', err);
+      }
+      return;
+    }
+
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
@@ -133,7 +174,115 @@ export class EscalationWorker {
     }
   }
 
-  private static async attemptEscalate(client: import('pg').Pool, alert: Record<string, any>) {
+  private static async attemptEscalatePrisma(alert: any) {
+    const {
+      id,
+      hospitalId,
+      patientId,
+      missedCount,
+      chronicTag,
+      patient,
+      doctor,
+      hospital,
+    } = alert;
+
+    const patientName = patient?.name || 'Unknown Patient';
+    const doctorName = doctor?.fullName || 'Unknown Doctor';
+    const doctorPhone = doctor?.mobile || '';
+    const hospitalName = hospital?.displayName || 'Unknown Hospital';
+
+    const message = buildEscalationMessage(
+      patientName,
+      doctorName,
+      hospitalName,
+      missedCount,
+      chronicTag,
+    );
+
+    const curfewDecision = evaluateCurfew(new Date());
+    if (curfewDecision === 'DEFER') {
+      console.warn(
+        `[EscalationWorker] Alert ${id.slice(0, 8)} deferred due to notification curfew.`,
+      );
+      return;
+    }
+
+    let sent = false;
+    let channel: 'whatsapp' | 'sms' | 'pending' = 'pending';
+
+    try {
+      const waOk = await this.mockProviderSend('whatsapp', doctorPhone, message);
+      if (waOk) {
+        sent = true;
+        channel = 'whatsapp';
+      } else {
+        const smsOk = await this.mockProviderSend('sms', doctorPhone, message);
+        if (smsOk) {
+          sent = true;
+          channel = 'sms';
+        }
+      }
+
+      if (sent) {
+        await prisma.escalationAlert.update({
+          where: { id },
+          data: {
+            notificationSent: true,
+            sentVia: channel,
+            sentAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
+        recordMetric(hospitalId, chronicTag || 'UNKNOWN', true);
+
+        await EventService.publish(
+          'escalation_notification_sent',
+          { alertId: id, channel, missedCount, chronicTag },
+          hospitalId,
+          patientId,
+        );
+        console.log(`[EscalationWorker] ✓ Alert ${id.slice(0, 8)} sent via ${channel}`);
+      } else {
+        throw new Error('both WhatsApp and SMS failed');
+      }
+    } catch (err: any) {
+      const attempts = (alert.attempts ?? 0) + 1;
+      if (attempts >= 3) {
+        await prisma.escalationAlert.update({
+          where: { id },
+          data: {
+            sentVia: 'FAILED',
+            updatedAt: new Date(),
+          },
+        });
+        recordMetric(hospitalId, chronicTag || 'UNKNOWN', false);
+        console.error(
+          `[EscalationWorker] Alert ${id.slice(0, 8)} dead-lettered after ${attempts} attempts:`,
+          err.message,
+        );
+        await EventService.publish(
+          'escalation_dlq',
+          { alertId: id, reason: err.message },
+          hospitalId,
+          patientId,
+        );
+      } else {
+        await prisma.escalationAlert.update({
+          where: { id },
+          data: {
+            attempts,
+            updatedAt: new Date(),
+          },
+        });
+        console.warn(
+          `[EscalationWorker] Alert ${id.slice(0, 8)} attempt ${attempts} failed; retrying next cycle.`,
+        );
+      }
+    }
+  }
+
+  private static async attemptEscalate(client: any, alert: Record<string, any>) {
     const {
       id,
       hospital_id: hospitalId,

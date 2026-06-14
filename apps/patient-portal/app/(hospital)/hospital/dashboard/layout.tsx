@@ -12,6 +12,7 @@ import {
   MapPin,
   LogOut,
   Sparkles,
+  Landmark,
 } from 'lucide-react';
 
 import Link from 'next/link';
@@ -97,6 +98,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     { href: '/hospital/dashboard/analytics', label: 'Analytics', icon: BarChart3, badge: null },
     { href: '/hospital/dashboard/notifications', label: 'Notifications', icon: Bell, badge: '12' },
     { href: '/hospital/dashboard/reports', label: 'Reports', icon: FileText, badge: null },
+    { href: '/hospital/dashboard/settlements', label: 'Settlements', icon: Landmark, badge: null },
     {
       href: '/hospital/dashboard/setup',
       label: 'Setup Wizard',

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { Role } from '@prisma/client';
+import type { UserRole } from '../../types';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
@@ -21,6 +21,7 @@ type HospitalModule =
 
 type HospitalAction =
   | 'read'
+  | 'write'
   | 'create'
   | 'update'
   | 'delete'
@@ -70,7 +71,7 @@ const ROLE_MODULES: Record<string, HospitalModule[]> = {
 export interface HospitalAccess {
   user: any;
   hospitalId: string;
-  role: Role | string;
+  role: UserRole | string;
   staffId?: string;
 }
 
@@ -82,7 +83,7 @@ export async function requireHospitalAccess(
   const hospitalId = user?.hospitalId;
   if (!hospitalId) throw new Error('UNAUTHORIZED');
 
-  const role = user.role as Role | string;
+  const role = user.role as UserRole | string;
   const defaultAllowed = ROLE_MODULES[role]?.includes(module) ?? false;
   if (!defaultAllowed) throw new Error('FORBIDDEN');
 
@@ -92,7 +93,7 @@ export async function requireHospitalAccess(
       hospitalId,
       module,
       action,
-      OR: [{ staffId: staffId ?? null }, { staffId: null, role: role as Role }],
+      OR: [{ staffId: staffId ?? null }, { staffId: null, role: role as string }],
     },
     orderBy: { staffId: 'desc' },
   });

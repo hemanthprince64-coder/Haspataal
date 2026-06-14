@@ -61,6 +61,7 @@ describe('Slot Engine: bookSmartSlot', () => {
     const mockExisting = { id: 'app-existing', status: 'BOOKED' };
     (prisma.$transaction as any).mockImplementation(async (callback) => {
       return await callback({
+        $executeRawUnsafe: vi.fn().mockResolvedValue(1),
         appointment: { findUnique: vi.fn().mockResolvedValue(mockExisting) },
       });
     });
@@ -76,6 +77,7 @@ describe('Slot Engine: bookSmartSlot', () => {
 
     (prisma.$transaction as any).mockImplementation(async (callback) => {
       return await callback({
+        $executeRawUnsafe: vi.fn().mockResolvedValue(1),
         appointment: { findUnique: vi.fn().mockResolvedValue(null) },
         doctorSlotBlock: { findFirst: vi.fn().mockResolvedValue({ id: 'block-1' }) },
       });
@@ -91,6 +93,7 @@ describe('Slot Engine: bookSmartSlot', () => {
 
     (prisma.$transaction as any).mockImplementation(async (callback) => {
       const tx = {
+        $executeRawUnsafe: vi.fn().mockResolvedValue(1),
         appointment: {
           findUnique: vi.fn().mockResolvedValue(null),
           count: vi.fn().mockResolvedValue(1),

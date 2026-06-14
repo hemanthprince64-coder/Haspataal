@@ -39,6 +39,7 @@ model DoctorMaster {
   referralsSent       InternalReferral[]          @relation("ReferralsSent")
   referralsReceived   InternalReferral[]          @relation("ReferralsReceived")
   consultantSettlements ConsultantSettlement[]
+  escalationAlerts      EscalationAlert[]
 
   @@index([email])
   @@map("doctors_master")
@@ -460,6 +461,7 @@ model Patient {
   vitalRecords             VitalRecord[]
   wallet                   Wallet?
   internalReferrals        InternalReferral[]
+  escalationAlerts         EscalationAlert[]
 
   @@index([city])
   @@index([email])
@@ -1092,20 +1094,136 @@ model VaccinationRecord {
 }
 
 model PregnancyProfile {
-  id             String    @id @default(uuid())
-  patientId      String    @unique @map("patient_id")
-  lmp            DateTime? @db.Date
-  edd            DateTime? @db.Date
-  gestationalAge Int?      @map("gestational_age")
-  highRisk       Boolean   @default(false) @map("high_risk")
-  ancVisits      Int?      @map("anc_visits")
-  dangerSigns    String?   @map("danger_signs")
-  deliveryPlan   String?   @map("delivery_plan")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id                    String    @id @default(uuid())
+  patientId             String    @unique @map("patient_id")
+  lmp                   DateTime? @db.Date
+  edd                   DateTime? @db.Date
+  usgEdd                DateTime? @map("usg_edd") @db.Date
+  gestationalAge        Int?      @map("gestational_age")
+  gravida               Int       @default(1)
+  para                  Int       @default(0)
+  abortions             Int       @default(0)
+  livingChildren        Int       @default(0) @map("living_children")
+  bloodGroup            String?   @map("blood_group")
+  rhFactor              String?   @map("rh_factor")
+  bmiPrePregnancy       Float?    @map("bmi_pre_pregnancy")
+  heightCm              Int?      @map("height_cm")
+  previousComplications String[]  @map("previous_complications")
+  conceptionMethod      String?   @map("conception_method")
+  registeredAt        DateTime  @default(now()) @map("registered_at")
+  mcpCardNumber         String?   @map("mcp_card_number")
+  highRisk              Boolean   @default(false) @map("high_risk")
+  highRiskReasons       String[]  @default([]) @map("high_risk_reasons")
+  ancVisits             Int?      @map("anc_visits")
+  dangerSigns           String?   @map("danger_signs")
+  deliveryPlan          String?   @map("delivery_plan")
+  schemeEnrolled        String[]  @default([]) @map("scheme_enrolled")
+  ashaWorkerId          String?   @map("asha_worker_id")
+  dropoutRiskScore      Int?      @map("dropout_risk_score")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  visits                AncVisit[]
+  supplements           AncSupplementLog[]
+  obstetricHistory      ObstetricHistory[]
+  mcpCard               McpCard?
+  retentionAlerts       AncRetentionAlert[]
 
   @@map("pregnancy_profiles")
+}
+
+model AncVisit {
+  id              String   @id @default(uuid())
+  pregnancyId     String   @map("pregnancy_id")
+  visitNumber     Int      @map("visit_number")
+  visitDate       DateTime @map("visit_date") @db.Date
+  gestationalAge  Int?     @map("gestational_age")
+  bpSystolic      Int?     @map("bp_systolic")
+  bpDiastolic     Int?     @map("bp_diastolic")
+  weightKg        Float?   @map("weight_kg")
+  fundalHeightCm  Float?   @map("fundal_height_cm")
+  fetalHeartRate  Int?     @map("fetal_heart_rate")
+  edema           String?
+  presentation    String?
+  hemoglobin      Float?
+  urineAlbumin    String?  @map("urine_albumin")
+  bloodSugar      Float?   @map("blood_sugar")
+  nextVisitDate   DateTime? @map("next_visit_date") @db.Date
+  highRiskNotes   String?  @map("high_risk_notes")
+  conductedBy     String?  @map("conducted_by")
+  conductedByRole String?  @map("conducted_by_role")
+  hospitalId      String?  @map("hospital_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  pregnancy       PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancyId])
+  @@index([nextVisitDate])
+  @@map("anc_visits")
+}
+
+model ObstetricHistory {
+  id                String   @id @default(uuid())
+  pregnancyId       String   @map("pregnancy_id")
+  previousDeliveryType  String?  @map("previous_delivery_type")
+  previousComplications String?  @map("previous_complications")
+  previousBabyWeight    Float?   @map("previous_baby_weight")
+  previousGestationalAge Int?    @map("previous_gestational_age")
+  pregnancyOutcome  String?  @map("pregnancy_outcome")
+  createdAt         DateTime @default(now()) @map("created_at")
+  pregnancy         PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancyId])
+  @@map("obstetric_history")
+}
+
+model AncSupplementLog {
+  id          String   @id @default(uuid())
+  pregnancyId String   @map("pregnancy_id")
+  supplementType String @map("supplement_type")
+  targetDose  Int      @map("target_dose")
+  dosesTaken  Int      @default(0) @map("doses_taken")
+  doseUnit    String   @map("dose_unit")
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  remindersEnabled Boolean @default(true) @map("reminders_enabled")
+  lastReminderAt DateTime? @map("last_reminder_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  pregnancy   PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancyId])
+  @@index([supplementType])
+  @@map("anc_supplement_logs")
+}
+
+model McpCard {
+  id          String   @id @default(uuid())
+  pregnancyId String   @unique @map("pregnancy_id")
+  cardData    Json     @map("card_data")
+  qrCodeUrl   String?  @map("qr_code_url")
+  printedAt   DateTime? @map("printed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  pregnancy   PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@map("mcp_cards")
+}
+
+model AncRetentionAlert {
+  id          String   @id @default(uuid())
+  pregnancyId String   @map("pregnancy_id")
+  alertType   String   @map("alert_type")
+  triggerEvent String @map("trigger_event")
+  channel     String   @default("sms")
+  status      String   @default("pending")
+  scheduledAt DateTime @map("scheduled_at")
+  sentAt      DateTime? @map("sent_at")
+  message     String?
+  response    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  pregnancy   PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancyId])
+  @@index([status, scheduledAt])
+  @@map("anc_retention_alerts")
 }
 
 model InsuranceDetail {
@@ -1228,10 +1346,13 @@ model EscalationAlert {
   notificationSent Boolean     @default(false) @map("notification_sent")
   sentVia          String?     @map("sent_via")            // WHATSAPP | SMS | PENDING
   sentAt           DateTime?   @map("sent_at")
+  attempts         Int         @default(0)
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
   hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient          Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor           DoctorMaster    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([appointmentId, hospitalId])           // idempotency guard — one alert per missed sequence
   @@index([hospitalId])
@@ -2141,6 +2262,12 @@ model ClinicOperationalProfile {
   pharmacyConfig     Json?           @map("pharmacy_config") // stock_mgmt, billing, expiry_alert
   labConfig          Json?           @map("lab_config") // reports_mgmt, upload_req
   communicationPrefs Json?           @map("communication_prefs") // WhatsApp_no, reminders_req, preferred_lang
+  deploymentMode     String          @default("CLOUD") @map("deployment_mode")
+  primaryLanguage    String          @default("en") @map("primary_language")
+  offlineEnabled     Boolean         @default(false) @map("offline_enabled")
+  printerType        String          @default("NONE") @map("printer_type")
+  paymentModes       Json?           @map("payment_modes")
+  networkProfile     String          @default("BROADBAND") @map("network_profile")
   createdAt          DateTime        @default(now()) @map("created_at")
   hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
@@ -2249,4 +2376,25 @@ enum HandoffStatus {
   IN_PROGRESS
   COMPLETED
   BYPASSED
+}
+
+model Concept {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  mappings    ConceptMap[]
+
+  @@map("concepts")
+}
+
+model ConceptMap {
+  id          String   @id @default(uuid())
+  conceptId   String   @map("concept_id")
+  source      String   // e.g., "SNOMED-CT", "LOINC", "CIEL"
+  code        String   // e.g., "38341003"
+  displayName String?  @map("display_name")
+  concept     Concept  @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@index([conceptId])
+  @@map("concept_mappings")
 }

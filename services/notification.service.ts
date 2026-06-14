@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
+import { prisma } from '@haspataal/db';
 import { EventService } from './event.service';
+import { buildMessage } from '../templates/notification-templates';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -16,41 +18,59 @@ export class NotificationService {
    * Enqueues a notification, respecting the 10pm-8am curfew.
    */
   public static async send(req: NotificationRequest) {
+    const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+
+    // 1. Curfew Check (10 PM to 8 AM IST)
+    const now = new Date();
+    const currentHourUTC = now.getUTCHours();
+    const currentMinUTC = now.getUTCMinutes();
+    let currentHourIST = currentHourUTC + 5;
+    let currentMinIST = currentMinUTC + 30;
+    if (currentMinIST >= 60) {
+      currentHourIST += 1;
+      currentMinIST -= 60;
+    }
+    currentHourIST = currentHourIST % 24;
+
+    let nextAttemptAt = new Date();
+    if (currentHourIST >= 22 || currentHourIST < 8) {
+      let hoursToAdd = 8 - currentHourIST;
+      if (hoursToAdd <= 0) hoursToAdd += 24;
+      nextAttemptAt.setHours(nextAttemptAt.getHours() + hoursToAdd);
+      console.log(
+        `[NotificationService] Curfew active. Delaying send until ${nextAttemptAt.toISOString()}`,
+      );
+    }
+
+    if (isSqlite) {
+      try {
+        const body = buildMessage(req.template_key, req.variables);
+        const res = await prisma.notification.create({
+          data: {
+            hospitalId: req.hospital_id,
+            patientId: req.patient_id,
+            channel: req.channel_preference || 'auto',
+            templateKey: req.template_key,
+            recipient: 'Patient',
+            body,
+            status: 'PENDING',
+            scheduledAt: nextAttemptAt,
+            payload: req.variables,
+          },
+        });
+        return { success: true, notification_id: res.id };
+      } catch (err) {
+        console.error('[NotificationService] SQLite enqueue failed:', err);
+        throw err;
+      }
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       await client.query(`SET LOCAL app.hospital_id = $1`, [req.hospital_id]);
 
-      // 1. Curfew Check (10 PM to 8 AM IST)
-      // We assume server is running in UTC or we do offset math.
-      // For simplicity, we'll do basic JS date hour check assuming IST server time,
-      // or explicit offset if UTC. Assuming UTC server: IST = UTC + 5:30.
-      const now = new Date();
-      // Simple mockup of curfew check logic:
-      const currentHourUTC = now.getUTCHours();
-      const currentMinUTC = now.getUTCMinutes();
-      // Convert to IST
-      let currentHourIST = currentHourUTC + 5;
-      let currentMinIST = currentMinUTC + 30;
-      if (currentMinIST >= 60) {
-        currentHourIST += 1;
-        currentMinIST -= 60;
-      }
-      currentHourIST = currentHourIST % 24;
-
-      let nextAttemptAt = new Date();
-      if (currentHourIST >= 22 || currentHourIST < 8) {
-        // Curfew active. Schedule for 8:00 AM IST.
-        // Fast-forward to 8AM
-        let hoursToAdd = 8 - currentHourIST;
-        if (hoursToAdd <= 0) hoursToAdd += 24;
-        nextAttemptAt.setHours(nextAttemptAt.getHours() + hoursToAdd);
-        console.log(
-          `[NotificationService] Curfew active. Delaying send until ${nextAttemptAt.toISOString()}`,
-        );
-      }
-
-      // 2. Insert into Queue (NotificationLog)
+      // Insert into Queue (NotificationLog)
       const res = await client.query(
         `
         INSERT INTO "NotificationLog" 
@@ -78,3 +98,4 @@ export class NotificationService {
     }
   }
 }
+

@@ -451,7 +451,7 @@ app.get(
 // GET /v1/escalations — list unacknowledged alerts for the logged-in doctor
 // PATCH /v1/escalations/:id/acknowledge — doctor marks alert as reviewed
 
-import { EscalationWorker } from '../../workers/escalation.worker';
+import { EscalationWorker } from '../../../workers/escalation.worker';
 
 // Worker process runner (for `node workers/escalation.worker.js` or cron)
 EscalationWorker.processQueue().catch((e) => logger.error(e, 'EscalationWorker crash'));
@@ -470,18 +470,18 @@ app.get(
 
       // Scope by doctor if not super-admin
       const isSuper = ['super_admin', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(req.user?.role);
-      const where: any = { is_acknowledged: acknowledged };
+      const where: any = { isAcknowledged: acknowledged };
       if (!isSuper) {
-        where.doctor_id = userId;
+        where.doctorId = userId;
       }
 
       const alerts = await prisma.escalationAlert.findMany({
         where,
         take: limit,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         include: {
           patient:     { select: { name: true, phone: true } },
-          hospital:    { select: { display_name: true } },
+          hospital:    { select: { displayName: true } },
         },
       });
 
@@ -506,7 +506,7 @@ app.patch(
       const isSuper = ['super_admin', 'SUPER_ADMIN', 'PLATFORM_ADMIN'].includes(req.user?.role);
       if (!isSuper) {
         const existing = await prisma.escalationAlert.findFirst({
-          where: { id: alertId, doctor_id: req.user?.sub || req.user?.userId },
+          where: { id: alertId, doctorId: req.user?.sub || req.user?.userId },
         });
         if (!existing) {
           return res.status(403).json({
@@ -519,7 +519,7 @@ app.patch(
 
       await prisma.escalationAlert.update({
         where:   { id: alertId },
-        data:    { is_acknowledged: true, acknowledged_at: new Date() },
+        data:    { isAcknowledged: true, acknowledgedAt: new Date() },
       });
 
       res.status(204).send();

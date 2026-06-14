@@ -80,9 +80,8 @@ export async function getDashboardMetrics(hospitalId: string): Promise<Dashboard
         paidAt: { gte: monthStart, lte: monthEnd },
         // Only bills where the payment event contained source: 'retention_followup'
         payload: {
-          path: ['source'],
-          equals: 'retention_followup',
-        },
+          string_contains: 'retention_followup',
+        } as any,
       },
       _sum: { totalAmount: true },
     }),
@@ -307,7 +306,7 @@ export async function markBillPaidWithRetentionSource(
         source: 'retention_followup',
         followUpId,
         paidAt: new Date().toISOString(),
-      },
+      } as any,
     },
   });
 }

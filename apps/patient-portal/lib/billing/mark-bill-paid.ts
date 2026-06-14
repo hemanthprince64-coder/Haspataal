@@ -34,7 +34,7 @@ export async function markBillPaid(options: MarkBillPaidOptions) {
       paidAt,
       source,
       followUpId: followUpId ?? null,
-      payload,
+      payload: payload as any,
     },
   });
 
