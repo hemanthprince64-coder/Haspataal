@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Role } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import {
@@ -8,8 +7,10 @@ import {
   writeAuditLog,
 } from '@/lib/auth/hospital-access';
 
+const roleEnum = z.enum(['SUPER_ADMIN','HOSPITAL_ADMIN','DOCTOR','RECEPTIONIST','STAFF','NURSE','BILLING','PHARMACIST','LAB_TECH','PATIENT']);
+
 const permissionSchema = z.object({
-  role: z.nativeEnum(Role),
+  role: roleEnum,
   module: z.string().min(2),
   action: z.string().min(2),
   allowed: z.boolean().default(true),

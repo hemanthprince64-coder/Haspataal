@@ -6,11 +6,15 @@ import {
   writeAuditLog,
 } from '@/lib/auth/hospital-access';
 import { IntegrationProvider } from '@prisma/client';
-import { createCipheriv, randomBytes } from 'crypto';
 import { z } from 'zod';
 
+const providerEnum = z.enum([
+  'RAZORPAY','WHATSAPP_META','WHATSAPP_TWILIO','WHATSAPP_WATI','WHATSAPP_INTERAKT','WHATSAPP_GUPSHUP',
+  'SMS_FAST2SMS','SMS_MSG91','SMS_TEXTLOCAL','SMS_2FACTOR','ABHA_ABDM','GOOGLE_CALENDAR'
+]).meta({ description: 'Supported integration providers' });
+
 const integrationSchema = z.object({
-  provider: z.nativeEnum(IntegrationProvider),
+  provider: providerEnum,
   config: z.record(z.string(), z.unknown()).default({}),
   isActive: z.boolean().default(true),
   isLive: z.boolean().default(false),
@@ -18,7 +22,7 @@ const integrationSchema = z.object({
   webhookUrl: z.string().url().optional(),
   webhookSecret: z.string().optional(),
   scope: z.array(z.string()).default([]),
-});
+}).strict();
 
 function getEncryptionKey() {
   const key = process.env.ENCRYPTION_KEY;
