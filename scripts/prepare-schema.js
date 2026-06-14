@@ -94,4 +94,8 @@ function prepareSchema() {
   console.log(`[prepare-schema] SQLite schema successfully written to ${sqliteSchemaPath}`);
 }
 
-prepareSchema();
+if (require.main === module) {
+  prepareSchema();
+}
+
+module.exports = { prepareSchema };

@@ -1,17 +1,21 @@
-const prepareSchema = require('./prepare-schema');
+const { prepareSchema } = require('./prepare-schema');
+const { execSync } = require('child_process');
+const path = require('path');
+
+const rootDir = path.resolve(__dirname, '..');
+const provider = process.env.DATABASE_PROVIDER || 'postgres';
 
 // 1. Regenerate SQLite schema if sqlite mode is active so the Prisma
 //    datasource validator can read the correct file: URL path.
-prepareSchema.prepareSchema();
-
-const { execSync } = require('child_process');
-const path = require('path');
-const provider = process.env.DATABASE_PROVIDER || 'postgres';
+prepareSchema();
 
 // 2. Determine which schema file to use
 let schemaPath = path.join('packages', 'db', 'prisma', 'schema.prisma');
 if (provider === 'sqlite') {
   schemaPath = path.join('packages', 'db', 'prisma', 'schema.sqlite.prisma');
+  if (!process.env.DATABASE_URL?.startsWith('file:')) {
+    process.env.DATABASE_URL = `file:${path.join(rootDir, 'packages', 'db', 'prisma', 'dev.db')}`;
+  }
 }
 
 // 3. Collect command arguments passed to this wrapper
