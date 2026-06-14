@@ -19,11 +19,19 @@ export interface SendOtpResult {
 }
 
 const ttlMinutesDefault = 5;
+const shouldLogOtpDev = process.env.NODE_ENV === 'development' && process.env.LOG_OTP === '1';
 
 function maskPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '').slice(-10);
   if (digits.length <= 4) return '****';
   return `${digits.slice(0, 2)}****${digits.slice(-4)}`;
+}
+
+function logOtpDev(input: { phone: string; channel: OtpChannel; code: string; expiresAt: Date }) {
+  if (!shouldLogOtpDev) return;
+  process.stdout.write(
+    `[OTP_DEV] phone=${maskPhone(input.phone)} channel=${input.channel} code=${input.code} expiresAt=${input.expiresAt.toISOString()}\n`,
+  );
 }
 
 export async function sendOtp(input: SendOtpInput): Promise<SendOtpResult> {
@@ -32,6 +40,8 @@ export async function sendOtp(input: SendOtpInput): Promise<SendOtpResult> {
   const ttlMs = (input.ttlMinutes ?? ttlMinutesDefault) * 60 * 1000;
   const code = String(randomInt(0, 1000000)).padStart(6, '0');
   const expiresAt = new Date(Date.now() + ttlMs);
+
+  logOtpDev({ phone, channel, code, expiresAt });
 
   try {
     await prisma.otpCode.upsert({
