@@ -462,6 +462,7 @@ model Patient {
   wallet                   Wallet?
   internalReferrals        InternalReferral[]
   escalationAlerts         EscalationAlert[]
+  newbornRecord            NewbornRecord?
 
   @@index([city])
   @@index([email])
@@ -1128,6 +1129,10 @@ model PregnancyProfile {
   obstetricHistory      ObstetricHistory[]
   mcpCard               McpCard?
   retentionAlerts       AncRetentionAlert[]
+  newborns              NewbornRecord[]
+  referrals             ReferralSlip[]
+  partographs           PartographRecord[]
+  nearMissAudits        NearMissAudit[]
 
   @@map("pregnancy_profiles")
 }
@@ -1224,6 +1229,60 @@ model AncRetentionAlert {
   @@index([pregnancyId])
   @@index([status, scheduledAt])
   @@map("anc_retention_alerts")
+}
+
+model NewbornRecord {
+  id               String           @id @default(uuid())
+  pregnancyId      String           @map("pregnancy_id")
+  babyPatientId    String           @unique @map("baby_patient_id")
+  birthWeightKg    Float            @map("birth_weight_kg")
+  apgarScore       Int?             @map("apgar_score")
+  deliveryDate     DateTime         @map("delivery_date")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  pregnancy        PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  baby             Patient          @relation(fields: [babyPatientId], references: [id], onDelete: Cascade)
+
+  @@map("newborn_records")
+}
+
+model ReferralSlip {
+  id              String           @id @default(uuid())
+  pregnancyId     String           @map("pregnancy_id")
+  referralReason  String           @map("referral_reason")
+  referredTo      String           @map("referred_to")
+  referringDoctor String           @map("referring_doctor")
+  isUrgent        Boolean          @default(false) @map("is_urgent")
+  smsSent         Boolean          @default(false) @map("sms_sent")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  pregnancy       PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@map("referral_slips")
+}
+
+model PartographRecord {
+  id              String           @id @default(uuid())
+  pregnancyId     String           @map("pregnancy_id")
+  cervicalDil     Int              @map("cervical_dil")
+  fetalHeartRate  Int              @map("fetal_heart_rate")
+  contractionFreq Int              @map("contraction_freq")
+  bpSystolic      Int              @map("bp_systolic")
+  bpDiastolic     Int              @map("bp_diastolic")
+  recordedAt      DateTime         @default(now()) @map("recorded_at")
+  pregnancy       PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@map("partograph_records")
+}
+
+model NearMissAudit {
+  id              String           @id @default(uuid())
+  pregnancyId     String           @map("pregnancy_id")
+  criteriaMet     String[]         @map("criteria_met")
+  savingIntervent String           @map("saving_intervention")
+  auditNotes      String?          @map("audit_notes")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  pregnancy       PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+
+  @@map("near_miss_audits")
 }
 
 model InsuranceDetail {

@@ -144,6 +144,7 @@ packages/core/
 - **Communications Node**: Consolidated WhatsApp/SMS/Email/Gateway orchestration with DLT-compliant template management.
 - **Marketplace Discovery**: Professional hospital profiles with media galleries, insurance panel support, and multi-tier cancellation policies.
 - **Retention Engine**: Logic-driven patient recall with frequency capping and audience segmentation.
+- **Bihar Pregnancy Tracker (Phase 2 & 3)**: Completed full integration with ABDM/ABHA IDs, FHIR R4 resource exports, bilingual Hindi/Bhojpuri MCH portal with TTS reader, WHO Partograph chart, referral slip generator, 108 emergency ambulance integration, and e-Raktkosh blood bank locator.
 - **Activation Gate**: Deep validation engine ensuring 100% compliance before production workflow enablement.
 
 ---
