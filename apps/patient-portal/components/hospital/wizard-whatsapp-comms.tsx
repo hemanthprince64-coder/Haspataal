@@ -276,7 +276,7 @@ export default function WizardWhatsappComms({ onNext, onPrev }: WizardWhatsappCo
                       <RadioCard
                         options={WHATSAPP_PROVIDERS}
                         value={whatsappProvider}
-                        onChange={setWhatsappProvider}
+                        onChange={(v) => setWhatsappProvider(v as WhatsAppProvider)}
                       />
                     </div>
 
@@ -337,7 +337,7 @@ export default function WizardWhatsappComms({ onNext, onPrev }: WizardWhatsappCo
                     <RadioCard
                       options={SMS_PROVIDERS}
                       value={smsProvider}
-                      onChange={setSmsProvider}
+                      onChange={(v) => setSmsProvider(v as SMSProvider)}
                     />
                   </motion.div>
                 )}

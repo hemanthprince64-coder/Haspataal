@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/util/prisma-singleton';
 
 /**
@@ -14,7 +15,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid mutations payload' }, { status: 400 });
     }
 
-    const results: Array<{ id: string; status: 'SUCCESS' | 'CONFLICT' | 'FAILED'; error?: string }> = [];
+    const results: Array<{
+      id: string;
+      status: 'SUCCESS' | 'CONFLICT' | 'FAILED';
+      error?: string;
+    }> = [];
 
     // Process each mutation sequentially to preserve chronological ordering
     for (const mut of mutations) {
@@ -42,7 +47,7 @@ export async function POST(req: NextRequest) {
                       dateOfBirth: payload.dateOfBirth ? new Date(payload.dateOfBirth) : null,
                       gender: payload.gender,
                       updatedAt: new Date(timestamp),
-                    },
+                    } as any,
                   });
                   results.push({ id, status: 'SUCCESS' });
                 } else {
@@ -65,7 +70,7 @@ export async function POST(req: NextRequest) {
                     gender: payload.gender,
                     createdAt: new Date(timestamp),
                     updatedAt: new Date(timestamp),
-                  },
+                  } as any,
                 });
                 results.push({ id, status: 'SUCCESS' });
               }
@@ -117,7 +122,7 @@ export async function POST(req: NextRequest) {
                   notes: payload.notes,
                   idempotencyKey: payload.idempotencyKey || id,
                   createdAt: new Date(timestamp),
-                },
+                } as any,
               });
               results.push({ id, status: 'SUCCESS' });
               break;
@@ -144,7 +149,7 @@ export async function POST(req: NextRequest) {
                   diagnosis: payload.diagnosis,
                   notes: payload.notes,
                   createdAt: new Date(timestamp),
-                },
+                } as any,
               });
               results.push({ id, status: 'SUCCESS' });
               break;

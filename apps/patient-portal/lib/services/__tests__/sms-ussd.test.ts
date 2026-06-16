@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SmsUssdService } from '../sms-ussd';
-import prisma from '../../prisma';
-import { BookingStatus } from '../../../types';
 
-vi.mock('../../prisma', () => ({
+import { BookingStatus } from '../../../types';
+import { prisma } from '../../util/prisma-singleton';
+import { SmsUssdService } from '../sms-ussd';
+
+vi.mock('../../util/prisma-singleton', () => ({
   __esModule: true,
-  default: {
+  prisma: {
     patient: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -40,7 +41,10 @@ describe('SmsUssdService Tests', () => {
 
   describe('SMS Flows', () => {
     it('should confirm an appointment when receiving 1 or CONFIRM', async () => {
-      vi.mocked(prisma.patient.findUnique).mockResolvedValue({ id: 'pat-1', phone: '9876543210' } as any);
+      vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+        id: 'pat-1',
+        phone: '9876543210',
+      } as any);
       vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
         id: 'appt-1',
         doctor: { fullName: 'Kumar' },
@@ -57,7 +61,10 @@ describe('SmsUssdService Tests', () => {
     });
 
     it('should cancel an appointment when receiving CANCEL', async () => {
-      vi.mocked(prisma.patient.findUnique).mockResolvedValue({ id: 'pat-1', phone: '9876543210' } as any);
+      vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+        id: 'pat-1',
+        phone: '9876543210',
+      } as any);
       vi.mocked(prisma.appointment.findFirst).mockResolvedValue({
         id: 'appt-1',
       } as any);
@@ -72,7 +79,10 @@ describe('SmsUssdService Tests', () => {
     });
 
     it('should triage fever and cough as suspected TB', async () => {
-      const reply = await SmsUssdService.handleIncomingSMS('9876543210', 'TRIAGE fever and persistent cough for 3 weeks');
+      const reply = await SmsUssdService.handleIncomingSMS(
+        '9876543210',
+        'TRIAGE fever and persistent cough for 3 weeks',
+      );
       expect(reply).toContain('Suspected Tuberculosis');
       expect(reply).toContain('Urgent');
     });
@@ -89,12 +99,18 @@ describe('SmsUssdService Tests', () => {
         fullName: 'Rajesh',
         affiliations: [{ hospitalId: 'hosp-1' }],
       } as any);
-      vi.mocked(prisma.patient.findUnique).mockResolvedValue({ id: 'pat-1', phone: '9876543210' } as any);
+      vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+        id: 'pat-1',
+        phone: '9876543210',
+      } as any);
       vi.mocked(prisma.appointment.create).mockResolvedValue({
         id: 'appt-new-id-xyz',
       } as any);
 
-      const reply = await SmsUssdService.handleIncomingSMS('9876543210', 'BOOK Rajesh Tomorrow 10:30');
+      const reply = await SmsUssdService.handleIncomingSMS(
+        '9876543210',
+        'BOOK Rajesh Tomorrow 10:30',
+      );
 
       expect(prisma.appointment.create).toHaveBeenCalled();
       expect(reply).toContain('SUCCESS');
@@ -136,12 +152,19 @@ describe('SmsUssdService Tests', () => {
       vi.mocked(prisma.doctorMaster.findMany).mockResolvedValue([
         { id: 'doc-1', fullName: 'Rajesh', affiliations: [{ hospitalId: 'hosp-1' }] },
       ] as any);
-      vi.mocked(prisma.patient.findUnique).mockResolvedValue({ id: 'pat-1', phone: '9876543210' } as any);
+      vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+        id: 'pat-1',
+        phone: '9876543210',
+      } as any);
       vi.mocked(prisma.appointment.create).mockResolvedValue({
         id: '1234-appt-id',
       } as any);
 
-      const response = await SmsUssdService.handleUSSDRequest('session-1', '9876543210', '1*1*2*1*1');
+      const response = await SmsUssdService.handleUSSDRequest(
+        'session-1',
+        '9876543210',
+        '1*1*2*1*1',
+      );
       expect(prisma.appointment.create).toHaveBeenCalled();
       expect(response).toContain('END Success!');
       expect(response).toContain('Token: USD-1234');

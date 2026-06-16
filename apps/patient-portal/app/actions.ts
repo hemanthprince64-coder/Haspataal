@@ -1502,7 +1502,7 @@ export async function getTopDoctorsBySpeciality(speciality: string, city?: strin
       name: doc.fullName,
       fullName: doc.fullName,
       speciality: speciality,
-      hospital: doc.affiliations?.[0]?.hospital?.legalName || 'Haspataal Partner',
+      hospital: (doc as any).affiliations?.[0]?.hospital?.legalName || 'Haspataal Partner',
       stars: 4.5,
       distance: 'Near you',
     }));

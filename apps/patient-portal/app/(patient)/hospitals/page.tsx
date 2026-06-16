@@ -1,6 +1,4 @@
-export const revalidate = 3600; // Revalidate every 1 hour (ISR)
-import { services } from '../../../lib/services';
-import Link from 'next/link';
+// Revalidate every 1 hour (ISR)
 import {
   Building2,
   MapPin,
@@ -16,8 +14,11 @@ import {
   Phone,
   Info,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+import Link from 'next/link';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -26,6 +27,10 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
+
+import { services } from '../../../lib/services';
+
+export const revalidate = 3600;
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -98,7 +103,7 @@ export default async function HospitalsPage({ searchParams }: PageProps) {
                 <div className="absolute top-6 right-6 z-20">
                   <Badge className="bg-white/95 backdrop-blur-md text-slate-900 hover:bg-white font-black text-[11px] px-3 py-1.5 rounded-xl border-none shadow-xl flex items-center gap-1.5">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    {hospital.avgRating}
+                    {(hospital as any).avgRating || '4.5'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -111,7 +116,7 @@ export default async function HospitalsPage({ searchParams }: PageProps) {
                   <div className="flex items-center gap-2 mt-1">
                     <MapPin className="w-3 h-3 text-slate-300" />
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                      {hospital.addressLine1 || city}
+                      {(hospital as any).addressLine1 || city}
                     </span>
                   </div>
                 </Link>
@@ -119,7 +124,7 @@ export default async function HospitalsPage({ searchParams }: PageProps) {
                 <div className="flex items-center gap-5 py-4 border-y border-slate-50 mb-4">
                   <div className="flex flex-col">
                     <span className="text-xl font-black text-slate-800 tracking-tight">
-                      {hospital.doctorCount}
+                      {(hospital as any).doctorCount || '0'}
                     </span>
                     <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">
                       Specialists

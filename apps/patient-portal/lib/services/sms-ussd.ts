@@ -1,6 +1,6 @@
 import { BookingStatus } from '../../types';
 import logger from '../logger';
-import prisma from '../util/prisma-singleton';
+import { prisma } from '../util/prisma-singleton';
 import { CareLifecycleService } from './care-lifecycle';
 
 export class SmsUssdService {

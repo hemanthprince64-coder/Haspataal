@@ -1,6 +1,6 @@
 import { randomInt } from 'crypto';
 
-import prisma from '../util/prisma-singleton';
+import { prisma } from '../util/prisma-singleton';
 
 export type OtpChannel = 'SMS' | 'WHATSAPP' | 'EMAIL';
 
@@ -46,8 +46,8 @@ export async function sendOtp(input: SendOtpInput): Promise<SendOtpResult> {
   try {
     await prisma.otpCode.upsert({
       where: { phone },
-      create: { phone, code, expiresAt, channel, attempts: 0 },
-      update: { code, expiresAt, channel, attempts: 0, verifiedAt: null },
+      create: { phone, code, expiresAt, channel, attempts: 0 } as any,
+      update: { code, expiresAt, channel, attempts: 0, verifiedAt: null } as any,
     });
 
     return {

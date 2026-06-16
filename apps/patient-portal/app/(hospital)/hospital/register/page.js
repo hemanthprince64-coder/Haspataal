@@ -72,7 +72,7 @@ export default function HospitalRegister() {
         </CardHeader>
 
         <CardContent className="px-6 sm:px-8 pb-8">
-          <form action={formAction} encType="multipart/form-data" className="space-y-6">
+          <form action={formAction} className="space-y-6">
             {/* Section 1: Facility Details */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 pb-3 border-b border-slate-100">

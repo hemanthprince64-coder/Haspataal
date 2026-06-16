@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { ColumnMapper } from './ColumnMapper';
-import { ValidationReport } from './ValidationReport';
-import { ImportProgress } from './ImportProgress';
 import { UploadCloud, Database } from 'lucide-react';
-import { fuzzyMatchHeaders } from '../../utils/column-mapper';
+
+import React, { useState } from 'react';
+
+import { Card, CardContent } from '@/components/ui/card';
+
+import { autoMapHeaders } from '../../utils/column-mapper';
+import { ColumnMapper } from './ColumnMapper';
+import { ImportProgress } from './ImportProgress';
+import { ValidationReport } from './ValidationReport';
 
 export function MigrationLayout() {
   const [step, setStep] = useState(1); // 1: Upload, 2: Map, 3: Validate, 4: Import
@@ -45,7 +48,7 @@ export function MigrationLayout() {
     ];
     setRawHeaders(mockHeaders);
     setRawData(mockData);
-    setMapping(fuzzyMatchHeaders(mockHeaders));
+    setMapping(autoMapHeaders(mockHeaders));
     setStep(2);
   };
 

@@ -1,6 +1,7 @@
-import { prisma } from '@/lib/util/prisma-singleton';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { prisma } from '@/lib/util/prisma-singleton';
 
 export interface DHIS2AggregateData {
   period: string; // YYYYMMDD
@@ -19,15 +20,21 @@ export interface DHIS2AggregateData {
 export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
   const date = targetDate || new Date();
   // Yesterday's boundaries
-  const startOfYesterday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1, 0, 0, 0));
-  const endOfYesterday = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1, 23, 59, 59));
-  
+  const startOfYesterday = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1, 0, 0, 0),
+  );
+  const endOfYesterday = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - 1, 23, 59, 59),
+  );
+
   const periodString = `${startOfYesterday.getUTCFullYear()}${String(startOfYesterday.getUTCMonth() + 1).padStart(2, '0')}${String(startOfYesterday.getUTCDate()).padStart(2, '0')}`;
-  
+
   // Default Org Unit matching local operational profile or default district hospital
   const orgUnitId = process.env.DHIS2_ORG_UNIT || 'OU-BIHAR-PHC-123';
 
-  console.log(`[DHIS2-Worker] Running aggregate queries for period: ${periodString} (${startOfYesterday.toISOString()} to ${endOfYesterday.toISOString()})`);
+  console.log(
+    `[DHIS2-Worker] Running aggregate queries for period: ${periodString} (${startOfYesterday.toISOString()} to ${endOfYesterday.toISOString()})`,
+  );
 
   try {
     // 1. Total OPD Consultations (appointments)
@@ -82,7 +89,7 @@ export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
           gte: startOfYesterday,
           lte: endOfYesterday,
         },
-        chiefComplaint: {
+        diagnosis: {
           contains: 'ANC',
         },
       },
@@ -133,12 +140,16 @@ export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
     // If online, optionally push to DHIS2 Web API
     if (process.env.DHIS2_API_URL && process.env.DHIS2_USERNAME && process.env.DHIS2_PASSWORD) {
       console.log('[DHIS2-Worker] Online mode: Pushing aggregate data to central DHIS2 API...');
-      const authHeader = 'Basic ' + Buffer.from(`${process.env.DHIS2_USERNAME}:${process.env.DHIS2_PASSWORD}`).toString('base64');
+      const authHeader =
+        'Basic ' +
+        Buffer.from(`${process.env.DHIS2_USERNAME}:${process.env.DHIS2_PASSWORD}`).toString(
+          'base64',
+        );
       const response = await fetch(`${process.env.DHIS2_API_URL}/dataValueSets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': authHeader,
+          Authorization: authHeader,
         },
         body: JSON.stringify(reportData),
       });

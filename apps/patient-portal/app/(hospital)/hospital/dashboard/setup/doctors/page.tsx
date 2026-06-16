@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import {
   Stethoscope,
   Plus,
@@ -33,10 +32,13 @@ import {
   ExternalLink,
   Activity,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+import { useState, useEffect, useCallback } from 'react';
+
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -45,6 +47,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -52,9 +55,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -465,7 +467,7 @@ function DoctorWizard({
                     >
                       <Checkbox
                         checked={form.deptIds.includes(d.id)}
-                        onChange={() => toggleDept(d.id)}
+                        onCheckedChange={() => toggleDept(d.id)}
                         className="rounded-md"
                       />
                       <span className="text-[11px] font-bold text-slate-700 truncate">

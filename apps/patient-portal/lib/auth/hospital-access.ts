@@ -1,9 +1,11 @@
 import 'server-only';
 
-import type { UserRole } from '../../types';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+
 import { requireAuth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+import type { UserRole } from '../../types';
 
 type HospitalModule =
   | 'admin'
@@ -93,7 +95,7 @@ export async function requireHospitalAccess(
       hospitalId,
       module,
       action,
-      OR: [{ staffId: staffId ?? null }, { staffId: null, role: role as string }],
+      OR: [{ staffId: staffId ?? null }, { staffId: null, role: role as any }],
     },
     orderBy: { staffId: 'desc' },
   });

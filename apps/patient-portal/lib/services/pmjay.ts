@@ -25,10 +25,10 @@ export async function generatePMJAYClaim(visitId: string): Promise<PMJAYClaim | 
     const visit = await prisma.visit.findUnique({
       where: { id: visitId },
       include: {
-        patient: true,
         hospital: true,
         appointment: {
           include: {
+            patient: true,
             invoices: {
               include: {
                 payments: true,
@@ -44,7 +44,7 @@ export async function generatePMJAYClaim(visitId: string): Promise<PMJAYClaim | 
       return null;
     }
 
-    const patient = (visit as any).patient;
+    const patient = (visit as any).appointment?.patient;
     const appointment = (visit as any).appointment;
     const hospital = (visit as any).hospital;
     const invoice = appointment?.invoices?.[0];
@@ -81,7 +81,11 @@ export async function generatePMJAYClaim(visitId: string): Promise<PMJAYClaim | 
 /**
  * Bundles multiple PMJAY claims into a JSON batch export for manual upload in air-gapped clinics
  */
-export async function exportPMJAYBatch(hospitalId: string, startDate: Date, endDate: Date): Promise<string> {
+export async function exportPMJAYBatch(
+  hospitalId: string,
+  startDate: Date,
+  endDate: Date,
+): Promise<string> {
   const visits = await prisma.visit.findMany({
     where: {
       hospitalId,

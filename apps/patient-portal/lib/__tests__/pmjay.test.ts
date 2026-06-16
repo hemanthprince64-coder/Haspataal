@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { generatePMJAYClaim, exportPMJAYBatch } from '../services/pmjay';
 import { prisma } from '../util/prisma-singleton';
 
@@ -23,11 +24,11 @@ describe('PMJAY e-claim service tests', () => {
       hospitalId: 'hosp-abc',
       createdAt: new Date('2026-06-14T10:00:00Z'),
       diagnosis: 'Malaria infection',
-      patient: {
-        name: 'Amit Kumar',
-        abhaAddress: 'amit@abdh',
-      },
       appointment: {
+        patient: {
+          name: 'Amit Kumar',
+          abhaAddress: 'amit@abdh',
+        },
         invoices: [
           {
             amount: 250.0,
@@ -43,13 +44,13 @@ describe('PMJAY e-claim service tests', () => {
     expect(prisma.visit.findUnique).toHaveBeenCalledWith({
       where: { id: 'visit-12345678' },
       include: {
-        patient: true,
         hospital: true,
         appointment: {
           include: {
+            patient: true,
             invoices: {
               include: {
-                payment: true,
+                payments: true,
               },
             },
           },
@@ -66,10 +67,7 @@ describe('PMJAY e-claim service tests', () => {
   });
 
   it('should export a valid JSON batch of PMJAY claims', async () => {
-    const mockVisits = [
-      { id: 'visit-1' },
-      { id: 'visit-2' },
-    ];
+    const mockVisits = [{ id: 'visit-1' }, { id: 'visit-2' }];
 
     vi.mocked(prisma.visit.findMany).mockResolvedValue(mockVisits as any);
 
@@ -78,11 +76,11 @@ describe('PMJAY e-claim service tests', () => {
       hospitalId: 'hosp-abc',
       createdAt: new Date('2026-06-14T10:00:00Z'),
       diagnosis: 'Tuberculosis check',
-      patient: {
-        name: 'Rahul Kumar',
-        abhaAddress: 'rahul@abdh',
-      },
       appointment: {
+        patient: {
+          name: 'Rahul Kumar',
+          abhaAddress: 'rahul@abdh',
+        },
         invoices: [{ amount: 150.0 }],
       },
     };
@@ -92,11 +90,11 @@ describe('PMJAY e-claim service tests', () => {
       hospitalId: 'hosp-abc',
       createdAt: new Date('2026-06-14T10:05:00Z'),
       diagnosis: 'Pediatric fever',
-      patient: {
-        name: 'Sonia Kumari',
-        abhaAddress: 'sonia@abdh',
-      },
       appointment: {
+        patient: {
+          name: 'Sonia Kumari',
+          abhaAddress: 'sonia@abdh',
+        },
         invoices: [{ amount: 300.0 }],
       },
     };

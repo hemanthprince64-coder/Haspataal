@@ -428,7 +428,7 @@ export default function WizardBillingSetup({ onNext, onPrev }: WizardBillingSetu
                       min="0"
                       className={`${inputCls} pl-9`}
                       placeholder="500"
-                      value={(form as Record<string, string>)[key]}
+                      value={(form as any)[key]}
                       onChange={(e) => set(key as keyof FormState, e.target.value)}
                     />
                   </div>
@@ -532,13 +532,11 @@ export default function WizardBillingSetup({ onNext, onPrev }: WizardBillingSetu
                 <div
                   key={key}
                   className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
-                    (form as Record<string, boolean>)[key]
+                    (form as any)[key]
                       ? 'border-teal-300 bg-teal-50/30'
                       : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
-                  onClick={() =>
-                    set(key as keyof FormState, !(form as Record<string, boolean>)[key])
-                  }
+                  onClick={() => set(key as keyof FormState, !(form as any)[key])}
                 >
                   <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
@@ -548,7 +546,7 @@ export default function WizardBillingSetup({ onNext, onPrev }: WizardBillingSetu
                     <p className="text-xs text-slate-500">{desc}</p>
                   </div>
                   <Toggle
-                    value={(form as Record<string, boolean>)[key]}
+                    value={(form as any)[key]}
                     onChange={(v) => set(key as keyof FormState, v)}
                   />
                 </div>

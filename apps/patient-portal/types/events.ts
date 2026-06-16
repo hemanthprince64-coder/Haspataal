@@ -24,4 +24,14 @@ export type EventType =
   | 'RETENTION_ALERT_TRIGGERED'
   | 'SYNC_REPLAY_APPLIED'
   | 'SETTLEMENT_CALCULATED'
-  | 'DATA_MIGRATION_QUEUED';
+  | 'DATA_MIGRATION_QUEUED'
+  | 'hospital_registered'
+  | 'lab_registered'
+  | 'patient_visited'
+  | 'doctor_added'
+  | 'doctor_removed'
+  | 'doctor_registered'
+  | 'hospital_approved'
+  | 'hospital_rejected'
+  | 'hospital_suspended'
+  | 'agent_registered';

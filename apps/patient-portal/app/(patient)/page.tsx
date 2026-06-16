@@ -22,11 +22,13 @@ import {
   Search,
 } from 'lucide-react';
 
-import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
+
+import Image from 'next/image';
+import Link from 'next/link';
+
 import { getPatientFullProfile } from '@/app/actions';
-import DoctorCard from './components/DoctorCard';
+import ContinuousCareHub from '@/app/components/ContinuousCareHub';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,10 +40,11 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 
+import DoctorCard from './components/DoctorCard';
+
 export default function PatientHome() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [patient, setPatient] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const [recentAnalysis, setRecentAnalysis] = useState<any>(null);
 
   useEffect(() => {
@@ -68,7 +71,8 @@ export default function PatientHome() {
       fees: 800,
       matches: 98,
       stars: 4.9,
-      image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop',
     },
     {
       id: 'dr-gupta-456',
@@ -79,32 +83,37 @@ export default function PatientHome() {
       fees: 600,
       matches: 95,
       stars: 4.8,
-      image: 'https://images.unsplash.com/photo-1594824436998-38290fbb6948?q=80&w=2070&auto=format&fit=crop',
+      image:
+        'https://images.unsplash.com/photo-1594824436998-38290fbb6948?q=80&w=2070&auto=format&fit=crop',
     },
   ];
 
   const infoServices = [
     {
       title: 'OPD Consultation',
-      description: 'Get assistance in choosing the correct specialist, comparing hospitals, and scheduling OPD consultations with accuracy and care',
+      description:
+        'Get assistance in choosing the correct specialist, comparing hospitals, and scheduling OPD consultations with accuracy and care',
       icon: <Stethoscope className="w-8 h-8 text-blue-600" />,
       gradient: 'bg-blue-50',
     },
     {
       title: 'In-Patient Services',
-      description: 'Complete hospital support for patients who require admission and continuous medical care with smooth hospital stays',
+      description:
+        'Complete hospital support for patients who require admission and continuous medical care with smooth hospital stays',
       icon: <Building2 className="w-8 h-8 text-teal-600" />,
       gradient: 'bg-teal-50',
     },
     {
       title: 'Diagnostic Services',
-      description: 'Access accurate lab tests and imaging services through trusted diagnostic centers for clarity and timely results',
+      description:
+        'Access accurate lab tests and imaging services through trusted diagnostic centers for clarity and timely results',
       icon: <Microscope className="w-8 h-8 text-purple-600" />,
       gradient: 'bg-purple-50',
     },
     {
       title: 'Digital Health Records',
-      description: 'Securely store and access your past and present medical records, including investigations and imaging reports',
+      description:
+        'Securely store and access your past and present medical records, including investigations and imaging reports',
       icon: <ClipboardList className="w-8 h-8 text-amber-600" />,
       gradient: 'bg-amber-50',
     },
@@ -113,13 +122,15 @@ export default function PatientHome() {
   const infoValues = [
     {
       title: 'Assistance',
-      description: 'End-to-end guidance to help patients choose the right doctors, hospitals, and services',
+      description:
+        'End-to-end guidance to help patients choose the right doctors, hospitals, and services',
       icon: <HelpingHand className="w-10 h-10 text-blue-600" />,
       color: 'border-blue-200',
     },
     {
       title: 'Accuracy',
-      description: 'Focused on correct information, right referrals and reliable healthcare decisions',
+      description:
+        'Focused on correct information, right referrals and reliable healthcare decisions',
       icon: <Target className="w-10 h-10 text-teal-600" />,
       color: 'border-teal-200',
     },
@@ -131,7 +142,8 @@ export default function PatientHome() {
     },
     {
       title: 'Accountability',
-      description: 'Dedicated patient support with transparent processes and dependable coordination',
+      description:
+        'Dedicated patient support with transparent processes and dependable coordination',
       icon: <CheckCircle className="w-10 h-10 text-orange-600" />,
       color: 'border-orange-200',
     },
@@ -264,7 +276,9 @@ export default function PatientHome() {
               <div className="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <Building2 className="w-8 h-8" />
               </div>
-              <span className="text-sm font-semibold text-slate-700 text-center">In Patient Services</span>
+              <span className="text-sm font-semibold text-slate-700 text-center">
+                In Patient Services
+              </span>
             </CardContent>
           </Card>
         </Link>
@@ -284,7 +298,9 @@ export default function PatientHome() {
               <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                 <ClipboardList className="w-8 h-8" />
               </div>
-              <span className="text-sm font-semibold text-slate-700 text-center">Health Records</span>
+              <span className="text-sm font-semibold text-slate-700 text-center">
+                Health Records
+              </span>
             </CardContent>
           </Card>
         </Link>
@@ -346,7 +362,9 @@ export default function PatientHome() {
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
               Top Doctors Near You
             </h2>
-            <p className="text-slate-500 mt-2 text-lg">Highly-rated specialists available for instant booking.</p>
+            <p className="text-slate-500 mt-2 text-lg">
+              Highly-rated specialists available for instant booking.
+            </p>
           </div>
           <Button
             asChild
@@ -379,9 +397,12 @@ export default function PatientHome() {
           >
             What We Offer
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-4">Our Services</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-4">
+            Our Services
+          </h2>
           <p className="text-slate-500 max-w-2xl mx-auto text-lg">
-            Patient-centric healthcare assistance at every step of your medical journey, guided by expertise and empathy.
+            Patient-centric healthcare assistance at every step of your medical journey, guided by
+            expertise and empathy.
           </p>
         </div>
 
@@ -392,10 +413,14 @@ export default function PatientHome() {
               className="group hover:-translate-y-1 hover:shadow-lg transition-all duration-300 border-slate-200 cursor-pointer h-full"
             >
               <CardContent className="p-8 flex flex-col items-center justify-center text-center min-h-[220px]">
-                <div className={`w-20 h-20 rounded-2xl ${service.gradient} flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                <div
+                  className={`w-20 h-20 rounded-2xl ${service.gradient} flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300`}
+                >
                   {service.icon}
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">{service.title}</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-3 tracking-tight">
+                  {service.title}
+                </h3>
                 <p className="text-slate-500 text-sm leading-relaxed">{service.description}</p>
               </CardContent>
             </Card>
@@ -406,10 +431,15 @@ export default function PatientHome() {
       {/* POPULAR SPECIALITIES */}
       <section className="py-12 mt-12 bg-slate-50/50 rounded-[2.5rem] px-6 sm:px-10 border border-slate-100">
         <div className="text-center mb-10">
-          <Badge variant="outline" className="mb-3 text-teal-600 border-teal-200 uppercase tracking-widest px-3 py-1 text-xs bg-teal-50/50">
+          <Badge
+            variant="outline"
+            className="mb-3 text-teal-600 border-teal-200 uppercase tracking-widest px-3 py-1 text-xs bg-teal-50/50"
+          >
             Browse By
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">Popular Specialities</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+            Popular Specialities
+          </h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {infoSpecialities.map((spec) => (
@@ -428,17 +458,24 @@ export default function PatientHome() {
       {/* WHY CHOOSE US */}
       <section className="py-12 mt-12">
         <div className="text-center mb-12">
-          <Badge variant="secondary" className="mb-3 text-purple-600 border-purple-200 uppercase tracking-widest px-3 py-1 text-xs bg-purple-50/50">
+          <Badge
+            variant="secondary"
+            className="mb-3 text-purple-600 border-purple-200 uppercase tracking-widest px-3 py-1 text-xs bg-purple-50/50"
+          >
             The 4 A&apos;s
           </Badge>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">Why Choose Haspataal</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+            Why Choose Haspataal
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {infoValues.map((value) => (
             <Card key={value.title} className="border-slate-200 h-full shadow-sm">
               <CardContent className="p-8 flex flex-col items-center justify-center text-center min-h-[260px]">
-                <div className={`w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] border-4 ${value.color}`}>
+                <div
+                  className={`w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] border-4 ${value.color}`}
+                >
                   {value.icon}
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">{value.title}</h3>
@@ -455,9 +492,12 @@ export default function PatientHome() {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/2" />
 
         <CardContent className="relative z-10 p-12 text-center flex flex-col items-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">Your Guide to Better Healthcare</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">
+            Your Guide to Better Healthcare
+          </h2>
           <p className="text-blue-100 text-lg mb-8 max-w-2xl leading-relaxed">
-            From choosing the right doctor & hospital to managing medical records, Haspataal supports patients at every step.
+            From choosing the right doctor & hospital to managing medical records, Haspataal
+            supports patients at every step.
           </p>
           <Button
             asChild

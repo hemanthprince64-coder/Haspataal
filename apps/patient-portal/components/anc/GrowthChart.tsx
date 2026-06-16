@@ -1,8 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { AlertTriangle } from 'lucide-react';
 import { Line } from 'recharts';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface GrowthChartProps {
   visits: {
@@ -73,18 +75,25 @@ export default function GrowthChart({ visits, type }: GrowthChartProps) {
         <CardTitle className="text-xl font-black tracking-tight">
           {config.icon} {config.title}
         </CardTitle>
-        <CardDescription className="text-slate-500 font-medium">{config.description}</CardDescription>
+        <CardDescription className="text-slate-500 font-medium">
+          {config.description}
+        </CardDescription>
       </CardHeader>
       <CardContent className="p-6">
         {data.length === 0 ? (
-          <p className="text-slate-500 text-sm italic">No data recorded yet. Add visit records to see trends.</p>
+          <p className="text-slate-500 text-sm italic">
+            No data recorded yet. Add visit records to see trends.
+          </p>
         ) : (
           <div className="space-y-4">
             {data.map((reading, idx) => {
               const range = getReferenceRange(reading.week);
               const isOutsideRange = reading.value < range.min || reading.value > range.max;
               return (
-                <div key={idx} className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div
+                  key={idx}
+                  className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100"
+                >
                   <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 font-bold text-sm">
                     W{reading.week}
                   </div>

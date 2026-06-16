@@ -88,7 +88,8 @@ export default async function DoctorDiscoveryPage({
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    {doc.affiliations?.[0]?.hospital?.legalName || 'Private Practice'}, {cityTitle}
+                    {(doc as any).affiliations?.[0]?.hospital?.legalName || 'Private Practice'},{' '}
+                    {cityTitle}
                   </p>
                 </div>
               </div>

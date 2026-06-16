@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+
 import { getHospitalIdFromSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   const hospitalId = await getHospitalIdFromSession(req);
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
       gstInclusivePricing: true,
       bankAccountNo: true,
       bankIfsc: true,
-    },
+    } as any,
   });
 
   return NextResponse.json({ profile, hospital });
@@ -62,7 +63,7 @@ export async function PUT(req: NextRequest) {
         gstInclusivePricing: body.gstInclusivePricing,
         bankAccountNo: body.bankAccountNumber, // Sync
         bankIfsc: body.bankIfsc, // Sync
-      },
+      } as any,
     }),
   ]);
 

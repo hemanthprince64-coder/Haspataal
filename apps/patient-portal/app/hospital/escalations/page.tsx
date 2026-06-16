@@ -1,8 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import EscalationCard from '@/components/hospital/EscalationCard';
 import { Siren, AlertTriangle } from 'lucide-react';
+
+import { useEffect, useState, useCallback } from 'react';
+
+import EscalationCard from '@/components/hospital/EscalationCard';
+import { Badge } from '@/components/ui/badge';
 
 interface EscalationRow {
   id: string;
@@ -27,23 +30,25 @@ export default function EscalationsPage() {
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
   const PAGE_SIZE = 20;
 
-  const fetchEscalations = useCallback(async (off: number, replace = false) => {
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `/api/v1/escalations?limit=${PAGE_SIZE}&offset=${off}`,
-        { credentials: 'include' },
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setEscalations(replace ? data.escalations : [...escalations, ...data.escalations]);
-      setTotal(data.pagination?.total ?? data.escalations.length);
-    } catch (e: any) {
-      console.error('[EscalationsPage] fetch failed:', e.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [escalations.length]);
+  const fetchEscalations = useCallback(
+    async (off: number, replace = false) => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/v1/escalations?limit=${PAGE_SIZE}&offset=${off}`, {
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        setEscalations(replace ? data.escalations : [...escalations, ...data.escalations]);
+        setTotal(data.pagination?.total ?? data.escalations.length);
+      } catch (e: any) {
+        console.error('[EscalationsPage] fetch failed:', e.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [escalations.length],
+  );
 
   useEffect(() => {
     fetchEscalations(0, true);
@@ -81,9 +86,7 @@ export default function EscalationsPage() {
             Chronic follow-up escalations requiring doctor review
           </p>
         </div>
-        {total > 0 && (
-          <Badge className="ml-auto bg-red-600 text-white">{total} pending</Badge>
-        )}
+        {total > 0 && <Badge className="ml-auto bg-red-600 text-white">{total} pending</Badge>}
       </div>
 
       {/* Empty state */}
@@ -91,7 +94,9 @@ export default function EscalationsPage() {
         <div className="text-center py-16 bg-slate-50 rounded-xl border border-slate-200">
           <AlertTriangle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
           <p className="text-slate-500 font-medium">No active escalations</p>
-          <p className="text-sm text-slate-400">All caught up — patients with missed follow-ups will appear here.</p>
+          <p className="text-sm text-slate-400">
+            All caught up — patients with missed follow-ups will appear here.
+          </p>
         </div>
       )}
 
@@ -100,7 +105,7 @@ export default function EscalationsPage() {
         {escalations.map((alert) => (
           <EscalationCard
             key={alert.id}
-            alert={alert}
+            alert={alert as any}
             onAcknowledge={handleAcknowledge}
             isAcknowledging={acknowledging === alert.id}
           />
@@ -119,9 +124,7 @@ export default function EscalationsPage() {
         </div>
       )}
 
-      {loading && (
-        <div className="text-center py-8 text-slate-500">Loading escalations…</div>
-      )}
+      {loading && <div className="text-center py-8 text-slate-500">Loading escalations…</div>}
     </div>
   );
 }

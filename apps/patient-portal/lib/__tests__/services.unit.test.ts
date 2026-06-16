@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { services } from '../services';
-import prisma from '../prisma';
 import bcrypt from 'bcryptjs';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { UserRole, BookingStatus } from '../../types';
+import prisma from '../prisma';
+import { services } from '../services';
 
 // Mock Prisma
 vi.mock('../prisma', () => ({
@@ -22,6 +23,10 @@ vi.mock('../prisma', () => ({
     },
     patient: {
       upsert: vi.fn(),
+      findUnique: vi.fn(),
+    },
+    consent: {
+      findUnique: vi.fn(),
     },
     doctorHospitalAffiliation: {
       findFirst: vi.fn(),
@@ -61,9 +66,14 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
 
       // Mock unique checks to pass
       vi.mocked(prisma.hospitalAdmin.findUnique).mockResolvedValue(null);
-      
+
       // Mock creation results
-      const mockHospital = { id: 'hosp-123', legalName: 'Apollo', city: 'Delhi', contactNumber: '9876543210' };
+      const mockHospital = {
+        id: 'hosp-123',
+        legalName: 'Apollo',
+        city: 'Delhi',
+        contactNumber: '9876543210',
+      };
       vi.mocked(prisma.hospitalsMaster.create).mockResolvedValue(mockHospital as any);
 
       await services.hospital.register(hospitalData);
@@ -74,13 +84,15 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       // Verify transaction used $executeRaw to update the password with the hash
       // The implementation uses: UPDATE hospitals_master SET password = ${hashedPassword} WHERE id = ${hospital.id}
       expect(prisma.$executeRaw).toHaveBeenCalled();
-      
+
       // Verify hospital master was created
-      expect(prisma.hospitalsMaster.create).toHaveBeenCalledWith(expect.objectContaining({
-        data: expect.objectContaining({
-          legalName: 'Apollo',
-        })
-      }));
+      expect(prisma.hospitalsMaster.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            legalName: 'Apollo',
+          }),
+        }),
+      );
     });
   });
 
@@ -90,19 +102,20 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       const password = 'wrong_password';
 
       // Mock raw query finding the hospital
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([{
-        id: 'hosp-1',
-        legalName: 'Apollo',
-        password: 'correct_hash'
-      }]);
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+        {
+          id: 'hosp-1',
+          legalName: 'Apollo',
+          password: 'correct_hash',
+        },
+      ]);
 
       // Mock bcrypt comparison failure
       vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
       const result = await services.hospital.login(mobile, password);
 
-      expect(result.ok).toBe(false);
-      expect(result.ok === false && result.code).toBe('AUTH_FAILED');
+      expect(result).toBeNull();
       expect(bcrypt.compare).toHaveBeenCalledWith('wrong_password', 'correct_hash');
     });
 
@@ -110,19 +123,21 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       const mobile = '9876543210';
       const password = 'correct_password';
 
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([{
-        id: 'hosp-1',
-        legalName: 'Apollo',
-        password: 'correct_hash'
-      }]);
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+        {
+          id: 'hosp-1',
+          legalName: 'Apollo',
+          password: 'correct_hash',
+        },
+      ]);
 
       vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
       const result = await services.hospital.login(mobile, password);
 
-      expect(result.ok).toBe(true);
-      expect(result.ok === true && result.value.user.id).toBe('hosp-1');
-      expect(result.ok === true && result.value.user.role).toBe(UserRole.HOSPITAL_ADMIN);
+      expect(result).not.toBeNull();
+      expect(result?.user?.id).toBe('hosp-1');
+      expect(result?.user?.role).toBe(UserRole.HOSPITAL_ADMIN);
     });
   });
 
@@ -137,10 +152,23 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       };
 
       // Mock affiliation check (success)
-      vi.mocked(prisma.doctorHospitalAffiliation.findFirst).mockResolvedValue({ id: 'aff-1' } as any);
+      vi.mocked(prisma.doctorHospitalAffiliation.findFirst).mockResolvedValue({
+        id: 'aff-1',
+      } as any);
 
       // Mock patient upsert
       vi.mocked(prisma.patient.upsert).mockResolvedValue({ id: 'pat-1', name: 'John Doe' } as any);
+      vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+        id: 'pat-1',
+        name: 'John Doe',
+        phone: '9999999999',
+      } as any);
+      vi.mocked(prisma.consent.findUnique).mockResolvedValue({
+        patientId: 'pat-1',
+        purpose: 'APPOINTMENT_BOOKING',
+        version: 1,
+        withdrawnAt: null,
+      } as any);
 
       // Mock existing appointment check (finds nothing)
       vi.mocked(prisma.appointment.findFirst).mockResolvedValue(null);
@@ -161,12 +189,14 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       expect(result.ok === true && result.value.id).toBe('app-1');
 
       // Verify the check was performed
-      expect(prisma.appointment.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({
-          doctorId: 'doc-1',
-          slot: '10:00',
-        })
-      }));
+      expect(prisma.appointment.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            doctorId: 'doc-1',
+            slot: '10:00',
+          }),
+        }),
+      );
 
       // Verify the appointment was created
       expect(prisma.appointment.create).toHaveBeenCalled();
@@ -182,9 +212,22 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       };
 
       // Mock affiliation check (success)
-      vi.mocked(prisma.doctorHospitalAffiliation.findFirst).mockResolvedValue({ id: 'aff-1' } as any);
+      vi.mocked(prisma.doctorHospitalAffiliation.findFirst).mockResolvedValue({
+        id: 'aff-1',
+      } as any);
 
       vi.mocked(prisma.patient.upsert).mockResolvedValue({ id: 'pat-1', name: 'John Doe' } as any);
+      vi.mocked(prisma.patient.findUnique).mockResolvedValue({
+        id: 'pat-1',
+        name: 'John Doe',
+        phone: '9999999999',
+      } as any);
+      vi.mocked(prisma.consent.findUnique).mockResolvedValue({
+        patientId: 'pat-1',
+        purpose: 'APPOINTMENT_BOOKING',
+        version: 1,
+        withdrawnAt: null,
+      } as any);
 
       // Mock existing appointment check (finds a collision)
       vi.mocked(prisma.appointment.findFirst).mockResolvedValue({ id: 'existing-app' } as any);

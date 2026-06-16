@@ -21,7 +21,18 @@ export const TARGET_FIELDS: TargetField[] = [
     key: 'phone',
     label: 'Mobile Number',
     required: false,
-    aliases: ['phone', 'mobile', 'mobile number', 'contact', 'number', 'phone number', 'mobile no', 'mob', 'फोन', 'मोबाइल'],
+    aliases: [
+      'phone',
+      'mobile',
+      'mobile number',
+      'contact',
+      'number',
+      'phone number',
+      'mobile no',
+      'mob',
+      'फोन',
+      'मोबाइल',
+    ],
   },
   {
     key: 'age',
@@ -100,8 +111,8 @@ export function autoMapHeaders(headers: string[]): Record<string, string | null>
 export function validateRow(
   row: Record<string, string>,
   mapping: Record<string, string | null>,
-  rowIndex: number,
-): string[] {
+  rowIndex?: number,
+): { mappedRow: Record<string, string>; errors: string[]; isValid: boolean } {
   const errors: string[] = [];
   const mapped: Record<string, string> = {};
 
@@ -112,16 +123,18 @@ export function validateRow(
     }
   }
 
+  const rowPrefix = rowIndex !== undefined ? `Row ${rowIndex}: ` : '';
+
   // Validate required fields
   if (!mapped.name || mapped.name.length < 2) {
-    errors.push(`Row ${rowIndex}: Patient Name is required and must be at least 2 characters`);
+    errors.push(`${rowPrefix}Patient Name is required and must be at least 2 characters`);
   }
 
   // Validate phone if provided
   if (mapped.phone) {
     const phoneDigits = mapped.phone.replace(/\D/g, '');
     if (phoneDigits.length !== 10) {
-      errors.push(`Row ${rowIndex}: Mobile number "${mapped.phone}" must be 10 digits`);
+      errors.push(`${rowPrefix}Mobile number "${mapped.phone}" must be 10 digits`);
     }
   }
 
@@ -129,9 +142,13 @@ export function validateRow(
   if (mapped.age) {
     const age = parseInt(mapped.age, 10);
     if (isNaN(age) || age < 0 || age > 120) {
-      errors.push(`Row ${rowIndex}: Age "${mapped.age}" is not a valid age`);
+      errors.push(`${rowPrefix}Age "${mapped.age}" is not a valid age`);
     }
   }
 
-  return errors;
+  return {
+    mappedRow: mapped,
+    errors,
+    isValid: errors.length === 0,
+  };
 }

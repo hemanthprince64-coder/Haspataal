@@ -3,9 +3,8 @@
  * This is the SINGLE function every write operation calls.
  * No Redis dependency — works immediately with just PostgreSQL.
  */
-
-import prisma from '../apps/patient-portal/lib/prisma';
 import logger from '../apps/patient-portal/lib/logger';
+import prisma from '../apps/patient-portal/lib/prisma';
 
 export type EventType =
   | 'APPOINTMENT_BOOKED'
@@ -29,7 +28,17 @@ export type EventType =
   | 'RETENTION_ALERT_TRIGGERED'
   | 'SYNC_REPLAY_APPLIED'
   | 'SETTLEMENT_CALCULATED'
-  | 'DATA_MIGRATION_QUEUED';
+  | 'DATA_MIGRATION_QUEUED'
+  | 'hospital_registered'
+  | 'lab_registered'
+  | 'patient_visited'
+  | 'doctor_added'
+  | 'doctor_removed'
+  | 'doctor_registered'
+  | 'hospital_approved'
+  | 'hospital_rejected'
+  | 'hospital_suspended'
+  | 'agent_registered';
 
 interface EmitEventInput {
   eventType: EventType;

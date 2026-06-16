@@ -1,10 +1,11 @@
+import {
+  RegisterHospitalSchema,
+  RegisterAgentSchema,
+  BookAppointmentSchema,
+  IndianMobileRegex,
+} from '@haspataal/types';
 import { describe, it, expect } from 'vitest';
-import { 
-  RegisterHospitalSchema, 
-  RegisterAgentSchema, 
-  BookAppointmentSchema, 
-  IndianMobileRegex 
-} from '../../app/actions';
+
 import { BookingStatus } from '../../types';
 
 describe('Zod Schema & Regex Validation', () => {
@@ -35,7 +36,7 @@ describe('Zod Schema & Regex Validation', () => {
         phone: '9999988888',
         password: 'securepassword123',
         city: 'Mumbai',
-        state: 'Maharashtra'
+        state: 'Maharashtra',
       };
       const result = RegisterHospitalSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -48,7 +49,7 @@ describe('Zod Schema & Regex Validation', () => {
         phone: '9999988888',
         password: 'securepassword123',
         city: 'Mumbai',
-        state: 'Maharashtra'
+        state: 'Maharashtra',
       };
       const result = RegisterHospitalSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -57,19 +58,19 @@ describe('Zod Schema & Regex Validation', () => {
 
   describe('BookAppointmentSchema', () => {
     const validUuid = '123e4567-e89b-12d3-a456-426614174000';
-    
+
     it('should reject past dates', () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
-      
+
       const input = {
         patientId: validUuid,
         doctorId: validUuid,
         hospitalId: validUuid,
         date: pastDate.toISOString(),
-        slot: '10:00'
+        slot: '10:00',
       };
-      
+
       const result = BookAppointmentSchema.safeParse(input);
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -80,15 +81,15 @@ describe('Zod Schema & Regex Validation', () => {
     it('should accept future dates', () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
-      
+
       const input = {
         patientId: validUuid,
         doctorId: validUuid,
         hospitalId: validUuid,
         date: futureDate.toISOString(),
-        slot: '10:00'
+        slot: '10:00',
       };
-      
+
       const result = BookAppointmentSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
@@ -97,7 +98,7 @@ describe('Zod Schema & Regex Validation', () => {
   describe('BookingStatus Enum Integrity', () => {
     it('should contain expected statuses and NOT contain legacy PENDING', () => {
       const statuses = Object.values(BookingStatus);
-      
+
       expect(statuses).toContain('AWAITING_PAYMENT');
       expect(statuses).toContain('BOOKED');
       expect(statuses).not.toContain('PENDING');
