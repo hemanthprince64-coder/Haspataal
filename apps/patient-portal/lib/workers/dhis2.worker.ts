@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { prisma } from '@/lib/util/prisma-singleton';
+import { prisma } from '../util/prisma-singleton';
 
 export interface DHIS2AggregateData {
   period: string; // YYYYMMDD
