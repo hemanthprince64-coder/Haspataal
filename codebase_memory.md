@@ -7,7 +7,7 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
 ## ⚠️ Session Protocol (MANDATORY)
 
-1. **READ FIRST:** At the start of every session or conversation, **always read this `CLAUDE.md` file before doing any work.** No exceptions.
+1. **READ FIRST:** At the start of every session or conversation, **always read this `codebase_memory.md` file before doing any work.** No exceptions.
 2. **UPDATE AFTER EVERY BUG FIX:** After fixing any bug, immediately add an entry to the **Knowledge Base** section below with the root cause and fix.
 3. **NEVER REPEAT MISTAKES:** Before writing code, check the Knowledge Base for known pitfalls. If a past lesson applies, follow it.
 4. **Accountability:** If a bug recurs that is already documented in the Knowledge Base, treat it as a critical failure and flag it.
