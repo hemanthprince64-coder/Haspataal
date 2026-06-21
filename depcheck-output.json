@@ -1,0 +1,348 @@
+{
+  "dependencies": [
+    "@dnd-kit/core",
+    "@dnd-kit/sortable",
+    "@dnd-kit/utilities",
+    "@google/generative-ai",
+    "@hookform/resolvers",
+    "@radix-ui/react-avatar",
+    "@radix-ui/react-dialog",
+    "@radix-ui/react-dropdown-menu",
+    "@radix-ui/react-label",
+    "@radix-ui/react-slot",
+    "@radix-ui/react-switch",
+    "@tanstack/react-table",
+    "bullmq",
+    "class-variance-authority",
+    "clsx",
+    "framer-motion",
+    "ioredis",
+    "lucide-react",
+    "pino-pretty",
+    "react-hook-form",
+    "redlock",
+    "sonner",
+    "tailwind-merge",
+    "tailwindcss-animate"
+  ],
+  "devDependencies": [
+    "@commitlint/cli",
+    "@commitlint/config-conventional",
+    "@trivago/prettier-plugin-sort-imports",
+    "@types/react",
+    "@types/react-dom",
+    "@typescript-eslint/eslint-plugin",
+    "@typescript-eslint/parser",
+    "autoprefixer",
+    "eslint-config-next",
+    "eslint-plugin-local-rules",
+    "postcss",
+    "tailwindcss",
+    "testcontainers",
+    "typescript"
+  ],
+  "missing": {
+    "@eslint/eslintrc": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\eslint.config.mjs"
+    ],
+    "@eslint/js": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\eslint.config.mjs"],
+    "@haspataal/db": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\escalation.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\followup.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\notification.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\anc-retention-notifier.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\event.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\notification.service.ts"
+    ],
+    "@haspataal/types": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\breaking-changes.test.ts"
+    ],
+    "express": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\pharmacy\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\opd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\ipd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\diagnostics\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\billing\\index.ts"
+    ]
+  },
+  "using": {
+    "@eslint/eslintrc": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\eslint.config.mjs"
+    ],
+    "@eslint/js": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\eslint.config.mjs"],
+    "next": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\proxy.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\sentry.client.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\sentry.edge.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\sentry.server.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts"
+    ],
+    "@playwright/test": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\playwright.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\proxy.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\e2e\\appointment-booking.spec.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\e2e\\hospital-onboarding.spec.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\e2e\\patient-auth.spec.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\e2e\\pages\\AdminPage.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\e2e\\pages\\HospitalPage.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\e2e\\pages\\PatientPage.ts"
+    ],
+    "eslint": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json"],
+    "husky": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json"],
+    "prettier": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json"],
+    "turbo": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json"],
+    "vitest": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\vitest.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\__tests__\\dhis2.worker.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\__tests__\\escalation.worker.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\enums-schema.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\pure-functions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\schemas.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\integration\\server-actions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\tests\\regression.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\__tests__\\notification-curfew.test.ts"
+    ],
+    "react": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\proxy.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\hooks\\useDashboard.ts"
+    ],
+    "react-dom": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\proxy.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts"
+    ],
+    "@types/node": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\vitest.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\dhis2.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\__tests__\\dhis2.worker.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\__tests__\\escalation.worker.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\enums-schema.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\pure-functions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\schemas.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\integration\\server-actions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\document.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\event.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\quality-audit.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\tests\\regression.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\__tests__\\notification-curfew.test.ts"
+    ],
+    "@vitest/coverage-v8": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\vitest.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\__tests__\\dhis2.worker.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\__tests__\\escalation.worker.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\rate-limit.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\enums-schema.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\pure-functions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\unit\\schemas.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\integration\\server-actions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\tests\\regression.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\__tests__\\notification-curfew.test.ts"
+    ],
+    "lint-staged": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\package.json"],
+    "dotenv": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\prisma.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit_isolation.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check-facility-type.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\drop_user_profiles.cjs",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\platform-health-check.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\run-migration.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-demo-data.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-booking-flow.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-cce-lifecycle.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-rls-security.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\validate-env.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\verify-env-fix.js"
+    ],
+    "prisma": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\prisma.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tmp\\check_db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tmp\\find_users.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\integration\\server-actions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit-bill-payload.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit_isolation.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\backend-health-check.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns_2.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns_3.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns_4.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\debug-create.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\debug_sql.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\demo-smart-engine.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\drop_user_profiles.cjs",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\drop_user_profiles.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\fix_audit.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\raw_sql_test.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\security-test.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-concepts.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-demo-data.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-patients.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-realistic-data.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed_data.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\simulate-journey.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\stress-test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-booking-flow.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-cce-lifecycle.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-hospital-onboarding.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\validate-db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\check-hospitals.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\list_hospitals.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\reset-hospital.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\test_db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\seeds\\clinic-demo-seed.ts"
+    ],
+    "@sentry/nextjs": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\sentry.client.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\sentry.edge.config.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\sentry.server.config.ts"
+    ],
+    "pg": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\escalation.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\followup.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\notification.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\analytics.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\document.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\event.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\hospital-config.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\migration.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\notification.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\prescription.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\retention.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\run-migration.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\pharmacy\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\opd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\ipd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\diagnostics\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\billing\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\backfill-escalations.ts"
+    ],
+    "@types/pg": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\escalation.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\followup.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\notification.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\analytics.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\document.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\event.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\hospital-config.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\migration.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\notification.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\prescription.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\retention.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\pharmacy\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\opd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\ipd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\diagnostics\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\billing\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\backfill-escalations.ts"
+    ],
+    "@haspataal/db": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\escalation.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\followup.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\notification.worker.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\anc-retention-notifier.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\event.service.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\notification.service.ts"
+    ],
+    "prom-client": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\workers\\escalation.worker.ts"
+    ],
+    "@prisma/client": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tmp\\check_db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tmp\\find_users.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\integration\\server-actions.test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit-bill-payload.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\audit_isolation.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\backend-health-check.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns_2.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns_3.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\check_columns_4.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\debug-create.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\debug_sql.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\demo-smart-engine.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\drop_user_profiles.cjs",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\drop_user_profiles.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\fix_audit.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\raw_sql_test.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\security-test.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-concepts.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-demo-data.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-patients.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed-realistic-data.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\seed_data.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\simulate-journey.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\stress-test.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-booking-flow.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-cce-lifecycle.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-hospital-onboarding.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\validate-db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\check-hospitals.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\list_hospitals.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\reset-hospital.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scratch\\test_db.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\lib\\seeds\\clinic-demo-seed.ts"
+    ],
+    "@haspataal/types": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\breaking-changes.test.ts"
+    ],
+    "@testcontainers/postgresql": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\tests\\integration\\server-actions.test.ts"
+    ],
+    "date-fns": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\services\\dashboard.service.ts"
+    ],
+    "bcryptjs": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\migrate-plaintext-passwords.ts"
+    ],
+    "@types/bcryptjs": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\migrate-plaintext-passwords.ts"
+    ],
+    "chalk": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\quality-audit.ts"
+    ],
+    "jose": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\security-test.js"
+    ],
+    "pino": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\stress-test.ts"],
+    "@supabase/supabase-js": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\test-rls-security.js"
+    ],
+    "zod": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\validate-env.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\scripts\\verify-env-fix.js",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\common\\schemas.ts"
+    ],
+    "express": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\pharmacy\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\opd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\ipd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\diagnostics\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\billing\\index.ts"
+    ],
+    "@types/express": [
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\pharmacy\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\opd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\ipd\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\diagnostics\\index.ts",
+      "C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\modules\\billing\\index.ts"
+    ],
+    "swr": ["C:\\Users\\heman\\.gemini\\antigravity\\scratch\\haspataal\\hooks\\useDashboard.ts"]
+  },
+  "invalidFiles": {},
+  "invalidDirs": {}
+}

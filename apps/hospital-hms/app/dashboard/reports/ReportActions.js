@@ -1,10 +1,12 @@
 'use client';
 
-import { useActionState } from 'react';
-import { cancelVisitHospital, completeVisitHospital } from '@/app/actions';
 import { Button } from '@haspataal/ui';
 import { Badge } from '@haspataal/ui';
 import { CheckCircle2, XCircle } from 'lucide-react';
+
+import { useActionState } from 'react';
+
+import { cancelVisitHospital, completeVisitHospital } from '@/app/actions';
 
 const initialState = { message: '', success: false };
 
@@ -38,40 +40,6 @@ export default function ReportActions({ visitId, status }) {
         <Button type="submit" disabled={isCancelling} size="sm" variant="destructive">
           <XCircle className="h-4 w-4" />
         </Button>
-      </form>
-    </div>
-  );
-}
-
-  return (
-    <div style={{ display: 'flex', gap: '0.5rem' }}>
-      <form action={completeAction}>
-        <input type="hidden" name="visitId" value={visitId} />
-        <button
-          type="submit"
-          disabled={isCompleting}
-          className="btn btn-sm badge-success"
-          style={{ border: 'none', cursor: 'pointer', fontWeight: '600' }}
-        >
-          {isCompleting ? '...' : '✓'}
-        </button>
-      </form>
-      <form action={cancelAction}>
-        <input type="hidden" name="visitId" value={visitId} />
-        <button
-          type="submit"
-          disabled={isCancelling}
-          className="btn btn-sm"
-          style={{
-            background: 'var(--danger-light)',
-            color: 'var(--danger)',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '600',
-          }}
-        >
-          {isCancelling ? '...' : '✕'}
-        </button>
       </form>
     </div>
   );

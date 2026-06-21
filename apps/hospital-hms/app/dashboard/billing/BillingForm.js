@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useActionState } from 'react';
-import { createVisitAction } from '@/app/actions';
 import { Button } from '@haspataal/ui';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@haspataal/ui';
 import { Input } from '@haspataal/ui';
 import { Label } from '@haspataal/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@haspataal/ui';
 import { CheckCircle2, IndianRupee } from 'lucide-react';
+
+import { useState, useActionState } from 'react';
+
+import { createVisitAction } from '@/app/actions';
 
 const initialState = { message: '', success: false };
 
@@ -62,12 +64,7 @@ export default function BillingForm({ doctors }) {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="patientName">Patient Name *</Label>
-                <Input
-                  id="patientName"
-                  name="patientName"
-                  placeholder="Full name"
-                  required
-                />
+                <Input id="patientName" name="patientName" placeholder="Full name" required />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -84,12 +81,7 @@ export default function BillingForm({ doctors }) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    placeholder="Years"
-                  />
+                  <Input id="age" name="age" type="number" placeholder="Years" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gender</Label>
@@ -140,12 +132,7 @@ export default function BillingForm({ doctors }) {
                 </div>
               )}
 
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full"
-                size="lg"
-              >
+              <Button type="submit" disabled={isPending} className="w-full" size="lg">
                 {isPending ? 'Creating...' : 'Create Visit & Generate Receipt'}
               </Button>
             </div>
@@ -189,315 +176,6 @@ export default function BillingForm({ doctors }) {
             )}
           </CardContent>
         </Card>
-      </div>
-    </div>
-  );
-}
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Main Form */}
-      <div className="lg:col-span-2">
-        <Card>
-          <form action={formAction} className="p-6 space-y-6">
-            <h3 className="text-lg font-bold mb-4">Patient Details</h3>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="patientName">Patient Name *</Label>
-                <Input
-                  id="patientName"
-                  name="patientName"
-                  placeholder="Full name"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="patientMobile">Mobile *</Label>
-                  <Input
-                    id="patientMobile"
-                    name="patientMobile"
-                    type="tel"
-                    placeholder="10-digit mobile"
-                    maxLength="10"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    placeholder="Years"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select name="gender">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="M">Male</SelectItem>
-                      <SelectItem value="F">Female</SelectItem>
-                      <SelectItem value="O">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            <hr className="my-6" />
-
-            <h3 className="text-lg font-bold mb-4">Consultation Details</h3>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="doctorId">Doctor *</Label>
-                <Select
-                  name="doctorId"
-                  required
-                  value={selectedDoctor}
-                  onValueChange={setSelectedDoctor}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name} — {d.speciality} (₹{d.fee})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {state?.message && !state.success && (
-                <Alert variant="destructive">
-                  <AlertDescription>⚠️ {state.message}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full"
-                size="lg"
-              >
-                {isPending ? 'Creating...' : 'Create Visit & Generate Receipt'}
-              </Button>
-            </div>
-          </form>
-        </Card>
-      </div>
-
-      {/* Fee Summary Sidebar */}
-      <div className="lg:col-span-1">
-        <Card className="sticky top-6">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <IndianRupee className="h-4 w-4" />
-              Fee Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {selectedDoctor ? (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Doctor</span>
-                  <span className="font-semibold">{doctor?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Speciality</span>
-                  <span>{doctor?.speciality}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Consultation Fee</span>
-                  <span className="font-semibold">₹{fee}</span>
-                </div>
-                <div className="border-t pt-3 flex justify-between text-base">
-                  <span className="font-bold">Total</span>
-                  <span className="font-extrabold text-emerald-600">₹{fee}</span>
-                </div>
-              </>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">
-                Select a doctor to see fee details
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 320px',
-        gap: '1.5rem',
-        alignItems: 'start',
-      }}
-    >
-      {/* Main Form */}
-      <div className="card">
-        <form
-          action={formAction}
-          style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
-        >
-          <h3 style={{ fontWeight: '700', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
-            Patient Details
-          </h3>
-
-          <div className="form-group">
-            <label className="form-label">Patient Name *</label>
-            <input
-              name="patientName"
-              type="text"
-              required
-              className="form-input"
-              placeholder="Full name"
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Mobile *</label>
-              <input
-                name="patientMobile"
-                type="tel"
-                required
-                className="form-input"
-                placeholder="Mobile"
-                maxLength="10"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Age</label>
-              <input name="age" type="number" className="form-input" placeholder="Years" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Gender</label>
-              <select name="gender" className="form-input">
-                <option value="">Select</option>
-                <option value="M">Male</option>
-                <option value="F">Female</option>
-                <option value="O">Other</option>
-              </select>
-            </div>
-          </div>
-
-          <hr
-            style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.25rem 0' }}
-          />
-          <h3 style={{ fontWeight: '700', marginBottom: '0.25rem', fontSize: '1.1rem' }}>
-            Consultation Details
-          </h3>
-
-          <div className="form-group">
-            <label className="form-label">Doctor *</label>
-            <select
-              name="doctorId"
-              required
-              className="form-input"
-              value={selectedDoctor}
-              onChange={(e) => setSelectedDoctor(e.target.value)}
-            >
-              <option value="">Select Doctor</option>
-              {doctors.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name} — {d.speciality} (₹{d.fee})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {state?.message && !state.success && (
-            <div className="alert alert-error">⚠️ {state.message}</div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className="btn btn-primary btn-lg"
-            style={{ width: '100%' }}
-          >
-            {isPending ? '⏳ Creating...' : '✓ Create Visit & Generate Receipt'}
-          </button>
-        </form>
-      </div>
-
-      {/* Fee Summary (Sidebar) */}
-      <div className="card" style={{ position: 'sticky', top: '1rem' }}>
-        <h4 style={{ fontWeight: '700', marginBottom: '1rem', fontSize: '0.95rem' }}>
-          💳 Fee Summary
-        </h4>
-        {selectedDoctor ? (
-          <>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '0.5rem',
-                fontSize: '0.9rem',
-              }}
-            >
-              <span style={{ color: 'var(--text-muted)' }}>Doctor</span>
-              <span style={{ fontWeight: '600' }}>{doctor?.name}</span>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '0.5rem',
-                fontSize: '0.9rem',
-              }}
-            >
-              <span style={{ color: 'var(--text-muted)' }}>Speciality</span>
-              <span>{doctor?.speciality}</span>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '0.75rem',
-                fontSize: '0.9rem',
-              }}
-            >
-              <span style={{ color: 'var(--text-muted)' }}>Consultation Fee</span>
-              <span style={{ fontWeight: '600' }}>₹{fee}</span>
-            </div>
-            <div
-              style={{
-                borderTop: '2px solid var(--primary)',
-                paddingTop: '0.75rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '1.1rem',
-              }}
-            >
-              <span style={{ fontWeight: '700' }}>Total</span>
-              <span style={{ fontWeight: '800', color: 'var(--accent)' }}>₹{fee}</span>
-            </div>
-          </>
-        ) : (
-          <p
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: '0.85rem',
-              textAlign: 'center',
-              padding: '1rem 0',
-            }}
-          >
-            Select a doctor to see fee details
-          </p>
-        )}
       </div>
     </div>
   );
