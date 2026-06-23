@@ -2,7 +2,7 @@
   "_readme": "Haspataal MCP Server Configuration — copy relevant servers to your Claude settings",
   "_usage": "Add mcpServers entries to ~/.claude.json or project .claude/settings.json",
   "_context_warning": "Keep under 10 MCPs active to preserve your 200k context window",
-  "_haspataal_recommended": ["supabase", "github", "filesystem"],
+  "_haspataal_recommended": ["supabase", "github", "filesystem", "serena", "playwright"],
   "mcpServers": {
     "supabase": {
       "command": "npx",
@@ -49,6 +49,16 @@
       "args": ["-y", "@modelcontextprotocol/server-memory"],
       "description": "Persistent memory MCP — store and recall cross-session context. Use for remembering ongoing tasks and WAR ROOM decisions."
     },
+    "serena": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-serena"],
+      "description": "Serena MCP — semantic code search, navigation, and understanding for TypeScript/JavaScript codebases."
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-playwright"],
+      "description": "Playwright MCP — browser automation for end-to-end testing, UI verification, and patient portal interactions."
+    },
     "_disabled_by_default": {
       "vercel": {
         "command": "npx",
@@ -70,6 +80,8 @@
     "step2": "Create a GitHub Personal Access Token at: https://github.com/settings/tokens (repo scope)",
     "step3": "Add to your environment or .env: SUPABASE_SERVICE_ROLE_KEY=... GITHUB_TOKEN=...",
     "step4": "Copy the mcpServers section to your Claude project settings or ~/.claude.json",
-    "step5": "Keep only haspataal_recommended servers active to preserve context window"
+    "step5": "Keep only haspataal_recommended servers active (7 total) to preserve context window",
+    "step6": "Serena MCP: semantic code search for TypeScript/JavaScript navigation",
+    "step7": "Playwright MCP: browser automation for patient portal e2e testing"
   }
 }

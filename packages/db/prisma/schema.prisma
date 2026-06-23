@@ -188,7 +188,9 @@ model HospitalsMaster {
   patientAcquisitions     PatientAcquisition[]
   aiDocuments             AIDocument[]
   escalationAlerts        EscalationAlert[]
+  hospitalInsurances      HospitalInsurance[]
   // Clinic Tier — new scalar fields
+
   facilityType            FacilityType        @default(HOSPITAL)   @map("facility_type")
   gstExempt               Boolean             @default(false)       @map("gst_exempt")
   clinicTier              ClinicTier?         @map("clinic_tier")
@@ -2457,3 +2459,31 @@ model ConceptMap {
   @@index([conceptId])
   @@map("concept_mappings")
 }
+
+enum InsurerType {
+  GENERAL_INSURANCE
+  TPA
+  GOVERNMENT
+}
+
+model HospitalInsurance {
+  id                 String          @id @default(uuid())
+  hospitalId         String          @map("hospital_id")
+  insurerName        String          @map("insurer_name")
+  insurerType        InsurerType     @map("insurer_type")
+  policyNumber       String?         @map("policy_number")
+  tieUpLetterFileUrl String?         @map("tie_up_letter_file_url")
+  validFrom          DateTime        @map("valid_from") @db.Date
+  validTo            DateTime        @map("valid_to") @db.Date
+  isActive           Boolean         @default(true) @map("is_active")
+  specialitiesCovered String[]       @default([]) @map("specialities_covered")
+  coPayPercentage    Decimal?        @map("co_pay_percentage")
+  cashlessNetwork    Boolean         @default(true) @map("cashless_network")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+  hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@map("hospital_insurances")
+}
+

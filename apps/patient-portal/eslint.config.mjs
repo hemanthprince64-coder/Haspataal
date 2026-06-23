@@ -18,7 +18,6 @@ export default [
   {
     files: ['**/*.ts', '**/*.tsx'],
     plugins: {
-      '@typescript-eslint': null,
       'local-rules': localRules,
     },
     languageOptions: {
@@ -59,6 +58,9 @@ export default [
       'lib/generated/**',
       'scripts/**',
       '.kilo/**',
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.test.tsx',
     ],
   },
 ];
