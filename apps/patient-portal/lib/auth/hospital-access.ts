@@ -30,7 +30,8 @@ type HospitalAction =
   | 'activate'
   | 'pay'
   | 'finalize'
-  | 'discharge';
+  | 'discharge'
+  | 'manage_schedule';
 
 const ROLE_MODULES: Record<string, HospitalModule[]> = {
   SUPER_ADMIN: [
