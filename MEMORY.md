@@ -13,7 +13,7 @@ Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 4. **Accountability:** If a bug recurs that is already documented in the Knowledge Base, treat it as a critical failure and flag it.
 5. **Mobile Validation:** All hospital-facing login and registration actions MUST validate mobile numbers using `MobileSchema` (min 10 digits) before proceeding to database queries.
 6. **Auto-Login:** Successful hospital registration MUST automatically create a session and redirect the user to `/hospital/dashboard/setup` to ensure a frictionless onboarding experience.
-7. **"commit" Command Workflow:** When the user says "commit", the agent MUST (in order): (a) run `git status` + `git diff --stat` to understand the changeset, (b) stage all changes with `git add -A`, (c) generate a Conventional Commits message summarising the diff, (d) run `git commit`, and (e) update the Knowledge Base in this `MEMORY.md` with any new lessons from the session — then commit the MEMORY.md update as a follow-up if it wasn't included in the original staged set.
+7. **"commit" Command Workflow:** When the user says "commit", the agent MUST (in order): (a) run `git status` + `git diff --stat` to understand the changeset, (b) **update the Knowledge Base in `MEMORY.md`** with any new lessons from the session (this MUST happen BEFORE staging — no exceptions), (c) stage all changes with `git add -A` (this automatically includes the updated `MEMORY.md`), (d) generate a Conventional Commits message summarising the diff, (e) run `git commit`. MEMORY.md must always be part of the same commit as the code changes — never as a follow-up commit.
 
 ---
 
