@@ -1,11 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { getHospitalIdFromSession } from '@/lib/auth';
-import { randomBytes } from 'crypto';
 
-const staffUpdateSchema = z.object({
-  name: z.string().optional(),
+import { NextRequest, NextResponse } from 'next/server';
+
+import { getHospitalIdFromSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+const staffCreateSchema = z.object({
+  name: z.string().min(1),
+  mobile: z.string().min(1),
+  email: z.string().optional(),
   role: z
     .enum([
       'DOCTOR',
@@ -17,11 +20,14 @@ const staffUpdateSchema = z.object({
       'HOSPITAL_ADMIN',
       'SUPER_ADMIN',
     ])
-    .optional(),
+    .default('RECEPTIONIST'),
   shift: z.enum(['MORNING', 'EVENING', 'NIGHT', 'ROTATIONAL']).optional(),
-  isActive: z.boolean().optional(),
+  isActive: z.boolean().default(true),
   departmentId: z.string().optional(),
   permissions: z.any().optional(),
+  designation: z.string().optional(),
+  qualifications: z.array(z.string()).optional(),
+  bloodGroup: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -60,11 +66,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const parsed = staffUpdateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 422 });
+  const parsed = staffCreateSchema.safeParse(body);
+  if (!parsed.success)
+    return NextResponse.json(
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
+    );
 
-  // Minimal create — full flow uses invite
-  return NextResponse.json({ error: 'Use invite flow for staff creation' }, { status: 400 });
+  const staff = await prisma.staff.create({
+    data: {
+      hospitalId,
+      name: parsed.data.name,
+      mobile: parsed.data.mobile,
+      email: parsed.data.email || null,
+      role: parsed.data.role,
+      shift: parsed.data.shift || null,
+      isActive: parsed.data.isActive,
+      departmentId: parsed.data.departmentId || null,
+      permissions: parsed.data.permissions || {},
+      designation: parsed.data.designation || null,
+      qualifications: parsed.data.qualifications || [],
+      bloodGroup: parsed.data.bloodGroup || null,
+    } as any,
+  });
+
+  return NextResponse.json({ staff }, { status: 201 });
 }
 
 // Invite route (separate file handles /staff/invite)

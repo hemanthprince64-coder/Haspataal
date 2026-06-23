@@ -189,6 +189,8 @@ model HospitalsMaster {
   aiDocuments             AIDocument[]
   escalationAlerts        EscalationAlert[]
   hospitalInsurances      HospitalInsurance[]
+  billingPackages         BillingPackage[]
+  copayRules              CoPayRule[]
   // Clinic Tier — new scalar fields
 
   facilityType            FacilityType        @default(HOSPITAL)   @map("facility_type")
@@ -1987,6 +1989,7 @@ model ServiceCatalog {
   updatedAt        DateTime          @updatedAt @map("updated_at")
   hospital         HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   invoiceLineItems InvoiceLineItem[]
+  copayRules       CoPayRule[]
 
   @@unique([hospitalId, code])
   @@index([hospitalId])
@@ -2482,8 +2485,44 @@ model HospitalInsurance {
   createdAt          DateTime        @default(now()) @map("created_at")
   updatedAt          DateTime        @updatedAt @map("updated_at")
   hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  copayRules         CoPayRule[]
 
   @@index([hospitalId])
   @@map("hospital_insurances")
+}
+
+model BillingPackage {
+  id          String   @id @default(cuid())
+  hospitalId  String   @map("hospital_id")
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@map("billing_packages")
+}
+
+model CoPayRule {
+  id           String    @id @default(cuid())
+  hospitalId   String    @map("hospital_id")
+  insurerId    String    @map("insurer_id")
+  insurer      HospitalInsurance @relation(fields: [insurerId], references: [id], onDelete: Cascade)
+  serviceType  String?   @map("service_type")
+  serviceId    String?   @map("service_id")
+  service      ServiceCatalog? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  copayType    String    @default("PERCENTAGE") @map("copay_type")
+  copayValue   Decimal   @map("copay_value")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([insurerId])
+  @@index([serviceId])
+  @@map("copay_rules")
 }
 
