@@ -322,6 +322,8 @@ The following documents provide detailed specifications for the Haspataal platfo
 
 ---
 
+- **commitlint Scope Enum:** The project enforces a strict `scope-enum` list: `[patient, hospital, admin, lab, agent, doctor, auth, gateway, db, infra, deps, ci, security]`. Multi-domain scopes like `billing,staff` are rejected by the commit-msg hook. When a commit touches multiple HMS sub-domains (billing, staff, OPD, etc.), use `hospital` as the single scope. Use `db` when the primary change is a Prisma schema update. _(Fixed 2026-06-24)_
+
 ## 🤖 Agent Personality
 
 - Be concise.
