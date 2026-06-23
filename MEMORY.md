@@ -297,6 +297,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 - **ESLint Plugin References in Flat Config:** When overriding plugins in ESLint Flat Config, setting a plugin to `null` (e.g. `'@typescript-eslint': null`) triggers a configuration schema error. Omit it entirely from `plugins` object or map to an actual plugin object. _(Fixed 2026-06-23)_
 - **TypeScript and ESLint Ignore Alignments:** When `tsconfig.json` excludes test directories (e.g. `"exclude": ["**/__tests__/**/*"]`), ESLint will fail to parse these files if they are not also ignored in `eslint.config.mjs` (due to `parserOptions.project` referencing `tsconfig.json`). Ensure test folders are explicitly ignored in ESLint configs. _(Fixed 2026-06-23)_
 - **Conventional Commits Scope Validation:** Workspace commitlint rules enforce a specific set of allowed scopes: `[patient, hospital, admin, lab, agent, doctor, auth, gateway, db, infra, deps, ci, security]`. Non-compliant scopes (e.g. `settings`) will trigger pre-commit failures. _(Fixed 2026-06-23)_
+- **JS to DB Weekday Offsets:** When mapping JavaScript's `Date.getDay()` (0-Sunday to 6-Saturday) onto custom schema weekly day values (e.g. Mon-Sun mapped to 1-7), always translate Sunday explicitly (0 to 7) to ensure exact schedule template matches during batch slot generation. _(Fixed 2026-06-23)_
 
 ---
 
