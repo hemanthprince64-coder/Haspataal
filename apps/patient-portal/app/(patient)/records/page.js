@@ -1,57 +1,131 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   FolderHeart,
   Search,
   Plus,
-  Filter,
   FileText,
   FlaskConical,
   ReceiptText,
-  ChevronRight,
+  Stethoscope,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
+import { useState, useEffect } from 'react';
+
 import RecordsList from '@/components/patient/RecordsList';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function RecordsPage() {
   const [loading, setLoading] = useState(true);
+  const [records, setRecords] = useState([]);
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
+    const fetchRecords = async () => {
+      try {
+        const res = await fetch('/api/patient/records');
+        if (!res.ok) throw new Error('Failed to fetch records');
+        const data = await res.json();
+
+        const mapped = [];
+
+        data.prescriptions?.forEach((p) => {
+          const meds = p.items?.map((i) => i.medName).join(', ') || '';
+          mapped.push({
+            id: p.id,
+            type: 'Prescription',
+            title: meds || 'Prescription',
+            doctor: p.doctor?.fullName || 'Doctor',
+            date: new Date(p.createdAt).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
+            icon: <FileText className="w-5 h-5 text-blue-600" />,
+            bgColor: 'bg-blue-100/50',
+            raw: p,
+          });
+        });
+
+        data.labOrders?.forEach((order) => {
+          const tests =
+            order.items?.map((i) => i.test?.testName || i.testName).join(', ') || 'Lab Test';
+          mapped.push({
+            id: order.id,
+            type: 'Lab Report',
+            title: tests,
+            doctor: order.doctor?.fullName || 'Lab',
+            date: new Date(order.createdAt).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
+            icon: <FlaskConical className="w-5 h-5 text-teal-600" />,
+            bgColor: 'bg-teal-100/50',
+            raw: order,
+          });
+        });
+
+        data.invoices?.forEach((inv) => {
+          mapped.push({
+            id: inv.id,
+            type: 'Invoice',
+            title: inv.hospital?.displayName || inv.hospital?.legalName || 'Hospital',
+            doctor: `₹${Number(inv.totalAmount || 0).toLocaleString('en-IN')}`,
+            date: new Date(inv.createdAt).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
+            icon: <ReceiptText className="w-5 h-5 text-amber-600" />,
+            bgColor: 'bg-amber-100/50',
+            raw: inv,
+          });
+        });
+
+        data.records?.forEach((rec) => {
+          mapped.push({
+            id: rec.id,
+            type: 'Clinical Note',
+            title: rec.diagnosis || 'Visit Record',
+            doctor: rec.doctor?.fullName || 'Doctor',
+            date: new Date(rec.createdAt).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }),
+            icon: <Stethoscope className="w-5 h-5 text-purple-600" />,
+            bgColor: 'bg-purple-100/50',
+            raw: rec,
+          });
+        });
+
+        mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setRecords(mapped);
+      } catch {
+        // records will remain empty
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecords();
   }, []);
 
-  const records = [
-    {
-      id: 'rec-1',
-      type: 'Prescription',
-      doctor: 'Dr. Arvind Sharma',
-      date: '12 Oct, 2023',
-      icon: <FileText className="w-5 h-5 text-blue-600" />,
-      bgColor: 'bg-blue-100/50',
-    },
-    {
-      id: 'rec-2',
-      type: 'Lab Report',
-      title: 'Lipid Profile & Glucose',
-      date: '05 Sep, 2023',
-      icon: <FlaskConical className="w-5 h-5 text-teal-600" />,
-      bgColor: 'bg-teal-100/50',
-    },
-    {
-      id: 'rec-3',
-      type: 'Invoice',
-      title: 'Apollo Pharmacy',
-      date: '05 Sep, 2023',
-      icon: <ReceiptText className="w-5 h-5 text-amber-600" />,
-      bgColor: 'bg-amber-100/50',
-    },
-  ];
+  const filteredRecords = records.filter((r) => {
+    const matchesSearch =
+      (r.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.doctor || '').toLowerCase().includes(search.toLowerCase()) ||
+      (r.type || '').toLowerCase().includes(search.toLowerCase());
+    const matchesTab =
+      activeTab === 'all' || r.type.toLowerCase().includes(activeTab.replace('s', ''));
+    return matchesSearch && matchesTab;
+  });
 
   return (
     <div className="container max-w-5xl mx-auto px-4 py-8 animate-fade-in">
@@ -96,20 +170,14 @@ export default function RecordsPage() {
             <Input
               placeholder="Find records by doctor, hospital, or date..."
               className="w-full pl-16 border-0 focus-visible:ring-0 bg-transparent text-lg h-16 font-medium placeholder:text-slate-400"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="h-10 w-px bg-slate-100 mx-2" />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-12 w-12 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl mr-2"
-          >
-            <Filter className="w-6 h-6" />
-          </Button>
         </div>
       </Card>
 
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-slate-100/80 p-1 rounded-xl mb-8 space-x-1">
           <TabsTrigger
             value="all"
@@ -137,7 +205,7 @@ export default function RecordsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="mt-0">
+        <TabsContent value={activeTab} className="mt-0">
           <div
             className={
               loading
@@ -145,20 +213,8 @@ export default function RecordsPage() {
                 : 'transition-opacity duration-300'
             }
           >
-            <RecordsList records={records} />
+            <RecordsList records={filteredRecords} />
           </div>
-        </TabsContent>
-
-        <TabsContent value="prescriptions">
-          <RecordsList records={records.filter((r) => r.type === 'Prescription')} />
-        </TabsContent>
-
-        <TabsContent value="labs">
-          <RecordsList records={records.filter((r) => r.type === 'Lab Report')} />
-        </TabsContent>
-
-        <TabsContent value="bills">
-          <RecordsList records={records.filter((r) => r.type === 'Invoice')} />
         </TabsContent>
       </Tabs>
     </div>

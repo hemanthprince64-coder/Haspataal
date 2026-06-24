@@ -323,6 +323,11 @@ The following documents provide detailed specifications for the Haspataal platfo
 ---
 
 - **commitlint Scope Enum:** The project enforces a strict `scope-enum` list: `[patient, hospital, admin, lab, agent, doctor, auth, gateway, db, infra, deps, ci, security]`. Multi-domain scopes like `billing,staff` are rejected by the commit-msg hook. When a commit touches multiple HMS sub-domains (billing, staff, OPD, etc.), use `hospital` as the single scope. Use `db` when the primary change is a Prisma schema update. _(Fixed 2026-06-24)_
+- **OPD Triage Page Complexity:** The triage page (`hospital/dashboard/opd/triage/page.tsx`) is a high-density clinical screen. When extending it, keep patient vitals, queue status, and handoff controls in clearly separated sections to avoid cognitive overload for clinical staff. All state mutations (triage decisions, handoffs) must emit an event to `EventLog` before updating the UI optimistically. _(Implemented 2026-06-24)_
+- **OPD Handoff API Pattern:** Handoff routes live under `api/hospital/opd/handoffs/`. They must validate the receiving department exists, is active, and has available bed capacity before persisting a handoff record. Return `409` if target department is at capacity to prevent silent over-admissions. _(Implemented 2026-06-24)_
+- **Patient API Namespace:** All patient-facing data APIs live under `app/api/patient/`. Never expose hospital-internal fields (costPrice, margin, staffNotes) through this namespace. _(Implemented 2026-06-24)_
+- **Payment Webhook Idempotency:** The payment webhook handler at `api/webhooks/payment/` must process events idempotently using the payment provider's `event_id` as a unique key (`ON CONFLICT DO NOTHING`). Without this, retried webhook deliveries (Razorpay/Stripe guarantee at-least-once) cause duplicate bill-paid records and inflated revenue dashboards. _(Implemented 2026-06-24)_
+- **Slot Cleanup Worker:** `workers/slot-cleanup.worker.ts` reclaims expired appointment slots (status=PENDING older than TTL). It must run inside an RLS-scoped transaction (`SET LOCAL app.hospital_id`) per hospital batch to preserve tenant isolation. Use `FOR UPDATE SKIP LOCKED` to avoid contention with the booking flow. _(Implemented 2026-06-24)_
 
 ## 🤖 Agent Personality
 

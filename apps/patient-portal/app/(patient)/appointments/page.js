@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getMyAppointmentsAction, cancelAppointmentAction } from '@/app/actions';
-import Link from 'next/link';
-import { format } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays, Plus, ChevronLeft, History, Clock } from 'lucide-react';
+
+import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
+import { getMyAppointmentsAction } from '@/app/actions';
+import AppointmentsList from '@/components/patient/AppointmentsList';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-import AppointmentsList from '@/components/patient/AppointmentsList';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
@@ -39,26 +40,6 @@ export default function AppointmentsPage() {
       active = false;
     };
   }, []);
-
-  const handleCancel = async (visitId) => {
-    if (
-      !window.confirm(
-        'Are you sure you want to cancel? (Cannot cancel within 6 hours of appointment)',
-      )
-    )
-      return;
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('visitId', visitId);
-
-    const res = await cancelAppointmentAction(null, formData);
-    if (!res.success) {
-      alert(res.message);
-    } else {
-      alert(res.message);
-    }
-    await loadData();
-  };
 
   const now = new Date();
 
@@ -129,7 +110,12 @@ export default function AppointmentsPage() {
             ))}
           </div>
         ) : (
-          <AppointmentsList appointments={displayList} tab={tab} now={now} />
+          <AppointmentsList
+            appointments={displayList}
+            tab={tab}
+            now={now}
+            onReviewSubmitted={() => loadData()}
+          />
         )}
       </div>
     </div>

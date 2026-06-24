@@ -4,20 +4,18 @@ import {
   Calendar as CalendarIcon,
   Clock,
   CheckCircle2,
-  Wallet,
   AlertCircle,
   Loader2,
   ChevronRight,
   BookmarkCheck,
   ShieldCheck,
-  CreditCard,
 } from 'lucide-react';
 
 import { useActionState, useState, useEffect, useRef } from 'react';
 
 import Link from 'next/link';
 
-import { bookAppointment, getAvailableSlotsAction } from '@/app/actions';
+import { bookAppointment } from '@/app/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,32 +51,40 @@ export default function BookingForm({ doctorId, hospitalId }) {
   useEffect(() => {
     setMounted(true);
     let isMounted = true;
+    let intervalId;
 
     async function fetchSlots() {
       if (!doctorId || !selectedDate) return;
       setIsLoadingSlots(true);
       try {
-        const available = await getAvailableSlotsAction(doctorId, selectedDate);
+        const res = await fetch(
+          `/api/patient/slots?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(selectedDate)}`,
+        );
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
         if (isMounted) {
-          setSlots(available);
+          const availableSlots = (data.slots || []).filter((s) => s.available).map((s) => s.time);
+          setSlots(availableSlots.length > 0 || !isLoadingSlots ? data.slots : data.slots);
           const currentSlot = selectedSlotRef.current;
-          if (currentSlot && !available.find((s) => s.time === currentSlot && s.available)) {
+          if (currentSlot && !data.slots.find((s) => s.time === currentSlot && s.available)) {
             setSelectedSlot('');
           }
         }
-      } catch (error) {
-        console.error('Failed to load slots', error);
+      } catch (_err) {
+        // slot fetch failure is non-critical; slots will retry on next interval
       } finally {
         if (isMounted) setIsLoadingSlots(false);
       }
     }
 
     fetchSlots();
+    intervalId = setInterval(fetchSlots, 15000);
 
     return () => {
       isMounted = false;
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [doctorId, selectedDate]);
+  }, [doctorId, selectedDate]); // isLoadingSlots intentionally omitted — reads via ref to avoid refetch loop
 
   if (state?.success) {
     return (
@@ -221,7 +227,7 @@ export default function BookingForm({ doctorId, hospitalId }) {
                         <div className="flex items-center gap-1">
                           <span className="text-xs font-black tracking-tight">
                             {(() => {
-                              const [h, m] = slot.time.split(':');
+                              const [h] = slot.time.split(':');
                               const hour = parseInt(h);
                               return hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
                             })()}
