@@ -728,6 +728,7 @@ model DiagnosticOrder {
   deletedAt   DateTime?             @map("deleted_at")
   items       DiagnosticOrderItem[]
   invoices    Invoice[]
+  documents   DiagnosticDocument[]
   doctor      DoctorMaster?         @relation(fields: [doctorId], references: [id])
   hospital    HospitalsMaster       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient     Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -754,18 +755,40 @@ model DiagnosticOrderItem {
 }
 
 model DiagnosticResult {
-  id             String              @id @default(uuid())
-  orderItemId    String              @map("order_item_id")
-  resultValue    String?             @map("result_value")
-  resultFlag     String?             @map("result_flag")
-  reportFileUrl  String?             @map("report_file_url")
-  verifiedBy     String?             @map("verified_by")
-  verifiedAt     DateTime?           @map("verified_at")
-  structuredData Json?               @map("structured_data")
-  orderItem      DiagnosticOrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-  verifier       DoctorMaster?       @relation(fields: [verifiedBy], references: [id])
+  id             String               @id @default(uuid())
+  orderItemId    String               @map("order_item_id")
+  resultValue    String?              @map("result_value")
+  resultFlag     String?              @map("result_flag")
+  reportFileUrl  String?              @map("report_file_url")
+  verifiedBy     String?              @map("verified_by")
+  verifiedAt     DateTime?            @map("verified_at")
+  structuredData Json?                @map("structured_data")
+  orderItem      DiagnosticOrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  verifier       DoctorMaster?        @relation(fields: [verifiedBy], references: [id])
+  documents      DiagnosticDocument[]
 
   @@map("diagnostic_results")
+}
+
+model DiagnosticDocument {
+  id            String   @id @default(uuid())
+  orderId       String   @map("order_id")
+  resultId      String?  @map("result_id")
+  documentType  String   @map("document_type")
+  description   String?
+  fileUrl       String   @map("file_url")
+  fileSizeBytes Int      @map("file_size_bytes")
+  mimeType      String   @map("mime_type")
+  uploadedBy    String   @map("uploaded_by")
+  uploadedAt    DateTime @default(now()) @map("uploaded_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  order    DiagnosticOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  result   DiagnosticResult? @relation(fields: [resultId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([resultId])
+  @@map("diagnostic_documents")
 }
 
 model LabQualityControl {
