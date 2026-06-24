@@ -40,6 +40,7 @@ export async function GET() {
         stage: 1,
         hospitalName: hospital.verificationStatus,
         hospitalId: access.hospitalId,
+        contactNumber: hospital.contactNumber ?? '',
       }); // default welcome stage
     }
 
@@ -49,7 +50,11 @@ export async function GET() {
     });
 
     if (staffCount === 0) {
-      return NextResponse.json({ stage: 4, hospitalId: access.hospitalId });
+      return NextResponse.json({
+        stage: 4,
+        hospitalId: access.hospitalId,
+        contactNumber: hospital.contactNumber ?? '',
+      });
     }
 
     // Check opd config (Stage 5)
@@ -58,12 +63,20 @@ export async function GET() {
     });
 
     if (!opdConfig) {
-      return NextResponse.json({ stage: 5, hospitalId: access.hospitalId });
+      return NextResponse.json({
+        stage: 5,
+        hospitalId: access.hospitalId,
+        contactNumber: hospital.contactNumber ?? '',
+      });
     }
 
     // Check if patient list is not empty (e.g. they skipped or completed migration)
     // We can default to Stage 7 Training if they completed everything else but are not active yet
-    return NextResponse.json({ stage: 7, hospitalId: access.hospitalId });
+    return NextResponse.json({
+      stage: 7,
+      hospitalId: access.hospitalId,
+      contactNumber: hospital.contactNumber ?? '',
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 550 });
   }

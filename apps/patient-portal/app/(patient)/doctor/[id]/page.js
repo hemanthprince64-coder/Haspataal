@@ -1,5 +1,3 @@
-'use client';
-
 import {
   ChevronLeft,
   Star,
@@ -15,98 +13,26 @@ import {
   Heart,
 } from 'lucide-react';
 
-import { useEffect, useState } from 'react';
-
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { services } from '@/lib/services';
 
-export default function DoctorProfile() {
-  const params = useParams();
-  const [doctor, setDoctor] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+export default async function DoctorProfile({ params }) {
+  const { id } = await params;
 
-  useEffect(() => {
-    // Simulate API fetch based on ID
-    const fetchDoctor = async () => {
-      setLoading(true);
-      setError(false);
-
-      try {
-        // Mock API delay
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        const id = params.id;
-
-        if (id === 'dr-sharma-123') {
-          setDoctor({
-            id: 'dr-sharma-123',
-            name: 'Dr. Arvind Sharma',
-            speciality: 'Senior Cardiologist',
-            hospital: 'Apollo Spectra Hospital',
-            experience: '15+ Years',
-            patients: '8k+',
-            rating: '4.9',
-            reviewsCount: '124',
-            about:
-              'Dr. Arvind Sharma is a leading cardiologist with over 15 years of experience in interventional cardiology. He specializes in advanced heart failure management, coronary artery disease, and preventive cardiology. He has performed over 2,000 successful procedures.',
-            image:
-              'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop',
-            availability: 'Available Today',
-            fee: '₹800',
-          });
-        } else if (id === 'dr-gupta-456') {
-          setDoctor({
-            id: 'dr-gupta-456',
-            name: 'Dr. Meera Gupta',
-            speciality: 'Pediatrician',
-            hospital: 'Fortis Escorts',
-            experience: '10+ Years',
-            patients: '5k+',
-            rating: '4.8',
-            reviewsCount: '89',
-            about:
-              'Dr. Meera Gupta is an expert pediatrician specializing in neonatal care and child development. With over 10 years of experience, she provides compassionate care to infants and children.',
-            image:
-              'https://images.unsplash.com/photo-1594824436998-38290fbb6948?q=80&w=2070&auto=format&fit=crop',
-            availability: 'Available Tomorrow',
-            fee: '₹600',
-          });
-        } else {
-          // Mock Not Found
-          setError(true);
-        }
-      } catch (err) {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (params?.id) {
-      fetchDoctor();
-    }
-  }, [params]);
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-50/50 pb-24 flex items-center justify-center">
-        <div className="flex flex-col items-center animate-pulse gap-4">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
-            Loading Profile...
-          </p>
-        </div>
-      </main>
-    );
+  let doctor;
+  try {
+    doctor = await services.platform.getDoctorById(id);
+  } catch (err) {
+    console.error('Failed to load doctor profile:', err);
+    doctor = null;
   }
 
-  if (error || !doctor) {
+  if (!doctor) {
     return (
       <main className="min-h-screen bg-slate-50/50 pb-24 flex items-center justify-center p-6">
         <Card className="max-w-md w-full p-8 text-center border-slate-200 shadow-sm rounded-2xl">
@@ -127,6 +53,44 @@ export default function DoctorProfile() {
       </main>
     );
   }
+
+  // Extract primary affiliation data
+  const currentAffiliation =
+    doctor.affiliations?.find((a) => a.isCurrent) || doctor.affiliations?.[0];
+  const hospital = currentAffiliation?.hospital;
+  const hospitalName = hospital?.displayName || hospital?.legalName || 'Hospital';
+  const speciality =
+    currentAffiliation?.payload?.speciality ||
+    currentAffiliation?.department ||
+    'General Specialist';
+  const experienceYears = doctor.experienceYears || 0;
+  const consultationFee = currentAffiliation?.consultationFee || 500;
+
+  // Profile image fallback
+  const profileImage =
+    doctor.profilePhotoUrl ||
+    'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=2070&auto=format&fit=crop';
+
+  // Compute initials from full name
+  const initials =
+    doctor.fullName
+      ?.split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || 'DR';
+
+  // Compute rating & review count from real reviews
+  const reviews = doctor.reviews || [];
+  const reviewCount = reviews.length;
+  const rating =
+    reviewCount > 0
+      ? (reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / reviewCount).toFixed(1)
+      : '4.5';
+
+  // Build biography text
+  const aboutText = `Dr. ${doctor.fullName} is a ${speciality.toLowerCase()} with ${experienceYears} ${experienceYears === 1 ? 'year' : 'years'} of clinical experience. They provide quality patient care and are affiliated with ${hospitalName}.`;
 
   return (
     <main className="min-h-screen bg-slate-50/50 pb-24 animate-fade-in">
@@ -155,9 +119,13 @@ export default function DoctorProfile() {
                 <div className="flex flex-col md:flex-row gap-5 items-center md:items-start text-center md:text-left">
                   <div className="relative">
                     <Avatar className="w-20 h-20 md:w-24 md:h-24 rounded-xl border-2 border-white shadow-md">
-                      <AvatarImage src={doctor.image} alt={doctor.name} className="object-cover" />
+                      <AvatarImage
+                        src={profileImage}
+                        alt={doctor.fullName}
+                        className="object-cover"
+                      />
                       <AvatarFallback className="bg-blue-50 text-blue-600 text-xl font-black">
-                        AS
+                        {initials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1 bg-emerald-500 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm" />
@@ -166,25 +134,27 @@ export default function DoctorProfile() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 mb-1.5">
                       <Badge className="bg-blue-600 hover:bg-blue-600 text-white px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-md">
-                        {doctor.speciality}
+                        {speciality}
                       </Badge>
                       <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                        ID: {params.id ? params.id.toString().slice(-6).toUpperCase() : 'DOC-001'}
+                        ID: {doctor.id.slice(-6).toUpperCase()}
                       </div>
                     </div>
                     <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight mb-1 uppercase">
-                      {doctor.name}
+                      Dr. {doctor.fullName}
                     </h1>
                     <div className="flex flex-col gap-1.5 text-slate-500 font-medium text-[11px]">
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <Building2 className="w-4 h-4 text-blue-500" />
                         <span className="font-black text-slate-700 tracking-tight uppercase text-[10px]">
-                          {doctor.hospital}
+                          {hospitalName}
                         </span>
                       </div>
                       <div className="flex items-center justify-center md:justify-start gap-2">
                         <MapPin className="w-4 h-4 text-slate-400" />
-                        <span className="font-bold">Mumbai • South Avenue Center</span>
+                        <span className="font-bold">
+                          {hospital?.city || ''} • {hospital?.addressLine1 || 'Main Center'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -194,7 +164,7 @@ export default function DoctorProfile() {
                   <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center">
                     <Award className="w-4 h-4 text-blue-600 mb-0.5" />
                     <div className="text-sm font-black text-slate-900 tracking-tight">
-                      {doctor.experience}
+                      {experienceYears}+ Yrs
                     </div>
                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-widest">
                       Experience
@@ -203,7 +173,7 @@ export default function DoctorProfile() {
                   <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center">
                     <Users className="w-4 h-4 text-emerald-500 mb-0.5" />
                     <div className="text-sm font-black text-slate-900 tracking-tight">
-                      {doctor.patients}
+                      {reviewCount > 0 ? `${reviewCount}+` : '500+'}
                     </div>
                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-widest">
                       Patients
@@ -211,9 +181,7 @@ export default function DoctorProfile() {
                   </div>
                   <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center">
                     <Star className="w-4 h-4 text-amber-500 mb-0.5 fill-amber-500" />
-                    <div className="text-sm font-black text-slate-900 tracking-tight">
-                      {doctor.rating}
-                    </div>
+                    <div className="text-sm font-black text-slate-900 tracking-tight">{rating}</div>
                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none text-center">
                       Reviews
                     </div>
@@ -226,9 +194,7 @@ export default function DoctorProfile() {
               <h3 className="text-lg font-black text-slate-900 mb-2 tracking-tight uppercase">
                 Biography
               </h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium mb-6">
-                {doctor.about}
-              </p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium mb-6">{aboutText}</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
@@ -239,7 +205,9 @@ export default function DoctorProfile() {
                     <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                       Verified
                     </div>
-                    <div className="text-xs font-black text-slate-900">MCI-29384-932</div>
+                    <div className="text-xs font-black text-slate-900">
+                      {doctor.kycStatus === 'VERIFIED' ? 'MCI Verified' : 'Verification Pending'}
+                    </div>
                   </div>
                 </div>
                 <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center gap-4">
@@ -250,7 +218,7 @@ export default function DoctorProfile() {
                     <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                       Languages
                     </div>
-                    <div className="text-xs font-black text-slate-900">English, Hindi, Marathi</div>
+                    <div className="text-xs font-black text-slate-900">English, Hindi</div>
                   </div>
                 </div>
               </div>
@@ -266,7 +234,7 @@ export default function DoctorProfile() {
                     Fee
                   </div>
                   <div className="text-2xl font-black text-slate-900 tracking-tight">
-                    {doctor.fee}
+                    ₹{consultationFee}
                   </div>
                   <div className="mt-2 flex items-center justify-center gap-2 text-emerald-600 bg-emerald-50 py-1 px-2 rounded-lg text-[9px] font-black uppercase tracking-wide">
                     <Calendar className="w-2.5 h-2.5" /> Available Today
@@ -278,7 +246,11 @@ export default function DoctorProfile() {
                     asChild
                     className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-xs uppercase tracking-widest"
                   >
-                    <Link href={`/book?doctorId=${params.id || 'dr-sharma-123'}`}>Book Now</Link>
+                    <Link
+                      href={`/book?doctorId=${doctor.id}&hospitalId=${currentAffiliation?.hospitalId || ''}`}
+                    >
+                      Book Now
+                    </Link>
                   </Button>
                   <Button
                     variant="outline"

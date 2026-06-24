@@ -20,6 +20,7 @@ export default function SetupPage() {
   const [stage, setStage] = useState<number>(1);
   const [hospitalName, setHospitalName] = useState<string>('Your Clinic');
   const [hospitalId, setHospitalId] = useState<string>('');
+  const [contactNumber, setContactNumber] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
   const fetchStage = async () => {
@@ -28,6 +29,8 @@ export default function SetupPage() {
       if (res.ok) {
         const data = await res.json();
         setStage(data.stage || 1);
+        if (data.hospitalId) setHospitalId(data.hospitalId);
+        if (data.contactNumber) setContactNumber(data.contactNumber);
       }
     } catch (e) {
       console.error('Failed to fetch stage:', e);
@@ -168,7 +171,13 @@ export default function SetupPage() {
             {stage === 1 && (
               <WelcomeScreen hospitalName={hospitalName} onStart={() => handleUpdateStage(2)} />
             )}
-            {stage === 2 && <DiscoveryWizard onComplete={() => handleUpdateStage(3)} />}
+            {stage === 2 && (
+              <DiscoveryWizard
+                hospitalId={hospitalId}
+                contactNumber={contactNumber}
+                onComplete={() => handleUpdateStage(3)}
+              />
+            )}
             {stage === 3 && <SetupWizardAuto onComplete={() => handleUpdateStage(4)} />}
             {stage === 4 && (
               <StaffSetup onNext={() => handleUpdateStage(5)} onPrev={() => handleUpdateStage(3)} />

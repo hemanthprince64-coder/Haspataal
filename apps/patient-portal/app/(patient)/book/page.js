@@ -1,5 +1,3 @@
-import { services } from '@/lib/services';
-import Link from 'next/link';
 import {
   ChevronLeft,
   Stethoscope,
@@ -10,10 +8,15 @@ import {
   ShieldCheck,
   Info,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
+import Link from 'next/link';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { services } from '@/lib/services';
+
 import BookingForm from './BookingForm';
 
 export default async function BookingPage({ searchParams }) {
@@ -47,10 +50,16 @@ export default async function BookingPage({ searchParams }) {
     );
   }
 
+  const currentAffiliation = doctor.affiliations?.find((a) => a.hospitalId === hospitalId);
   const doctorSpeciality =
-    doctor.affiliations?.find((a) => a.hospitalId === hospitalId)?.department ||
+    currentAffiliation?.payload?.speciality ||
+    currentAffiliation?.department ||
     'General Specialist';
-  const consultationFee = doctor.fee || hospital.consultationFee || 500;
+  const consultationFee = currentAffiliation?.consultationFee
+    ? Number(currentAffiliation.consultationFee)
+    : hospital.consultationFee
+      ? Number(hospital.consultationFee)
+      : 500;
 
   return (
     <div className="container max-w-2xl mx-auto px-4 py-8 animate-fade-in">
