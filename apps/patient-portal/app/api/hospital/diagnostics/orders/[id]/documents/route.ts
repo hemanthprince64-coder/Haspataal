@@ -23,7 +23,7 @@ function isAllowedSize(bytes: number): boolean {
   return bytes <= MAX_FILE_SIZE_MB * 1024 * 1024;
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let access;
   try {
     access = await requireHospitalAccess('diagnostics', 'create');
@@ -31,10 +31,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ord
     return hospitalAccessError(error);
   }
 
-  const { orderId } = await params;
+  const { id } = await params;
 
   const order = await prisma.diagnosticOrder.findUnique({
-    where: { id: orderId, hospitalId: access.hospitalId },
+    where: { id, hospitalId: access.hospitalId },
     include: { items: { include: { results: true } } },
   });
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ord
       if (supabaseUrl && supabaseAnonKey) {
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
         const bucketName = 'diagnostics';
-        const filePath = `${access.hospitalId}/${orderId}/${fileName}`;
+        const filePath = `${access.hospitalId}/${id}/${fileName}`;
 
         const { error } = await supabase.storage.from(bucketName).upload(filePath, buffer, {
           upsert: true,
@@ -124,17 +124,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ord
         'uploads',
         'diagnostics',
         access.hospitalId,
-        orderId,
+        id,
       );
       await fs.mkdir(uploadDir, { recursive: true });
       const filePath = path.join(uploadDir, fileName);
       await fs.writeFile(filePath, buffer);
-      fileUrl = `/uploads/diagnostics/${access.hospitalId}/${orderId}/${fileName}`;
+      fileUrl = `/uploads/diagnostics/${access.hospitalId}/${id}/${fileName}`;
     }
 
     const doc = await prisma.diagnosticDocument.create({
       data: {
-        orderId,
+        orderId: id,
         resultId,
         documentType,
         description,
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ord
       action: 'create',
       entity: 'diagnostic_document',
       entityId: doc.id,
-      details: { orderId, resultId, documentType },
+      details: { orderId: id, resultId, documentType },
     });
 
     return NextResponse.json(doc, { status: 201 });
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ord
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let access;
   try {
     access = await requireHospitalAccess('diagnostics', 'read');
@@ -169,17 +169,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orde
     return hospitalAccessError(error);
   }
 
-  const { orderId } = await params;
+  const { id } = await params;
 
   const order = await prisma.diagnosticOrder.findUnique({
-    where: { id: orderId, hospitalId: access.hospitalId },
+    where: { id, hospitalId: access.hospitalId },
   });
   if (!order) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
   const docs = await prisma.diagnosticDocument.findMany({
-    where: { orderId },
+    where: { orderId: id },
     include: {
       result: { select: { id: true } },
     },

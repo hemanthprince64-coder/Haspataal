@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { hospitalAccessError, requireHospitalAccess } from '@/lib/auth/hospital-access';
 import prisma from '@/lib/prisma';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   let access;
   try {
     access = await requireHospitalAccess('diagnostics', 'read');
@@ -11,10 +11,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ orde
     return hospitalAccessError(error);
   }
 
-  const { orderId } = await params;
+  const { id } = await params;
 
   const order = await prisma.diagnosticOrder.findUnique({
-    where: { id: orderId, hospitalId: access.hospitalId },
+    where: { id, hospitalId: access.hospitalId },
     include: {
       patient: { select: { id: true, name: true, phone: true } },
       doctor: { select: { id: true, fullName: true } },
