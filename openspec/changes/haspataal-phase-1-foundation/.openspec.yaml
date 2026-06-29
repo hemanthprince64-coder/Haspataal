@@ -1,0 +1,22 @@
+name: haspataal-phase-1-foundation
+description: Production-ready foundation for Haspataal Healthcare SaaS platform
+priority: P0
+phase: 1
+estimated_hours: 180
+status: in_progress
+artifacts:
+  - proposal.md
+  - design.md
+  - tasks.md
+  - openapi.yaml
+  - permission-matrix.md
+  - sequence-diagrams.md
+  - IMPLEMENTATION_PROGRESS.md
+implementation_ready: true
+acceptance_criteria:
+  - Multi-tenant queries return only hospital-scoped data
+  - RBAC guards enforce 11 roles across all endpoints
+  - Doctor registration completes with verification workflow
+  - Hospital setup wizard configures operational profile
+  - OpenAPI contracts generated for all core endpoints
+  - CI/CD pipeline executes successfully

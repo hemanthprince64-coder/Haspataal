@@ -9,37 +9,47 @@ datasource db {
 }
 
 model DoctorMaster {
-  id                  String                      @id @default(uuid())
-  fullName            String                      @map("full_name")
-  dob                 DateTime?                   @db.Date
-  gender              String?
-  mobile              String                      @unique
-  email               String                      @unique
-  profilePhotoUrl     String?                     @map("profile_photo_url")
-  kycStatus           KycStatus                   @default(PENDING) @map("kyc_status")
-  accountStatus       AccountStatus               @default(ACTIVE) @map("account_status")
-  createdAt           DateTime                    @default(now()) @map("created_at")
-  updatedAt           DateTime                    @updatedAt @map("updated_at")
-  experienceYears     Int?                        @map("experience_years")
-  password            String?
-  appointments        Appointment[]
-  admissions          Admission[]
-  prescribedOrders    DiagnosticOrder[]
-  verifiedResults     DiagnosticResult[]
-  flags               DoctorFlag[]
-  affiliations        DoctorHospitalAffiliation[]
-  identityDocs        DoctorIdentityDoc[]
-  professionalHistory DoctorProfessionalHistory[]
-  registration        DoctorRegistration?
-  roles               DoctorRole[]
-  PatientPrescription PatientPrescription[]
-  records             PatientRecord[]
-  reviews             Review[]
-  slots               Slot[]
-  referralsSent       InternalReferral[]          @relation("ReferralsSent")
-  referralsReceived   InternalReferral[]          @relation("ReferralsReceived")
+  id                    String                      @id @default(uuid())
+  fullName              String                      @map("full_name")
+  dob                   DateTime?                   @db.Date
+  gender                String?
+  mobile                String                      @unique
+  email                 String                      @unique
+  profilePhotoUrl       String?                     @map("profile_photo_url")
+  kycStatus             KycStatus                   @default(PENDING) @map("kyc_status")
+  accountStatus         AccountStatus               @default(ACTIVE) @map("account_status")
+  createdAt             DateTime                    @default(now()) @map("created_at")
+  updatedAt             DateTime                    @updatedAt @map("updated_at")
+  experienceYears       Int?                        @map("experience_years")
+  password              String?
+  appointments          Appointment[]
+  admissions            Admission[]
+  prescribedOrders      DiagnosticOrder[]
+  verifiedResults       DiagnosticResult[]
+  flags                 DoctorFlag[]
+  affiliations          DoctorHospitalAffiliation[]
+  identityDocs          DoctorIdentityDoc[]
+  professionalHistory   DoctorProfessionalHistory[]
+  registration          DoctorRegistration?
+  roles                 DoctorRole[]
+  PatientPrescription   PatientPrescription[]
+  records               PatientRecord[]
+  reviews               Review[]
+  slots                 Slot[]
+  referralsSent         InternalReferral[]          @relation("ReferralsSent")
+  referralsReceived     InternalReferral[]          @relation("ReferralsReceived")
   consultantSettlements ConsultantSettlement[]
   escalationAlerts      EscalationAlert[]
+  profile               DoctorProfile?
+  education             DoctorEducation[]
+  certifications        DoctorCertification[]
+  skills                DoctorSkill[]
+  memberships           DoctorMembership[]
+  publications          DoctorPublication[]
+  awards                DoctorAward[]
+  conferences           DoctorConference[]
+  experience            DoctorExperience[]
+  verification          DoctorVerification?
 
   @@index([email])
   @@map("doctors_master")
@@ -77,136 +87,136 @@ model DoctorRegistration {
 }
 
 model HospitalsMaster {
-  id                      String                      @id @default(uuid())
-  legalName               String                      @map("legal_name")
-  displayName             String?                     @map("display_name")
-  registrationNumber      String                      @unique @map("registration_number")
-  gstNumber               String?                     @map("gst_number")
-  panNumber               String?                     @map("pan_number")
-  cinNumber               String?                     @map("cin_number")
-  hospitalType            String?                     @map("hospital_type")
-  nabhAccredited          Boolean                     @default(false) @map("nabh_accredited")
-  nablAccredited          Boolean                     @default(false) @map("nabl_accredited")
-  bedStrength             Int?                        @map("bed_strength")
-  addressLine1            String?                     @map("address_line1")
-  addressLine2            String?                     @map("address_line2")
-  city                    String?
-  state                   String?
-  pincode                 String?
-  contactNumber           String?                     @map("contact_number")
-  officialEmail           String?                     @map("official_email")
-  verificationStatus      String                      @default("pending") @map("verification_status")
-  accountStatus           String                      @default("inactive") @map("account_status")
-  name                    String?                     @ignore
-  password                String?                     @ignore
-  adminUserId             String?                     @map("admin_user_id")
-  createdAt               DateTime                    @default(now()) @map("created_at")
-  agentId                 String?                     @map("agent_id")
-  type                    HospitalType                @default(HOSPITAL)
-  updatedAt               DateTime                    @default(now()) @updatedAt @map("updated_at")
+  id                       String                      @id @default(uuid())
+  legalName                String                      @map("legal_name")
+  displayName              String?                     @map("display_name")
+  registrationNumber       String                      @unique @map("registration_number")
+  gstNumber                String?                     @map("gst_number")
+  panNumber                String?                     @map("pan_number")
+  cinNumber                String?                     @map("cin_number")
+  hospitalType             String?                     @map("hospital_type")
+  nabhAccredited           Boolean                     @default(false) @map("nabh_accredited")
+  nablAccredited           Boolean                     @default(false) @map("nabl_accredited")
+  bedStrength              Int?                        @map("bed_strength")
+  addressLine1             String?                     @map("address_line1")
+  addressLine2             String?                     @map("address_line2")
+  city                     String?
+  state                    String?
+  pincode                  String?
+  contactNumber            String?                     @map("contact_number")
+  officialEmail            String?                     @map("official_email")
+  verificationStatus       String                      @default("pending") @map("verification_status")
+  accountStatus            String                      @default("inactive") @map("account_status")
+  name                     String?                     @ignore
+  password                 String?                     @ignore
+  adminUserId              String?                     @map("admin_user_id")
+  createdAt                DateTime                    @default(now()) @map("created_at")
+  agentId                  String?                     @map("agent_id")
+  type                     HospitalType                @default(HOSPITAL)
+  updatedAt                DateTime                    @default(now()) @updatedAt @map("updated_at")
   // Identity & Branding
-  logoUrl                 String?                     @map("logo_url")
-  faviconUrl              String?                     @map("favicon_url")
-  brandColor              String?                     @map("brand_color")
-  stateRegistrationNumber String?                     @map("state_registration_number")
-  nabhCertUrl             String?                     @map("nabh_cert_url")
-  nablCertUrl             String?                     @map("nabl_cert_url")
+  logoUrl                  String?                     @map("logo_url")
+  faviconUrl               String?                     @map("favicon_url")
+  brandColor               String?                     @map("brand_color")
+  stateRegistrationNumber  String?                     @map("state_registration_number")
+  nabhCertUrl              String?                     @map("nabh_cert_url")
+  nablCertUrl              String?                     @map("nabl_cert_url")
   // Operational
-  timezone                String                      @default("Asia/Kolkata")
-  workingDays             String[]                    @map("working_days")
-  openTime                String?                     @map("open_time")
-  closeTime               String?                     @map("close_time")
-  emergencyContact        String?                     @map("emergency_contact")
-  isMultiBranch           Boolean                     @default(false) @map("is_multi_branch")
-  invoicePrefix           String                      @default("INV") @map("invoice_prefix")
-  nextInvoiceNumber       Int                         @default(1001) @map("next_invoice_number")
-  gstInclusivePricing     Boolean                     @default(false) @map("gst_inclusive_pricing")
+  timezone                 String                      @default("Asia/Kolkata")
+  workingDays              String[]                    @map("working_days")
+  openTime                 String?                     @map("open_time")
+  closeTime                String?                     @map("close_time")
+  emergencyContact         String?                     @map("emergency_contact")
+  isMultiBranch            Boolean                     @default(false) @map("is_multi_branch")
+  invoicePrefix            String                      @default("INV") @map("invoice_prefix")
+  nextInvoiceNumber        Int                         @default(1001) @map("next_invoice_number")
+  gstInclusivePricing      Boolean                     @default(false) @map("gst_inclusive_pricing")
   // Branding templates
-  letterheadTemplate      String?                     @map("letterhead_template")
-  prescriptionHeader      String?                     @map("prescription_header")
-  prescriptionFooter      String?                     @map("prescription_footer")
+  letterheadTemplate       String?                     @map("letterhead_template")
+  prescriptionHeader       String?                     @map("prescription_header")
+  prescriptionFooter       String?                     @map("prescription_footer")
   // Marketplace
-  isListedOnMarketplace   Boolean                     @default(false) @map("is_listed_on_marketplace")
-  marketplaceTagline      String?                     @map("marketplace_tagline")
-  marketplaceAbout        String?                     @map("marketplace_about")
-  marketplaceFacilities   String[]                    @map("marketplace_facilities")
-  showConsultationFees    Boolean                     @default(true) @map("show_consultation_fees")
-  showBedCharges          Boolean                     @default(false) @map("show_bed_charges")
-  showPackagePrices       Boolean                     @default(false) @map("show_package_prices")
-  allowOnlineBooking      Boolean                     @default(true) @map("allow_online_booking")
-  requiresApproval        Boolean                     @default(false) @map("requires_approval")
-  cancellationPolicy      String                      @default("FLEXIBLE") @map("cancellation_policy")
-  depositRequired         Boolean                     @default(false) @map("deposit_required")
-  depositAmount           Decimal?                    @map("deposit_amount")
-  rankingScore            Float                       @default(0) @map("ranking_score")
-  coverImageUrl           String?                     @map("cover_image_url")
-  galleryUrls             String[]                    @default([]) @map("gallery_urls")
-  insurancePanels         String[]                    @default([]) @map("insurance_panels")
-  customCancellationTerms String?                     @map("custom_cancellation_terms")
-  allowsInstantBooking    Boolean                     @default(true) @map("allows_instant_booking")
-  specialities            String[]                    @default([]) @map("specialities")
-  beds                    Bed[]
-  bills                   Bill[]
-  diagnosticOrders        DiagnosticOrder[]
-  affiliations            DoctorHospitalAffiliation[]
-  doctorRoles             DoctorRole[]
-  drugStocks              DrugStock[]
-  followUps               FollowUp[]
-  admins                  HospitalAdmin[]
-  billingProfile          HospitalBillingProfile?
-  departments             HospitalDepartment[]
-  newDepartments          Department[]
-  diagnosticPricing       HospitalDiagnosticPricing[]
-  facilities              HospitalFacilities?
-  panelPricing            HospitalPanelPricing[]
-  roles                   HospitalRole[]
-  services                HospitalService[]
-  serviceCatalog          ServiceCatalog[]
-  paymentGateways         PaymentGateway[]
-  retentionRules          RetentionRule[]
-  chronicConditions       ChronicCondition[]
-  opdConfig               OpdConfig?
-  integrationConfigs      IntegrationConfig[]
-  branches                Branch[]
-  verificationLogs        HospitalVerificationLog[]
-  agent                   Agent?                      @relation(fields: [agentId], references: [id])
-  labOrders               LabOrder[]
-  admissions              Admission[]
-  invoices                Invoice[]
-  notifications           Notification[]
-  pharmacyDispenses       PharmacyDispense[]
-  rolePermissions         RolePermission[]
-  qualityControls         LabQualityControl[]
-  reviews                 Review[]
-  staff                   Staff[]
-  visits                  Visit[]
-  NotificationTemplate    NotificationTemplate[]
+  isListedOnMarketplace    Boolean                     @default(false) @map("is_listed_on_marketplace")
+  marketplaceTagline       String?                     @map("marketplace_tagline")
+  marketplaceAbout         String?                     @map("marketplace_about")
+  marketplaceFacilities    String[]                    @map("marketplace_facilities")
+  showConsultationFees     Boolean                     @default(true) @map("show_consultation_fees")
+  showBedCharges           Boolean                     @default(false) @map("show_bed_charges")
+  showPackagePrices        Boolean                     @default(false) @map("show_package_prices")
+  allowOnlineBooking       Boolean                     @default(true) @map("allow_online_booking")
+  requiresApproval         Boolean                     @default(false) @map("requires_approval")
+  cancellationPolicy       String                      @default("FLEXIBLE") @map("cancellation_policy")
+  depositRequired          Boolean                     @default(false) @map("deposit_required")
+  depositAmount            Decimal?                    @map("deposit_amount")
+  rankingScore             Float                       @default(0) @map("ranking_score")
+  coverImageUrl            String?                     @map("cover_image_url")
+  galleryUrls              String[]                    @default([]) @map("gallery_urls")
+  insurancePanels          String[]                    @default([]) @map("insurance_panels")
+  customCancellationTerms  String?                     @map("custom_cancellation_terms")
+  allowsInstantBooking     Boolean                     @default(true) @map("allows_instant_booking")
+  specialities             String[]                    @default([]) @map("specialities")
+  beds                     Bed[]
+  bills                    Bill[]
+  diagnosticOrders         DiagnosticOrder[]
+  affiliations             DoctorHospitalAffiliation[]
+  doctorRoles              DoctorRole[]
+  drugStocks               DrugStock[]
+  followUps                FollowUp[]
+  admins                   HospitalAdmin[]
+  billingProfile           HospitalBillingProfile?
+  departments              HospitalDepartment[]
+  newDepartments           Department[]
+  diagnosticPricing        HospitalDiagnosticPricing[]
+  facilities               HospitalFacilities?
+  panelPricing             HospitalPanelPricing[]
+  roles                    HospitalRole[]
+  services                 HospitalService[]
+  serviceCatalog           ServiceCatalog[]
+  paymentGateways          PaymentGateway[]
+  retentionRules           RetentionRule[]
+  chronicConditions        ChronicCondition[]
+  opdConfig                OpdConfig?
+  integrationConfigs       IntegrationConfig[]
+  branches                 Branch[]
+  verificationLogs         HospitalVerificationLog[]
+  agent                    Agent?                      @relation(fields: [agentId], references: [id])
+  labOrders                LabOrder[]
+  admissions               Admission[]
+  invoices                 Invoice[]
+  notifications            Notification[]
+  pharmacyDispenses        PharmacyDispense[]
+  rolePermissions          RolePermission[]
+  qualityControls          LabQualityControl[]
+  reviews                  Review[]
+  staff                    Staff[]
+  visits                   Visit[]
+  NotificationTemplate     NotificationTemplate[]
   NotificationEventMapping NotificationEventMapping[]
-  Supplier                Supplier[]
+  Supplier                 Supplier[]
   // Clinic tier relations
-  clinicProfile           ClinicProfile?
-  patientAcquisitions     PatientAcquisition[]
-  aiDocuments             AIDocument[]
-  escalationAlerts        EscalationAlert[]
-  hospitalInsurances      HospitalInsurance[]
-  billingPackages         BillingPackage[]
-  copayRules              CoPayRule[]
+  clinicProfile            ClinicProfile?
+  patientAcquisitions      PatientAcquisition[]
+  aiDocuments              AIDocument[]
+  escalationAlerts         EscalationAlert[]
+  hospitalInsurances       HospitalInsurance[]
+  billingPackages          BillingPackage[]
+  copayRules               CoPayRule[]
   // Clinic Tier — new scalar fields
 
-  facilityType            FacilityType        @default(HOSPITAL)   @map("facility_type")
-  gstExempt               Boolean             @default(false)       @map("gst_exempt")
-  clinicTier              ClinicTier?         @map("clinic_tier")
-  operatingHours          Json?               @map("operating_hours") // { "open": "09:00", "close": "21:00" }
+  facilityType             FacilityType              @default(HOSPITAL) @map("facility_type")
+  gstExempt                Boolean                   @default(false) @map("gst_exempt")
+  clinicTier               ClinicTier?               @map("clinic_tier")
+  operatingHours           Json?                     @map("operating_hours") // { "open": "09:00", "close": "21:00" }
   // Onboarding Redesign Fields
-  approvalDocumentUrl     String?             @map("approval_document_url")
-  medicalCouncilNumber    String?             @map("medical_council_number")
-  latitude                Float?              @map("latitude")
-  longitude               Float?              @map("longitude")
-  googleLocationUrl       String?             @map("google_location_url")
+  approvalDocumentUrl      String?                   @map("approval_document_url")
+  medicalCouncilNumber     String?                   @map("medical_council_number")
+  latitude                 Float?                    @map("latitude")
+  longitude                Float?                    @map("longitude")
+  googleLocationUrl        String?                   @map("google_location_url")
   clinicOperationalProfile ClinicOperationalProfile?
-  internalReferrals       InternalReferral[]
-  consultantSettlements   ConsultantSettlement[]
-  departmentHandoffs      DepartmentHandoff[]
+  internalReferrals        InternalReferral[]
+  consultantSettlements    ConsultantSettlement[]
+  departmentHandoffs       DepartmentHandoff[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -381,26 +391,26 @@ model DoctorFlag {
 }
 
 model Staff {
-  id              String           @id @default(uuid())
-  hospitalId      String           @map("hospital_id")
-  name            String
-  email           String?          @unique
-  mobile          String           @unique
-  password        String
-  role            Role             @default(RECEPTIONIST)
-  designation     String?          @map("designation")
-  qualifications  String[]         @default([])
-  idDocumentUrl   String?          @map("id_document_url")
-  bloodGroup      String?          @map("blood_group")
-  departmentId    String?          @map("department_id")
-  shift           ShiftType?       @map("shift")
-  permissions     Json?            @map("permissions")
-  isActive        Boolean          @default(true) @map("is_active")
-  branchId        String?          @map("branch_id")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  branch          Branch?          @relation(fields: [branchId], references: [id])
-  hospital        HospitalsMaster  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  rolePermissions RolePermission[]
+  id                 String              @id @default(uuid())
+  hospitalId         String              @map("hospital_id")
+  name               String
+  email              String?             @unique
+  mobile             String              @unique
+  password           String
+  role               Role                @default(RECEPTIONIST)
+  designation        String?             @map("designation")
+  qualifications     String[]            @default([])
+  idDocumentUrl      String?             @map("id_document_url")
+  bloodGroup         String?             @map("blood_group")
+  departmentId       String?             @map("department_id")
+  shift              ShiftType?          @map("shift")
+  permissions        Json?               @map("permissions")
+  isActive           Boolean             @default(true) @map("is_active")
+  branchId           String?             @map("branch_id")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  hospital           HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  rolePermissions    RolePermission[]
   departmentHandoffs DepartmentHandoff[]
 
   @@index([hospitalId])
@@ -783,8 +793,8 @@ model DiagnosticDocument {
   uploadedAt    DateTime @default(now()) @map("uploaded_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  order    DiagnosticOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  result   DiagnosticResult? @relation(fields: [resultId], references: [id], onDelete: SetNull)
+  order  DiagnosticOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  result DiagnosticResult? @relation(fields: [resultId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([resultId])
@@ -805,21 +815,21 @@ model LabQualityControl {
 }
 
 model Visit {
-  id            String                @id @default(uuid())
-  appointmentId String?               @unique @map("appointment_id")
-  hospitalId    String                @map("hospital_id")
-  patientName   String                @map("patient_name")
-  patientPhone  String                @map("patient_phone")
-  diagnosis     String?
-  amount        Int                   @default(0)
-  createdAt     DateTime              @default(now()) @map("created_at")
-  deletedAt     DateTime?             @map("deleted_at")
-  careJourney   CareJourney?
-  observations  ClinicalObservation[]
-  notes         VisitNote[]
-  appointment   Appointment?          @relation(fields: [appointmentId], references: [id])
-  hospital      HospitalsMaster       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  currentStage  HandoffStage          @default(RECEPTION) @map("current_stage")
+  id                 String                @id @default(uuid())
+  appointmentId      String?               @unique @map("appointment_id")
+  hospitalId         String                @map("hospital_id")
+  patientName        String                @map("patient_name")
+  patientPhone       String                @map("patient_phone")
+  diagnosis          String?
+  amount             Int                   @default(0)
+  createdAt          DateTime              @default(now()) @map("created_at")
+  deletedAt          DateTime?             @map("deleted_at")
+  careJourney        CareJourney?
+  observations       ClinicalObservation[]
+  notes              VisitNote[]
+  appointment        Appointment?          @relation(fields: [appointmentId], references: [id])
+  hospital           HospitalsMaster       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  currentStage       HandoffStage          @default(RECEPTION) @map("current_stage")
   departmentHandoffs DepartmentHandoff[]
 
   @@index([hospitalId])
@@ -1122,35 +1132,35 @@ model VaccinationRecord {
 }
 
 model PregnancyProfile {
-  id                    String    @id @default(uuid())
-  patientId             String    @unique @map("patient_id")
-  lmp                   DateTime? @db.Date
-  edd                   DateTime? @db.Date
-  usgEdd                DateTime? @map("usg_edd") @db.Date
-  gestationalAge        Int?      @map("gestational_age")
-  gravida               Int       @default(1)
-  para                  Int       @default(0)
-  abortions             Int       @default(0)
-  livingChildren        Int       @default(0) @map("living_children")
-  bloodGroup            String?   @map("blood_group")
-  rhFactor              String?   @map("rh_factor")
-  bmiPrePregnancy       Float?    @map("bmi_pre_pregnancy")
-  heightCm              Int?      @map("height_cm")
-  previousComplications String[]  @map("previous_complications")
-  conceptionMethod      String?   @map("conception_method")
-  registeredAt        DateTime  @default(now()) @map("registered_at")
-  mcpCardNumber         String?   @map("mcp_card_number")
-  highRisk              Boolean   @default(false) @map("high_risk")
-  highRiskReasons       String[]  @default([]) @map("high_risk_reasons")
-  ancVisits             Int?      @map("anc_visits")
-  dangerSigns           String?   @map("danger_signs")
-  deliveryPlan          String?   @map("delivery_plan")
-  schemeEnrolled        String[]  @default([]) @map("scheme_enrolled")
-  ashaWorkerId          String?   @map("asha_worker_id")
-  dropoutRiskScore      Int?      @map("dropout_risk_score")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id                    String              @id @default(uuid())
+  patientId             String              @unique @map("patient_id")
+  lmp                   DateTime?           @db.Date
+  edd                   DateTime?           @db.Date
+  usgEdd                DateTime?           @map("usg_edd") @db.Date
+  gestationalAge        Int?                @map("gestational_age")
+  gravida               Int                 @default(1)
+  para                  Int                 @default(0)
+  abortions             Int                 @default(0)
+  livingChildren        Int                 @default(0) @map("living_children")
+  bloodGroup            String?             @map("blood_group")
+  rhFactor              String?             @map("rh_factor")
+  bmiPrePregnancy       Float?              @map("bmi_pre_pregnancy")
+  heightCm              Int?                @map("height_cm")
+  previousComplications String[]            @map("previous_complications")
+  conceptionMethod      String?             @map("conception_method")
+  registeredAt          DateTime            @default(now()) @map("registered_at")
+  mcpCardNumber         String?             @map("mcp_card_number")
+  highRisk              Boolean             @default(false) @map("high_risk")
+  highRiskReasons       String[]            @default([]) @map("high_risk_reasons")
+  ancVisits             Int?                @map("anc_visits")
+  dangerSigns           String?             @map("danger_signs")
+  deliveryPlan          String?             @map("delivery_plan")
+  schemeEnrolled        String[]            @default([]) @map("scheme_enrolled")
+  ashaWorkerId          String?             @map("asha_worker_id")
+  dropoutRiskScore      Int?                @map("dropout_risk_score")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  patient               Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
   visits                AncVisit[]
   supplements           AncSupplementLog[]
   obstetricHistory      ObstetricHistory[]
@@ -1165,27 +1175,27 @@ model PregnancyProfile {
 }
 
 model AncVisit {
-  id              String   @id @default(uuid())
-  pregnancyId     String   @map("pregnancy_id")
-  visitNumber     Int      @map("visit_number")
-  visitDate       DateTime @map("visit_date") @db.Date
-  gestationalAge  Int?     @map("gestational_age")
-  bpSystolic      Int?     @map("bp_systolic")
-  bpDiastolic     Int?     @map("bp_diastolic")
-  weightKg        Float?   @map("weight_kg")
-  fundalHeightCm  Float?   @map("fundal_height_cm")
-  fetalHeartRate  Int?     @map("fetal_heart_rate")
+  id              String           @id @default(uuid())
+  pregnancyId     String           @map("pregnancy_id")
+  visitNumber     Int              @map("visit_number")
+  visitDate       DateTime         @map("visit_date") @db.Date
+  gestationalAge  Int?             @map("gestational_age")
+  bpSystolic      Int?             @map("bp_systolic")
+  bpDiastolic     Int?             @map("bp_diastolic")
+  weightKg        Float?           @map("weight_kg")
+  fundalHeightCm  Float?           @map("fundal_height_cm")
+  fetalHeartRate  Int?             @map("fetal_heart_rate")
   edema           String?
   presentation    String?
   hemoglobin      Float?
-  urineAlbumin    String?  @map("urine_albumin")
-  bloodSugar      Float?   @map("blood_sugar")
-  nextVisitDate   DateTime? @map("next_visit_date") @db.Date
-  highRiskNotes   String?  @map("high_risk_notes")
-  conductedBy     String?  @map("conducted_by")
-  conductedByRole String?  @map("conducted_by_role")
-  hospitalId      String?  @map("hospital_id")
-  createdAt       DateTime @default(now()) @map("created_at")
+  urineAlbumin    String?          @map("urine_albumin")
+  bloodSugar      Float?           @map("blood_sugar")
+  nextVisitDate   DateTime?        @map("next_visit_date") @db.Date
+  highRiskNotes   String?          @map("high_risk_notes")
+  conductedBy     String?          @map("conducted_by")
+  conductedByRole String?          @map("conducted_by_role")
+  hospitalId      String?          @map("hospital_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
   pregnancy       PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@index([pregnancyId])
@@ -1194,33 +1204,33 @@ model AncVisit {
 }
 
 model ObstetricHistory {
-  id                String   @id @default(uuid())
-  pregnancyId       String   @map("pregnancy_id")
-  previousDeliveryType  String?  @map("previous_delivery_type")
-  previousComplications String?  @map("previous_complications")
-  previousBabyWeight    Float?   @map("previous_baby_weight")
-  previousGestationalAge Int?    @map("previous_gestational_age")
-  pregnancyOutcome  String?  @map("pregnancy_outcome")
-  createdAt         DateTime @default(now()) @map("created_at")
-  pregnancy         PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  id                     String           @id @default(uuid())
+  pregnancyId            String           @map("pregnancy_id")
+  previousDeliveryType   String?          @map("previous_delivery_type")
+  previousComplications  String?          @map("previous_complications")
+  previousBabyWeight     Float?           @map("previous_baby_weight")
+  previousGestationalAge Int?             @map("previous_gestational_age")
+  pregnancyOutcome       String?          @map("pregnancy_outcome")
+  createdAt              DateTime         @default(now()) @map("created_at")
+  pregnancy              PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@index([pregnancyId])
   @@map("obstetric_history")
 }
 
 model AncSupplementLog {
-  id          String   @id @default(uuid())
-  pregnancyId String   @map("pregnancy_id")
-  supplementType String @map("supplement_type")
-  targetDose  Int      @map("target_dose")
-  dosesTaken  Int      @default(0) @map("doses_taken")
-  doseUnit    String   @map("dose_unit")
-  startDate   DateTime @map("start_date") @db.Date
-  endDate     DateTime? @map("end_date") @db.Date
-  remindersEnabled Boolean @default(true) @map("reminders_enabled")
-  lastReminderAt DateTime? @map("last_reminder_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  pregnancy   PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  id               String           @id @default(uuid())
+  pregnancyId      String           @map("pregnancy_id")
+  supplementType   String           @map("supplement_type")
+  targetDose       Int              @map("target_dose")
+  dosesTaken       Int              @default(0) @map("doses_taken")
+  doseUnit         String           @map("dose_unit")
+  startDate        DateTime         @map("start_date") @db.Date
+  endDate          DateTime?        @map("end_date") @db.Date
+  remindersEnabled Boolean          @default(true) @map("reminders_enabled")
+  lastReminderAt   DateTime?        @map("last_reminder_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  pregnancy        PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@index([pregnancyId])
   @@index([supplementType])
@@ -1228,30 +1238,30 @@ model AncSupplementLog {
 }
 
 model McpCard {
-  id          String   @id @default(uuid())
-  pregnancyId String   @unique @map("pregnancy_id")
-  cardData    Json     @map("card_data")
-  qrCodeUrl   String?  @map("qr_code_url")
-  printedAt   DateTime? @map("printed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id          String           @id @default(uuid())
+  pregnancyId String           @unique @map("pregnancy_id")
+  cardData    Json             @map("card_data")
+  qrCodeUrl   String?          @map("qr_code_url")
+  printedAt   DateTime?        @map("printed_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
   pregnancy   PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@map("mcp_cards")
 }
 
 model AncRetentionAlert {
-  id          String   @id @default(uuid())
-  pregnancyId String   @map("pregnancy_id")
-  alertType   String   @map("alert_type")
-  triggerEvent String @map("trigger_event")
-  channel     String   @default("sms")
-  status      String   @default("pending")
-  scheduledAt DateTime @map("scheduled_at")
-  sentAt      DateTime? @map("sent_at")
-  message     String?
-  response    String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  pregnancy   PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  id           String           @id @default(uuid())
+  pregnancyId  String           @map("pregnancy_id")
+  alertType    String           @map("alert_type")
+  triggerEvent String           @map("trigger_event")
+  channel      String           @default("sms")
+  status       String           @default("pending")
+  scheduledAt  DateTime         @map("scheduled_at")
+  sentAt       DateTime?        @map("sent_at")
+  message      String?
+  response     String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  pregnancy    PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
 
   @@index([pregnancyId])
   @@index([status, scheduledAt])
@@ -1259,15 +1269,15 @@ model AncRetentionAlert {
 }
 
 model NewbornRecord {
-  id               String           @id @default(uuid())
-  pregnancyId      String           @map("pregnancy_id")
-  babyPatientId    String           @unique @map("baby_patient_id")
-  birthWeightKg    Float            @map("birth_weight_kg")
-  apgarScore       Int?             @map("apgar_score")
-  deliveryDate     DateTime         @map("delivery_date")
-  createdAt        DateTime         @default(now()) @map("created_at")
-  pregnancy        PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
-  baby             Patient          @relation(fields: [babyPatientId], references: [id], onDelete: Cascade)
+  id            String           @id @default(uuid())
+  pregnancyId   String           @map("pregnancy_id")
+  babyPatientId String           @unique @map("baby_patient_id")
+  birthWeightKg Float            @map("birth_weight_kg")
+  apgarScore    Int?             @map("apgar_score")
+  deliveryDate  DateTime         @map("delivery_date")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  pregnancy     PregnancyProfile @relation(fields: [pregnancyId], references: [id], onDelete: Cascade)
+  baby          Patient          @relation(fields: [babyPatientId], references: [id], onDelete: Cascade)
 
   @@map("newborn_records")
 }
@@ -1419,31 +1429,31 @@ model WaitlistEntry {
 // ── Escalation Alert (add-retention-followup-escalation) ─────────────────────
 
 model EscalationAlert {
-  id               String      @id @default(uuid())
-  hospitalId       String      @map("hospital_id")
-  patientId        String      @map("patient_id")
-  doctorId         String      @map("doctor_id")
-  followUpId       String      @map("follow_up_id")        // the missed follow-up that triggered this
-  appointmentId    String      @map("appointment_id")      // FK to the original appointment
-  missedCount      Int         @default(2)                 // consecutive missed follow-ups at trigger time
-  chronicTag       String?     @map("chronic_tag")         // e.g. DIABETES, CANCER, CARDIAC
-  isAcknowledged   Boolean     @default(false) @map("is_acknowledged")
-  acknowledgedAt   DateTime?   @map("acknowledged_at")
-  notificationSent Boolean     @default(false) @map("notification_sent")
-  sentVia          String?     @map("sent_via")            // WHATSAPP | SMS | PENDING
-  sentAt           DateTime?   @map("sent_at")
-  attempts         Int         @default(0)
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
+  id               String    @id @default(uuid())
+  hospitalId       String    @map("hospital_id")
+  patientId        String    @map("patient_id")
+  doctorId         String    @map("doctor_id")
+  followUpId       String    @map("follow_up_id") // the missed follow-up that triggered this
+  appointmentId    String    @map("appointment_id") // FK to the original appointment
+  missedCount      Int       @default(2) // consecutive missed follow-ups at trigger time
+  chronicTag       String?   @map("chronic_tag") // e.g. DIABETES, CANCER, CARDIAC
+  isAcknowledged   Boolean   @default(false) @map("is_acknowledged")
+  acknowledgedAt   DateTime? @map("acknowledged_at")
+  notificationSent Boolean   @default(false) @map("notification_sent")
+  sentVia          String?   @map("sent_via") // WHATSAPP | SMS | PENDING
+  sentAt           DateTime? @map("sent_at")
+  attempts         Int       @default(0)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  patient          Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor           DoctorMaster    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient  Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor   DoctorMaster    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
-  @@unique([appointmentId, hospitalId])           // idempotency guard — one alert per missed sequence
+  @@unique([appointmentId, hospitalId]) // idempotency guard — one alert per missed sequence
   @@index([hospitalId])
-  @@index([patientId])                            // retrieve full escalation history per patient
-  @@index([doctorId])                             // list escalations assigned to doctor
+  @@index([patientId]) // retrieve full escalation history per patient
+  @@index([doctorId]) // list escalations assigned to doctor
   @@map("escalation_alerts")
 }
 
@@ -1847,6 +1857,8 @@ enum AccountStatus {
 
 enum VerificationStatus {
   PENDING
+  DOCUMENT_PENDING
+  UNDER_VERIFICATION
   VERIFIED
   REJECTED
 }
@@ -2173,24 +2185,24 @@ model StaffInvite {
 }
 
 model NotificationTemplate {
-  id         String          @id @default(cuid())
-  hospitalId String          @map("hospital_id")
-  name       String
-  channel    String // WHATSAPP, SMS, EMAIL
-  body       String          @db.Text // Support for {{variable}}
-  headerText String?         @map("header_text")
-  footerText String?         @map("footer_text")
-  buttons    Json? // For WhatsApp interactive
-  language   String          @default("en")
-  isApproved Boolean         @default(false) @map("is_approved")
-  providerId String?         @map("provider_id") // DLT ID or WhatsApp Template Name
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
-  hospital   HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  id                       String                     @id @default(cuid())
+  hospitalId               String                     @map("hospital_id")
+  name                     String
+  channel                  String // WHATSAPP, SMS, EMAIL
+  body                     String                     @db.Text // Support for {{variable}}
+  headerText               String?                    @map("header_text")
+  footerText               String?                    @map("footer_text")
+  buttons                  Json? // For WhatsApp interactive
+  language                 String                     @default("en")
+  isApproved               Boolean                    @default(false) @map("is_approved")
+  providerId               String?                    @map("provider_id") // DLT ID or WhatsApp Template Name
+  createdAt                DateTime                   @default(now()) @map("created_at")
+  updatedAt                DateTime                   @updatedAt @map("updated_at")
+  hospital                 HospitalsMaster            @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  NotificationEventMapping NotificationEventMapping[]
 
   @@index([hospitalId])
   @@map("notification_templates")
-  NotificationEventMapping NotificationEventMapping[]
 }
 
 model NotificationEventMapping {
@@ -2250,37 +2262,37 @@ model Consent {
 // --- Clinic Tier (Clinic Acquisition & HMS Growth) ---
 
 model ClinicProfile {
-  id              String            @id @default(uuid())
-  hospitalId      String            @unique @map("hospital_id")
-  tier            ClinicTier
-  doctorInCharge  String?           @map("doctor_in_charge")
-  specialization  String?
-  numDoctors      Int?              @map("num_doctors")
-  hasPharmacy     Boolean           @default(false) @map("has_pharmacy")
-  hasOwnLab       Boolean           @default(false) @map("has_own_lab")
-  avgDailyPatients Int?             @map("avg_daily_patients")
-  clinicMode      Boolean           @default(true) @map("clinic_mode")
-  allowedFeatures String[]          @default([]) @map("allowed_features")
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt @map("updated_at")
-  hospital        HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  id               String          @id @default(uuid())
+  hospitalId       String          @unique @map("hospital_id")
+  tier             ClinicTier
+  doctorInCharge   String?         @map("doctor_in_charge")
+  specialization   String?
+  numDoctors       Int?            @map("num_doctors")
+  hasPharmacy      Boolean         @default(false) @map("has_pharmacy")
+  hasOwnLab        Boolean         @default(false) @map("has_own_lab")
+  avgDailyPatients Int?            @map("avg_daily_patients")
+  clinicMode       Boolean         @default(true) @map("clinic_mode")
+  allowedFeatures  String[]        @default([]) @map("allowed_features")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  hospital         HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@map("clinic_profiles")
 }
 
 model PatientAcquisition {
-  id             String            @id @default(uuid())
-  hospitalId     String            @map("hospital_id")
-  patientId      String            @map("patient_id")
+  id             String                   @id @default(uuid())
+  hospitalId     String                   @map("hospital_id")
+  patientId      String                   @map("patient_id")
   source         PatientAcquisitionSource
-  referrerId     String?           @map("referrer_id")
-  referrerType   String?           @map("referrer_type") // DOCTOR, CLINIC, HOSPITAL, AGENT
+  referrerId     String?                  @map("referrer_id")
+  referrerType   String?                  @map("referrer_type") // DOCTOR, CLINIC, HOSPITAL, AGENT
   specialty      String?
-  bookedApptId   String?           @map("booked_appt_id")
-  converted      Boolean           @default(false) @map("converted")
-  revenueAtCents Decimal?          @map("revenue_at_cents")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  hospital       HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  bookedApptId   String?                  @map("booked_appt_id")
+  converted      Boolean                  @default(false) @map("converted")
+  revenueAtCents Decimal?                 @map("revenue_at_cents")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  hospital       HospitalsMaster          @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([patientId])
@@ -2302,18 +2314,18 @@ enum PatientAcquisitionSource {
 }
 
 model AIDocument {
-  id             String            @id @default(uuid())
-  hospitalId     String            @map("hospital_id")
-  patientId      String            @map("patient_id")
-  apptId         String?           @map("appt_id")
+  id             String          @id @default(uuid())
+  hospitalId     String          @map("hospital_id")
+  patientId      String          @map("patient_id")
+  apptId         String?         @map("appt_id")
   docType        AIDocumentType
-  inputPrompt    String?           @map("input_prompt") @db.Text // Stored for audit
-  generatedText  String            @map("generated_text") @db.Text
-  isAssisted     Boolean           @default(true) @map("is_assisted") // false = fully AI
-  doctorApproved Boolean           @default(false) @map("is_doctor_approved")
-  approvedAt     DateTime?         @map("approved_at")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  hospital       HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  inputPrompt    String?         @map("input_prompt") @db.Text // Stored for audit
+  generatedText  String          @map("generated_text") @db.Text
+  isAssisted     Boolean         @default(true) @map("is_assisted") // false = fully AI
+  doctorApproved Boolean         @default(false) @map("is_doctor_approved")
+  approvedAt     DateTime?       @map("approved_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([patientId])
@@ -2363,21 +2375,21 @@ model ClinicOperationalProfile {
 
 // 2. Internal Referral Tracker (Multi-speciality Engine 4)
 model InternalReferral {
-  id             String          @id @default(uuid())
-  hospitalId     String          @map("hospital_id")
-  patientId      String          @map("patient_id")
-  fromDoctorId   String          @map("from_doctor_id")
-  toDoctorId     String          @map("to_doctor_id")
-  reason         String?
-  status         ReferralStatus  @default(PENDING)
-  priority       ReferralPriority @default(ROUTINE)
-  notes          String?
-  createdAt      DateTime        @default(now()) @map("created_at")
-  completedAt    DateTime?       @map("completed_at")
-  hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  patient        Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  fromDoctor     DoctorMaster    @relation("ReferralsSent", fields: [fromDoctorId], references: [id], onDelete: Cascade)
-  toDoctor       DoctorMaster    @relation("ReferralsReceived", fields: [toDoctorId], references: [id], onDelete: Cascade)
+  id           String           @id @default(uuid())
+  hospitalId   String           @map("hospital_id")
+  patientId    String           @map("patient_id")
+  fromDoctorId String           @map("from_doctor_id")
+  toDoctorId   String           @map("to_doctor_id")
+  reason       String?
+  status       ReferralStatus   @default(PENDING)
+  priority     ReferralPriority @default(ROUTINE)
+  notes        String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  completedAt  DateTime?        @map("completed_at")
+  hospital     HospitalsMaster  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient      Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  fromDoctor   DoctorMaster     @relation("ReferralsSent", fields: [fromDoctorId], references: [id], onDelete: Cascade)
+  toDoctor     DoctorMaster     @relation("ReferralsReceived", fields: [toDoctorId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([patientId])
@@ -2399,21 +2411,21 @@ enum ReferralPriority {
 
 // 3. Consultant Revenue Share & Settlements (Multi-speciality Engine 2)
 model ConsultantSettlement {
-  id                  String          @id @default(uuid())
-  hospitalId          String          @map("hospital_id")
-  doctorId            String          @map("doctor_id")
-  settlementPeriodStart DateTime       @map("settlement_period_start")
-  settlementPeriodEnd   DateTime       @map("settlement_period_end")
-  totalConsultations  Int             @map("total_consultations")
-  grossRevenueCents   Int             @map("gross_revenue_cents")
-  revenueSharePercent Decimal         @map("revenue_share_percent")
-  consultantShareCents Int            @map("consultant_share_cents")
-  hospitalShareCents  Int             @map("hospital_share_cents")
-  status              SettlementStatus @default(PENDING)
-  paidAt              DateTime?       @map("paid_at")
-  createdAt           DateTime        @default(now()) @map("created_at")
-  hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  doctor              DoctorMaster    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  id                    String           @id @default(uuid())
+  hospitalId            String           @map("hospital_id")
+  doctorId              String           @map("doctor_id")
+  settlementPeriodStart DateTime         @map("settlement_period_start")
+  settlementPeriodEnd   DateTime         @map("settlement_period_end")
+  totalConsultations    Int              @map("total_consultations")
+  grossRevenueCents     Int              @map("gross_revenue_cents")
+  revenueSharePercent   Decimal          @map("revenue_share_percent")
+  consultantShareCents  Int              @map("consultant_share_cents")
+  hospitalShareCents    Int              @map("hospital_share_cents")
+  status                SettlementStatus @default(PENDING)
+  paidAt                DateTime?        @map("paid_at")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  hospital              HospitalsMaster  @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  doctor                DoctorMaster     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([doctorId])
@@ -2475,12 +2487,12 @@ model Concept {
 }
 
 model ConceptMap {
-  id          String   @id @default(uuid())
-  conceptId   String   @map("concept_id")
-  source      String   // e.g., "SNOMED-CT", "LOINC", "CIEL"
-  code        String   // e.g., "38341003"
-  displayName String?  @map("display_name")
-  concept     Concept  @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  id          String  @id @default(uuid())
+  conceptId   String  @map("concept_id")
+  source      String // e.g., "SNOMED-CT", "LOINC", "CIEL"
+  code        String // e.g., "38341003"
+  displayName String? @map("display_name")
+  concept     Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
 
   @@index([conceptId])
   @@map("concept_mappings")
@@ -2493,35 +2505,35 @@ enum InsurerType {
 }
 
 model HospitalInsurance {
-  id                 String          @id @default(uuid())
-  hospitalId         String          @map("hospital_id")
-  insurerName        String          @map("insurer_name")
-  insurerType        InsurerType     @map("insurer_type")
-  policyNumber       String?         @map("policy_number")
-  tieUpLetterFileUrl String?         @map("tie_up_letter_file_url")
-  validFrom          DateTime        @map("valid_from") @db.Date
-  validTo            DateTime        @map("valid_to") @db.Date
-  isActive           Boolean         @default(true) @map("is_active")
-  specialitiesCovered String[]       @default([]) @map("specialities_covered")
-  coPayPercentage    Decimal?        @map("co_pay_percentage")
-  cashlessNetwork    Boolean         @default(true) @map("cashless_network")
-  createdAt          DateTime        @default(now()) @map("created_at")
-  updatedAt          DateTime        @updatedAt @map("updated_at")
-  hospital           HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  copayRules         CoPayRule[]
+  id                  String          @id @default(uuid())
+  hospitalId          String          @map("hospital_id")
+  insurerName         String          @map("insurer_name")
+  insurerType         InsurerType     @map("insurer_type")
+  policyNumber        String?         @map("policy_number")
+  tieUpLetterFileUrl  String?         @map("tie_up_letter_file_url")
+  validFrom           DateTime        @map("valid_from") @db.Date
+  validTo             DateTime        @map("valid_to") @db.Date
+  isActive            Boolean         @default(true) @map("is_active")
+  specialitiesCovered String[]        @default([]) @map("specialities_covered")
+  coPayPercentage     Decimal?        @map("co_pay_percentage")
+  cashlessNetwork     Boolean         @default(true) @map("cashless_network")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+  hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  copayRules          CoPayRule[]
 
   @@index([hospitalId])
   @@map("hospital_insurances")
 }
 
 model BillingPackage {
-  id          String   @id @default(cuid())
-  hospitalId  String   @map("hospital_id")
+  id          String          @id @default(cuid())
+  hospitalId  String          @map("hospital_id")
   name        String
   description String?
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  isActive    Boolean         @default(true) @map("is_active")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
   hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
@@ -2529,19 +2541,19 @@ model BillingPackage {
 }
 
 model CoPayRule {
-  id           String    @id @default(cuid())
-  hospitalId   String    @map("hospital_id")
-  insurerId    String    @map("insurer_id")
-  insurer      HospitalInsurance @relation(fields: [insurerId], references: [id], onDelete: Cascade)
-  serviceType  String?   @map("service_type")
-  serviceId    String?   @map("service_id")
-  service      ServiceCatalog? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  copayType    String    @default("PERCENTAGE") @map("copay_type")
-  copayValue   Decimal   @map("copay_value")
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  id          String            @id @default(cuid())
+  hospitalId  String            @map("hospital_id")
+  insurerId   String            @map("insurer_id")
+  insurer     HospitalInsurance @relation(fields: [insurerId], references: [id], onDelete: Cascade)
+  serviceType String?           @map("service_type")
+  serviceId   String?           @map("service_id")
+  service     ServiceCatalog?   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  copayType   String            @default("PERCENTAGE") @map("copay_type")
+  copayValue  Decimal           @map("copay_value")
+  isActive    Boolean           @default(true) @map("is_active")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  hospital    HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   @@index([hospitalId])
   @@index([insurerId])
@@ -2549,3 +2561,403 @@ model CoPayRule {
   @@map("copay_rules")
 }
 
+// ============================================================
+// DOCTOR IDENTITY MODULE - Phase 1 Foundation
+// ============================================================
+
+model DoctorProfile {
+  id          String       @id @default(uuid())
+  doctorId    String       @unique @map("doctor_id")
+  firstName   String       @map("first_name")
+  middleName  String?      @map("middle_name")
+  lastName    String       @map("last_name")
+  gender      String?
+  dob         DateTime?    @db.Date
+  photoUrl    String?      @map("photo_url")
+  languages   String[]     @default([])
+  bio         String?      @db.Text
+  designation String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  doctor      DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_profiles")
+}
+
+model DoctorEducation {
+  id                 String       @id @default(uuid())
+  doctorId           String       @map("doctor_id")
+  degreeType         DegreeType   @map("degree_type")
+  degreeName         String       @map("degree_name")
+  collegeName        String       @map("college_name")
+  universityName     String?      @map("university_name")
+  country            String?
+  year               Int?
+  registrationNumber String?      @map("registration_number")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  doctor             DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_education")
+}
+
+enum DegreeType {
+  MBBS
+  MD
+  MS
+  DM
+  MCH
+  DNB_SS
+  DNB
+  DIPLOMA
+  FESS
+  FRIENDS
+  OTHER
+}
+
+model DoctorCertification {
+  id            String               @id @default(uuid())
+  doctorId      String               @map("doctor_id")
+  courseName    String               @map("course_name")
+  authority     String?
+  certificateNo String?              @map("certificate_no")
+  expiryDate    DateTime?            @map("expiry_date") @db.Date
+  documents     DoctorCertDocument[]
+  createdAt     DateTime             @default(now()) @map("created_at")
+  doctor        DoctorMaster         @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@index([expiryDate])
+  @@map("doctor_certifications")
+}
+
+model DoctorCertDocument {
+  id              String              @id @default(uuid())
+  certificationId String              @map("certification_id")
+  fileUrl         String              @map("file_url")
+  documentType    String              @map("document_type")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  certification   DoctorCertification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_cert_documents")
+}
+
+model DoctorSkill {
+  id            String       @id @default(uuid())
+  doctorId      String       @map("doctor_id")
+  skillName     String       @map("skill_name")
+  skillLevel    String?      @map("skill_level") // BASIC, ADVANCED, EXPERT
+  certifiedDate DateTime?    @map("certified_date") @db.Date
+  createdAt     DateTime     @default(now()) @map("created_at")
+  doctor        DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, skillName])
+  @@index([doctorId])
+  @@map("doctor_skills")
+}
+
+model DoctorMembership {
+  id             String       @id @default(uuid())
+  doctorId       String       @map("doctor_id")
+  organization   String       @map("organization")
+  membershipType String?      @map("membership_type")
+  sinceYear      Int?         @map("since_year")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  doctor         DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_memberships")
+}
+
+model DoctorPublication {
+  id        String       @id @default(uuid())
+  doctorId  String       @map("doctor_id")
+  journal   String
+  doi       String?
+  year      Int
+  createdAt DateTime     @default(now()) @map("created_at")
+  doctor    DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_publications")
+}
+
+model DoctorAward {
+  id        String       @id @default(uuid())
+  doctorId  String       @map("doctor_id")
+  title     String
+  authority String?
+  year      Int
+  createdAt DateTime     @default(now()) @map("created_at")
+  doctor    DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_awards")
+}
+
+model DoctorConference {
+  id             String       @id @default(uuid())
+  doctorId       String       @map("doctor_id")
+  conferenceName String       @map("conference_name")
+  role           String? // SPEAKER, FACULTY, DELEGATE
+  year           Int
+  createdAt      DateTime     @default(now()) @map("created_at")
+  doctor         DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_conferences")
+}
+
+model DoctorExperience {
+  id               String       @id @default(uuid())
+  doctorId         String       @map("doctor_id")
+  hospitalName     String       @map("hospital_name")
+  designation      String?
+  department       String?
+  fromDate         DateTime     @map("from_date") @db.Date
+  toDate           DateTime?    @map("to_date") @db.Date
+  isCurrent        Boolean      @default(false) @map("is_current")
+  responsibilities String?      @db.Text
+  proofDocUrl      String?      @map("proof_doc_url")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  doctor           DoctorMaster @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@map("doctor_experience")
+}
+
+model DoctorVerification {
+  id              String             @id @default(uuid())
+  doctorId        String             @unique @map("doctor_id")
+  status          VerificationStatus @default(DOCUMENT_PENDING) @map("status")
+  verifiedBy      String?            @map("verified_by")
+  verifiedAt      DateTime?          @map("verified_at")
+  rejectionReason String?            @map("rejection_reason")
+  notes           String?            @db.Text
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  doctor          DoctorMaster       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_verifications")
+}
+
+// ============================================================
+// DOCTOR DISCOVERY & AVAILABILITY MODULE - Phase 1 Foundation
+// ============================================================
+
+model DoctorSearchIndex {
+  id              String   @id @default(uuid())
+  doctorId        String   @unique @map("doctor_id")
+  fullName        String   @map("full_name")
+  specialties     String[] @map("specialties")
+  departments     String[] @map("departments")
+  city            String?
+  state           String?
+  latitude        Float?
+  longitude       Float?
+  avgRating       Float    @default(0) @map("avg_rating")
+  reviewCount     Int      @default(0) @map("review_count")
+  experienceYears Int?     @map("experience_years")
+  isActive        Boolean  @default(false) @map("is_active")
+  lastIndexedAt   DateTime @default(now()) @map("last_indexed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([city])
+  @@index([avgRating(sort: Desc)])
+  @@index([specialties])
+  @@map("doctor_search_index")
+}
+
+model DoctorPublicProfile {
+  id                 String    @id @default(uuid())
+  doctorId           String    @unique @map("doctor_id")
+  fullName           String    @map("full_name")
+  qualifications     String[]  @default([]) @map("qualifications")
+  specialties        String[]  @default([]) @map("specialties")
+  superSpecialties   String[]  @default([]) @map("super_specialties")
+  yearsExperience    Int?      @map("years_experience")
+  languages          String[]  @default([])
+  consultationFee    Decimal?  @map("consultation_fee")
+  availableToday     Boolean   @default(false) @map("available_today")
+  nextAvailableSlot  DateTime? @map("next_available_slot")
+  availabilityStatus String    @default("OFFLINE") @map("availability_status")
+  verificationStatus String    @default("PENDING") @map("verification_status")
+  hospitalCount      Int       @default(0) @map("hospital_count")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("doctor_public_profiles")
+}
+
+model DoctorAvailability {
+  id             String   @id @default(uuid())
+  doctorId       String   @map("doctor_id")
+  hospitalId     String   @map("hospital_id")
+  date           DateTime @db.Date
+  status         String   @default("AVAILABLE") @map("status") // Available, Limited, Full, Leave
+  availableSlots Int      @default(0) @map("available_slots")
+  bookableSlots  Int      @default(0) @map("bookable_slots")
+  slotDetails    Json?    @map("slot_details")
+  cachedAt       DateTime @default(now()) @map("cached_at")
+  ttlExpiresAt   DateTime @map("ttl_expires_at")
+
+  @@unique([doctorId, date, hospitalId])
+  @@index([doctorId, date])
+  @@index([hospitalId, date])
+  @@index([status])
+  @@map("doctor_availability")
+}
+
+model DoctorHoliday {
+  id          String   @id @default(uuid())
+  doctorId    String   @map("doctor_id")
+  hospitalId  String?  @map("hospital_id")
+  date        DateTime @db.Date
+  holidayType String   @map("holiday_type") // FESTIVAL, PERSONAL, CONFERENCE, EMERGENCY
+  title       String
+  isRecurring Boolean  @default(false) @map("is_recurring")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("doctor_holidays")
+}
+
+model DoctorLeave {
+  id          String   @id @default(uuid())
+  doctorId    String   @map("doctor_id")
+  hospitalId  String?  @map("hospital_id")
+  leaveType   String   @map("leave_type") // CASUAL, EARNED, SICK, CONFERENCE, PERSONAL
+  startDate   DateTime @map("start_date") @db.Date
+  endDate     DateTime @map("end_date") @db.Date
+  reason      String?
+  isApproved  Boolean  @default(false) @map("is_approved")
+  approvedBy  String?  @map("approved_by")
+  visibility  String   @default("PUBLIC") @map("visibility") // PUBLIC, PRIVATE
+  isRecurring Boolean  @default(false) @map("is_recurring")
+  status      String   @default("ACTIVE") @map("status") // ACTIVE, CANCELLED, COMPLETED
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([doctorId])
+  @@index([status])
+  @@map("doctor_leaves")
+}
+
+// ============================================================
+// PATIENT CLINICAL DATA MODULE - Phase 1 Foundation
+// ============================================================
+
+model TimelineEvent {
+  id          String   @id @default(uuid())
+  hospitalId  String?  @map("hospital_id")
+  patientId   String   @map("patient_id")
+  eventType   String   @map("event_type") // PATIENT_REGISTERED, APPOINTMENT_BOOKED, VITALS_RECORDED, etc.
+  title       String
+  description String?
+  metadata    Json?    @map("metadata")
+  timestamp   DateTime @default(now()) @map("timestamp")
+  actorType   String?  @map("actor_type") // DOCTOR, RECEPTIONIST, SYSTEM, PATIENT
+  actorId     String?  @map("actor_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([hospitalId, timestamp(sort: Desc)])
+  @@index([patientId, timestamp(sort: Desc)])
+  @@map("timeline_events")
+}
+
+model ChiefComplaint {
+  id        String   @id @default(uuid())
+  visitId   String?  @map("visit_id")
+  complaint String
+  severity  String? // MILD, MODERATE, SEVERE
+  duration  String?
+  priority  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@map("chief_complaints")
+}
+
+model ClinicalHistory {
+  id                  String   @id @default(uuid())
+  visitId             String?  @map("visit_id")
+  chiefComplaint      String?  @map("chief_complaint")
+  historyPresent      String?  @map("history_present") @db.Text // HPI
+  historyPast         String?  @map("history_past") @db.Text // PMH
+  historyFamily       String?  @map("history_family") @db.Text
+  historyDrug         String?  @map("history_drug") @db.Text
+  historyAllergy      String?  @map("history_allergy") @db.Text
+  historySocial       String?  @map("history_social") @db.Text
+  historyImmunization String?  @map("history_immunization") @db.Text
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@map("clinical_history")
+}
+
+model ClinicalExamination {
+  id         String   @id @default(uuid())
+  visitId    String?  @map("visit_id")
+  examType   String   @map("exam_type") // GENERAL, SYSTEMIC, PEDIATRIC, OBSTETRIC, NEUROLOGICAL
+  findings   Json?    @map("findings")
+  vitalSigns Json?    @map("vital_signs")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@map("clinical_examinations")
+}
+
+model Diagnosis {
+  id            String   @id @default(uuid())
+  visitId       String?  @map("visit_id")
+  diagnosisType String   @default("PRIMARY") @map("diagnosis_type") // PRIMARY, SECONDARY, DIFFERENTIAL
+  icd10Code     String?  @map("icd10_code")
+  description   String
+  isFinal       Boolean  @default(false) @map("is_final")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@index([icd10Code])
+  @@map("diagnoses")
+}
+
+model InvestigationOrder {
+  id        String   @id @default(uuid())
+  visitId   String?  @map("visit_id")
+  testName  String   @map("test_name")
+  testCode  String?  @map("test_code")
+  status    String   @default("PENDING") @map("status")
+  priority  String? // ROUTINE, URGENT, STAT
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@map("investigation_orders")
+}
+
+model Treatment {
+  id            String   @id @default(uuid())
+  visitId       String?  @map("visit_id")
+  treatmentType String   @map("treatment_type") // IV_FLUID, NEBULIZATION, VACCINATION, INJECTION, PROCEDURE
+  description   String
+  metadata      Json?    @map("metadata")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@map("treatments")
+}
+
+model ClinicalAttachment {
+  id         String   @id @default(uuid())
+  visitId    String?  @map("visit_id")
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  fileType   String   @map("file_type")
+  fileSize   Int      @map("file_size")
+  mimeType   String   @map("mime_type")
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([visitId])
+  @@map("clinical_attachments")
+}

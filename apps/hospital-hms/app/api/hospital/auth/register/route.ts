@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { hashPassword } from '@/lib/auth/hash';
 import { generateToken } from '@/lib/auth/jwt';
 import prisma from '@/lib/prisma';

@@ -1,11 +1,14 @@
+/* eslint-disable no-console */
 import { NextResponse } from 'next/server';
-import { PatientService } from '@/lib/services/patients';
+
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
+import prisma from '@/lib/prisma';
+import { PatientService } from '@/lib/services/patients';
 
 export async function GET(req: Request) {
   try {
     const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.RECEPTIONIST]);
-    // @ts-ignore
+    // @ts-expect-error - user shape from checkRole may not have hospital_id typed
     const data = await PatientService.getAll(user.hospital_id);
     return NextResponse.json(data);
   } catch (err: any) {
@@ -21,20 +24,63 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    // Only Admin and Receptionist can create patients
-    const user = await checkRole(req, [Roles.ADMIN, Roles.RECEPTIONIST]);
     const body = await req.json();
 
-    // @ts-ignore
-    const data = await PatientService.create(user.hospital_id, body);
+    // Patient Portal Registration (no auth required)
+    if (body.action === 'register') {
+      const { mobile, name, dob, gender, abhaId, consents } = body;
+
+      // Validate mobile
+      if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+        return NextResponse.json({ error: 'Invalid mobile number' }, { status: 400 });
+      }
+
+      // Create patient
+      const patient = await prisma.patient.create({
+        data: {
+          name,
+          phone: mobile,
+          dob: dob ? new Date(dob) : undefined,
+          gender,
+          abhaAddress: abhaId,
+        },
+      });
+
+      // Create consents
+      if (consents?.length) {
+        const consentData = consents.map((consent: string) => ({
+          patientId: patient.id,
+          purpose: ['APPOINTMENT_BOOKING', 'HEALTH_RECORDS', 'MARKETING'].includes(consent)
+            ? (consent as any)
+            : 'HEALTH_RECORDS',
+        }));
+        await prisma.consent.createMany({ data: consentData });
+      }
+
+      // Create audit log
+      await prisma.auditLog.create({
+        data: {
+          userId: patient.id,
+          action: 'PATIENT_REGISTER',
+          entity: 'patient',
+          entityId: patient.id,
+        },
+      });
+
+      return NextResponse.json({ success: true, patient });
+    }
+
+    // Hospital-staff patient creation
+    const user = await checkRole(req, [Roles.ADMIN, Roles.RECEPTIONIST]);
+    const data = await PatientService.create(body.hospitalId || user.hospital_id, body);
 
     // Audit Log
     const { AuditService } = await import('@/lib/services/audit');
-    // @ts-ignore
+    // @ts-expect-error - user shape from checkRole may not have hospital_id typed
     await AuditService.log(
       'PATIENT_CREATE',
-      user.hospital_id,
-      user.user_id,
+      body.hospitalId || user.hospital_id,
+      body.userId,
       'hospital_patients',
       data.id,
       { patient_name: body.name },

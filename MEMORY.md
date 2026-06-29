@@ -339,9 +339,13 @@ The following documents provide detailed specifications for the Haspataal platfo
 - **Next.js Worker Thread Crash & OTel/Prisma Externals:** Using `@prisma/instrumentation` (via `@sentry/node`) in Next.js projects can trigger a `Critical dependency` warning or worker thread crashes due to dynamic `require()` statements in `@opentelemetry/instrumentation`. Resolve by adding both packages to Webpack `externals` in `next.config.mjs` for server-side bundles. _(Fixed 2026-06-25)_
 - **Stale Next.js Cache Worker Resolution:** During package version alignment or bundler config changes, Next.js can crash with a `Cannot find module` error in `vendor-chunks/lib/worker.js`. Resolve by deleting the `.next/` cache directory and restarting the development server to force a clean build. _(Fixed 2026-06-25)_
 - **README Merge Conflict Resolution & Profile Creation:** Cleaned up git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) in `README.md` from stashed/upstream changes, and introduced `profile-readme.md` as a personalized developer profile to ensure clean documentation and workspace continuity. _(Resolved 2026-06-28)_
+- **Phase 1 Foundation Database & Type Schema:** Added database tables and TS interfaces for Doctor Identity (education, certifications, experience, verification), Patient Clinical Data (timeline, complaints, diagnosis, history, treatment, etc.), and Doctor Discovery. The `@haspataal/types` package serves as the shared type contract across the workspace. _(Implemented 2026-06-29)_
+- **Public Patient Registration API Routing:** Public registration from the Patient Portal on the `/api/patients` route uses the `body.action === 'register'` conditional path to bypass staff role checks. It enforces strict Indian mobile validation (`/^[6-9]\d{9}$/`) and populates `patient`, `consent`, and `auditLog` tables. _(Implemented 2026-06-29)_
+- **Shared Packages & Middleware Exports:** Created new shared packages `@haspataal/events` (Redis Stream event bus), `@haspataal/scheduler` (BullMQ cron engine), and `@haspataal/files` (secure storage). When adding helper modules like `authorization.ts` and `rate-limit.ts` to `@haspataal/auth`, ensure they are explicitly exported in the package's `index.ts`. _(Implemented 2026-06-29)_
 
 ## 🤖 Agent Personality
 
 - Be concise.
 - Use "we".
 - Prioritize event-driven decoupling.
+

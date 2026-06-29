@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+
 import { requireHospital } from '@/lib/auth/middleware';
 import prisma from '@/lib/prisma';
 

@@ -41,36 +41,36 @@ export const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
 export const IndianMobileRegex = /^[6-9]\d{9}$/;
 
 export const RegisterHospitalSchema = z.object({
-  name: z.string().min(2, "Hospital name too short"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().regex(IndianMobileRegex, "Invalid Indian mobile number"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
+  name: z.string().min(2, 'Hospital name too short'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().regex(IndianMobileRegex, 'Invalid Indian mobile number'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
 });
 
 export const RegisterAgentSchema = z.object({
-  name: z.string().min(2, "Name too short"),
-  mobile: z.string().regex(IndianMobileRegex, "Invalid Indian mobile number"),
-  email: z.string().email("Invalid email address"),
+  name: z.string().min(2, 'Name too short'),
+  mobile: z.string().regex(IndianMobileRegex, 'Invalid Indian mobile number'),
+  email: z.string().email('Invalid email address'),
   referralCode: z.string().optional(),
 });
 
 export const LoginSchema = z.object({
-  identifier: z.string().min(1, "Identifier is required"),
-  password: z.string().min(1, "Password is required"),
+  identifier: z.string().min(1, 'Identifier is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 export const BookAppointmentSchema = z.object({
-  patientId: z.string().uuid("Invalid patient ID"),
-  doctorId: z.string().uuid("Invalid doctor ID"),
-  date: z.coerce.date().refine((d) => d > new Date(), "Date must be in the future"),
-  slot: z.string().min(1, "Slot is required"),
-  hospitalId: z.string().uuid("Invalid hospital ID"),
+  patientId: z.string().uuid('Invalid patient ID'),
+  doctorId: z.string().uuid('Invalid doctor ID'),
+  date: z.coerce.date().refine((d) => d > new Date(), 'Date must be in the future'),
+  slot: z.string().min(1, 'Slot is required'),
+  hospitalId: z.string().uuid('Invalid hospital ID'),
 });
 
 export const AffiliationActionSchema = z.object({
-  affiliationId: z.string().uuid("Invalid affiliation ID"),
+  affiliationId: z.string().uuid('Invalid affiliation ID'),
   reason: z.string().optional(),
 });
 
@@ -145,4 +145,176 @@ export interface Review {
   rating: number;
   comment?: string | null;
   createdAt: Date;
+}
+
+// ============================================================
+// PHASE 1 FOUNDATION TYPES
+// ============================================================
+
+// Doctor Identity Types
+export interface DoctorProfile {
+  id: string;
+  doctorId: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  gender?: string;
+  dob?: Date;
+  photoUrl?: string;
+  languages: string[];
+  bio?: string;
+  designation?: string;
+}
+
+export interface DoctorEducation {
+  id: string;
+  doctorId: string;
+  degreeType: 'MBBS' | 'MD' | 'MS' | 'DM' | 'MCH' | 'DNB_SS' | 'DIPLOMA';
+  degreeName: string;
+  collegeName: string;
+  universityName?: string;
+  country?: string;
+  year?: number;
+  registrationNumber?: string;
+}
+
+export interface DoctorCertification {
+  id: string;
+  doctorId: string;
+  courseName: string;
+  authority?: string;
+  certificateNo?: string;
+  expiryDate?: Date;
+}
+
+export interface DoctorSkill {
+  id: string;
+  doctorId: string;
+  skillName: string;
+  skillLevel?: string;
+  certifiedDate?: Date;
+}
+
+export interface DoctorVerification {
+  id: string;
+  doctorId: string;
+  status: 'DOCUMENT_PENDING' | 'UNDER_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+  verifiedBy?: string;
+  verifiedAt?: Date;
+  rejectionReason?: string;
+  notes?: string;
+}
+
+// Patient Clinical Data Types
+export interface TimelineEvent {
+  id: string;
+  hospitalId?: string;
+  patientId: string;
+  eventType: string;
+  title: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  timestamp: Date;
+  actorType?: string;
+  actorId?: string;
+}
+
+export interface PatientSummary {
+  id: string;
+  name: string;
+  age?: number;
+  gender?: string;
+  bloodGroup?: string;
+  allergies: string[];
+  chronicDiseases: string[];
+  currentMedications: string[];
+  recentVisits: any[];
+  alerts: string[];
+}
+
+export interface Consent {
+  id: string;
+  patientGlobalId: string;
+  hospitalId: string;
+  consentType:
+    | 'CLINICAL_CARE'
+    | 'AI_ASSISTANT'
+    | 'RECORD_SHARING'
+    | 'RESEARCH'
+    | 'NOTIFICATIONS'
+    | 'EMERGENCY_OVERRIDE';
+  version: number;
+  isActive: boolean;
+  createdAt: Date;
+  withdrawnAt?: Date;
+}
+
+// Hospital Onboarding Types
+export interface HospitalSetup {
+  legalName: string;
+  displayName?: string;
+  registrationNumber: string;
+  gstNumber?: string;
+  address?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+  };
+  contact?: {
+    phone?: string;
+    email?: string;
+  };
+  branding?: {
+    logoUrl?: string;
+    brandColor?: string;
+  };
+  admin?: {
+    fullName: string;
+    email: string;
+    mobile: string;
+    password: string;
+  };
+}
+
+// Doctor Discovery Types
+export interface DoctorSearchIndex {
+  id: string;
+  doctorId: string;
+  fullName: string;
+  specialties: string[];
+  departments: string[];
+  city?: string;
+  state?: string;
+  latitude?: number;
+  longitude?: number;
+  avgRating: number;
+  reviewCount: number;
+  experienceYears?: number;
+  isActive: boolean;
+  lastIndexedAt: Date;
+}
+
+export interface DoctorPublicProfile {
+  id: string;
+  doctorId: string;
+  fullName: string;
+  qualifications: string[];
+  specialties: string[];
+  superSpecialties: string[];
+  yearsExperience?: number;
+  languages: string[];
+  consultationFee?: number;
+  availableToday: boolean;
+  nextAvailableSlot?: Date;
+  availabilityStatus:
+    | 'AVAILABLE'
+    | 'LIMITED_SLOTS'
+    | 'FULLY_BOOKED'
+    | 'ON_LEAVE'
+    | 'OFFLINE'
+    | 'EMERGENCY_ONLY';
+  verificationStatus: string;
+  hospitalCount: number;
 }
