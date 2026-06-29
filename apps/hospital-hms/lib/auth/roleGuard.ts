@@ -1,11 +1,12 @@
 import { verifyToken } from './jwt';
 
-export type Role = 'admin' | 'doctor' | 'receptionist';
+export type Role = 'admin' | 'doctor' | 'receptionist' | 'lab_tech';
 
 export const Roles = {
   ADMIN: 'admin' as Role,
   DOCTOR: 'doctor' as Role,
   RECEPTIONIST: 'receptionist' as Role,
+  LAB_TECH: 'lab_tech' as Role,
 };
 
 export async function checkRole(req: Request, allowedRoles: Role[]) {
@@ -17,8 +18,7 @@ export async function checkRole(req: Request, allowedRoles: Role[]) {
 
   try {
     const user = await verifyToken(token);
-    // @ts-ignore
-    if (!allowedRoles.includes(user.role)) {
+    if (!allowedRoles.includes(user.role as Role)) {
       throw new Error(`Forbidden: Role ${user.role} not allowed`);
     }
     return user;

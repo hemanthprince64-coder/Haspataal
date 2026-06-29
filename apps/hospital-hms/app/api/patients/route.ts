@@ -8,7 +8,6 @@ import { PatientService } from '@/lib/services/patients';
 export async function GET(req: Request) {
   try {
     const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.RECEPTIONIST]);
-    // @ts-expect-error - user shape from checkRole may not have hospital_id typed
     const data = await PatientService.getAll(user.hospital_id);
     return NextResponse.json(data);
   } catch (err: any) {
@@ -76,7 +75,6 @@ export async function POST(req: Request) {
 
     // Audit Log
     const { AuditService } = await import('@/lib/services/audit');
-    // @ts-expect-error - user shape from checkRole may not have hospital_id typed
     await AuditService.log(
       'PATIENT_CREATE',
       body.hospitalId || user.hospital_id,

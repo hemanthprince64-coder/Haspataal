@@ -7,7 +7,8 @@ export type AuditAction =
   | 'DIAGNOSTIC_ORDER'
   | 'VIEW_PHI'
   | 'DIAGNOSTIC_UPDATE'
-  | 'HOSPITAL_APPROVED';
+  | 'HOSPITAL_APPROVED'
+  | 'LAB_ORDER_CREATED';
 
 export const AuditService = {
   async log(
@@ -34,8 +35,10 @@ export const AuditService = {
         meta: meta, // assuming we add a jsonb column or text
       });
 
+      // eslint-disable-next-line no-console
       if (error) console.error('Audit Log Error:', error);
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error('Audit Log System Failure:', e);
     }
   },

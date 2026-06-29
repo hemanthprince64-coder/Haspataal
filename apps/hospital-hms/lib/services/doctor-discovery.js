@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { redis } from '../lib/redis';
+import prisma from '../prisma';
+import { redis } from '../redis';
 
 const CACHE_TTL = 300; // 5 minutes
 

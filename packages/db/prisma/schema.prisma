@@ -50,6 +50,9 @@ model DoctorMaster {
   conferences           DoctorConference[]
   experience            DoctorExperience[]
   verification          DoctorVerification?
+  samplesCollected      LabSample[]                 @relation("SampleCollectedBy")
+  samplesVerified       LabSample[]                 @relation("SampleVerifiedBy")
+  LabOrder              LabOrder[]
 
   @@index([email])
   @@map("doctors_master")
@@ -600,6 +603,7 @@ model Appointment {
   payment             Payment?
   visit               Visit?
   invoices            Invoice[]
+  LabOrder            LabOrder[]
 
   @@unique([doctorId, date, slot])
   @@index([patientId])
@@ -831,6 +835,7 @@ model Visit {
   hospital           HospitalsMaster       @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   currentStage       HandoffStage          @default(RECEPTION) @map("current_stage")
   departmentHandoffs DepartmentHandoff[]
+  LabOrder           LabOrder[]
 
   @@index([hospitalId])
   @@index([appointmentId])
@@ -1572,6 +1577,7 @@ model Invoice {
   lineItems         InvoiceLineItem[]
   payments          InvoicePayment[]
   pharmacyDispenses PharmacyDispense[]
+  LabOrder          LabOrder[]
 
   @@unique([hospitalId, invoiceNumber])
   @@index([hospitalId, status])
@@ -1792,20 +1798,67 @@ model DrugStock {
 }
 
 model LabOrder {
-  id         String          @id @default(uuid())
-  hospitalId String          @map("hospital_id")
-  patientId  String          @map("patient_id")
-  testName   String          @map("test_name")
-  status     String          @default("PENDING")
-  result     String?
-  orderedAt  DateTime        @default(now()) @map("ordered_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
-  hospital   HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  patient    Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id             String          @id @default(uuid())
+  hospitalId     String          @map("hospital_id")
+  patientId      String          @map("patient_id")
+  doctorId       String?         @map("doctor_id")
+  appointmentId  String?         @map("appointment_id")
+  visitId        String?         @map("visit_id")
+  status         LabOrderStatus  @default(ORDERED)
+  orderNumber    String?         @map("order_number")
+  priority       String? // ROUTINE, URGENT, STAT
+  clinicalInfo   String?         @map("clinical_info")
+  collectionDate DateTime?       @map("collection_date")
+  reportingDate  DateTime?       @map("reporting_date")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient        Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor         DoctorMaster?   @relation(fields: [doctorId], references: [id])
+  appointment    Appointment?    @relation(fields: [appointmentId], references: [id])
+  visit          Visit?          @relation(fields: [visitId], references: [id])
+  samples        LabSample[]
+  invoice        Invoice?        @relation(fields: [invoiceId], references: [id])
+  invoiceId      String?
 
   @@index([hospitalId])
   @@index([patientId])
+  @@index([doctorId])
+  @@index([visitId])
+  @@index([status])
   @@map("lab_orders")
+}
+
+model LabSample {
+  id             String             @id @default(uuid())
+  labOrderId     String             @map("lab_order_id")
+  testId         String?            @map("test_id")
+  barcode        String             @unique @map("barcode")
+  collectedById  String?            @map("collected_by_id")
+  collectedAt    DateTime?          @map("collected_at")
+  collectionTime DateTime?          @map("collection_time")
+  sampleType     String?            @map("sample_type")
+  volume         String?
+  notes          String?
+  status         LabOrderItemStatus @default(PENDING)
+  resultValue    String?            @map("result_value")
+  referenceRange String?            @map("reference_range")
+  resultFlag     String?            @map("result_flag")
+  verifiedById   String?            @map("verified_by_id")
+  verifiedAt     DateTime?          @map("verified_at")
+  reportFileUrl  String?            @map("report_file_url")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  labOrder    LabOrder             @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+  collectedBy DoctorMaster?        @relation("SampleCollectedBy", fields: [collectedById], references: [id])
+  verifiedBy  DoctorMaster?        @relation("SampleVerifiedBy", fields: [verifiedById], references: [id])
+  testMaster  InvestigationMaster? @relation(fields: [testId], references: [id])
+
+  @@index([labOrderId])
+  @@index([barcode])
+  @@index([collectedById])
+  @@map("lab_samples")
 }
 
 enum HospitalStatus {
@@ -1861,6 +1914,23 @@ enum VerificationStatus {
   UNDER_VERIFICATION
   VERIFIED
   REJECTED
+}
+
+enum LabOrderStatus {
+  ORDERED
+  SAMPLE_COLLECTED
+  PROCESSED
+  VERIFIED
+  REPORT_READY
+  CANCELLED
+}
+
+enum LabOrderItemStatus {
+  PENDING
+  COLLECTED
+  PROCESSED
+  VERIFIED
+  REPORTED
 }
 
 enum FacilityType {
@@ -2945,6 +3015,167 @@ model Treatment {
 
   @@index([visitId])
   @@map("treatments")
+}
+
+model Icd10Code {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  description String
+  categoryId  String?  @map("category_id")
+  parentCode  String?  @map("parent_code")
+  isLeaf      Boolean  @default(true) @map("is_leaf")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([code])
+  @@index([categoryId])
+  @@index([parentCode])
+  @@map("icd10_codes")
+}
+
+model LoincCode {
+  id          String  @id @default(uuid())
+  loincNumber String  @unique @map("loinc_number")
+  component   String?
+  property    String?
+  timeAspect  String? @map("time_aspect")
+  system      String?
+  scaleType   String? @map("scale_type")
+  method      String?
+  shortName   String? @map("short_name")
+  displayName String? @map("display_name")
+  status      String  @default("ACTIVE")
+
+  @@index([loincNumber])
+  @@index([component])
+  @@map("loinc_codes")
+}
+
+model SnomedConcept {
+  id                 String  @id @default(uuid())
+  conceptId          String  @unique @map("concept_id")
+  fullySpecifiedName String? @map("fully_specified_name")
+  synonyms           String?
+  definition         String?
+  isActive           Boolean @default(true) @map("is_active")
+
+  @@index([conceptId])
+  @@map("snomed_concepts")
+}
+
+model DrugMaster {
+  id               String      @id @default(uuid())
+  name             String
+  genericName      String?     @map("generic_name")
+  formulation      String? // TABLET, CAPSULE, SYRUP, INJECTION
+  strength         String? // 500MG, 10ML
+  unit             String? // mg, ml, units
+  schedule         String? // H, H1, etc.
+  isControlled     Boolean     @default(false) @map("is_controlled")
+  contraindication String?
+  createdAt        DateTime    @default(now()) @map("created_at")
+  DrugBrand        DrugBrand[]
+
+  @@index([name])
+  @@index([genericName])
+  @@map("drug_master")
+}
+
+model DrugBrand {
+  id           String   @id @default(uuid())
+  drugMasterId String   @map("drug_master_id")
+  brandName    String   @map("brand_name")
+  manufacturer String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  drugMaster DrugMaster @relation(fields: [drugMasterId], references: [id], onDelete: Cascade)
+
+  @@index([drugMasterId])
+  @@index([brandName])
+  @@map("drug_brands")
+}
+
+model InvestigationMaster {
+  id              String      @id @default(uuid())
+  testName        String      @map("test_name")
+  testCode        String?     @unique @map("test_code")
+  loincCode       String?     @map("loinc_code")
+  sampleType      String?     @map("sample_type")
+  normalRange     String?     @map("normal_range")
+  referenceRanges Json?       @map("reference_ranges")
+  units           String?
+  fastingRequired Boolean     @default(false) @map("fasting_required")
+  testDuration    Int?        @map("test_duration") // minutes
+  LabSample       LabSample[]
+
+  @@index([testName])
+  @@index([loincCode])
+  @@map("investigation_master")
+}
+
+model RadiologyMaster {
+  id               String   @id @default(uuid())
+  testName         String   @map("test_name")
+  testCode         String?  @unique @map("test_code")
+  modality         String? // X-RAY, CT, MRI, ULTRASOUND, MAMMOGRAM
+  bodyRegion       String?  @map("body_region")
+  contrastRequired Boolean  @default(false) @map("contrast_required")
+  normalFinding    String?  @map("normal_finding")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([testName])
+  @@index([modality])
+  @@map("radiology_master")
+}
+
+model ProcedureMaster {
+  id            String   @id @default(uuid())
+  procedureName String   @map("procedure_name")
+  procedureCode String?  @unique @map("procedure_code")
+  cptCode       String?  @map("cpt_code")
+  durationMin   Int?     @map("duration_min")
+  consumables   Json?    @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([procedureName])
+  @@map("procedure_master")
+}
+
+model VaccineMaster {
+  id                String  @id @default(uuid())
+  vaccineName       String  @map("vaccine_name")
+  vaccineCode       String? @unique @map("vaccine_code")
+  diseaseTarget     String? @map("disease_target")
+  scheduleDays      Int[]   @map("schedule_days") // [0, 60, 120] for schedule
+  minAgeMonths      Int?    @map("min_age_months")
+  maxAgeMonths      Int?    @map("max_age_months")
+  contraindications String?
+
+  @@index([vaccineName])
+  @@map("vaccine_master")
+}
+
+model AllergyMaster {
+  id       String  @id @default(uuid())
+  allergen String // DUST, POLLEN, PENICILLIN, etc.
+  category String? // DRUG, FOOD, ENVIRONMENTAL, CONTACT
+  symptoms String?
+  severity String? // MILD, MODERATE, SEVERE
+
+  @@index([allergen])
+  @@map("allergy_master")
+}
+
+model ClinicalTemplate {
+  id          String   @id @default(uuid())
+  templateKey String   @unique @map("template_key")
+  name        String
+  body        String   @default("{}")
+  category    String? // HISTORY, EXAMINATION, TREATMENT, DISCHARGE
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([templateKey])
+  @@map("clinical_templates")
 }
 
 model ClinicalAttachment {

@@ -77,4 +77,5 @@ export const EVENT_TYPES = {
   FOLLOW_UP_SCHEDULED: 'FollowUpScheduled',
   DOCTOR_VERIFIED: 'DoctorVerified',
   HOSPITAL_VERIFIED: 'HospitalVerified',
+  LAB_COMPLETED: 'LabCompleted',
 } as const;
