@@ -342,10 +342,14 @@ The following documents provide detailed specifications for the Haspataal platfo
 - **Phase 1 Foundation Database & Type Schema:** Added database tables and TS interfaces for Doctor Identity (education, certifications, experience, verification), Patient Clinical Data (timeline, complaints, diagnosis, history, treatment, etc.), and Doctor Discovery. The `@haspataal/types` package serves as the shared type contract across the workspace. _(Implemented 2026-06-29)_
 - **Public Patient Registration API Routing:** Public registration from the Patient Portal on the `/api/patients` route uses the `body.action === 'register'` conditional path to bypass staff role checks. It enforces strict Indian mobile validation (`/^[6-9]\d{9}$/`) and populates `patient`, `consent`, and `auditLog` tables. _(Implemented 2026-06-29)_
 - **Shared Packages & Middleware Exports:** Created new shared packages `@haspataal/events` (Redis Stream event bus), `@haspataal/scheduler` (BullMQ cron engine), and `@haspataal/files` (secure storage). When adding helper modules like `authorization.ts` and `rate-limit.ts` to `@haspataal/auth`, ensure they are explicitly exported in the package's `index.ts`. _(Implemented 2026-06-29)_
+- **Doctor Discovery Engine Isolation & Indexing:** Implemented a denormalized search index (`DoctorSearchIndex`) and a public profile model (`DoctorPublicProfile`) to isolate patient-facing doctor discovery. The Patient Portal queries these discovery tables exclusively to prevent direct reads on hospital-private schemas. _(Implemented 2026-06-29)_
+- **Real-Time Availability Computation:** Implemented availability logic to compute doctor availability on-demand by combining weekly schedules, approved leaves, active holidays, and existing appointments. Results are cached in Redis (5-minute TTL) and persisted in `DoctorAvailability` to speed up checkout. _(Implemented 2026-06-29)_
+- **Background Search Index Sync:** Integrated a background BullMQ queue (`search-index-refresh.js`) to asynchronously update search indices and public profiles when doctor master data, verification status, or hospital affiliations change. _(Implemented 2026-06-29)_
 
 ## 🤖 Agent Personality
 
 - Be concise.
 - Use "we".
 - Prioritize event-driven decoupling.
+
 

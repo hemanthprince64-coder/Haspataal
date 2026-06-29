@@ -63,3 +63,30 @@ test.describe('Phase 1 Integration Tests', () => {
     expect(response.status()).toBe(400);
   });
 });
+
+test.describe('Phase 2 Discovery Tests', () => {
+  test('Doctor search returns list', async ({ request }) => {
+    const response = await request.get('/api/doctors/search');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+
+  test('Doctor search with specialty filter', async ({ request }) => {
+    const response = await request.get('/api/doctors/search?specialty=Cardiology&limit=5');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+  });
+
+  test('Doctor search with city filter', async ({ request }) => {
+    const response = await request.get('/api/doctors/search?city=Mumbai');
+    expect(response.status()).toBe(200);
+  });
+
+  test('Availability check requires parameters', async ({ request }) => {
+    const response = await request.get('/api/doctors/availability');
+    expect(response.status()).toBe(400);
+  });
+});

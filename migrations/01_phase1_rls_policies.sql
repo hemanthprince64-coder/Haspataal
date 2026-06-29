@@ -73,3 +73,16 @@ USING (
   hospital_id = (current_setting('request.hospital_id'))::uuid
   OR (current_setting('request.role'))::text = 'SUPER_ADMIN'
 );
+
+-- Discovery tables (READ-ONLY for patients, write for hospital context)
+CREATE POLICY doctor_search_index_read
+ON doctor_search_index FOR SELECT
+USING (true);
+
+CREATE POLICY doctor_public_profile_read
+ON doctor_public_profiles FOR SELECT
+USING (true);
+
+CREATE POLICY doctor_availability_read
+ON doctor_availability FOR SELECT
+USING (true);

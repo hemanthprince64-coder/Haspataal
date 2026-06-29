@@ -27,3 +27,10 @@ export const addCleanupJob = async (type, data) => {
   return await queueService.addJob('cleanup', type, data);
 };
 
+export const discoveryQueue = {
+  add: (name, data, options) => queueService.addJob('discovery', name, data, options),
+};
+
+export const refreshSearchIndex = async (type, data) => {
+  return await queueService.addJob('discovery', type, data);
+};
