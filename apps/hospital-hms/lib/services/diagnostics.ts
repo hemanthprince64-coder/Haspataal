@@ -83,7 +83,7 @@ export const LabService = {
     return { order, samples: createdSamples };
   },
 
-  async getOrders(hospitalId, status) {
+  async getOrders(hospitalId: string, status?: string) {
     const supabase = createClient();
     let query = supabase
       .from('lab_orders')

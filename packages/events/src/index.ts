@@ -1,6 +1,4 @@
-// ============================================================
 // @haspataal/events - Event Bus Singleton (Redis Streams)
-// ============================================================
 import { Queue } from 'bullmq';
 import { EventEmitter } from 'events';
 
@@ -65,7 +63,6 @@ export class EventBus extends EventEmitter {
 
 export const eventBus = EventBus.getInstance();
 
-// Event Types
 export const EVENT_TYPES = {
   PATIENT_REGISTERED: 'PatientRegistered',
   APPOINTMENT_BOOKED: 'AppointmentBooked',
@@ -73,9 +70,12 @@ export const EVENT_TYPES = {
   VITALS_RECORDED: 'VitalsRecorded',
   PRESCRIPTION_CREATED: 'PrescriptionCreated',
   INVESTIGATION_ORDERED: 'InvestigationOrdered',
+  LAB_COMPLETED: 'LabCompleted',
+  DRUG_DISPENSED: 'DrugDispensed',
+  PATIENT_ADMITTED: 'PatientAdmitted',
   VISIT_COMPLETED: 'VisitCompleted',
   FOLLOW_UP_SCHEDULED: 'FollowUpScheduled',
   DOCTOR_VERIFIED: 'DoctorVerified',
   HOSPITAL_VERIFIED: 'HospitalVerified',
-  LAB_COMPLETED: 'LabCompleted',
+  SAMPLE_COLLECTED: 'SampleCollected',
 } as const;

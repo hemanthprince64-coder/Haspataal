@@ -53,6 +53,7 @@ model DoctorMaster {
   samplesCollected      LabSample[]                 @relation("SampleCollectedBy")
   samplesVerified       LabSample[]                 @relation("SampleVerifiedBy")
   LabOrder              LabOrder[]
+  OTSchedule            OTSchedule[]
 
   @@index([email])
   @@map("doctors_master")
@@ -220,6 +221,13 @@ model HospitalsMaster {
   internalReferrals        InternalReferral[]
   consultantSettlements    ConsultantSettlement[]
   departmentHandoffs       DepartmentHandoff[]
+  PurchaseOrder            PurchaseOrder[]
+  NursingNote              NursingNote[]
+  MAR                      MAR[]
+  OTSchedule               OTSchedule[]
+  ICUAdmission             ICUAdmission[]
+  InsuranceVerification    InsuranceVerification[]
+  InsuranceClaim           InsuranceClaim[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -415,6 +423,8 @@ model Staff {
   hospital           HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   rolePermissions    RolePermission[]
   departmentHandoffs DepartmentHandoff[]
+  NursingNote        NursingNote[]
+  MAR                MAR[]
 
   @@index([hospitalId])
   @@index([role])
@@ -422,34 +432,34 @@ model Staff {
 }
 
 model Patient {
-  id                       String                 @id @default(uuid())
+  id                       String                  @id @default(uuid())
   name                     String
-  phone                    String                 @unique
+  phone                    String                  @unique
   email                    String?
   password                 String
   city                     String?
-  createdAt                DateTime               @default(now()) @map("created_at")
-  abhaAddress              String?                @unique @map("abha_address")
-  role                     Role                   @default(PATIENT)
+  createdAt                DateTime                @default(now()) @map("created_at")
+  abhaAddress              String?                 @unique @map("abha_address")
+  role                     Role                    @default(PATIENT)
   address                  String?
-  bloodGroup               String?                @map("blood_group")
-  dob                      DateTime?              @db.Date
+  bloodGroup               String?                 @map("blood_group")
+  dob                      DateTime?               @db.Date
   gender                   String?
   pincode                  String?
-  updatedAt                DateTime               @default(now()) @updatedAt @map("updated_at")
-  agentId                  String?                @map("agent_id")
+  updatedAt                DateTime                @default(now()) @updatedAt @map("updated_at")
+  agentId                  String?                 @map("agent_id")
   country                  String?
-  emergencyContactAltPhone String?                @map("emergency_contact_alt_phone")
-  emergencyContactName     String?                @map("emergency_contact_name")
-  emergencyContactPhone    String?                @map("emergency_contact_phone")
+  emergencyContactAltPhone String?                 @map("emergency_contact_alt_phone")
+  emergencyContactName     String?                 @map("emergency_contact_name")
+  emergencyContactPhone    String?                 @map("emergency_contact_phone")
   consents                 Consent[]
-  emergencyContactRelation String?                @map("emergency_contact_relation")
-  maritalStatus            String?                @map("marital_status")
+  emergencyContactRelation String?                 @map("emergency_contact_relation")
+  maritalStatus            String?                 @map("marital_status")
   occupation               String?
-  preferredDoctor          String?                @map("preferred_doctor")
-  preferredHospital        String?                @map("preferred_hospital")
-  preferredSpeciality      String?                @map("preferred_speciality")
-  profilePhotoUrl          String?                @map("profile_photo_url")
+  preferredDoctor          String?                 @map("preferred_doctor")
+  preferredHospital        String?                 @map("preferred_hospital")
+  preferredSpeciality      String?                 @map("preferred_speciality")
+  profilePhotoUrl          String?                 @map("profile_photo_url")
   state                    String?
   nickname                 String?
   appointments             Appointment[]
@@ -471,7 +481,7 @@ model Patient {
   medications              PatientMedication[]
   prescriptions            PatientPrescription[]
   records                  PatientRecord[]
-  agent                    Agent?                 @relation(fields: [agentId], references: [id])
+  agent                    Agent?                  @relation(fields: [agentId], references: [id])
   pregnancyProfile         PregnancyProfile?
   reviews                  Review[]
   vaccinationRecords       VaccinationRecord[]
@@ -480,6 +490,9 @@ model Patient {
   internalReferrals        InternalReferral[]
   escalationAlerts         EscalationAlert[]
   newbornRecord            NewbornRecord?
+  OTSchedule               OTSchedule[]
+  InsuranceVerification    InsuranceVerification[]
+  InsuranceClaim           InsuranceClaim[]
 
   @@index([city])
   @@index([email])
@@ -836,6 +849,7 @@ model Visit {
   currentStage       HandoffStage          @default(RECEPTION) @map("current_stage")
   departmentHandoffs DepartmentHandoff[]
   LabOrder           LabOrder[]
+  NursingNote        NursingNote[]
 
   @@index([hospitalId])
   @@index([appointmentId])
@@ -1537,6 +1551,9 @@ model Admission {
   bed                 Bed?            @relation(fields: [bedId], references: [id])
   attendingDoctor     DoctorMaster?   @relation(fields: [attendingDoctorId], references: [id])
   invoices            Invoice[]
+  NursingNote         NursingNote[]
+  MAR                 MAR[]
+  ICUAdmission        ICUAdmission[]
 
   @@unique([hospitalId, admissionNumber])
   @@index([hospitalId, status])
@@ -1578,6 +1595,7 @@ model Invoice {
   payments          InvoicePayment[]
   pharmacyDispenses PharmacyDispense[]
   LabOrder          LabOrder[]
+  InsuranceClaim    InsuranceClaim[]
 
   @@unique([hospitalId, invoiceNumber])
   @@index([hospitalId, status])
@@ -1733,6 +1751,7 @@ model Bed {
   unit                Unit?           @relation(fields: [unitId], references: [id])
   department          Department?     @relation("DepartmentBeds", fields: [departmentId], references: [id])
   admissions          Admission[]
+  ICUAdmission        ICUAdmission[]
 
   @@unique([hospitalId, bedNumber])
   @@unique([unitId, bedNumber], name: "idx_unit_bednumber")
@@ -3191,4 +3210,177 @@ model ClinicalAttachment {
 
   @@index([visitId])
   @@map("clinical_attachments")
+}
+
+model PurchaseOrder {
+  id           String          @id @default(uuid())
+  hospitalId   String          @map("hospital_id")
+  supplierId   String?         @map("supplier_id")
+  orderNumber  String          @map("order_number")
+  status       String          @default("PENDING")
+  totalAmount  Decimal         @default(0) @map("total_amount")
+  expectedDate DateTime?       @map("expected_date")
+  receivedDate DateTime?       @map("received_date")
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String    @id @default(uuid())
+  purchaseOrderId String    @map("purchase_order_id")
+  drugStockId     String?   @map("drug_stock_id")
+  drugName        String    @map("drug_name")
+  quantity        Int
+  unitPrice       Decimal   @default(0) @map("unit_price")
+  totalPrice      Decimal   @default(0) @map("total_price")
+  batchNumber     String?   @map("batch_number")
+  expiryDate      DateTime? @map("expiry_date")
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+model DrugInteraction {
+  id          String  @id @default(uuid())
+  drugId1     String  @map("drug_id1")
+  drugId2     String  @map("drug_id2")
+  severity    String? // HIGH, MEDIUM, LOW
+  description String?
+  management  String?
+
+  @@unique([drugId1, drugId2])
+  @@map("drug_interactions")
+}
+
+model NursingNote {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  visitId     String?  @map("visit_id")
+  admissionId String?  @map("admission_id")
+  nurseId     String   @map("nurse_id")
+  note        String
+  shift       String? // MORNING, EVENING, NIGHT
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  hospital  HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  visit     Visit?          @relation(fields: [visitId], references: [id])
+  admission Admission?      @relation(fields: [admissionId], references: [id])
+  nurse     Staff           @relation(fields: [nurseId], references: [id])
+
+  @@index([hospitalId])
+  @@index([admissionId])
+  @@map("nursing_notes")
+}
+
+model MAR {
+  id               String    @id @default(uuid())
+  hospitalId       String    @map("hospital_id")
+  admissionId      String    @map("admission_id")
+  medicationName   String    @map("medication_name")
+  dosage           String
+  route            String // ORAL, IV, IM, SC etc.
+  scheduledTime    DateTime  @map("scheduled_time")
+  administeredAt   DateTime? @map("administered_at")
+  administeredById String?   @map("administered_by_id")
+  status           String    @default("PENDING") // PENDING, GIVEN, MISSED, REFUSED
+
+  hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  admission      Admission       @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  administeredBy Staff?          @relation(fields: [administeredById], references: [id])
+
+  @@index([hospitalId])
+  @@index([admissionId])
+  @@map("mars")
+}
+
+model OTSchedule {
+  id             String   @id @default(uuid())
+  hospitalId     String   @map("hospital_id")
+  patientId      String   @map("patient_id")
+  procedureName  String   @map("procedure_name")
+  surgeonId      String   @map("surgeon_id")
+  theatreName    String   @map("theatre_name")
+  scheduledAt    DateTime @map("scheduled_at")
+  status         String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+  whoChecklist   Json?    @default("{}") @map("who_checklist")
+  surgeryNotes   String?  @map("surgery_notes")
+  recoveryStatus String?  @map("recovery_status")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient  Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  surgeon  DoctorMaster    @relation(fields: [surgeonId], references: [id])
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@map("ot_schedules")
+}
+
+model ICUAdmission {
+  id             String    @id @default(uuid())
+  hospitalId     String    @map("hospital_id")
+  admissionId    String    @map("admission_id")
+  bedId          String    @map("bed_id")
+  apacheScore    Int?      @map("apache_score")
+  prismScore     Int?      @map("prism_score")
+  pelodScore     Int?      @map("pelod_score")
+  ventilatorMode String?   @map("ventilator_mode")
+  peep           Float?
+  fio2           Float?
+  infusions      Json?     @default("[]") // Infusion rates and medications
+  admittedAt     DateTime  @default(now()) @map("admitted_at")
+  dischargedAt   DateTime? @map("discharged_at")
+
+  hospital  HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  admission Admission       @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  bed       Bed             @relation(fields: [bedId], references: [id])
+
+  @@index([hospitalId])
+  @@index([admissionId])
+  @@map("icu_admissions")
+}
+
+model InsuranceVerification {
+  id            String    @id @default(uuid())
+  hospitalId    String    @map("hospital_id")
+  patientId     String    @map("patient_id")
+  policyNumber  String    @map("policy_number")
+  insurerName   String    @map("insurer_name")
+  tpaName       String?   @map("tpa_name")
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  preAuthAmount Decimal?  @default(0) @map("pre_auth_amount")
+  verifiedAt    DateTime? @map("verified_at")
+  verifiedById  String?   @map("verified_by_id")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient  Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@map("insurance_verifications")
+}
+
+model InsuranceClaim {
+  id             String    @id @default(uuid())
+  hospitalId     String    @map("hospital_id")
+  patientId      String    @map("patient_id")
+  invoiceId      String    @map("invoice_id")
+  status         String    @default("SUBMITTED") // SUBMITTED, APPROVED, REJECTED, PAID
+  claimAmount    Decimal   @default(0) @map("claim_amount")
+  approvedAmount Decimal   @default(0) @map("approved_amount")
+  settledAmount  Decimal   @default(0) @map("settled_amount")
+  submittedAt    DateTime  @default(now()) @map("submitted_at")
+  settledAt      DateTime? @map("settled_at")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient  Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  invoice  Invoice         @relation(fields: [invoiceId], references: [id])
+
+  @@index([hospitalId])
+  @@map("insurance_claims")
 }
