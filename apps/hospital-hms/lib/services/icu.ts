@@ -32,6 +32,39 @@ export const ICUService = {
       .eq('id', bedId);
     if (bedError) throw bedError;
 
+    // Timeline Engine publish
+    try {
+      const { data: admission } = await supabase
+        .from('admissions')
+        .select('patient_id')
+        .eq('id', admissionId)
+        .single();
+
+      if (admission) {
+        const { getTimelinePublisher } = await import('@haspataal/timeline');
+        await getTimelinePublisher().publish({
+          patientId: admission.patient_id,
+          hospitalId,
+          eventType: 'IcuAdmitted',
+          title: 'Admitted to ICU',
+          subtitle: `Bed: ${bedId}`,
+          summary: `Patient transferred to Intensive Care Unit. Apache score: ${scores?.apache || 'N/A'}.`,
+          timestamp: new Date(),
+          category: 'ADMISSION',
+          module: 'icu',
+          severity: 'CRITICAL',
+          metadata: {
+            icuAdmissionId: data.id,
+            admissionId,
+            bedId,
+            apacheScore: scores?.apache,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish IcuAdmitted event:', e.message);
+    }
+
     return data;
   },
 

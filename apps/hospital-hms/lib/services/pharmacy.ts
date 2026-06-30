@@ -99,6 +99,33 @@ export const PharmacyService = {
       hospitalId,
     });
 
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      for (const item of dispensedItems) {
+        await getTimelinePublisher().publish({
+          patientId,
+          hospitalId,
+          eventType: 'DrugDispensed',
+          title: `Drug Dispensed: ${item.name}`,
+          subtitle: `Qty: ${item.quantity}`,
+          summary: `Dispensed drug stock ${item.drugStockId}. MRP per unit: ₹${item.unitPrice.toFixed(2)}. Total: ₹${item.totalPrice.toFixed(2)}.`,
+          timestamp: new Date(),
+          category: 'PRESCRIPTION',
+          module: 'pharmacy',
+          severity: 'LOW',
+          metadata: {
+            drugStockId: item.drugStockId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish DrugDispensed event:', e);
+    }
+
     return { dispensedItems, totalAmount: totalChargeAmount };
   },
 

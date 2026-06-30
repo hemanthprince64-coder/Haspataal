@@ -27,6 +27,30 @@ export const DischargeService = {
       new Date(admission.admitted_at).getTime();
     const stayDays = Math.max(1, Math.ceil(stayMs / (1000 * 60 * 60 * 24)));
 
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId: admission.patient_id,
+        hospitalId: admission.hospital_id,
+        doctorId: admission.attending_doctor_id,
+        eventType: 'DischargeCompleted',
+        title: 'Discharge Summary Generated',
+        subtitle: `Admission: ${admission.admission_number}`,
+        summary: admission.discharge_summary || 'Discharge finalized.',
+        timestamp: new Date(),
+        category: 'DISCHARGE',
+        module: 'discharge',
+        severity: 'LOW',
+        metadata: {
+          admissionId,
+          stayDays,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish DischargeCompleted event:', e.message);
+    }
+
     return {
       admissionNumber: admission.admission_number,
       admittedAt: admission.admitted_at,

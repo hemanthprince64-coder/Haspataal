@@ -25,6 +25,32 @@ export const OTService = {
       .select()
       .single();
     if (error) throw error;
+
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId,
+        hospitalId,
+        doctorId: surgeonId,
+        eventType: 'SurgeryScheduled',
+        title: `Surgery Scheduled: ${procedureName}`,
+        subtitle: `Theatre: ${theatreName}`,
+        timestamp: scheduledAt,
+        category: 'SURGERY',
+        module: 'ot',
+        severity: 'MEDIUM',
+        metadata: {
+          otScheduleId: data.id,
+          procedureName,
+          surgeonId,
+          theatreName,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish SurgeryScheduled event:', e.message);
+    }
+
     return data;
   },
 
@@ -53,6 +79,32 @@ export const OTService = {
       .select()
       .single();
     if (error) throw error;
+
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId: data.patient_id,
+        hospitalId: data.hospital_id,
+        doctorId: data.surgeon_id,
+        eventType: 'SurgeryCompleted',
+        title: `Surgery Completed: ${data.procedure_name}`,
+        subtitle: `Recovery Status: ${recoveryStatus}`,
+        summary: surgeryNotes,
+        timestamp: new Date(),
+        category: 'SURGERY',
+        module: 'ot',
+        severity: 'MEDIUM',
+        metadata: {
+          otScheduleId,
+          procedureName: data.procedure_name,
+          recoveryStatus,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish SurgeryCompleted event:', e.message);
+    }
+
     return data;
   },
 };

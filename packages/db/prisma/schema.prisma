@@ -493,6 +493,9 @@ model Patient {
   OTSchedule               OTSchedule[]
   InsuranceVerification    InsuranceVerification[]
   InsuranceClaim           InsuranceClaim[]
+  TimelineExport           TimelineExport[]
+  TimelineSubscription     TimelineSubscription[]
+  TimelineSnapshot         TimelineSnapshot[]
 
   @@index([city])
   @@index([email])
@@ -2937,20 +2940,51 @@ model DoctorLeave {
 // ============================================================
 
 model TimelineEvent {
-  id          String   @id @default(uuid())
-  hospitalId  String?  @map("hospital_id")
-  patientId   String   @map("patient_id")
-  eventType   String   @map("event_type") // PATIENT_REGISTERED, APPOINTMENT_BOOKED, VITALS_RECORDED, etc.
-  title       String
-  description String?
-  metadata    Json?    @map("metadata")
-  timestamp   DateTime @default(now()) @map("timestamp")
-  actorType   String?  @map("actor_type") // DOCTOR, RECEPTIONIST, SYSTEM, PATIENT
-  actorId     String?  @map("actor_id")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id               String    @id @default(uuid())
+  patientId        String    @map("patient_id")
+  hospitalId       String?   @map("hospital_id")
+  doctorId         String?   @map("doctor_id")
+  module           String    @default("UNKNOWN")
+  entityType       String?   @map("entity_type")
+  entityId         String?   @map("entity_id")
+  eventType        String    @map("event_type")
+  category         String    @default("UNKNOWN")
+  title            String
+  subtitle         String?
+  summary          String?
+  description      String?
+  timestamp        DateTime  @default(now())
+  clinicalDate     DateTime? @map("clinical_date")
+  priority         Int       @default(5)
+  severity         String    @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  tags             String[]
+  status           String    @default("ACTIVE") // ACTIVE, AMENDED, VOIDED
+  metadata         Json?
+  fhirResourceType String?   @map("fhir_resource_type")
+  fhirMapping      Json?     @map("fhir_mapping")
+  correlationId    String?   @unique @map("correlation_id")
+  sourceSystem     String?   @map("source_system")
+  isPinned         Boolean   @default(false) @map("is_pinned")
+  amendedEventId   String?   @map("amended_event_id")
+  integrityHash    String?   @map("integrity_hash")
+  actorType        String?   @map("actor_type")
+  actorId          String?   @map("actor_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  @@index([hospitalId, timestamp(sort: Desc)])
+  amendedFrom TimelineEvent?       @relation("TimelineAmendments", fields: [amendedEventId], references: [id])
+  amendments  TimelineEvent[]      @relation("TimelineAmendments")
+  attachments TimelineAttachment[]
+  tags_       TimelineTag[]
+  bookmarks   TimelineBookmark[]
+  versions    TimelineVersion[]
+  audits      TimelineAudit[]
+
   @@index([patientId, timestamp(sort: Desc)])
+  @@index([hospitalId, patientId])
+  @@index([eventType])
+  @@index([category])
+  @@index([correlationId])
   @@map("timeline_events")
 }
 
@@ -3383,4 +3417,131 @@ model InsuranceClaim {
 
   @@index([hospitalId])
   @@map("insurance_claims")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLINICAL TIMELINE ENGINE — Supporting Models
+// ─────────────────────────────────────────────────────────────────────────────
+
+model TimelineAttachment {
+  id         String   @id @default(uuid())
+  eventId    String   @map("event_id")
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  fileType   String   @map("file_type")
+  fileSizeKb Float    @default(0) @map("file_size_kb")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  event TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("timeline_attachments")
+}
+
+model TimelineTag {
+  id       String @id @default(uuid())
+  eventId  String @map("event_id")
+  tag      String
+  category String @default("GENERAL")
+
+  event TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([tag])
+  @@map("timeline_tags")
+}
+
+model TimelineBookmark {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  eventId   String   @map("event_id")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  event TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@map("timeline_bookmarks")
+}
+
+model TimelineVersion {
+  id              String   @id @default(uuid())
+  eventId         String   @map("event_id")
+  version         Int      @default(1)
+  changeType      String   @map("change_type")
+  changedBy       String   @map("changed_by")
+  changedAt       DateTime @default(now()) @map("changed_at")
+  previousPayload Json?    @map("previous_payload")
+
+  event TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("timeline_versions")
+}
+
+model TimelineAudit {
+  id          String   @id @default(uuid())
+  eventId     String?  @map("event_id")
+  action      String
+  performedBy String?  @map("performed_by")
+  performedAt DateTime @default(now()) @map("performed_at")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  payload     Json?
+
+  event TimelineEvent? @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
+  @@index([action])
+  @@map("timeline_audit")
+}
+
+model TimelineExport {
+  id           String    @id @default(uuid())
+  patientId    String    @map("patient_id")
+  requestedBy  String    @map("requested_by")
+  format       String
+  status       String    @default("QUEUED")
+  filters      Json?
+  fileUrl      String?   @map("file_url")
+  fileSizeKb   Float?    @map("file_size_kb")
+  errorMessage String?   @map("error_message")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  completedAt  DateTime? @map("completed_at")
+  expiresAt    DateTime? @map("expires_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([requestedBy])
+  @@map("timeline_exports")
+}
+
+model TimelineSubscription {
+  id             String   @id @default(uuid())
+  subscriberId   String   @map("subscriber_id")
+  subscriberType String   @map("subscriber_type")
+  patientId      String   @map("patient_id")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([subscriberId])
+  @@map("timeline_subscriptions")
+}
+
+model TimelineSnapshot {
+  id           String   @id @default(uuid())
+  patientId    String   @map("patient_id")
+  snapshotData Json     @map("snapshot_data")
+  generatedAt  DateTime @default(now()) @map("generated_at")
+  expiresAt    DateTime @map("expires_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("timeline_snapshots")
 }

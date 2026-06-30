@@ -21,6 +21,39 @@ export const NursingService = {
       .select()
       .single();
     if (error) throw error;
+
+    // Timeline Engine publish
+    try {
+      const { data: admission } = await supabase
+        .from('admissions')
+        .select('patient_id')
+        .eq('id', admissionId)
+        .single();
+
+      if (admission) {
+        const { getTimelinePublisher } = await import('@haspataal/timeline');
+        await getTimelinePublisher().publish({
+          patientId: admission.patient_id,
+          hospitalId,
+          eventType: 'NursingNoteCreated',
+          title: 'Nursing Note Created',
+          subtitle: `Shift: ${shift || 'MORNING'}`,
+          summary: note.substring(0, 100) + (note.length > 100 ? '...' : ''),
+          timestamp: new Date(),
+          category: 'CLINICAL_NOTE',
+          module: 'nursing',
+          severity: 'LOW',
+          metadata: {
+            nursingNoteId: data.id,
+            admissionId,
+            nurseId,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish NursingNoteCreated event:', e.message);
+    }
+
     return data;
   },
 
@@ -74,6 +107,40 @@ export const NursingService = {
       .select()
       .single();
     if (error) throw error;
+
+    // Timeline Engine publish
+    try {
+      const { data: admission } = await supabase
+        .from('admissions')
+        .select('patient_id')
+        .eq('id', data.admission_id)
+        .single();
+
+      if (admission) {
+        const { getTimelinePublisher } = await import('@haspataal/timeline');
+        await getTimelinePublisher().publish({
+          patientId: admission.patient_id,
+          hospitalId: data.hospital_id,
+          eventType: 'MarAdministered',
+          title: `Medication Administered: ${data.medication_name}`,
+          subtitle: `Dose: ${data.dosage} (${data.route})`,
+          summary: `Medication administration record updated to: ${status}.`,
+          timestamp: new Date(),
+          category: 'PRESCRIPTION',
+          module: 'nursing',
+          severity: 'LOW',
+          metadata: {
+            marId,
+            admissionId: data.admission_id,
+            status,
+            administeredById,
+          },
+        });
+      }
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish MarAdministered event:', e.message);
+    }
+
     return data;
   },
 };

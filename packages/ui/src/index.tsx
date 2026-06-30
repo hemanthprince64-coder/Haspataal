@@ -45,3 +45,4 @@ export { Skeleton } from './skeleton';
 export { Progress } from './progress';
 export { Avatar, AvatarFallback, AvatarImage } from './avatar';
 export { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion';
+export * from './timeline';

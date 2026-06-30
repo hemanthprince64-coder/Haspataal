@@ -142,6 +142,28 @@ export const LabService = {
         .eq('id', sample.lab_order_id);
     }
 
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId: sample.patient_id,
+        hospitalId: sample.hospital_id,
+        eventType: 'SampleCollected',
+        title: `Sample Collected: ${sample.sample_type}`,
+        timestamp: sample.collected_at || new Date(),
+        category: 'INVESTIGATION',
+        module: 'laboratory',
+        severity: 'LOW',
+        metadata: {
+          sampleId: sample.id,
+          orderId: sample.lab_order_id,
+          sampleType: sample.sample_type,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish SampleCollected event:', e.message);
+    }
+
     return sample;
   },
 
@@ -212,6 +234,30 @@ export const LabService = {
         timestamp: new Date(),
         hospitalId: order.hospital_id,
       });
+
+      // Timeline Engine publish
+      try {
+        const { getTimelinePublisher } = await import('@haspataal/timeline');
+        await getTimelinePublisher().publish({
+          patientId: sample.patient_id,
+          hospitalId: order.hospital_id,
+          eventType: 'LabCompleted',
+          title: `Lab Report Ready: ${sample.test_name || 'Investigation'}`,
+          timestamp: new Date(),
+          category: 'INVESTIGATION',
+          module: 'laboratory',
+          severity: sample.result_flag === 'CRITICAL' ? 'CRITICAL' : 'LOW',
+          metadata: {
+            orderId: order.id,
+            resultId: sample.id,
+            testName: sample.test_name,
+            result: sample.result_value,
+            isAbnormal: sample.result_flag === 'CRITICAL' || sample.result_flag === 'HIGH',
+          },
+        });
+      } catch (e: any) {
+        console.error('[Timeline] Failed to publish LabCompleted event:', e.message);
+      }
     }
 
     return sample;

@@ -66,6 +66,31 @@ export const IPDService = {
       hospitalId,
     });
 
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId,
+        hospitalId,
+        doctorId: attendingDoctorId,
+        eventType: 'PatientAdmitted',
+        title: 'Patient Admitted to Ward',
+        subtitle: `Admission Number: ${admission.admission_number}`,
+        summary: reason,
+        timestamp: new Date(),
+        category: 'ADMISSION',
+        module: 'ipd',
+        severity: 'MEDIUM',
+        metadata: {
+          admissionId: admission.id,
+          admissionNumber: admission.admission_number,
+          bedId,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish PatientAdmitted event:', e.message);
+    }
+
     return admission;
   },
 
@@ -124,6 +149,29 @@ export const IPDService = {
       .select()
       .single();
     if (updateError) throw updateError;
+
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId: admission.patient_id,
+        hospitalId: admission.hospital_id,
+        eventType: 'WardTransfer',
+        title: 'Ward Transfer completed',
+        subtitle: `Transferred to Bed: ${newBedId}`,
+        timestamp: new Date(),
+        category: 'ADMISSION',
+        module: 'ipd',
+        severity: 'LOW',
+        metadata: {
+          admissionId,
+          oldBedId,
+          newBedId,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish WardTransfer event:', e.message);
+    }
 
     return updatedAdmission;
   },

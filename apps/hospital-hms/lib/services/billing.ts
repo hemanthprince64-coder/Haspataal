@@ -108,6 +108,33 @@ export const BillingService = {
       .select()
       .single();
     if (error) throw error;
+
+    // Timeline Engine publish
+    try {
+      const { getTimelinePublisher } = await import('@haspataal/timeline');
+      await getTimelinePublisher().publish({
+        patientId,
+        hospitalId,
+        eventType: 'BillingCompleted',
+        title: `Bill Generated: ${invoiceNumber}`,
+        subtitle: `Amount: ₹${totalAmount.toFixed(2)}`,
+        summary: `Bill generated for ${admissionId ? 'IPD Stay' : 'Outpatient diagnostics'}. GST included: ₹${gstTotal.toFixed(2)}.`,
+        timestamp: new Date(),
+        category: 'BILLING',
+        module: 'billing',
+        severity: 'LOW',
+        metadata: {
+          invoiceId: data.id,
+          invoiceNumber,
+          totalAmount,
+          admissionId,
+          diagnosticOrderId,
+        },
+      });
+    } catch (e: any) {
+      console.error('[Timeline] Failed to publish BillingCompleted event:', e.message);
+    }
+
     return data;
   },
 
