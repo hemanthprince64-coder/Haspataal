@@ -515,12 +515,304 @@ Complete API inventory for Haspataal platform with request/response schemas, aut
 3. Migration guide provided
 4. Gradual removal
 
-## Future API Endpoints
+## Implemented Phase 3 Operations APIs
 
-### Planned
-- GET /api/doctors/search - Search with filters
-- GET /api/doctors/{id}/availability - Real-time availability
-- POST /api/appointments - Appointment booking
-- GET /api/patients/{id}/timeline - Clinical timeline
-- POST /api/notifications - Send notifications
-- GET /api/analytics/dashboard - Analytics data
+### Ward Management
+
+#### GET /api/ward
+Purpose: Get bed dashboard with occupancy metrics for hospital staff.
+
+Authorization: ADMIN, DOCTOR, RECEPTIONIST, NURSE roles
+
+Response:
+```json
+{
+  "beds": [
+    { "id": "uuid", "bed_number": "101", "status": "OCCUPIED", "type": "GENERAL" }
+  ],
+  "metrics": {
+    "totalBeds": 50,
+    "occupiedBeds": 35,
+    "availableBeds": 10,
+    "cleaningBeds": 3,
+    "maintenanceBeds": 2,
+    "occupancyRate": 70
+  }
+}
+```
+
+#### PATCH /api/ward/{bedId}
+Purpose: Update bed status (cleaning, maintenance, etc.)
+
+Authorization: ADMIN, RECEPTIONIST, NURSE roles
+
+Request:
+```json
+{
+  "status": "Available|Occupied|Cleaning|Under_Maintenance|Reserved"
+}
+```
+
+### Nursing
+
+#### GET /api/nursing
+Purpose: Fetch nursing notes for an admission
+
+Authorization: ADMIN, DOCTOR, NURSE roles
+
+Query Parameters:
+- admissionId (required): Filter by admission
+
+Response:
+```json
+{
+  "data": [
+    { "id": "uuid", "nurse_id": "staff_uuid", "note": "Stabilized", "shift": "MORNING", "created_at": "ISO" }
+  ]
+}
+```
+
+#### POST /api/nursing
+Purpose: Add clinical nursing note
+
+Authorization: NURSE role
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "admissionId": "admission_uuid",
+  "nurseId": "staff_uuid",
+  "note": "Patient stable, BP 120/80"
+}
+```
+
+#### POST /api/nursing/mar
+Purpose: Schedule medication administration record
+
+Authorization: NURSE role
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "admissionId": "admission_uuid",
+  "medicationName": "Paracetamol",
+  "dosage": "500mg",
+  "route": "ORAL",
+  "scheduledTime": "2026-06-30T08:00:00"
+}
+```
+
+### Operation Theatre
+
+#### GET /api/ot
+Purpose: List OT schedules
+
+Authorization: ADMIN, DOCTOR, SURGEON roles
+
+Query Parameters:
+- date (optional): Filter by date
+- status (optional): Filter by status
+
+Response:
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "procedure_name": "Appendectomy",
+      "patient_id": "patient_uuid",
+      "surgeon_id": "doctor_uuid",
+      "theatre_name": "OT-1",
+      "scheduled_at": "ISO",
+      "status": "SCHEDULED",
+      "who_checklist": {}
+    }
+  ]
+}
+```
+
+#### POST /api/ot
+Purpose: Schedule surgery with WHO safety checklist
+
+Authorization: ADMIN, DOCTOR, SURGEON roles
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "patientId": "patient_uuid",
+  "procedureName": "Appendectomy",
+  "surgeonId": "doctor_uuid",
+  "theatreName": "OT-1",
+  "scheduledAt": "2026-06-30T09:00:00",
+  "whoChecklist": { "anesthesia": true, "sterility": true }
+}
+```
+
+### ICU Management
+
+#### POST /api/icu
+Purpose: Admit patient to ICU
+
+Authorization: ADMIN, DOCTOR, NURSE roles
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "admissionId": "admission_uuid",
+  "bedId": "bed_uuid",
+  "scores": { "apache": 15, "prism": 5 },
+  "ventilatorMode": "CMV"
+}
+```
+
+#### PATCH /api/icu/{id}
+Purpose: Update ICU vitals and infusion data
+
+Authorization: ADMIN, DOCTOR, NURSE roles
+
+Request:
+```json
+{
+  "peep": 5,
+  "fio2": 0.4,
+  "infusions": [
+    { "medication": "Dopamine", "rate": "5ml/hr" }
+  ]
+}
+```
+
+### Billing
+
+#### POST /api/billing
+Purpose: Create dynamic invoice with line items
+
+Authorization: ADMIN, BILLING roles
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "patientId": "patient_uuid",
+  "items": [
+    { "serviceName": "Consultation", "quantity": 1, "unitPrice": 500 }
+  ],
+  "discountPercent": 10
+}
+```
+
+Response:
+```json
+{
+  "id": "uuid",
+  "invoice_number": "INV-123",
+  "subtotal": 500,
+  "gst_total": 50,
+  "total_amount": 550,
+  "status": "DRAFT"
+}
+```
+
+#### POST /api/billing/refund
+Purpose: Process refund for invoice
+
+Authorization: ADMIN, BILLING roles
+
+Request:
+```json
+{
+  "invoiceId": "uuid",
+  "amount": 100,
+  "reason": "Overcharged"
+}
+```
+
+### Insurance
+
+#### POST /api/insurance
+Purpose: Verify insurance eligibility and pre-auth
+
+Authorization: ADMIN, RECEPTIONIST, BILLING roles
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "patientId": "patient_uuid",
+  "policyNumber": "POL-123",
+  "insurerName": "Star Health"
+}
+```
+
+Response:
+```json
+{
+  "id": "uuid",
+  "status": "APPROVED",
+  "pre_auth_amount": 50000
+}
+```
+
+#### POST /api/insurance/claim
+Purpose: Submit claim for invoice
+
+Authorization: ADMIN, BILLING roles
+
+Request:
+```json
+{
+  "hospitalId": "hospital_uuid",
+  "patientId": "patient_uuid",
+  "invoiceId": "uuid",
+  "claimAmount": 15000
+}
+```
+
+### Patient Records (EMR)
+
+#### GET /api/records/{patientId}
+Purpose: Get longitudinal EMR timeline
+
+Authorization: ADMIN, DOCTOR, PATIENT (own records)
+
+Response:
+```json
+[
+  {
+    "type": "ADMISSION",
+    "timestamp": "2026-06-01",
+    "title": "Admitted for fever",
+    "details": { "admission_number": "ADM-123" }
+  }
+]
+```
+
+### Discharge
+
+#### POST /api/discharge/{admissionId}/summary
+Purpose: Generate discharge summary
+
+Authorization: ADMIN, DOCTOR, NURSE roles
+
+Request:
+```json
+{
+  "admissionId": "admission_uuid",
+  "dischargeSummary": "Patient recovered and discharged",
+  "followUpDays": 7
+}
+```
+
+Response:
+```json
+{
+  "admissionNumber": "ADM-123",
+  "patientDetails": { "name": "John Doe" },
+  "nursingNotes": [],
+  "mars": [],
+  "followUpDate": "2026-07-07"
+}
+```
