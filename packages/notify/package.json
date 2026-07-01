@@ -1,21 +1,23 @@
 {
   "name": "@haspataal/notify",
   "version": "0.1.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
-    "@haspataal/db": "workspace:*",
-    "bullmq": "^4.11.0",
-    "ioredis": "^5.4.0"
+    "@haspataal/db": "*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "ts-node": "^10.9.0",
-    "tsx": "^4.19.0",
     "typescript": "^5.5.0"
   }
 }

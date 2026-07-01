@@ -1,7 +1,7 @@
 import { prisma } from '@haspataal/db';
 import { TwilioSMSAdapter, MetaWhatsAppAdapter, ResendEmailAdapter } from '@haspataal/notify';
 import { ProviderFailover } from '@haspataal/notify';
-import { Worker } from 'bullmq';
+import { Worker, Queue } from 'bullmq';
 
 const connection = {
   host: process.env.REDIS_HOST || 'localhost',
@@ -19,13 +19,17 @@ const whatsappAdapter = new MetaWhatsAppAdapter({
   phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
 });
 
-const emailAdapter = new ResendEmailAdapter(process.env.RESEND_API_KEY || '');
+const emailAdapter = new ResendEmailAdapter();
 
 const smsFailover = new ProviderFailover(twilioAdapter);
 const whatsappFailover = new ProviderFailover(whatsappAdapter);
 const emailFailover = new ProviderFailover(emailAdapter);
 
 void [smsFailover, whatsappFailover, emailFailover];
+
+const smsQueue = new Queue('sms-notifications', { connection });
+const whatsappQueue = new Queue('whatsapp-notifications', { connection });
+const emailQueue = new Queue('email-notifications', { connection });
 
 function createWorker(queueName: string, adapter: any) {
   return new Worker(
@@ -92,9 +96,9 @@ const retryWorker = new Worker(
     const { notificationId } = job.data;
     const n = await prisma.notification.findUnique({ where: { id: notificationId } });
     if (!n) return;
-    if (n.channel === 'SMS') await workers[0].add('retry', n);
-    if (n.channel === 'WHATSAPP') await workers[1].add('retry', n);
-    if (n.channel === 'EMAIL') await workers[2].add('retry', n);
+    if (n.channel === 'SMS') await smsQueue.add('retry', n);
+    if (n.channel === 'WHATSAPP') await whatsappQueue.add('retry', n);
+    if (n.channel === 'EMAIL') await emailQueue.add('retry', n);
   },
   { connection },
 );
