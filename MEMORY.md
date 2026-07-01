@@ -371,6 +371,16 @@ The following documents provide detailed specifications for the Haspataal platfo
 
 - **Rules Engine — `update_record` Safety Risk:** The `update_record` action resolves the Prisma model via `this.prisma[payload.table]` — a dynamic accessor from JSON. Before enabling in production, validate `table` against a strict allowlist (e.g. `['patient', 'appointment', 'followUp']`) to prevent unauthorized record mutation via a crafted rule payload. _(Risk identified 2026-07-01)_
 
+- **Unified Notification Engine (`@haspataal/notify`):** Multi-channel notification package at `packages/notify/src/`. Channels: `SMS`, `WHATSAPP`, `EMAIL`, `PUSH`, `IN_APP`. Priority tiers: `EMERGENCY` → `CRITICAL` → `HIGH` → `NORMAL` → `LOW` → `BACKGROUND`. `NotificationEngine.enqueue()` routes to a priority-keyed BullMQ queue via `NotificationRouter`. Retry attempts by priority: EMERGENCY=10, CRITICAL=5, HIGH/NORMAL=3, LOW/BACKGROUND=1. Backoff is exponential (1s for EMERGENCY, 5s otherwise). `workers/notification-worker.ts` runs per-channel workers (concurrency 10 each) with `ProviderFailover` wrapping each adapter. _(Implemented 2026-07-01)_
+
+- **Notify — Adapters:** `TwilioSMSAdapter` (env: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`), `MetaWhatsAppAdapter` (env: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`), `ResendEmailAdapter` (env: `RESEND_API_KEY`), `PushNotificationAdapter`, `InAppNotificationAdapter`. All implement the `ChannelAdapter` interface (`deliver(notification): Promise<ProviderResponse>`). Wrap every adapter in `ProviderFailover` in the worker for automatic retry on provider failure. _(Implemented 2026-07-01)_
+
+- **Notify — Curfew (10 PM–8 AM IST):** Non-critical notifications (NORMAL, LOW, BACKGROUND) MUST NOT be dispatched between 22:00 and 08:00 IST. Apply IST half-hour offset (+30 min) when computing boundaries from UTC — see existing MEMORY.md lesson on `IST Half-Hour Offset`. EMERGENCY and CRITICAL bypass the curfew entirely. _(Reminder 2026-07-01)_
+
+- **Notify — RLS Migration:** Apply `db/migrations/004_notification_rls.sql` manually via Supabase SQL Editor after schema deploy. The notification tables (`notifications`, `notification_deliveries`, `notification_templates`) require explicit RLS scoped by `hospital_id`. _(Implemented 2026-07-01)_
+
+- **Notify — notification-worker.ts Syntax Bug:** Line 8 of `workers/notification-worker.ts` has a syntax error: `parseInt(process.env.REDIS_PORT || 6379,` — missing closing parenthesis `)`. Fix to `parseInt(process.env.REDIS_PORT || '6379')` before running. Also pass `6379` as a string, not number, to avoid TypeScript `strictNullChecks` errors. _(Bug identified 2026-07-01)_
+
 ---
 
 ## 🤖 Agent Personality

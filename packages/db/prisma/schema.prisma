@@ -1655,23 +1655,31 @@ model Notification {
   id            String          @id @default(uuid())
   hospitalId    String          @map("hospital_id")
   patientId     String?         @map("patient_id")
+  doctorId      String?         @map("doctor_id")
+  templateId    String?         @map("template_id")
   channel       String
-  templateKey   String?         @map("template_key")
+  priority      String            @default("NORMAL")
+  status        String            @default("QUEUED")
   recipient     String
   subject       String?
   body          String
-  status        String          @default("PENDING")
+  variables     Json?           @default("{}")
+  metadata      Json?           @default("{}")
   scheduledAt   DateTime?       @map("scheduled_at")
   sentAt        DateTime?       @map("sent_at")
+  deliveredAt   DateTime?       @map("delivered_at")
+  readAt        DateTime?       @map("read_at")
+  failedAt      DateTime?       @map("failed_at")
   failureReason String?         @map("failure_reason")
-  payload       Json?           @default("{}")
+  createdBy     String?         @map("created_by")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
   hospital      HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient       Patient?        @relation(fields: [patientId], references: [id])
 
-  @@index([hospitalId, status])
+  @@index([hospitalId, status, priority])
   @@index([patientId])
+  @@index([doctorId])
   @@map("notifications")
 }
 
@@ -3606,4 +3614,131 @@ model RuleSchedule {
   @@index([ruleId])
   @@index([nextRunAt])
   @@map("rule_schedules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UNIFIED NOTIFICATION ENGINE - Extended Models
+// ─────────────────────────────────────────────────────────────────────────────
+
+model NotificationProvider {
+  id           String   @id @default(uuid())
+  hospitalId   String?  @map("hospital_id")
+  name         String
+  channel      String
+  type         String
+  config       Json
+  isActive     Boolean  @default(true)
+  priority     Int      @default(100)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId])
+  @@index([channel])
+  @@map("notification_providers")
+}
+
+model NotificationCampaign {
+  id          String   @id @default(uuid())
+  hospitalId  String?  @map("hospital_id")
+  name        String
+  description String?
+  category    String
+  channel     String
+  template    String
+  audience    Json
+  scheduledAt DateTime? @map("scheduled_at")
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId])
+  @@map("notification_campaigns")
+}
+
+model NotificationDelivery {
+  id            String   @id @default(uuid())
+  notificationId String  @map("notification_id")
+  channel       String
+  provider      String
+  status        String   @default("QUEUED")
+  attempt       Int      @default(1)
+  providerRef   String?  @map("provider_ref")
+  error         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([notificationId])
+  @@map("notification_deliveries")
+}
+
+model NotificationPreference {
+  id             String   @id @default(uuid())
+  hospitalId     String?  @map("hospital_id")
+  userId         String   @unique @map("user_id")
+  sms            Boolean  @default(true)
+  whatsapp       Boolean  @default(true)
+  email          Boolean  @default(true)
+  push           Boolean  @default(true)
+  inApp          Boolean  @default(true)
+  quietHoursFrom String?  @map("quiet_hours_from")
+  quietHoursTo   String?  @map("quiet_hours_to")
+  locale         String   @default("en")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId])
+  @@map("notification_preferences")
+}
+
+model NotificationEvent {
+  id          String   @id @default(uuid())
+  hospitalId  String?  @map("hospital_id")
+  event       String   // e.g., APPOINTMENT_BOOKED
+  payload     Json?
+  processed   Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([hospitalId])
+  @@index([event])
+  @@map("notification_events")
+}
+
+model NotificationAudit {
+  id            String   @id @default(uuid())
+  hospitalId    String?  @map("hospital_id")
+  notificationId String  @map("notification_id")
+  action        String   // SENT, DELIVERED, READ, FAILED
+  actorType     String?  @map("actor_type") // USER, SYSTEM, PROVIDER
+  actorId       String?  @map("actor_id")
+  details       Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([hospitalId])
+  @@index([notificationId])
+  @@map("notification_audits")
+}
+
+model NotificationProviderHealth {
+  id           String   @id @default(uuid())
+  providerId   String   @unique @map("provider_id")
+  latency      Int      @default(0)
+  errorCount   Int      @default(0) @map("error_count")
+  successCount Int      @default(0) @map("success_count")
+  lastCheck    DateTime @default(now()) @map("last_check")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_provider_health")
+}
+
+model NotificationTemplateVersion {
+  id          String   @id @default(uuid())
+  templateId  String   @map("template_id")
+  body        String
+  variables   Json?
+  version     Int      @default(1)
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([templateId])
+  @@map("notification_template_versions")
 }
