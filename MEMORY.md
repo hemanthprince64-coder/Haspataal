@@ -359,6 +359,18 @@ The following documents provide detailed specifications for the Haspataal platfo
 
 - **tsvector / GIN Indexes in Prisma Monorepos:** Prisma cannot emit `GENERATED ALWAYS AS STORED` columns or `CREATE INDEX CONCURRENTLY` in its migration DSL. Map the column as `String? @map("search_vector")` in `schema.prisma` so the ORM can read it, then apply the actual `ALTER TABLE` and GIN index via a standalone SQL file in `packages/db/prisma/migrations/` executed manually through the Supabase SQL Editor. `CREATE INDEX CONCURRENTLY` cannot run inside a transaction block — split `ALTER TABLE` and each `CREATE INDEX` into separate SQL Editor runs if needed. Always document the manual step in `DEPLOYMENT.md`. _(Added 2026-07-01)_
 
+- **Clinical Rules Engine (`@haspataal/rules`):** A configurable workflow automation package that acts as the "Clinical Brain" — eliminating hardcoded business logic. Located at `packages/rules/src/`. Exports: `RuleRegistry` (Prisma-backed CRUD + event lookup), `RuleCompiler` (stateless condition evaluator), `ExecutionEngine` (action dispatcher + `RuleExecution` logger). Workers in `workers/rules-worker.ts` run two BullMQ queues: `rules-execution` (concurrency 5, event-triggered) and `rules-scheduler` (concurrency 3, cron-triggered). API at `apps/hospital-hms/app/api/rules/route.ts` — admin-only (`POST /api/rules`, `GET /api/rules`). _(Implemented 2026-07-01)_
+
+- **Rules Engine — Condition Operators:** `RuleCompiler.evaluateCondition()` supports: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `contains`, `between`. Fields are resolved from `RuleContext` via dot-notation (e.g. `age.months` → `context.event.age.months`). All conditions in `conditionJson` must pass (`AND` logic — `Array.every`). _(Implemented 2026-07-01)_
+
+- **Rules Engine — Action Types:** `ExecutionEngine.executeAction()` dispatches to 6 handlers: `create_timeline` (writes `TimelineEvent`), `send_notification` (queues to `notificationQueue`), `update_record` (dynamic Prisma model update — **see safety risk below**), `call_api` (external HTTP fetch), `assign_task` (creates `Task` record), `escalate` (creates `Escalation` + a HIGH `TimelineEvent`). All results logged to `RuleExecution` with `executionTimeMs`. _(Implemented 2026-07-01)_
+
+- **Rules Engine — Task Status (2026-07-01):** Schema models (`Rule`, `RuleExecution`, `RuleSchedule`) ✅. `RuleRegistry` ✅. `RuleCompiler` ✅. `ExecutionEngine` ✅. BullMQ workers ✅. **Pending (❌):** `RuleValidator` (task 2.3), notification/follow-up/booking action handlers (tasks 3.1–3.4), execute/simulate API routes (task 5.3), Admin UI rule builder (tasks 6.1–6.3). Do not assume the engine is production-complete.
+
+- **Rules Engine — RLS:** Apply `003_rules_rls.sql` manually in Supabase SQL Editor. Policy: `hospital_id IS NULL OR hospital_id = current_setting('request.hospital_id')::uuid`. Global rules have `hospitalId = null` and are visible to all tenants. Hospital-scoped rules are strictly tenant-isolated. Never bypass via raw SQL without setting the RLS context variable first. _(Implemented 2026-07-01)_
+
+- **Rules Engine — `update_record` Safety Risk:** The `update_record` action resolves the Prisma model via `this.prisma[payload.table]` — a dynamic accessor from JSON. Before enabling in production, validate `table` against a strict allowlist (e.g. `['patient', 'appointment', 'followUp']`) to prevent unauthorized record mutation via a crafted rule payload. _(Risk identified 2026-07-01)_
+
 ---
 
 ## 🤖 Agent Personality
