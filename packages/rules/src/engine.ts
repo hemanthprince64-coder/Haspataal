@@ -67,27 +67,104 @@ export class ExecutionEngine {
   }
 
   private async createTimelineEvent(payload: any, context: RuleContext): Promise<void> {
-    // Implementation delegates to TimelineEvent model
+    if (!context.patientId) {
+      throw new Error('patientId required for timeline event creation');
+    }
+
+    await this.prisma.timelineEvent.create({
+      data: {
+        patientId: context.patientId,
+        hospitalId: context.hospitalId,
+        eventType: payload.eventType || 'RULE_TRIGGERED',
+        category: payload.category || 'RULE',
+        title: payload.title || 'Rule Action Executed',
+        subtitle: payload.subtitle,
+        summary: payload.summary,
+        description: payload.description,
+        severity: payload.severity || 'MEDIUM',
+        priority: payload.priority || 5,
+        tags: payload.tags || ['rule', context.patientId],
+        metadata: {
+          ...payload.metadata,
+          triggeredByRule: true,
+        },
+      },
+    });
   }
 
   private async sendNotification(payload: any, context: RuleContext): Promise<void> {
     // Implementation delegates to Notification engine
+    await this.prisma.notificationQueue.create({
+      data: {
+        patientId: context.patientId,
+        hospitalId: context.hospitalId,
+        channel: payload.channel || 'SMS',
+        template: payload.template,
+        payload: payload as any,
+        status: 'QUEUED',
+      },
+    });
   }
 
   private async updateRecord(payload: any, context: RuleContext): Promise<void> {
     // Implementation delegates to record update
+    const { table, id, data } = payload;
+    await this.prisma[table].update({
+      where: { id },
+      data,
+    });
   }
 
   private async callApi(payload: any, context: RuleContext): Promise<void> {
     // Implementation for external API calls
+    const response = await fetch(payload.url, {
+      method: payload.method || 'POST',
+      headers: payload.headers || {},
+      body: payload.body ? JSON.stringify(payload.body) : undefined,
+    });
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.statusText}`);
+    }
   }
 
   private async assignTask(payload: any, context: RuleContext): Promise<void> {
     // Implementation for task assignment
+    await this.prisma.task.create({
+      data: {
+        title: payload.title,
+        description: payload.description,
+        assignedTo: payload.assignedTo,
+        patientId: context.patientId,
+        hospitalId: context.hospitalId,
+        dueAt: payload.dueAt ? new Date(payload.dueAt) : undefined,
+        status: 'PENDING',
+      },
+    });
   }
 
   private async escalate(payload: any, context: RuleContext): Promise<void> {
     // Implementation for escalation logic
+    await this.prisma.escalation.create({
+      data: {
+        level: payload.level || 'DOCTOR',
+        reason: payload.reason,
+        patientId: context.patientId,
+        hospitalId: context.hospitalId,
+        status: 'PENDING',
+        metadata: payload.metadata,
+      },
+    });
+
+    // Also create timeline event for audit trail
+    await this.createTimelineEvent(
+      {
+        eventType: 'ESCALATION_TRIGGERED',
+        title: `Escalation: ${payload.reason}`,
+        severity: 'HIGH',
+        metadata: { level: payload.level },
+      },
+      context,
+    );
   }
 
   private async logExecution(
