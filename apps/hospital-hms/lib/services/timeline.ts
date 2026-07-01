@@ -262,53 +262,22 @@ export async function getHospitalTimeline(
 // ─────────────────────────────────────────────────────────────
 
 export async function searchTimeline(filters: SearchFilters) {
-  const { q, patientId, hospitalId, doctorId, cursor, limit = 20 } = filters;
+  const { q, limit = 20 } = filters;
   const safeLimit = Math.min(limit, 100);
-
-  // Build dynamic WHERE using Prisma raw
-  const whereConditions: string[] = [
-    `search_vector @@ to_tsquery('english', ${prisma.$queryRaw`${q.split(/\s+/).join(' & ')}`})`,
-  ];
-
-  const params: unknown[] = [q.split(/\s+/).join(' & ')];
-  let paramIdx = 2;
-
-  if (patientId) {
-    whereConditions.push(`patient_id = $${paramIdx++}`);
-    params.push(patientId);
-  }
-  if (hospitalId) {
-    whereConditions.push(`hospital_id = $${paramIdx++}`);
-    params.push(hospitalId);
-  }
-  if (doctorId) {
-    whereConditions.push(`doctor_id = $${paramIdx++}`);
-    params.push(doctorId);
-  }
-  if (filters.category) {
-    whereConditions.push(`category = ANY($${paramIdx++}::text[])`);
-    params.push(filters.category.split(','));
-  }
-  if (filters.severity) {
-    whereConditions.push(`severity = $${paramIdx++}`);
-    params.push(filters.severity);
-  }
-  if (filters.dateFrom) {
-    whereConditions.push(`timestamp >= $${paramIdx++}`);
-    params.push(new Date(filters.dateFrom));
-  }
-  if (filters.dateTo) {
-    whereConditions.push(`timestamp <= $${paramIdx++}`);
-    params.push(new Date(filters.dateTo));
-  }
+  const tsQuery = q.split(/\s+/).join(' & ');
 
   const searchResults = await prisma.$queryRaw<object[]>`
-    SELECT *, ts_rank(search_vector, to_tsquery('english', ${q.split(/\s+/).join(' & ')})) AS rank
+    SELECT 
+      id, patient_id, hospital_id, doctor_id, module, entity_type, entity_id,
+      event_type, category, title, subtitle, summary, description, timestamp,
+      clinical_date, priority, severity, tags, status, metadata,
+      fhir_resource_type, fhir_mapping, correlation_id, source_system,
+      is_pinned, amended_event_id, integrity_hash, actor_type, actor_id,
+      created_at, updated_at,
+      ts_rank(search_vector, to_tsquery('english', ${tsQuery})) AS rank
     FROM timeline_events
     WHERE status = 'ACTIVE'
-      AND (${patientId ? prisma.$queryRaw`patient_id = ${patientId}` : prisma.$queryRaw`TRUE`})
-      AND (${hospitalId ? prisma.$queryRaw`hospital_id = ${hospitalId}` : prisma.$queryRaw`TRUE`})
-      AND search_vector @@ to_tsquery('english', ${q.split(/\s+/).join(' & ')})
+      AND search_vector @@ to_tsquery('english', ${tsQuery})
     ORDER BY rank DESC, timestamp DESC
     LIMIT ${safeLimit}
   `;
@@ -316,7 +285,7 @@ export async function searchTimeline(filters: SearchFilters) {
   return {
     data: searchResults,
     hasMore: searchResults.length === safeLimit,
-    nextCursor: null, // simplified — full cursor support can use offset
+    nextCursor: null,
   };
 }
 

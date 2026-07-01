@@ -2971,6 +2971,7 @@ model TimelineEvent {
   actorId          String?   @map("actor_id")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
+  searchVector     String?   @map("search_vector") // tsvector for full-text search
 
   amendedFrom TimelineEvent?       @relation("TimelineAmendments", fields: [amendedEventId], references: [id])
   amendments  TimelineEvent[]      @relation("TimelineAmendments")
@@ -3534,7 +3535,7 @@ model TimelineSubscription {
 }
 
 model TimelineSnapshot {
-  id           String   @id @default(uuid())
+  id         String   @id @default(uuid())
   patientId    String   @map("patient_id")
   snapshotData Json     @map("snapshot_data")
   generatedAt  DateTime @default(now()) @map("generated_at")
@@ -3544,4 +3545,65 @@ model TimelineSnapshot {
 
   @@index([patientId])
   @@map("timeline_snapshots")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLINICAL RULES ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Rule {
+  id            String   @id @default(uuid())
+  hospitalId    String?  @map("hospital_id")
+  name          String
+  description   String?
+  category      String   @default("CLINICAL")
+  triggerType   String   @map("trigger_type")
+  triggerEvent  String?  @map("trigger_event")
+  conditionJson Json     @map("condition_json")
+  actionJson    Json     @map("action_json")
+  isActive      Boolean  @default(true) @map("is_active")
+  priority      Int      @default(100)
+  version       Int      @default(1)
+  createdBy     String?  @map("created_by")
+  approvedBy    String?  @map("approved_by")
+  approvedAt    DateTime? @map("approved_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId])
+  @@index([category])
+  @@index([triggerEvent])
+  @@map("rules")
+}
+
+model RuleExecution {
+  id            String   @id @default(uuid())
+  ruleId        String   @map("rule_id")
+  patientId     String?  @map("patient_id")
+  hospitalId    String?  @map("hospital_id")
+  triggeredBy   String   @map("triggered_by")
+  triggeredAt   DateTime @default(now()) @map("triggered_at")
+  status        String   @default("PENDING")
+  resultJson    Json?    @map("result_json")
+  errorJson     Json?    @map("error_json")
+  executionTimeMs Int?    @map("execution_time_ms")
+
+  @@index([ruleId])
+  @@index([patientId])
+  @@index([status])
+  @@map("rule_executions")
+}
+
+model RuleSchedule {
+  id            String   @id @default(uuid())
+  ruleId        String   @map("rule_id")
+  cronExpression String  @map("cron_expression")
+  timezone      String   @default("Asia/Kolkata")
+  nextRunAt     DateTime? @map("next_run_at")
+  lastRunAt     DateTime? @map("last_run_at")
+  isActive      Boolean  @default(true) @map("is_active")
+
+  @@index([ruleId])
+  @@index([nextRunAt])
+  @@map("rule_schedules")
 }

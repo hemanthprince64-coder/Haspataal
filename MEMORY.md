@@ -357,6 +357,10 @@ The following documents provide detailed specifications for the Haspataal platfo
 - **Zod v4 Union JIT Compilation Bug in Vitest:** Zod v4 (pre-release) compiles schema validators dynamically at runtime using `eval` or `new Function` inside `zod/v4/core/doc.js`. When parsing union types like `z.string().datetime().or(z.date())` or `z.record(z.unknown())` under Vitest, this JIT compilation fails with `Cannot read properties of undefined (reading '_zod')` due to context/scope binding issues. Fix: avoid complex unions/records by using `z.custom` or `z.any` for dynamic fields, ensuring stable cross-version parsing in test runners. _(Fixed 2026-06-30)_
 - **Hospital Operations Pharmacy return wrapper contract**: Preserving return types like `{ dispensedItems, totalAmount }` instead of only returning array values prevents breaking consumer layers (e.g. actions/billing integration layers) and test suite failures. _(Fixed 2026-06-30)_
 
+- **tsvector / GIN Indexes in Prisma Monorepos:** Prisma cannot emit `GENERATED ALWAYS AS STORED` columns or `CREATE INDEX CONCURRENTLY` in its migration DSL. Map the column as `String? @map("search_vector")` in `schema.prisma` so the ORM can read it, then apply the actual `ALTER TABLE` and GIN index via a standalone SQL file in `packages/db/prisma/migrations/` executed manually through the Supabase SQL Editor. `CREATE INDEX CONCURRENTLY` cannot run inside a transaction block — split `ALTER TABLE` and each `CREATE INDEX` into separate SQL Editor runs if needed. Always document the manual step in `DEPLOYMENT.md`. _(Added 2026-07-01)_
+
+---
+
 ## 🤖 Agent Personality
 
 - Be concise.
