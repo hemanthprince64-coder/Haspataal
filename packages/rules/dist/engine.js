@@ -1,49 +1,39 @@
 import { RuleCompiler } from './compiler';
-import { Rule, Action, RuleContext, RuleResult } from './types';
 
 export class ExecutionEngine {
-  private prisma: any;
-
-  constructor(prismaClient: any) {
+  constructor(prismaClient) {
     this.prisma = prismaClient;
   }
-
-  async execute(rule: Rule, context: RuleContext): Promise<RuleResult> {
+  async execute(rule, context) {
     const startTime = Date.now();
-    const executedActions: Action[] = [];
-    const errors: string[] = [];
-
+    const executedActions = [];
+    const errors = [];
     try {
-      const conditionsMet = RuleCompiler.evaluateAllConditions(rule.conditionJson as any, context);
-
+      const conditionsMet = RuleCompiler.evaluateAllConditions(rule.conditionJson, context);
       if (!conditionsMet) {
         return { success: true, executedActions, skipped: true };
       }
-
-      for (const action of rule.actionJson as Action[]) {
+      for (const action of rule.actionJson) {
         try {
           await this.executeAction(action, context);
           executedActions.push(action);
-        } catch (error: any) {
+        } catch (error) {
           errors.push(`Action ${action.type} failed: ${error.message}`);
         }
       }
-
       const executionTimeMs = Date.now() - startTime;
       await this.logExecution(rule.id, context, 'SUCCESS', executedActions, executionTimeMs);
-
       return {
         success: errors.length === 0,
         executedActions,
         errors: errors.length ? errors : undefined,
       };
-    } catch (error: any) {
+    } catch (error) {
       await this.logExecution(rule.id, context, 'FAILED', [], 0, { message: error.message });
       return { success: false, executedActions, errors: [error.message] };
     }
   }
-
-  private async executeAction(action: Action, context: RuleContext): Promise<void> {
+  async executeAction(action, context) {
     switch (action.type) {
       case 'create_timeline':
         await this.createTimelineEvent(action.payload, context);
@@ -65,39 +55,25 @@ export class ExecutionEngine {
         break;
     }
   }
-
-  private async createTimelineEvent(payload: any, context: RuleContext): Promise<void> {
+  async createTimelineEvent(payload, context) {
     // Implementation delegates to TimelineEvent model
   }
-
-  private async sendNotification(payload: any, context: RuleContext): Promise<void> {
+  async sendNotification(payload, context) {
     // Implementation delegates to Notification engine
   }
-
-  private async updateRecord(payload: any, context: RuleContext): Promise<void> {
+  async updateRecord(payload, context) {
     // Implementation delegates to record update
   }
-
-  private async callApi(payload: any, context: RuleContext): Promise<void> {
+  async callApi(payload, context) {
     // Implementation for external API calls
   }
-
-  private async assignTask(payload: any, context: RuleContext): Promise<void> {
+  async assignTask(payload, context) {
     // Implementation for task assignment
   }
-
-  private async escalate(payload: any, context: RuleContext): Promise<void> {
+  async escalate(payload, context) {
     // Implementation for escalation logic
   }
-
-  private async logExecution(
-    ruleId: string,
-    context: RuleContext,
-    status: string,
-    actions: Action[],
-    executionTimeMs: number,
-    error?: any,
-  ): Promise<void> {
+  async logExecution(ruleId, context, status, actions, executionTimeMs, error) {
     await this.prisma.ruleExecution.create({
       data: {
         ruleId,

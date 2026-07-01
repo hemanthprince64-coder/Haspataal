@@ -5,7 +5,6 @@ export const ConditionSchema = z.object({
   operator: z.enum(['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in', 'contains', 'between']),
   value: z.any(),
 });
-
 export const ActionSchema = z.object({
   type: z.enum([
     'create_timeline',
@@ -17,7 +16,6 @@ export const ActionSchema = z.object({
   ]),
   payload: z.record(z.string(), z.unknown()),
 });
-
 export const RuleSchema = z.object({
   id: z.string().uuid(),
   hospitalId: z.string().uuid().optional(),
@@ -39,21 +37,3 @@ export const RuleSchema = z.object({
   isActive: z.boolean().default(true),
   priority: z.number().int().min(1).max(1000).default(100),
 });
-
-export type Condition = z.infer<typeof ConditionSchema>;
-export type Action = z.infer<typeof ActionSchema>;
-export type Rule = z.infer<typeof RuleSchema>;
-
-export interface RuleContext {
-  event?: any;
-  patientId?: string;
-  hospitalId?: string;
-  timestamp: Date;
-}
-
-export interface RuleResult {
-  success: boolean;
-  executedActions: Action[];
-  skipped?: boolean;
-  errors?: string[];
-}
