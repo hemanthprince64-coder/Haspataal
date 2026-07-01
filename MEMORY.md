@@ -379,9 +379,14 @@ The following documents provide detailed specifications for the Haspataal platfo
 
 - **Notify — RLS Migration:** Apply `db/migrations/004_notification_rls.sql` manually via Supabase SQL Editor after schema deploy. The notification tables (`notifications`, `notification_deliveries`, `notification_templates`) require explicit RLS scoped by `hospital_id`. _(Implemented 2026-07-01)_
 
-- **Notify — notification-worker.ts Syntax Bug:** Line 8 of `workers/notification-worker.ts` has a syntax error: `parseInt(process.env.REDIS_PORT || 6379,` — missing closing parenthesis `)`. Fix to `parseInt(process.env.REDIS_PORT || '6379')` before running. Also pass `6379` as a string, not number, to avoid TypeScript `strictNullChecks` errors. _(Bug identified 2026-07-01)_
+- **Windows Prisma DLL Lock during Generation:** Running processes that load the Prisma client (e.g. background workers or Next.js dev servers) lock the query engine DLL (`query_engine-windows.dll.node`) on Windows. This causes `prisma generate` or `prisma db push` to fail with `EPERM: operation not permitted, unlink`. To resolve, terminate any running Node processes using the Prisma client before regenerating. _(Added 2026-07-01)_
+
+- **tsx/esbuild JSON Reserved Word Bug:** `tsx`/`esbuild` attempts to export all keys from imported `.json` files as named exports. If a JSON file contains keys that are JS reserved keywords (such as `function` in `ioredis`'s commands JSON), this results in a `SyntaxError: Unexpected token 'function'`. Workaround: Run scripts that import these modules via `ts-node` with standard compiler options rather than `tsx`. _(Added 2026-07-01)_
+
+- **Prisma Relations in Care Journeys:** Explicitly declare Prisma `@relation` fields on both sides of care journey entities (`JourneyInstance`, `JourneyMilestone`, `JourneyTask`, `JourneyRisk`, `JourneyTemplate`) in `schema.prisma` to allow `include` queries without throwing compilation errors. _(Added 2026-07-01)_
 
 ---
+
 
 ## 🤖 Agent Personality
 

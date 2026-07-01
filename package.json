@@ -54,8 +54,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "worker:notify": "npx tsx --tsconfig workers/tsconfig.json workers/notification-worker.ts",
-    "worker:rules": "npx tsx --tsconfig workers/tsconfig.json workers/rules-worker.ts",
+    "worker:notify": "npx ts-node --project workers/tsconfig.json workers/notification-worker.ts",
+    "worker:rules": "npx ts-node --project workers/tsconfig.json workers/rules-worker.ts",
     "audit": "npx tsx scripts/quality-audit.ts",
     "clean": "turbo run clean && Remove-Item -Recurse -Force .next, apps/**/.next, packages/**/dist -ErrorAction SilentlyContinue"
   },

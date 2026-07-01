@@ -14,6 +14,8 @@ export const ActionSchema = z.object({
     'call_api',
     'assign_task',
     'escalate',
+    'complete_milestone',
+    'update_journey_risk',
   ]),
   payload: z.record(z.string(), z.unknown()),
 });

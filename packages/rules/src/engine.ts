@@ -63,6 +63,12 @@ export class ExecutionEngine {
       case 'escalate':
         await this.escalate(action.payload, context);
         break;
+      case 'complete_milestone':
+        await this.completeMilestone(action.payload, context);
+        break;
+      case 'update_journey_risk':
+        await this.updateJourneyRisk(action.payload, context);
+        break;
     }
   }
 
@@ -143,7 +149,6 @@ export class ExecutionEngine {
   }
 
   private async escalate(payload: any, context: RuleContext): Promise<void> {
-    // Implementation for escalation logic
     await this.prisma.escalation.create({
       data: {
         level: payload.level || 'DOCTOR',
@@ -155,7 +160,6 @@ export class ExecutionEngine {
       },
     });
 
-    // Also create timeline event for audit trail
     await this.createTimelineEvent(
       {
         eventType: 'ESCALATION_TRIGGERED',
@@ -165,6 +169,37 @@ export class ExecutionEngine {
       },
       context,
     );
+  }
+
+  private async completeMilestone(payload: any, context: RuleContext): Promise<void> {
+    const { milestoneId } = payload;
+    if (!milestoneId) return;
+
+    await this.prisma.journeyMilestone.update({
+      where: { id: milestoneId },
+      data: { status: 'COMPLETED', completedAt: new Date() },
+    });
+
+    await this.createTimelineEvent(
+      {
+        eventType: 'MILESTONE_COMPLETED',
+        title: 'Clinical Milestone Completed',
+        severity: 'LOW',
+        metadata: { milestoneId },
+      },
+      context,
+    );
+  }
+
+  private async updateJourneyRisk(payload: any, context: RuleContext): Promise<void> {
+    const { journeyId, score, factors } = payload;
+    if (!journeyId) return;
+
+    await this.prisma.journeyRisk.upsert({
+      where: { journeyId },
+      update: { score, factors },
+      create: { journeyId, score, factors },
+    });
   }
 
   private async logExecution(
