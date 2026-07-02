@@ -385,6 +385,10 @@ The following documents provide detailed specifications for the Haspataal platfo
 
 - **Prisma Relations in Care Journeys:** Explicitly declare Prisma `@relation` fields on both sides of care journey entities (`JourneyInstance`, `JourneyMilestone`, `JourneyTask`, `JourneyRisk`, `JourneyTemplate`) in `schema.prisma` to allow `include` queries without throwing compilation errors. _(Added 2026-07-01)_
 
+- **Prisma JSON Bounds in Workers:** When passing object properties to Prisma's `InputJsonValue` fields (like `metadata` or `fhirMapping`), `Record<string, unknown>` is rejected due to index signature incompatibilities. Explicitly cast these objects `as any` to satisfy Prisma's strict JSON type bounds when mapping dynamic event payloads. _(Added 2026-07-02)_
+
+- **Notification Schema Adherence:** `Notification` records in Prisma do not have a `payload` column; they use `variables` and `metadata` (both JSON). Worker updates and ExecutionEngine payloads must target `metadata` rather than injecting undocumented fields, to satisfy Prisma schema constraints. _(Added 2026-07-02)_
+
 ---
 
 

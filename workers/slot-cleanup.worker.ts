@@ -35,7 +35,9 @@ export class SlotCleanupWorker {
         );
         released++;
       } catch (error) {
-        logger.error(`[SlotCleanupWorker] Failed to release appointment ${apt.id}:`, error);
+        logger.error(
+          `[SlotCleanupWorker] Failed to release appointment ${apt.id}: ${(error as any).message || String(error)}`,
+        );
       }
     }
 

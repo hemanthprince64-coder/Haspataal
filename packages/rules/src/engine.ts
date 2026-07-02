@@ -1,11 +1,15 @@
+import { NotificationEngine } from '@haspataal/notify';
+
 import { RuleCompiler } from './compiler';
 import { Rule, Action, RuleContext, RuleResult } from './types';
 
 export class ExecutionEngine {
   private prisma: any;
+  private notificationEngine: NotificationEngine;
 
   constructor(prismaClient: any) {
     this.prisma = prismaClient;
+    this.notificationEngine = new NotificationEngine();
   }
 
   async execute(rule: Rule, context: RuleContext): Promise<RuleResult> {
@@ -99,16 +103,16 @@ export class ExecutionEngine {
   }
 
   private async sendNotification(payload: any, context: RuleContext): Promise<void> {
-    // Implementation delegates to Notification engine
-    await this.prisma.notificationQueue.create({
-      data: {
-        patientId: context.patientId,
-        hospitalId: context.hospitalId,
-        channel: payload.channel || 'SMS',
-        template: payload.template,
-        payload: payload as any,
-        status: 'QUEUED',
-      },
+    await this.notificationEngine.enqueue({
+      patientId: context.patientId || undefined,
+      hospitalId: context.hospitalId || undefined,
+      channel: payload.channel || 'SMS',
+      priority: payload.priority || 'NORMAL',
+      templateId: payload.templateId,
+      recipient: payload.recipient || 'UNKNOWN',
+      body: payload.body || 'Automated Rule Notification',
+      variables: payload.variables,
+      metadata: payload.metadata,
     });
   }
 

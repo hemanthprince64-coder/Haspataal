@@ -1,5 +1,6 @@
-import { Pool } from 'pg';
 import { prisma } from '@haspataal/db';
+import { Pool } from 'pg';
+
 import { EventService } from '../services/event.service';
 import { buildMessage } from '../templates/notification-templates';
 
@@ -60,13 +61,16 @@ export class NotificationWorker {
 
   private static async attemptSendPrisma(job: any) {
     const { id, hospitalId, patientId, templateKey, payload, channel } = job;
-    const attempts = (job.payload as any)?.attempts ?? 0;
+    const attempts = (job.metadata as any)?.attempts ?? 0;
     const currentChannel = channel === 'auto' ? 'whatsapp' : channel;
 
     let success = false;
 
     try {
-      const variables = typeof payload === 'object' ? (payload as Record<string, string>) : {};
+      const variables =
+        typeof payload === 'object'
+          ? (payload as Record<string, string>)
+          : (job.variables as Record<string, string>) || {};
       const message = buildMessage(templateKey || '', variables);
 
       success = await this.mockProviderSend(currentChannel, patientId || 'unknown', message);
@@ -100,10 +104,10 @@ export class NotificationWorker {
             where: { id },
             data: {
               channel: 'sms',
-              payload: {
-                ...(typeof payload === 'object' ? (payload as any) : {}),
+              metadata: {
+                ...(typeof job.metadata === 'object' ? (job.metadata as any) : {}),
                 attempts: 0,
-              },
+              } as any,
               scheduledAt: new Date(),
             },
           });
@@ -127,10 +131,10 @@ export class NotificationWorker {
         await prisma.notification.update({
           where: { id },
           data: {
-            payload: {
-              ...(typeof payload === 'object' ? (payload as any) : {}),
+            metadata: {
+              ...(typeof job.metadata === 'object' ? (job.metadata as any) : {}),
               attempts: nextAttempts,
-            },
+            } as any,
             scheduledAt: nextAttemptAt,
           },
         });
@@ -216,4 +220,3 @@ export class NotificationWorker {
     return isSuccess;
   }
 }
-

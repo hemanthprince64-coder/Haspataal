@@ -1,8 +1,10 @@
+import { prisma } from '@haspataal/db';
 import { createHash } from 'crypto';
 import { Pool } from 'pg';
-import { prisma } from '@haspataal/db';
-import { EventType, CreateEventInput } from '../types/events';
+
 import redis from '../lib/redis';
+
+type EventType = string;
 
 // Assuming global instances or injected dependencies.
 // In a real app, these would be initialized elsewhere and injected.
@@ -45,7 +47,7 @@ export class EventService {
         return true;
       }
       this.processedKeys.add(idempotencyKey);
-      
+
       // Keep in-memory cache pruned
       if (this.processedKeys.size > 1000) {
         const iterator = this.processedKeys.values();

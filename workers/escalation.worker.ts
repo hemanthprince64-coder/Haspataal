@@ -12,8 +12,8 @@
  *  - Prometheus escalation_events_total counter
  *  - Notification curfew integration
  */
-import { Pool } from 'pg';
 import { prisma } from '@haspataal/db';
+import { Pool } from 'pg';
 
 import { evaluateCurfew } from '../lib/notification-curfew';
 import redis from '../lib/redis';
@@ -175,16 +175,7 @@ export class EscalationWorker {
   }
 
   private static async attemptEscalatePrisma(alert: any) {
-    const {
-      id,
-      hospitalId,
-      patientId,
-      missedCount,
-      chronicTag,
-      patient,
-      doctor,
-      hospital,
-    } = alert;
+    const { id, hospitalId, patientId, missedCount, chronicTag, patient, doctor, hospital } = alert;
 
     const patientName = patient?.name || 'Unknown Patient';
     const doctorName = doctor?.fullName || 'Unknown Doctor';
@@ -364,11 +355,11 @@ export class EscalationWorker {
         recordMetric(hospitalId, chronicTag || 'UNKNOWN', false);
         console.error(
           `[EscalationWorker] Alert ${id.slice(0, 8)} dead-lettered after ${attempts} attempts:`,
-          err.message,
+          (err as any).message,
         );
         await EventService.publish(
           'escalation_dlq',
-          { alertId: id, reason: err.message },
+          { alertId: id, reason: (err as any).message },
           hospitalId,
           patientId,
         );

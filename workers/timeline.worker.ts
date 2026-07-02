@@ -419,13 +419,13 @@ async function processTimelineJob(job: Job): Promise<void> {
       priority: transformed.priority,
       tags: transformed.tags,
       fhirResourceType: transformed.fhirResourceType,
-      fhirMapping: transformed.fhirMapping,
+      fhirMapping: transformed.fhirMapping as any,
       correlationId,
       sourceSystem,
       integrityHash,
       actorType: data.actorType ? String(data.actorType) : undefined,
       actorId: data.actorId ? String(data.actorId) : undefined,
-      metadata: data as Record<string, unknown>,
+      metadata: data as any,
     },
   });
 

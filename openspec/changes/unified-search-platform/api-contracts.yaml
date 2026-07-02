@@ -1,0 +1,352 @@
+# Search API Contracts - OpenAPI 3.1 Specification
+
+## Global Search Endpoint
+
+```yaml
+paths:
+  /api/search:
+    get:
+      summary: Universal search across all Haspataal entities
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query text
+        - name: types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [patient, doctor, hospital, appointment, journey, clinical, lab, radiology, bill, medicine, notification, task]
+          description: Filter by entity types (comma-separated)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: facets
+          in: query
+          schema:
+            type: string
+            description: JSON-encoded facet filters (e.g., status:completed)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, created_at, updated_at]
+            default: relevance
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  total:
+                    type: integer
+                  tookMs:
+                    type: integer
+                  facets:
+                    $ref: '#/components/schemas/FacetResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/search/autocomplete:
+    get:
+      summary: Autocomplete suggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: types
+          in: query
+          schema:
+            type: string
+            description: Comma-separated entity types
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Autocomplete suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AutocompleteSuggestion'
+```
+
+## Components Schema
+
+```yaml
+components:
+  schemas:
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        entityType:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        hospitalId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        metadata:
+          type: object
+        rank:
+          type: number
+          format: float
+        highlight:
+          type: object
+          properties:
+            title:
+              type: array
+              items:
+                type: string
+            content:
+              type: array
+              items:
+                type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AutocompleteSuggestion:
+      type: object
+      properties:
+        text:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+
+    FacetResult:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: object
+          properties:
+            value:
+              type: string
+            count:
+              type: integer
+
+    SearchQuery:
+      type: object
+      properties:
+        text:
+          type: string
+        filters:
+          type: object
+          properties:
+            types:
+              type: array
+              items:
+                type: string
+            hospitalId:
+              type: string
+              format: uuid
+            dateRange:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+            status:
+              type: array
+              items:
+                type: string
+            department:
+              type: array
+              items:
+                type: string
+```
+
+## Admin Endpoints
+
+```yaml
+  /api/admin/search:
+    post:
+      summary: Admin operations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ReindexRequest'
+                - $ref: '#/components/schemas/SynonymRequest'
+      responses:
+        '200':
+          description: Operation accepted
+
+  /api/admin/search/health:
+    get:
+      summary: Search platform health status
+      responses:
+        '200':
+          description: Health metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  indexSize:
+                    type: integer
+                  documentCount:
+                    type: integer
+                  queueDepth:
+                    type: integer
+                  lastReindex:
+                    type: string
+                    format: date-time
+                  indexLagMs:
+                    type: integer
+```
+
+## Request Schemas
+
+```yaml
+  ReindexRequest:
+    type: object
+    properties:
+      action:
+        type: string
+        enum: [reindex_all, reindex_entity, reindex_search]
+      entityType:
+        type: string
+      options:
+        type: object
+        properties:
+          full:
+            type: boolean
+          since:
+            type: string
+            format: date-time
+          batchSize:
+            type: integer
+
+  SynonymRequest:
+    type: object
+    properties:
+      action:
+        type: string
+        enum: [add, remove, update]
+      term:
+        type: string
+      synonyms:
+        type: array
+        items:
+          type: string
+      category:
+        type: string
+      hospitalId:
+        type: string
+        format: uuid
+```
+
+## Event Contracts
+
+```typescript
+// Event published to BullMQ for indexing
+interface IndexRequested {
+  type: 'IndexRequested';
+  id: string;
+  timestamp: string;
+  payload: {
+    entityType: string;
+    entityId: string;
+    hospitalId?: string;
+    operation: 'CREATE' | 'UPDATE' | 'DELETE';
+    source: string;
+  };
+}
+
+// Event published after indexing completes
+interface IndexCompleted {
+  type: 'IndexCompleted';
+  id: string;
+  timestamp: string;
+  payload: {
+    documentId: string;
+    entityType: string;
+    entityId: string;
+    provider: string;
+  };
+}
+```
+
+## Error Responses
+
+```yaml
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              details:
+                type: array
+                items:
+                  type: string
+
+    ServerError:
+      description: Internal search error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              traceId:
+                type: string
+```
