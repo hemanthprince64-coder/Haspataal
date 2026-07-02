@@ -54,15 +54,27 @@ interface EmitEventInput {
  */
 export async function emitEvent(input: EmitEventInput): Promise<void> {
   try {
-    await prisma.eventLog.create({
-      data: {
-        eventType: input.eventType,
-        hospitalId: input.hospitalId || null,
-        patientId: input.patientId || null,
-        executedBy: input.executedBy || null,
-        payload: input.payload as any,
-      },
-    });
+    await prisma.$transaction([
+      prisma.eventLog.create({
+        data: {
+          eventType: input.eventType,
+          hospitalId: input.hospitalId || null,
+          patientId: input.patientId || null,
+          executedBy: input.executedBy || null,
+          payload: input.payload as any,
+        },
+      }),
+      prisma.outboxEvent.create({
+        data: {
+          eventType: input.eventType,
+          payload: {
+            ...input.payload,
+            hospitalId: input.hospitalId,
+            patientId: input.patientId,
+          },
+        },
+      }),
+    ]);
     logger.info(
       { action: 'event_emitted', eventType: input.eventType, hospitalId: input.hospitalId },
       `Event: ${input.eventType}`,

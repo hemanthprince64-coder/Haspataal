@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
+import { RankingEngine } from '../../application/services/ranking-engine';
 import { SearchQuery, SearchResponse } from '../../domain/types';
 import {
   SearchIndexProvider,
@@ -13,8 +14,55 @@ export class PostgresSearchProvider implements SearchIndexProvider {
   constructor(private prisma: PrismaClient) {}
 
   async search(query: SearchQuery): Promise<SearchResponse> {
-    const { text, limit = 20, cursor, types, hospitalId } = query;
-    const tsQuery = text.trim().split(/\s+/).join(' | ');
+    const start = Date.now();
+    const { text, limit = 20, cursor, types, hospitalId, dateRange, status, sort, order } = query;
+    const tsQuery = text.trim() ? text.trim().split(/\s+/).join(' | ') : null;
+
+    const whereConditions: Prisma.Sql[] = [];
+    if (tsQuery) {
+      whereConditions.push(Prisma.sql`search_vector @@ to_tsquery('english', ${tsQuery})`);
+    }
+    if (types && types.length > 0) {
+      whereConditions.push(Prisma.sql`entity_type IN (${Prisma.join(types)})`);
+    }
+    if (hospitalId) {
+      whereConditions.push(Prisma.sql`hospital_id = ${hospitalId}::uuid`);
+    }
+    if (dateRange?.from) {
+      whereConditions.push(Prisma.sql`created_at >= ${dateRange.from}`);
+    }
+    if (dateRange?.to) {
+      whereConditions.push(Prisma.sql`created_at <= ${dateRange.to}`);
+    }
+    if (status) {
+      whereConditions.push(Prisma.sql`metadata->>'status' = ${status}`);
+    }
+    if (cursor) {
+      // Very basic cursor assumption if sorting by created_at desc (not fully generic, but better than nothing)
+      whereConditions.push(Prisma.sql`id != ${cursor}::uuid`);
+    }
+
+    const whereClause =
+      whereConditions.length > 0
+        ? Prisma.sql`WHERE ${Prisma.join(whereConditions, ' AND ')}`
+        : Prisma.empty;
+
+    const tsRankSelect = tsQuery
+      ? Prisma.sql`ts_rank(search_vector, to_tsquery('english', ${tsQuery}))`
+      : Prisma.sql`1.0`;
+
+    const tsHeadlineSelect = tsQuery
+      ? Prisma.sql`ts_headline('english', content, to_tsquery('english', ${tsQuery}))`
+      : Prisma.sql`content`;
+
+    let orderByClause = Prisma.empty;
+    if (sort === 'created_at') {
+      orderByClause = Prisma.sql`ORDER BY created_at ${order === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`}`;
+    } else if (sort === 'updated_at') {
+      orderByClause = Prisma.sql`ORDER BY updated_at ${order === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`}`;
+    } else {
+      orderByClause = Prisma.sql`ORDER BY rank DESC`;
+    }
 
     const results = await this.prisma.$queryRaw<any[]>`
       SELECT 
@@ -25,32 +73,56 @@ export class PostgresSearchProvider implements SearchIndexProvider {
         title, 
         content, 
         metadata,
-        ts_rank(search_vector, to_tsquery('english', ${tsQuery})) as rank,
+        ${tsRankSelect} as rank,
+        ${tsHeadlineSelect} as highlight_content,
         created_at as "createdAt",
         updated_at as "updatedAt"
       FROM searchable_entities
-      WHERE search_vector @@ to_tsquery('english', ${tsQuery})
-      ${types && types.length > 0 ? Prisma.sql`AND entity_type IN (${Prisma.join(types)})` : Prisma.empty}
-      ${hospitalId ? Prisma.sql`AND hospital_id = ${hospitalId}::uuid` : Prisma.empty}
-      ORDER BY rank DESC
+      ${whereClause}
+      ${orderByClause}
       LIMIT ${limit}
     `;
 
+    const facetResults = await this.prisma.$queryRaw<any[]>`
+      SELECT entity_type, count(*) as count
+      FROM searchable_entities
+      ${whereClause}
+      GROUP BY entity_type
+    `;
+
+    const facets = {
+      entityType: facetResults.map((f: any) => ({ value: f.entity_type, count: Number(f.count) })),
+    };
+
+    let mappedResults = results.map((r: any) => ({
+      id: r.id,
+      entityType: r.entityType,
+      entityId: r.entityId,
+      hospitalId: r.hospitalId,
+      title: r.title,
+      content: r.content,
+      metadata: r.metadata,
+      rank: Number(r.rank),
+      highlight: { content: [r.highlight_content] },
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+
+    if (sort === 'relevance' || !sort) {
+      mappedResults = mappedResults
+        .map((doc: any) => {
+          const newRank = RankingEngine.calculateRelevance(text, doc, { hospitalId });
+          return { ...doc, rank: newRank };
+        })
+        .sort((a: any, b: any) => (order === 'asc' ? a.rank - b.rank : b.rank - a.rank));
+    }
+
     return {
-      results: results.map((r: any) => ({
-        id: r.id,
-        entityType: r.entityType,
-        entityId: r.entityId,
-        hospitalId: r.hospitalId,
-        title: r.title,
-        content: r.content,
-        metadata: r.metadata,
-        rank: Number(r.rank),
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-      })),
-      total: results.length, // approximation
-      tookMs: 0,
+      results: mappedResults,
+      total: results.length,
+      tookMs: Date.now() - start,
+      facets,
+      nextCursor: results.length === limit ? results[results.length - 1].id : undefined,
     };
   }
 
@@ -125,12 +197,27 @@ export class PostgresSearchProvider implements SearchIndexProvider {
   }
 
   async health(): Promise<IndexHealth> {
-    const count = await this.prisma.searchableEntity.count();
-    return {
-      status: 'healthy',
-      documentCount: count,
-      indexSizeBytes: 0,
-      queueDepth: 0,
-    };
+    try {
+      const count = await this.prisma.searchableEntity.count();
+      const sizeResult = await this.prisma.$queryRaw<[{ size: bigint }]>`
+        SELECT pg_total_relation_size('searchable_entities') as size
+      `;
+      const outboxCount = await this.prisma.outboxEvent.count({ where: { processed: false } });
+
+      return {
+        status: 'healthy',
+        documentCount: count,
+        indexSizeBytes: Number(sizeResult[0]?.size || 0),
+        queueDepth: outboxCount,
+        lastIndexedAt: new Date(),
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        documentCount: 0,
+        indexSizeBytes: 0,
+        queueDepth: 0,
+      };
+    }
   }
 }

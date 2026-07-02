@@ -1,3 +1,8 @@
+// ─────────────────────────────────────────────────────────────
+// 5. FULL-TEXT SEARCH
+// ─────────────────────────────────────────────────────────────
+import { SearchService } from '@haspataal/search/src/application/services/search-service';
+import { PostgresSearchProvider } from '@haspataal/search/src/infrastructure/providers/postgres-provider';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
 import IORedis from 'ioredis';
@@ -257,64 +262,41 @@ export async function getHospitalTimeline(
   };
 }
 
-// ─────────────────────────────────────────────────────────────
-// 5. FULL-TEXT SEARCH
-// ─────────────────────────────────────────────────────────────
+const searchService = new SearchService(new PostgresSearchProvider(prisma as any));
 
 export async function searchTimeline(filters: SearchFilters) {
   const {
     q,
     limit = 20,
-    patientId,
+    patientId, // Passed inside metadata in the new architecture
     hospitalId,
-    doctorId,
-    category,
-    severity,
     dateFrom,
     dateTo,
-    module,
-    tag,
+    cursor,
   } = filters;
-  const safeLimit = Math.min(limit, 100);
-  const tsQuery = q.split(/\s+/).join(' & ');
 
-  const conditions = [
-    Prisma.sql`status = 'ACTIVE'`,
-    Prisma.sql`search_vector @@ to_tsquery('english', ${tsQuery})`,
-  ];
-
-  if (patientId) conditions.push(Prisma.sql`patient_id = ${patientId}`);
-  if (hospitalId) conditions.push(Prisma.sql`hospital_id = ${hospitalId}`);
-  if (doctorId) conditions.push(Prisma.sql`doctor_id = ${doctorId}`);
-  if (category) {
-    const cats = category.split(',').map((c) => c.trim());
-    conditions.push(Prisma.sql`category IN (${Prisma.join(cats)})`);
-  }
-  if (severity) conditions.push(Prisma.sql`severity = ${severity}`);
-  if (module) conditions.push(Prisma.sql`module = ${module}`);
-  if (dateFrom) conditions.push(Prisma.sql`timestamp >= ${new Date(dateFrom)}`);
-  if (dateTo) conditions.push(Prisma.sql`timestamp <= ${new Date(dateTo)}`);
-  if (tag) conditions.push(Prisma.sql`${tag} = ANY(tags)`);
-
-  const searchResults = await prisma.$queryRaw<object[]>`
-    SELECT 
-      id, patient_id, hospital_id, doctor_id, module, entity_type, entity_id,
-      event_type, category, title, subtitle, summary, description, timestamp,
-      clinical_date, priority, severity, tags, status, metadata,
-      fhir_resource_type, fhir_mapping, correlation_id, source_system,
-      is_pinned, amended_event_id, integrity_hash, actor_type, actor_id,
-      created_at, updated_at,
-      ts_rank(search_vector, to_tsquery('english', ${tsQuery})) AS rank
-    FROM timeline_events
-    WHERE ${Prisma.join(conditions, ' AND ')}
-    ORDER BY rank DESC, timestamp DESC
-    LIMIT ${safeLimit}
-  `;
+  // Utilize the unified search engine
+  const result = await searchService.search({
+    text: q,
+    types: ['timeline'],
+    hospitalId,
+    limit: Math.min(limit, 100),
+    cursor,
+    dateRange: {
+      from: dateFrom ? new Date(dateFrom) : undefined,
+      to: dateTo ? new Date(dateTo) : undefined,
+    },
+  });
 
   return {
-    data: searchResults,
-    hasMore: searchResults.length === safeLimit,
-    nextCursor: null,
+    data: result.results.map((r: any) => ({
+      ...(r.metadata || {}), // Re-hydrate original timeline event data
+      id: r.entityId,
+      rank: r.rank,
+      search_highlight: r.highlight,
+    })),
+    hasMore: !!result.nextCursor,
+    nextCursor: result.nextCursor,
   };
 }
 

@@ -55,6 +55,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: 'Catalogs seeded successfully' });
     }
 
+    if (action === 'seed-all') {
+      await seedMedicineCatalog();
+      await seedInvestigationCatalog();
+      await seedPatients();
+      await seedDoctors();
+      await seedAppointments();
+      await seedTimelineEvents();
+      return NextResponse.json({ success: true, message: 'All entities seeded successfully' });
+    }
+
     if (action === 'index-medicine') {
       const { drugId, drugName, genericName, strength, formulation } = body;
       await searchService.index({
@@ -121,6 +131,60 @@ async function seedInvestigationCatalog() {
         sampleType: test.sampleType,
         fastingRequired: test.fastingRequired,
       },
+    });
+  }
+}
+
+async function seedPatients() {
+  const patients = await prisma.patient.findMany();
+  for (const p of patients) {
+    await searchService.index({
+      entityType: 'patient',
+      entityId: p.id,
+      title: p.name.trim(),
+      content: `Phone: ${p.phone} Gender: ${p.gender || ''}`,
+      metadata: p as any,
+    });
+  }
+}
+
+async function seedDoctors() {
+  const doctors = await prisma.doctorMaster.findMany();
+  for (const d of doctors) {
+    await searchService.index({
+      entityType: 'doctor',
+      entityId: d.id,
+      title: d.fullName.trim(),
+      content: `Email: ${d.email} Mobile: ${d.mobile}`,
+      metadata: d as any,
+    });
+  }
+}
+
+async function seedAppointments() {
+  const appointments = await prisma.appointment.findMany();
+  for (const a of appointments) {
+    await searchService.index({
+      entityType: 'appointment',
+      entityId: a.id,
+      hospitalId: a.hospitalId || undefined,
+      title: `Appointment ${a.id}`,
+      content: `Date: ${a.date} Slot: ${a.slot} Status: ${a.status}`,
+      metadata: a as any,
+    });
+  }
+}
+
+async function seedTimelineEvents() {
+  const events = await prisma.timelineEvent.findMany();
+  for (const e of events) {
+    await searchService.index({
+      entityType: 'timeline',
+      entityId: e.id,
+      hospitalId: e.hospitalId || undefined,
+      title: e.title,
+      content: e.description || e.summary || JSON.stringify(e.metadata),
+      metadata: e as any,
     });
   }
 }
