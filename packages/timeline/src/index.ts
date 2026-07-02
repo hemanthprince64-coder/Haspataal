@@ -139,7 +139,7 @@ export const TimelineEventSchema = z.object({
   actorId: z.string().optional(),
 });
 
-export type TimelineEventInput = z.infer<typeof TimelineEventSchema>;
+export type TimelineEventInput = z.input<typeof TimelineEventSchema>;
 
 // ─────────────────────────────────────────────────────────────
 // PUBLISHER

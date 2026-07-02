@@ -30,7 +30,14 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const hospitalId = searchParams.get('hospitalId') || undefined;
 
-    const results = await searchService.search({ text: query, types, limit, hospitalId });
+    const results = await searchService.search({
+      text: query,
+      types,
+      limit,
+      hospitalId,
+      sort: 'relevance',
+      order: 'desc',
+    });
     return NextResponse.json(results);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -51,7 +58,6 @@ export async function POST(req: Request) {
     if (action === 'index-medicine') {
       const { drugId, drugName, genericName, strength, formulation } = body;
       await searchService.index({
-        id: `medicine-${drugId}`,
         entityType: 'medicine',
         entityId: drugId,
         title: drugName,
@@ -64,7 +70,6 @@ export async function POST(req: Request) {
     if (action === 'index-investigation') {
       const { testId, testName, testCode, sampleType, fastingRequired } = body;
       await searchService.index({
-        id: `investigation-${testId}`,
         entityType: 'investigation',
         entityId: testId,
         title: testName,
@@ -87,7 +92,6 @@ async function seedMedicineCatalog() {
 
   for (const drug of drugs) {
     await searchService.index({
-      id: `medicine-${drug.id}`,
       entityType: 'medicine',
       entityId: drug.id,
       title: drug.name,
@@ -108,7 +112,6 @@ async function seedInvestigationCatalog() {
 
   for (const test of investigations) {
     await searchService.index({
-      id: `investigation-${test.id}`,
       entityType: 'investigation',
       entityId: test.id,
       title: test.testName,

@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
 import * as TimelineService from '@/lib/services/timeline';
 
-export async function GET(req: Request, { params }: { params: { patientId: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ patientId: string }> }) {
   try {
     const user = await checkRole(req, [Roles.DOCTOR, Roles.ADMIN]);
-    const { patientId } = await params;
+    const { patientId } = await context.params;
     const { searchParams } = new URL(req.url);
 
     const cursor = searchParams.get('cursor') ?? undefined;

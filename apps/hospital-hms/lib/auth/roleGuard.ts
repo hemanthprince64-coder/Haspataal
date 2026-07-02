@@ -1,15 +1,18 @@
 import { verifyToken } from './jwt';
 
 export type Role =
+  | 'super_admin'
   | 'admin'
   | 'doctor'
   | 'receptionist'
   | 'lab_tech'
   | 'nurse'
   | 'pharmacist'
-  | 'billing';
+  | 'billing'
+  | 'patient';
 
 export const Roles = {
+  SUPER_ADMIN: 'super_admin' as Role,
   ADMIN: 'admin' as Role,
   DOCTOR: 'doctor' as Role,
   RECEPTIONIST: 'receptionist' as Role,
@@ -17,6 +20,7 @@ export const Roles = {
   NURSE: 'nurse' as Role,
   PHARMACIST: 'pharmacist' as Role,
   BILLING: 'billing' as Role,
+  PATIENT: 'patient' as Role,
 };
 
 export async function checkRole(req: Request, allowedRoles: Role[]) {

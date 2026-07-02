@@ -1,5 +1,6 @@
 import { prisma } from '@haspataal/db';
 import { NotificationEngine } from '@haspataal/notify';
+import { getTimelinePublisher } from '@haspataal/timeline';
 import { Queue } from 'bullmq';
 
 import { JourneyTimelineIntegration } from './timeline';
@@ -59,24 +60,23 @@ export class JourneyEngine {
     }
 
     // 1. Log Journey Enrollment in Timeline Engine
-    await prisma.timelineEvent.create({
-      data: {
-        patientId: payload.patientId,
-        hospitalId: payload.hospitalId,
-        eventType: 'JOURNEY_ENROLLED',
-        category: 'CLINICAL',
-        module: 'CARE_JOURNEY',
-        title: `Enrolled in ${template.name}`,
-        subtitle: `Category: ${template.category}`,
-        description: `Patient enrolled in clinical care journey '${template.name}'.`,
-        entityType: 'JourneyInstance',
-        entityId: instance.id,
-        metadata: {
-          templateId: payload.templateId,
-          journeyId: instance.id,
-          milestonesCount: milestones.length,
-        },
+    await getTimelinePublisher().publish({
+      patientId: payload.patientId,
+      hospitalId: payload.hospitalId,
+      eventType: 'JOURNEY_ENROLLED',
+      category: 'CLINICAL',
+      module: 'CARE_JOURNEY',
+      title: `Enrolled in ${template.name}`,
+      subtitle: `Category: ${template.category}`,
+      description: `Patient enrolled in clinical care journey '${template.name}'.`,
+      entityType: 'JourneyInstance',
+      entityId: instance.id,
+      metadata: {
+        templateId: payload.templateId,
+        journeyId: instance.id,
+        milestonesCount: milestones.length,
       },
+      timestamp: new Date(),
     });
 
     // 2. Trigger Rules Engine
@@ -164,24 +164,23 @@ export class JourneyEngine {
     });
 
     // 1. Log task creation to Timeline Engine
-    await prisma.timelineEvent.create({
-      data: {
-        patientId: journey.patientId,
-        hospitalId: journey.hospitalId,
-        eventType: 'JOURNEY_TASK_CREATED',
-        category: 'CLINICAL',
-        module: 'CARE_JOURNEY',
-        title: `Task Created: ${task.name}`,
-        subtitle: `Category: ${task.category}`,
-        description: `New care journey task '${task.name}' assigned.`,
-        entityType: 'JourneyTask',
-        entityId: task.id,
-        metadata: {
-          journeyId: payload.journeyId,
-          taskId: task.id,
-          milestoneId: payload.milestoneId,
-        },
+    await getTimelinePublisher().publish({
+      patientId: journey.patientId,
+      hospitalId: journey.hospitalId,
+      eventType: 'JOURNEY_TASK_CREATED',
+      category: 'CLINICAL',
+      module: 'CARE_JOURNEY',
+      title: `Task Created: ${task.name}`,
+      subtitle: `Category: ${task.category}`,
+      description: `New care journey task '${task.name}' assigned.`,
+      entityType: 'JourneyTask',
+      entityId: task.id,
+      metadata: {
+        journeyId: payload.journeyId,
+        taskId: task.id,
+        milestoneId: payload.milestoneId,
       },
+      timestamp: new Date(),
     });
 
     // 2. Trigger Rules Engine
@@ -211,24 +210,23 @@ export class JourneyEngine {
     });
 
     // 1. Log task completion to Timeline Engine
-    await prisma.timelineEvent.create({
-      data: {
-        patientId: task.journey.patientId,
-        hospitalId: task.journey.hospitalId,
-        eventType: 'JOURNEY_TASK_COMPLETED',
-        category: 'CLINICAL',
-        module: 'CARE_JOURNEY',
-        title: `Task Completed: ${task.name}`,
-        subtitle: `Category: ${task.category}`,
-        description: `Care journey task '${task.name}' completed.`,
-        entityType: 'JourneyTask',
-        entityId: task.id,
-        metadata: {
-          journeyId: task.journeyId,
-          taskId: task.id,
-          milestoneId: task.milestoneId,
-        },
+    await getTimelinePublisher().publish({
+      patientId: task.journey.patientId,
+      hospitalId: task.journey.hospitalId,
+      eventType: 'JOURNEY_TASK_COMPLETED',
+      category: 'CLINICAL',
+      module: 'CARE_JOURNEY',
+      title: `Task Completed: ${task.name}`,
+      subtitle: `Category: ${task.category}`,
+      description: `Care journey task '${task.name}' completed.`,
+      entityType: 'JourneyTask',
+      entityId: task.id,
+      metadata: {
+        journeyId: task.journeyId,
+        taskId: task.id,
+        milestoneId: task.milestoneId,
       },
+      timestamp: new Date(),
     });
 
     // 2. Trigger Rules Engine
@@ -272,21 +270,20 @@ export class JourneyEngine {
     });
 
     // Log the reminder action to Timeline
-    await prisma.timelineEvent.create({
-      data: {
-        patientId: payload.patientId,
-        hospitalId: payload.hospitalId,
-        eventType: 'PATIENT_REMINDER_SENT',
-        category: 'NOTIFICATION',
-        module: 'CARE_JOURNEY',
-        title: `Reminder Sent: ${payload.subject || 'Care Update'}`,
-        description: `Notification reminder queued via ${response.channel}.`,
-        metadata: {
-          recipient: payload.recipient,
-          channel: response.channel,
-          ...payload.metadata,
-        },
+    await getTimelinePublisher().publish({
+      patientId: payload.patientId,
+      hospitalId: payload.hospitalId,
+      eventType: 'PATIENT_REMINDER_SENT',
+      category: 'NOTIFICATION',
+      module: 'CARE_JOURNEY',
+      title: `Reminder Sent: ${payload.subject || 'Care Update'}`,
+      description: `Notification reminder queued via ${response.channel}.`,
+      metadata: {
+        recipient: payload.recipient,
+        channel: response.channel,
+        ...payload.metadata,
       },
+      timestamp: new Date(),
     });
 
     return response;

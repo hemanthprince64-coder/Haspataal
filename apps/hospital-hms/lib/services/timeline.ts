@@ -1,4 +1,4 @@
-import { PrismaClient, type Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
 import IORedis from 'ioredis';
 
@@ -262,9 +262,39 @@ export async function getHospitalTimeline(
 // ─────────────────────────────────────────────────────────────
 
 export async function searchTimeline(filters: SearchFilters) {
-  const { q, limit = 20 } = filters;
+  const {
+    q,
+    limit = 20,
+    patientId,
+    hospitalId,
+    doctorId,
+    category,
+    severity,
+    dateFrom,
+    dateTo,
+    module,
+    tag,
+  } = filters;
   const safeLimit = Math.min(limit, 100);
   const tsQuery = q.split(/\s+/).join(' & ');
+
+  const conditions = [
+    Prisma.sql`status = 'ACTIVE'`,
+    Prisma.sql`search_vector @@ to_tsquery('english', ${tsQuery})`,
+  ];
+
+  if (patientId) conditions.push(Prisma.sql`patient_id = ${patientId}`);
+  if (hospitalId) conditions.push(Prisma.sql`hospital_id = ${hospitalId}`);
+  if (doctorId) conditions.push(Prisma.sql`doctor_id = ${doctorId}`);
+  if (category) {
+    const cats = category.split(',').map((c) => c.trim());
+    conditions.push(Prisma.sql`category IN (${Prisma.join(cats)})`);
+  }
+  if (severity) conditions.push(Prisma.sql`severity = ${severity}`);
+  if (module) conditions.push(Prisma.sql`module = ${module}`);
+  if (dateFrom) conditions.push(Prisma.sql`timestamp >= ${new Date(dateFrom)}`);
+  if (dateTo) conditions.push(Prisma.sql`timestamp <= ${new Date(dateTo)}`);
+  if (tag) conditions.push(Prisma.sql`${tag} = ANY(tags)`);
 
   const searchResults = await prisma.$queryRaw<object[]>`
     SELECT 
@@ -276,8 +306,7 @@ export async function searchTimeline(filters: SearchFilters) {
       created_at, updated_at,
       ts_rank(search_vector, to_tsquery('english', ${tsQuery})) AS rank
     FROM timeline_events
-    WHERE status = 'ACTIVE'
-      AND search_vector @@ to_tsquery('english', ${tsQuery})
+    WHERE ${Prisma.join(conditions, ' AND ')}
     ORDER BY rank DESC, timestamp DESC
     LIMIT ${safeLimit}
   `;

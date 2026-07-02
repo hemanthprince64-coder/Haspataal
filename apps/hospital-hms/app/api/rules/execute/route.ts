@@ -1,10 +1,10 @@
+import { prisma } from '@haspataal/db';
 import { ExecutionEngine } from '@haspataal/rules';
 import { z } from 'zod';
 
 import { NextResponse } from 'next/server';
 
 import { checkRole } from '@/lib/auth/roleGuard';
-import { prisma } from '@/lib/prisma';
 
 const ExecuteRuleSchema = z.object({
   ruleId: z.string().uuid(),

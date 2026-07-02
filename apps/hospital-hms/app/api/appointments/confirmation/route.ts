@@ -2,7 +2,7 @@ import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';
 
-import { checkRole, Roles } from '../../../lib/auth/roleGuard';
+import { checkRole, Roles } from '@/lib/auth/roleGuard';
 
 async function requireRole(role: string, headerName = 'authorization') {
   const user = (await checkRole({} as Request, [role as any])) as any;
@@ -53,12 +53,15 @@ export async function PATCH(req: Request) {
     });
 
     // Send notification
-    const { emitEvent } = await import('../../../services/event-emitter');
+    const { emitEvent } = await import('../../../../../../services/event-emitter');
     await emitEvent({
       eventType: `appointment_${action}d` as any,
-      appointmentId,
-      patientId: appointment.patientId,
-      payload: { doctorId: user.id, status: newStatus },
+      payload: {
+        appointmentId,
+        patientId: appointment.patientId,
+        doctorId: user.id,
+        status: newStatus,
+      },
     });
 
     return NextResponse.json({ success: true, appointment: updated });

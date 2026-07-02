@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
 import * as TimelineService from '@/lib/services/timeline';
 
-export async function GET(req: Request, { params }: { params: { patientId: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ patientId: string }> }) {
   try {
     const user = await checkRole(req, [Roles.PATIENT]);
-    const { patientId } = await params;
+    const { patientId } = await context.params;
 
     // Patients can only access their own timeline
     if (user.user_id !== patientId) {

@@ -28,6 +28,6 @@ export class NotificationRouter {
   }
 
   static getQueueName(channel: Channel, priority: Priority): string {
-    return `${priority.toLowerCase()}-${channel.toLowerCase()}-notifications`;
+    return `${channel.toLowerCase()}-notifications`;
   }
 }

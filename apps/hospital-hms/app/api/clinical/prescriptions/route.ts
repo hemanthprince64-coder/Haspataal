@@ -2,7 +2,7 @@ import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';
 
-import { checkRole, Roles } from '../../../lib/auth/roleGuard';
+import { checkRole, Roles } from '@/lib/auth/roleGuard';
 
 async function requireRole(role: string, headerName = 'authorization') {
   const user = (await checkRole({} as Request, [role as any])) as any;
@@ -21,9 +21,7 @@ export async function GET(req: Request) {
     }
 
     const prescriptions = await prisma.patientPrescription.findMany({
-      where: patientId
-        ? { patientId }
-        : { appointment: { is: { visit: { visit: { id: visitId } } } } },
+      where: patientId ? { patientId } : { appointment: { visit: { id: visitId } } },
       include: {
         items: true,
         doctor: { select: { fullName: true } },
@@ -73,7 +71,6 @@ export async function POST(req: Request) {
     if (patient) {
       const searchService = await getSearchService();
       await searchService.index({
-        id: `prescription-${prescription.id}`,
         entityType: 'prescription',
         entityId: prescription.id,
         hospitalId: user.hospitalId,

@@ -2,7 +2,7 @@ import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';
 
-import { checkRole, Roles } from '../../../lib/auth/roleGuard';
+import { checkRole, Roles } from '@/lib/auth/roleGuard';
 
 async function requireRole(role: string, headerName = 'authorization') {
   const user = (await checkRole({} as Request, [role as any])) as any;

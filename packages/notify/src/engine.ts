@@ -1,3 +1,4 @@
+import { prisma } from '@haspataal/db';
 import { Queue } from 'bullmq';
 
 import { ChannelAdapter } from './adapters';
@@ -27,11 +28,33 @@ export class NotificationEngine {
       this.queues.set(queueName, queue);
     }
 
-    await queue.add('notification', input, {
-      priority: this.getPriorityValue(input.priority),
-      attempts: this.getMaxAttempts(input.priority),
-      backoff: this.getBackoffStrategy(input.priority),
+    const notification = await prisma.notification.create({
+      data: {
+        hospitalId: input.hospitalId as string,
+        patientId: input.patientId,
+        doctorId: input.doctorId,
+        templateId: input.templateId,
+        channel: channel,
+        priority: input.priority,
+        recipient: input.recipient,
+        subject: input.subject,
+        body: input.body,
+        variables: input.variables ? (input.variables as any) : undefined,
+        metadata: input.metadata ? (input.metadata as any) : undefined,
+        scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : undefined,
+        status: 'QUEUED',
+      } as any,
     });
+
+    await queue.add(
+      'notification',
+      { notificationId: notification.id },
+      {
+        priority: this.getPriorityValue(input.priority),
+        attempts: this.getMaxAttempts(input.priority),
+        backoff: this.getBackoffStrategy(input.priority),
+      },
+    );
 
     return { ...input, channel };
   }

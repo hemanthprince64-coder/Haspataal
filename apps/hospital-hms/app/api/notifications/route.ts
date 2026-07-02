@@ -1,23 +1,22 @@
+import { prisma } from '@haspataal/db';
 import { z } from 'zod';
 
 import { NextResponse } from 'next/server';
 
-import { prisma } from '@/lib/prisma';
-
 const CreateNotificationSchema = z.object({
-  hospitalId: z.string().uuid().optional(),
+  hospitalId: z.string().uuid(),
   patientId: z.string().uuid().optional(),
   doctorId: z.string().uuid().optional(),
   templateId: z.string().uuid().optional(),
-  channel: z.enum(['SMS', 'WHATSAPP', 'EMAIL', 'PUSH', 'IN_APP']).optional(),
+  channel: z.enum(['SMS', 'WHATSAPP', 'EMAIL', 'PUSH', 'IN_APP']),
   priority: z
     .enum(['EMERGENCY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'BACKGROUND'])
     .default('NORMAL'),
   recipient: z.string(),
   subject: z.string().optional(),
   body: z.string(),
-  variables: z.record(z.any()).optional(),
-  metadata: z.record(z.any()).optional(),
+  variables: z.record(z.string(), z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   scheduledAt: z
     .string()
     .optional()
@@ -27,7 +26,7 @@ const CreateNotificationSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = CreateNotificationSchema.parse(await req.json());
-    const notification = await prisma.notification.create({ data: body });
+    const notification = await prisma.notification.create({ data: body as any });
     return NextResponse.json({ success: true, data: notification });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 400 });

@@ -156,6 +156,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 ```
 
 ## 📚 Knowledge Base (Lessons Learned)
+- **2026-07-02**: Turborepo Workspace and Next.js 15 Fixes. Turborepo `workspace:*` dependencies in package.json will break root `npm install` if not matched by proper workspace configurations. Used explicit versions (`*`) to fix. Also, in Next.js 15 API routes, dynamic `params` objects must be awaited (`const { id } = await context.params`) before usage. Prisma $queryRaw filters appending must be done gracefully using `Prisma.sql` array concatenation inside `Prisma.join` to avoid TS issues and syntax errors.
 
 - **Hospital Login Session (hospitalId):** The login service MUST include `hospitalId` in the returned user object. The `requireHospitalAccess` middleware depends on this field to enforce tenant isolation. Omission causes post-login 401/403 errors and dashboard redirects. _(Fixed 2026-05-05)_
 - **Hospital Mobile Validation:** Hospital login and registration actions must validate mobile numbers via `MobileSchema`. Unvalidated mobile strings lead to poor UX ("Invalid credentials" for typos) and malformed data that breaks downstream SMS/WhatsApp integrations. _(Fixed 2026-05-05)_

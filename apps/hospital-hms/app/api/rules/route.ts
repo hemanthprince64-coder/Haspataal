@@ -1,10 +1,10 @@
+import { prisma } from '@haspataal/db';
 import { RuleRegistry } from '@haspataal/rules';
 import { z } from 'zod';
 
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import { prisma } from '@/lib/prisma';
 
 const CreateRuleSchema = z.object({
   name: z.string().min(1).max(255),

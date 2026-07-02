@@ -81,24 +81,25 @@ export class ExecutionEngine {
       throw new Error('patientId required for timeline event creation');
     }
 
-    await this.prisma.timelineEvent.create({
-      data: {
-        patientId: context.patientId,
-        hospitalId: context.hospitalId,
-        eventType: payload.eventType || 'RULE_TRIGGERED',
-        category: payload.category || 'RULE',
-        title: payload.title || 'Rule Action Executed',
-        subtitle: payload.subtitle,
-        summary: payload.summary,
-        description: payload.description,
-        severity: payload.severity || 'MEDIUM',
-        priority: payload.priority || 5,
-        tags: payload.tags || ['rule', context.patientId],
-        metadata: {
-          ...payload.metadata,
-          triggeredByRule: true,
-        },
+    const { getTimelinePublisher } = await import('@haspataal/timeline');
+
+    await getTimelinePublisher().publish({
+      patientId: context.patientId,
+      hospitalId: context.hospitalId,
+      eventType: payload.eventType || 'RULE_TRIGGERED',
+      category: payload.category || 'RULE',
+      title: payload.title || 'Rule Action Executed',
+      subtitle: payload.subtitle,
+      summary: payload.summary,
+      description: payload.description,
+      severity: payload.severity || 'MEDIUM',
+      priority: payload.priority || 5,
+      tags: payload.tags || ['rule', context.patientId],
+      metadata: {
+        ...payload.metadata,
+        triggeredByRule: true,
       },
+      timestamp: new Date(),
     });
   }
 

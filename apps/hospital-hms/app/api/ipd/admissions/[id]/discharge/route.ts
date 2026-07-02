@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
 import { IPDService } from '@/lib/services/ipd';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    const params = await context.params;
     await checkRole(req, [Roles.ADMIN, Roles.DOCTOR]);
     const body = await req.json();
     const admissionId = params.id;

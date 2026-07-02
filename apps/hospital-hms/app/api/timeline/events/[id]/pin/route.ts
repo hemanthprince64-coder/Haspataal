@@ -9,10 +9,10 @@ const PinSchema = z.object({
   isPinned: z.boolean(),
 });
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     await checkRole(req, [Roles.DOCTOR, Roles.ADMIN]);
-    const { id } = await params;
+    const { id } = await context.params;
     const body = await req.json();
     const { isPinned } = PinSchema.parse(body);
 

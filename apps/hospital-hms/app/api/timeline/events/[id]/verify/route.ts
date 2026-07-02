@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
 import * as TimelineService from '@/lib/services/timeline';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.PATIENT]);
-    const { id } = await params;
+    const { id } = await context.params;
     const result = await TimelineService.verifyIntegrity(id);
     return NextResponse.json(result);
   } catch (err: unknown) {
