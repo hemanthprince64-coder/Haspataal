@@ -3,10 +3,10 @@ import Redis from 'ioredis';
 import { SearchQuery, SearchResponse, EntityType } from '../../domain/types';
 import {
   SearchIndexProvider,
+  SearchDocument,
   AutocompleteOptions,
   AutocompleteResult,
   IndexHealth,
-  SearchDocument,
 } from './index-provider';
 
 export class RedisCacheDecorator implements SearchIndexProvider {

@@ -612,6 +612,7 @@ model Appointment {
   patientGlobalId     String?               @map("patient_global_id")
   slotTime            DateTime?             @map("slot_time")
   scheduledAt         DateTime?             @map("scheduled_at")
+  confirmationExpiresAt DateTime?            @map("confirmation_expires_at")
   doctor              DoctorMaster          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   patient             Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
   followUps           FollowUp[]
@@ -1130,6 +1131,7 @@ model VitalRecord {
   bmi           Decimal?
   bloodPressure String?  @map("blood_pressure")
   pulse         Int?
+  respiratoryRate Int?   @map("respiratory_rate")
   bloodSugar    Decimal? @map("blood_sugar")
   spo2          Decimal?
   temperature   Decimal?
@@ -1900,10 +1902,19 @@ enum HospitalStatus {
 enum AppointmentStatus {
   AWAITING_PAYMENT
   BOOKED
+  PENDING_CONFIRMATION
   CONFIRMED
+  CHECKED_IN
+  IN_CONSULTATION
   COMPLETED
+  FOLLOW_UP
   CANCELLED
   NO_SHOW
+  REJECTED
+  EXPIRED
+  RESCHEDULE_REQUESTED
+  RESCHEDULE_ACCEPTED
+  RESCHEDULE_DECLINED
 }
 
 enum PaymentStatus {

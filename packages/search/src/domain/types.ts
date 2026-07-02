@@ -11,6 +11,7 @@ export const EntityType = z.enum([
   'radiology',
   'bill',
   'medicine',
+  'investigation',
   'notification',
   'task',
   'clinical',

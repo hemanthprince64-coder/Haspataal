@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@haspataal/db": "workspace:*",
+    "ioredis": "^5.4.0",
+    "prisma": "^5.15.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

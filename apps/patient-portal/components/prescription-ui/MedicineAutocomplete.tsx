@@ -1,34 +1,68 @@
-import React, { useState, useRef, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+
+import React, { useState, useRef, useEffect } from 'react';
+
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+interface MedicineSuggestion {
+  text: string;
+  entityType: string;
+  entityId: string;
+}
 
 export function MedicineAutocomplete({ onAdd }: { onAdd: (med: any) => void }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [suggestions, setSuggestions] = useState<MedicineSuggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Smart defaults auto-filled upon selection
   const [selectedMed, setSelectedMed] = useState<any>(null);
   const [dose, setDose] = useState('');
   const [freq, setFreq] = useState('');
   const [dur, setDur] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mock DB
-  const MOCK_DRUGS = [
-    { name: 'Paracetamol 500mg', dose: '1 Tab', frequency: 'TDS (After Meal)', duration: '3 Days' },
-    { name: 'Amoxicillin 625mg', dose: '1 Tab', frequency: 'BD (After Meal)', duration: '5 Days' },
-    {
-      name: 'Pantoprazole 40mg',
-      dose: '1 Tab',
-      frequency: 'OD (Empty Stomach)',
-      duration: '5 Days',
-    },
-  ];
+  useEffect(() => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
 
-  const results = MOCK_DRUGS.filter((d) => d.name.toLowerCase().includes(query.toLowerCase()));
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          q: query,
+          action: 'autocomplete',
+          types: 'medicine',
+          limit: '10',
+        });
+        const res = await fetch(`/api/search?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(data.suggestions || []);
+        }
+      } catch (err) {
+        console.warn('Autocomplete fetch failed:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
+
+  const results = suggestions.map((s) => ({ name: s.text }));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -44,18 +78,16 @@ export function MedicineAutocomplete({ onAdd }: { onAdd: (med: any) => void }) {
   const handleSelect = (med: any) => {
     setSelectedMed(med);
     setQuery(med.name);
-    setDose(med.dose);
-    setFreq(med.frequency);
-    setDur(med.duration);
+    setDose(med.dose || '');
+    setFreq(med.frequency || '');
+    setDur(med.duration || '');
     setIsOpen(false);
-    // Move focus to dose
     document.getElementById('dose-input')?.focus();
   };
 
   const handleAdd = () => {
     if (!selectedMed) return;
     onAdd({ name: selectedMed.name, dose, frequency: freq, duration: dur });
-    // Reset for next rapid entry
     setSelectedMed(null);
     setQuery('');
     setDose('');
@@ -73,20 +105,24 @@ export function MedicineAutocomplete({ onAdd }: { onAdd: (med: any) => void }) {
           onChange={(e) => {
             setQuery(e.target.value);
             setIsOpen(e.target.value.length >= 2);
+            if (e.target.value.length < 2) setSuggestions([]);
           }}
           onKeyDown={handleKeyDown}
           placeholder="Type drug name (e.g., Par...)"
           className="w-full"
         />
-        {isOpen && results.length > 0 && (
+        {isLoading && (
+          <div className="absolute right-2 top-2 text-xs text-slate-400">loading...</div>
+        )}
+        {isOpen && suggestions.length > 0 && (
           <div className="absolute z-10 w-full bg-white border shadow-lg mt-1 rounded-md max-h-48 overflow-y-auto">
-            {results.map((r, i) => (
+            {suggestions.map((r, i) => (
               <div
-                key={i}
+                key={r.entityId}
                 className={`p-2 cursor-pointer text-sm ${i === activeIdx ? 'bg-blue-100' : 'hover:bg-slate-50'}`}
-                onClick={() => handleSelect(r)}
+                onClick={() => handleSelect({ name: r.text })}
               >
-                {r.name}
+                {r.text}
               </div>
             ))}
           </div>

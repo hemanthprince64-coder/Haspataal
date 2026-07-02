@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
 import { Input } from '@/components/ui/input';
+
+interface DiagnosisSuggestion {
+  text: string;
+  entityType: string;
+  entityId: string;
+}
 
 export function DiagnosisSearch({
   value,
@@ -10,15 +17,47 @@ export function DiagnosisSearch({
 }) {
   const [query, setQuery] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<DiagnosisSuggestion[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock ICD-10
-  const MOCK_ICD = [
-    { code: 'J06.9', desc: 'Acute upper respiratory infection, unspecified' },
-    { code: 'A09', desc: 'Infectious gastroenteritis and colitis' },
-    { code: 'E11.9', desc: 'Type 2 diabetes mellitus without complications' },
-  ];
-
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const FAVS = ['Viral Fever', 'URTI', 'Gastroenteritis', 'Hypertension'];
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({
+          q: query,
+          action: 'autocomplete',
+          types: 'clinical',
+          limit: '10',
+        });
+        const res = await fetch(`/api/search?${params}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(data.suggestions || []);
+        }
+      } catch (err) {
+        console.warn('Diagnosis search fetch failed:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
   const handleSelect = (diag: string) => {
     setQuery(diag);
@@ -38,18 +77,16 @@ export function DiagnosisSearch({
         placeholder="Search ICD-10 or Type Custom Diagnosis"
         className="w-full"
       />
-      {isOpen && (
-        <div className="absolute z-10 w-full bg-white border shadow-lg mt-1 rounded-md">
-          {MOCK_ICD.filter(
-            (i) => i.desc.toLowerCase().includes(query.toLowerCase()) || i.code.includes(query),
-          ).map((r, i) => (
+      {isLoading && <div className="absolute right-2 top-2 text-xs text-slate-400">loading...</div>}
+      {isOpen && suggestions.length > 0 && (
+        <div className="absolute z-10 w-full bg-white border shadow-lg mt-1 rounded-md max-h-48 overflow-y-auto">
+          {suggestions.map((r, i) => (
             <div
-              key={i}
-              className="p-2 cursor-pointer text-sm hover:bg-slate-50 flex justify-between"
-              onClick={() => handleSelect(`${r.desc} (${r.code})`)}
+              key={r.entityId}
+              className="p-2 cursor-pointer text-sm hover:bg-slate-50"
+              onClick={() => handleSelect(r.text)}
             >
-              <span>{r.desc}</span>
-              <span className="text-slate-400 text-xs">{r.code}</span>
+              {r.text}
             </div>
           ))}
         </div>
