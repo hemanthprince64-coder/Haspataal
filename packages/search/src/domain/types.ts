@@ -35,7 +35,7 @@ export const SearchQuery = z.object({
   sort: z.enum(['relevance', 'created_at', 'updated_at']).default('relevance'),
   order: z.enum(['asc', 'desc']).default('desc'),
 });
-export type SearchQuery = z.infer<typeof SearchQuery>;
+export type SearchQuery = z.input<typeof SearchQuery>;
 
 export const SearchResult = z.object({
   id: z.string().uuid(),

@@ -29,9 +29,14 @@ export class PostgresSearchProvider {
     if (status) {
       whereConditions.push(Prisma.sql`metadata->>'status' = ${status}`);
     }
+    let offset = 0;
     if (cursor) {
-      // Very basic cursor assumption if sorting by created_at desc (not fully generic, but better than nothing)
-      whereConditions.push(Prisma.sql`id != ${cursor}::uuid`);
+      if (cursor.startsWith('offset:')) {
+        offset = parseInt(cursor.replace('offset:', ''), 10) || 0;
+      } else {
+        // Fallback for older opaque cursor assuming id
+        whereConditions.push(Prisma.sql`id != ${cursor}::uuid`);
+      }
     }
     const whereClause =
       whereConditions.length > 0
@@ -68,6 +73,7 @@ export class PostgresSearchProvider {
       ${whereClause}
       ${orderByClause}
       LIMIT ${limit}
+      OFFSET ${offset}
     `;
     const facetResults = await this.prisma.$queryRaw`
       SELECT entity_type, count(*) as count
@@ -104,7 +110,7 @@ export class PostgresSearchProvider {
       total: results.length,
       tookMs: Date.now() - start,
       facets,
-      nextCursor: results.length === limit ? results[results.length - 1].id : undefined,
+      nextCursor: results.length === limit ? `offset:${offset + limit}` : undefined,
     };
   }
   async index(document) {
@@ -180,6 +186,10 @@ export class PostgresSearchProvider {
         SELECT pg_total_relation_size('searchable_entities') as size
       `;
       const outboxCount = await this.prisma.outboxEvent.count({ where: { processed: false } });
+      const lastIndexedResult = await this.prisma.searchableEntity.findFirst({
+        orderBy: { updatedAt: 'desc' },
+        select: { updatedAt: true },
+      });
       return {
         status: 'healthy',
         documentCount: count,
@@ -187,7 +197,10 @@ export class PostgresSearchProvider {
           ((_a = sizeResult[0]) === null || _a === void 0 ? void 0 : _a.size) || 0,
         ),
         queueDepth: outboxCount,
-        lastIndexedAt: new Date(),
+        lastIndexedAt:
+          (lastIndexedResult === null || lastIndexedResult === void 0
+            ? void 0
+            : lastIndexedResult.updatedAt) || new Date(0),
       };
     } catch (error) {
       return {

@@ -4,6 +4,8 @@ import type { EntityType } from '@haspataal/search';
 
 import { NextResponse } from 'next/server';
 
+import { requireHospital } from '../../../lib/auth/middleware';
+
 const provider = new PostgresSearchProvider(prisma);
 const searchService = new SearchService(provider);
 
@@ -29,14 +31,25 @@ export async function GET(req: Request) {
     const types = searchParams.get('types')?.split(',') as EntityType[] | undefined;
     const limit = parseInt(searchParams.get('limit') || '20');
     const hospitalId = searchParams.get('hospitalId') || undefined;
+    const cursor = searchParams.get('cursor') || undefined;
+    const from = searchParams.get('from') || undefined;
+    const to = searchParams.get('to') || undefined;
 
     const results = await searchService.search({
       text: query,
-      types,
-      limit,
+      types: types || ['timeline'],
       hospitalId,
-      sort: 'relevance',
+      limit,
+      cursor,
+      sort: types?.includes('timeline') ? 'created_at' : 'relevance',
       order: 'desc',
+      dateRange:
+        from || to
+          ? {
+              from: from ? new Date(from) : undefined,
+              to: to ? new Date(to) : undefined,
+            }
+          : undefined,
     });
     return NextResponse.json(results);
   } catch (err: any) {
@@ -50,18 +63,27 @@ export async function POST(req: Request) {
     const { action } = body;
 
     if (action === 'seed-catalog') {
+      const auth = await requireHospital(req);
+      if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
       await seedMedicineCatalog();
       await seedInvestigationCatalog();
       return NextResponse.json({ success: true, message: 'Catalogs seeded successfully' });
     }
 
     if (action === 'seed-all') {
+      const auth = await requireHospital(req);
+      if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
       await seedMedicineCatalog();
       await seedInvestigationCatalog();
       await seedPatients();
       await seedDoctors();
       await seedAppointments();
       await seedTimelineEvents();
+      await seedInvoices();
+      await seedLabOrders();
+      await seedPrescriptions();
       return NextResponse.json({ success: true, message: 'All entities seeded successfully' });
     }
 
@@ -185,6 +207,47 @@ async function seedTimelineEvents() {
       title: e.title,
       content: e.description || e.summary || JSON.stringify(e.metadata),
       metadata: e as any,
+    });
+  }
+}
+
+async function seedInvoices() {
+  const invoices = await prisma.invoice.findMany({ include: { patient: true } });
+  for (const i of invoices) {
+    await searchService.index({
+      entityType: 'bill',
+      entityId: i.id,
+      hospitalId: i.hospitalId || undefined,
+      title: `Invoice ${i.invoiceNumber}`,
+      content: `Total: ${i.totalAmount} Status: ${i.status} Patient: ${i.patient?.name || ''}`,
+      metadata: i as any,
+    });
+  }
+}
+
+async function seedLabOrders() {
+  const labOrders = await prisma.labOrder.findMany({ include: { patient: true } });
+  for (const l of labOrders) {
+    await searchService.index({
+      entityType: 'lab',
+      entityId: l.id,
+      hospitalId: l.hospitalId || undefined,
+      title: `Lab Order ${l.orderNumber}`,
+      content: `Status: ${l.status} Priority: ${l.priority} Patient: ${l.patient?.name || ''}`,
+      metadata: l as any,
+    });
+  }
+}
+
+async function seedPrescriptions() {
+  const prescriptions = await prisma.patientPrescription.findMany({ include: { patient: true } });
+  for (const p of prescriptions) {
+    await searchService.index({
+      entityType: 'prescription',
+      entityId: p.id,
+      title: `Prescription for ${p.patient?.name || 'Patient'}`,
+      content: `Type: ${p.type} Notes: ${p.notes || ''}`,
+      metadata: p as any,
     });
   }
 }

@@ -1,8 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // 5. FULL-TEXT SEARCH
 // ─────────────────────────────────────────────────────────────
-import { SearchService } from '@haspataal/search/src/application/services/search-service';
-import { PostgresSearchProvider } from '@haspataal/search/src/infrastructure/providers/postgres-provider';
+import { SearchService, PostgresSearchProvider } from '@haspataal/search';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { createHash } from 'crypto';
 import IORedis from 'ioredis';
@@ -282,6 +281,8 @@ export async function searchTimeline(filters: SearchFilters) {
     hospitalId,
     limit: Math.min(limit, 100),
     cursor,
+    sort: 'created_at',
+    order: 'desc',
     dateRange: {
       from: dateFrom ? new Date(dateFrom) : undefined,
       to: dateTo ? new Date(dateTo) : undefined,

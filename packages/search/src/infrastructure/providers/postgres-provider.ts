@@ -37,9 +37,14 @@ export class PostgresSearchProvider implements SearchIndexProvider {
     if (status) {
       whereConditions.push(Prisma.sql`metadata->>'status' = ${status}`);
     }
+    let offset = 0;
     if (cursor) {
-      // Very basic cursor assumption if sorting by created_at desc (not fully generic, but better than nothing)
-      whereConditions.push(Prisma.sql`id != ${cursor}::uuid`);
+      if (cursor.startsWith('offset:')) {
+        offset = parseInt(cursor.replace('offset:', ''), 10) || 0;
+      } else {
+        // Fallback for older opaque cursor assuming id
+        whereConditions.push(Prisma.sql`id != ${cursor}::uuid`);
+      }
     }
 
     const whereClause =
@@ -81,6 +86,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
       ${whereClause}
       ${orderByClause}
       LIMIT ${limit}
+      OFFSET ${offset}
     `;
 
     const facetResults = await this.prisma.$queryRaw<any[]>`
@@ -122,7 +128,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
       total: results.length,
       tookMs: Date.now() - start,
       facets,
-      nextCursor: results.length === limit ? results[results.length - 1].id : undefined,
+      nextCursor: results.length === limit ? `offset:${offset + limit}` : undefined,
     };
   }
 
@@ -204,12 +210,17 @@ export class PostgresSearchProvider implements SearchIndexProvider {
       `;
       const outboxCount = await this.prisma.outboxEvent.count({ where: { processed: false } });
 
+      const lastIndexedResult = await this.prisma.searchableEntity.findFirst({
+        orderBy: { updatedAt: 'desc' },
+        select: { updatedAt: true },
+      });
+
       return {
         status: 'healthy',
         documentCount: count,
         indexSizeBytes: Number(sizeResult[0]?.size || 0),
         queueDepth: outboxCount,
-        lastIndexedAt: new Date(),
+        lastIndexedAt: lastIndexedResult?.updatedAt || new Date(0),
       };
     } catch (error) {
       return {

@@ -1,6 +1,10 @@
 import { SearchResult } from '../../domain/types';
 
 export declare class RankingEngine {
+  private static exactMatch;
+  private static prefixMatch;
+  private static fuzzyMatch;
+  private static recencyScore;
   static calculateRelevance(
     query: string,
     document: SearchResult,
@@ -9,9 +13,5 @@ export declare class RankingEngine {
       hospitalId?: string;
     },
   ): number;
-  private static exactMatch;
-  private static prefixMatch;
-  private static fuzzyMatch;
-  private static recencyScore;
 }
 //# sourceMappingURL=ranking-engine.d.ts.map
