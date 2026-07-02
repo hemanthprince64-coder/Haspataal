@@ -45,28 +45,41 @@ export class PostgresSearchProvider {
   }
   async index(document) {
     const textContent = `${document.title} ${document.content || ''}`;
-    await this.prisma.$executeRaw`
-      INSERT INTO searchable_entities (
-        id, entity_type, entity_id, hospital_id, title, content, metadata, search_vector, created_at, updated_at
-      ) VALUES (
-        ${document.id}::uuid,
-        ${document.entityType},
-        ${document.entityId}::uuid,
-        ${document.hospitalId ? document.hospitalId + '::uuid' : null},
-        ${document.title},
-        ${document.content},
-        ${document.metadata ? JSON.stringify(document.metadata) : null}::jsonb,
-        to_tsvector('english', ${textContent}),
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        title = EXCLUDED.title,
-        content = EXCLUDED.content,
-        metadata = EXCLUDED.metadata,
-        search_vector = EXCLUDED.search_vector,
-        updated_at = NOW()
+    const existing = await this.prisma.$queryRaw`
+      SELECT id FROM searchable_entities
+      WHERE entity_type = ${document.entityType} AND entity_id = ${document.entityId}
+      LIMIT 1
     `;
+    const hId = document.hospitalId || null;
+    if (existing && existing.length > 0) {
+      await this.prisma.$executeRaw`
+        UPDATE searchable_entities SET
+          hospital_id = ${hId}::uuid,
+          title = ${document.title},
+          content = ${document.content},
+          metadata = ${document.metadata ? JSON.stringify(document.metadata) : null}::jsonb,
+          search_vector = to_tsvector('english', ${textContent}),
+          updated_at = NOW()
+        WHERE id = ${existing[0].id}::uuid
+      `;
+    } else {
+      await this.prisma.$executeRaw`
+        INSERT INTO searchable_entities (
+          id, entity_type, entity_id, hospital_id, title, content, metadata, search_vector, created_at, updated_at
+        ) VALUES (
+          gen_random_uuid(),
+          ${document.entityType},
+          ${document.entityId},
+          ${hId}::uuid,
+          ${document.title},
+          ${document.content},
+          ${document.metadata ? JSON.stringify(document.metadata) : null}::jsonb,
+          to_tsvector('english', ${textContent}),
+          NOW(),
+          NOW()
+        )
+      `;
+    }
   }
   async delete(entityId, entityType) {
     await this.prisma.searchableEntity.deleteMany({

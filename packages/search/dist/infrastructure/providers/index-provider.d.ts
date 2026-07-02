@@ -8,7 +8,7 @@ export interface SearchIndexProvider {
   health(): Promise<IndexHealth>;
 }
 export interface SearchDocument {
-  id: string;
+  id?: string;
   entityType: string;
   entityId: string;
   hospitalId?: string;

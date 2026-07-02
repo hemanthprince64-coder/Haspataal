@@ -9,7 +9,7 @@ export interface SearchIndexProvider {
 }
 
 export interface SearchDocument {
-  id: string;
+  id?: string;
   entityType: string;
   entityId: string;
   hospitalId?: string;
