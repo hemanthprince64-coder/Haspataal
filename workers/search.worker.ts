@@ -1,5 +1,4 @@
-import { SearchService } from '@haspataal/search/src/application/services/search-service';
-import { PostgresSearchProvider } from '@haspataal/search/src/infrastructure/providers/postgres-provider';
+import { SearchService, PostgresSearchProvider } from '@haspataal/search';
 import { PrismaClient } from '@prisma/client';
 
 import logger from '../apps/patient-portal/lib/logger';

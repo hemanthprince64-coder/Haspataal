@@ -11,6 +11,9 @@ const searchService = new SearchService(provider);
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireHospital(req);
+    if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('q');
     const action = searchParams.get('action') || 'search';
