@@ -3,14 +3,10 @@ import { NotificationEngine } from '@haspataal/notify';
 import { RuleCompiler } from './compiler';
 import { Rule, Action, RuleContext, RuleResult } from './types';
 
-export class ExecutionEngine {
-  private prisma: any;
-  private notificationEngine: NotificationEngine;
+import { prisma } from '@haspataal/db';
 
-  constructor(prismaClient: any) {
-    this.prisma = prismaClient;
-    this.notificationEngine = new NotificationEngine();
-  }
+export class ExecutionEngine {
+  constructor() {}
 
   async execute(rule: Rule, context: RuleContext): Promise<RuleResult> {
     const startTime = Date.now();
@@ -104,7 +100,12 @@ export class ExecutionEngine {
   }
 
   private async sendNotification(payload: any, context: RuleContext): Promise<void> {
-    await this.notificationEngine.enqueue({
+    const { randomUUID } = await import('crypto');
+    const { createPlatformCommandSchema } = await import('@haspataal/platform-contracts');
+    
+    // Wave 6: Write PlatformCommand to Outbox instead of synchronous execution
+    const commandId = randomUUID();
+    const commandPayload = {
       patientId: context.patientId || undefined,
       hospitalId: context.hospitalId || undefined,
       channel: payload.channel || 'SMS',
@@ -114,13 +115,32 @@ export class ExecutionEngine {
       body: payload.body || 'Automated Rule Notification',
       variables: payload.variables,
       metadata: payload.metadata,
+    };
+
+    const outboxCommand = {
+      id: commandId,
+      eventType: 'SEND_NOTIFICATION_COMMAND',
+      payload: {
+        commandPayload,
+        metadata: {
+          aggregateType: 'NotificationEngine',
+          aggregateId: commandId,
+          traceId: randomUUID(),
+          tenantId: context.hospitalId,
+        }
+      },
+      processed: false,
+    };
+
+    await prisma.outboxEvent.create({
+      data: outboxCommand,
     });
   }
 
   private async updateRecord(payload: any, context: RuleContext): Promise<void> {
     // Implementation delegates to record update
     const { table, id, data } = payload;
-    await this.prisma[table].update({
+    await (prisma as any)[table].update({
       where: { id },
       data,
     });
@@ -140,7 +160,7 @@ export class ExecutionEngine {
 
   private async assignTask(payload: any, context: RuleContext): Promise<void> {
     // Implementation for task assignment
-    await this.prisma.task.create({
+    await (prisma as any).task.create({
       data: {
         title: payload.title,
         description: payload.description,
@@ -154,7 +174,7 @@ export class ExecutionEngine {
   }
 
   private async escalate(payload: any, context: RuleContext): Promise<void> {
-    await this.prisma.escalation.create({
+    await (prisma as any).escalation.create({
       data: {
         level: payload.level || 'DOCTOR',
         reason: payload.reason,
@@ -180,7 +200,7 @@ export class ExecutionEngine {
     const { milestoneId } = payload;
     if (!milestoneId) return;
 
-    await this.prisma.journeyMilestone.update({
+    await prisma.journeyMilestone.update({
       where: { id: milestoneId },
       data: { status: 'COMPLETED', completedAt: new Date() },
     });
@@ -200,7 +220,7 @@ export class ExecutionEngine {
     const { journeyId, score, factors } = payload;
     if (!journeyId) return;
 
-    await this.prisma.journeyRisk.upsert({
+    await prisma.journeyRisk.upsert({
       where: { journeyId },
       update: { score, factors },
       create: { journeyId, score, factors },
@@ -215,15 +235,15 @@ export class ExecutionEngine {
     executionTimeMs: number,
     error?: any,
   ): Promise<void> {
-    await this.prisma.ruleExecution.create({
+    await prisma.ruleExecution.create({
       data: {
         ruleId,
         patientId: context.patientId,
         hospitalId: context.hospitalId,
         triggeredBy: 'EVENT',
         status,
-        resultJson: actions,
-        errorJson: error,
+        resultJson: actions as any,
+        errorJson: error as any,
         executionTimeMs,
       },
     });

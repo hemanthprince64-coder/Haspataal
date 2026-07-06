@@ -145,24 +145,18 @@ export type TimelineEventInput = z.input<typeof TimelineEventSchema>;
 // PUBLISHER
 // ─────────────────────────────────────────────────────────────
 
+import { prisma } from '@haspataal/db';
+
 export class TimelinePublisher {
-  private queue: Queue;
-
   constructor(redisConnection?: IORedis) {
-    const connection =
-      redisConnection ??
-      new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
-        maxRetriesPerRequest: null,
-      });
-
-    this.queue = new Queue('timeline-ingestion', { connection });
+    // Kept for backwards compatibility if anyone passes redis, but no longer used for publishing
   }
 
   async publish(input: TimelineEventInput): Promise<{ correlationId: string }> {
     // 1. Validate
     const parsed = TimelineEventSchema.parse(input);
 
-    // 2. Auto-generate correlationId if missing (backwards-compat shim)
+    // 2. Auto-generate correlationId if missing
     let correlationId = parsed.correlationId;
     if (!correlationId) {
       correlationId = uuidv4();
@@ -174,26 +168,35 @@ export class TimelinePublisher {
       }
     }
 
-    // 3. Enqueue on BullMQ
-    await this.queue.add(
-      parsed.eventType,
-      { ...parsed, correlationId },
-      {
-        jobId: correlationId, // idempotent job ID for BullMQ de-dup
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000 },
-        removeOnComplete: { count: 100 },
-        removeOnFail: false, // keep in DLQ for inspection
+    // 3. Insert into Outbox instead of BullMQ
+    // We use a generic 'system' actor context if none is provided
+    await prisma.outboxEvent.create({
+      data: {
+        id: uuidv4(),
+        eventType: 'ADD_TO_TIMELINE_COMMAND',
+        payload: {
+          commandId: uuidv4(),
+          commandVersion: 1,
+          target: 'timeline',
+          tenantContext: { hospitalId: parsed.hospitalId || 'system', branchId: 'default' },
+          actorContext: { actorId: parsed.actorId || 'system', actorType: parsed.actorType || 'SYSTEM' },
+          correlationId,
+          idempotencyKey: `timeline-publish-${correlationId}`,
+          timestamp: new Date().toISOString(),
+          payload: parsed,
+        },
+        processed: false,
       },
-    );
+    });
 
     return { correlationId };
   }
 
   async close(): Promise<void> {
-    await this.queue.close();
+    // No-op for backwards compatibility
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // SINGLETON (for use in Next.js App Router / server actions)
@@ -207,3 +210,7 @@ export function getTimelinePublisher(): TimelinePublisher {
   }
   return _publisher;
 }
+
+export * from './handlers';
+export * from './queries';
+export * from './mutations';

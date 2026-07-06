@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineQueryHandler } from '@haspataal/timeline';
+import { createPlatformQueryContext } from '@/lib/platform';
 
 export async function GET(req: Request, context: { params: Promise<{ jobId: string }> }) {
   try {
     await checkRole(req, [Roles.PATIENT, Roles.DOCTOR, Roles.ADMIN]);
     const { jobId } = await context.params;
-    const status = await TimelineService.getExportStatus(jobId);
+
+    const platformContext = await createPlatformQueryContext(req);
+    const query = {
+      ...platformContext,
+      filters: { jobId },
+    };
+
+    const status = await TimelineQueryHandler.getExportStatus(query);
 
     if (!status) {
       return NextResponse.json({ error: 'Export job not found' }, { status: 404 });

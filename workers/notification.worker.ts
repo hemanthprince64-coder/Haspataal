@@ -1,222 +1,175 @@
 import { prisma } from '@haspataal/db';
-import { Pool } from 'pg';
+import { TwilioSMSAdapter, MetaWhatsAppAdapter, ResendEmailAdapter } from '@haspataal/notify';
+import { ProviderFailover, NotificationCommandHandler } from '@haspataal/notify';
+import { Worker, Queue } from 'bullmq';
+import { eventBus } from '@haspataal/events';
+import { v4 as uuidv4 } from 'uuid';
+import logger from '../apps/patient-portal/lib/logger';
 
-import { EventService } from '../services/event.service';
-import { buildMessage } from '../templates/notification-templates';
+const connection = {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+};
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const twilioAdapter = new TwilioSMSAdapter({
+  accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '',
+  from: process.env.TWILIO_FROM || '',
+});
 
-export class NotificationWorker {
-  /**
-   * Intended to run frequently (e.g. every minute)
-   */
-  public static async processQueue() {
-    const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+const whatsappAdapter = new MetaWhatsAppAdapter({
+  accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+  phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+});
 
-    if (isSqlite) {
-      try {
-        const pendingNotifications = await prisma.notification.findMany({
-          where: {
-            status: 'PENDING',
-            scheduledAt: { lte: new Date() },
-          },
-          take: 50,
-        });
+const emailAdapter = new ResendEmailAdapter();
 
-        for (const job of pendingNotifications) {
-          await this.attemptSendPrisma(job);
-        }
-      } catch (err) {
-        console.error('[NotificationWorker] SQLite processQueue error', err);
+const smsFailover = new ProviderFailover(twilioAdapter);
+const whatsappFailover = new ProviderFailover(whatsappAdapter);
+const emailFailover = new ProviderFailover(emailAdapter);
+
+void [smsFailover, whatsappFailover, emailFailover];
+
+const smsQueue = new Queue('sms-notifications', { connection });
+const whatsappQueue = new Queue('whatsapp-notifications', { connection });
+const emailQueue = new Queue('email-notifications', { connection });
+
+function createWorker(queueName: string, adapter: any) {
+  return new Worker(
+    queueName,
+    async (job) => {
+      const { notificationId } = job.data as { notificationId: string };
+      const notification = await prisma.notification.findUnique({ where: { id: notificationId } });
+      
+      if (!notification) return { success: false, error: 'Notification not found' };
+
+      // Optional: Check scheduledAt
+      if (notification.scheduledAt && new Date() < notification.scheduledAt) {
+        console.log(`[NotificationWorker] Job ${job.id} is scheduled for future. Skipping for now.`);
+        throw new Error('Scheduled for future'); // Triggers BullMQ backoff
       }
-      return;
-    }
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
+      const result = await adapter.deliver(notification);
 
-      // Lock rows for processing
-      const res = await client.query(
-        `SELECT id, hospital_id, patient_id, template_key, variables, channel, attempts 
-         FROM "NotificationLog" 
-         WHERE status = 'pending' 
-           AND next_attempt_at <= now() 
-         FOR UPDATE SKIP LOCKED 
-         LIMIT 50`, // Batch to respect rate limits
-      );
-
-      for (const row of res.rows) {
-        await this.attemptSend(client, row);
-      }
-
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('[NotificationWorker] Queue processing error', err);
-    } finally {
-      client.release();
-    }
-  }
-
-  private static async attemptSendPrisma(job: any) {
-    const { id, hospitalId, patientId, templateKey, payload, channel } = job;
-    const attempts = (job.metadata as any)?.attempts ?? 0;
-    const currentChannel = channel === 'auto' ? 'whatsapp' : channel;
-
-    let success = false;
-
-    try {
-      const variables =
-        typeof payload === 'object'
-          ? (payload as Record<string, string>)
-          : (job.variables as Record<string, string>) || {};
-      const message = buildMessage(templateKey || '', variables);
-
-      success = await this.mockProviderSend(currentChannel, patientId || 'unknown', message);
-
-      if (success) {
+      if (result.success) {
         await prisma.notification.update({
-          where: { id },
+          where: { id: notificationId },
+          data: { status: 'SENT', sentAt: new Date() },
+        });
+        await prisma.notificationDelivery.create({
           data: {
-            status: 'delivered',
-            sentAt: new Date(),
+            notificationId,
+            channel: adapter.channel,
+            provider: adapter.constructor.name,
+            status: 'SENT',
+            providerRef: result.messageId,
           },
         });
-        await EventService.publish(
-          'notification_sent',
-          { notification_id: id, channel: currentChannel },
-          hospitalId,
-          patientId,
-        );
+        
+        // Emit delivery success
+        await eventBus.publish({
+          id: uuidv4(),
+          type: 'NOTIFICATION_DELIVERED',
+          timestamp: new Date(),
+          hospitalId: notification.hospitalId,
+          payload: { notificationId, channel: adapter.channel }
+        });
       } else {
-        throw new Error('Provider rejected');
-      }
-    } catch (err: any) {
-      const nextAttempts = attempts + 1;
-
-      if (nextAttempts >= 3) {
-        if (channel === 'auto' || currentChannel === 'whatsapp') {
-          console.log(
-            `[NotificationWorker] WhatsApp failed 3 times for Job ${id}. Falling back to SMS.`,
-          );
-          await prisma.notification.update({
-            where: { id },
-            data: {
-              channel: 'sms',
-              metadata: {
-                ...(typeof job.metadata === 'object' ? (job.metadata as any) : {}),
-                attempts: 0,
-              } as any,
-              scheduledAt: new Date(),
-            },
-          });
-        } else {
-          await prisma.notification.update({
-            where: { id },
-            data: {
-              status: 'failed',
-              failureReason: err.message || 'Maximum attempts reached',
-            },
-          });
-        }
-      } else {
-        let delayMins = 1;
-        if (nextAttempts === 2) delayMins = 5;
-        if (nextAttempts === 3) delayMins = 30;
-
-        const nextAttemptAt = new Date();
-        nextAttemptAt.setMinutes(nextAttemptAt.getMinutes() + delayMins);
-
         await prisma.notification.update({
-          where: { id },
+          where: { id: notificationId },
+          data: { status: 'FAILED', failureReason: result.error, failedAt: new Date() },
+        });
+        await prisma.notificationDelivery.create({
           data: {
-            metadata: {
-              ...(typeof job.metadata === 'object' ? (job.metadata as any) : {}),
-              attempts: nextAttempts,
-            } as any,
-            scheduledAt: nextAttemptAt,
+            notificationId,
+            channel: adapter.channel,
+            provider: adapter.constructor.name,
+            status: 'FAILED',
+            error: result.error,
           },
         });
+        
+        // Emit delivery failure for rules engine to escalate
+        await eventBus.publish({
+          id: uuidv4(),
+          type: 'NOTIFICATION_FAILED',
+          timestamp: new Date(),
+          hospitalId: notification.hospitalId,
+          payload: { notificationId, error: result.error, channel: adapter.channel }
+        });
       }
-    }
-  }
-
-  private static async attemptSend(client: any, job: any) {
-    const { id, hospital_id, patient_id, template_key, variables, channel, attempts } = job;
-
-    // Default to WhatsApp if AUTO
-    const currentChannel = channel === 'auto' ? 'whatsapp' : channel;
-
-    let success = false;
-
-    try {
-      // Build message
-      const message = buildMessage(template_key, variables);
-
-      // Mock external provider call
-      success = await this.mockProviderSend(currentChannel, patient_id, message);
-
-      if (success) {
-        // Mark delivered
-        await client.query(
-          `UPDATE "NotificationLog" SET status = 'delivered', delivered_at = now() WHERE id = $1`,
-          [id],
-        );
-        await EventService.publish(
-          'notification_sent',
-          { notification_id: id, channel: currentChannel },
-          hospital_id,
-          patient_id,
-        );
-      } else {
-        throw new Error('Provider rejected');
-      }
-    } catch (err) {
-      const nextAttempts = attempts + 1;
-
-      if (nextAttempts >= 3) {
-        // Fallback logic
-        if (channel === 'auto' || currentChannel === 'whatsapp') {
-          console.log(
-            `[NotificationWorker] WhatsApp failed 3 times for Job ${id}. Falling back to SMS.`,
-          );
-          await client.query(
-            `UPDATE "NotificationLog" 
-             SET channel = 'sms', attempts = 0, next_attempt_at = now() 
-             WHERE id = $1`,
-            [id],
-          );
-        } else {
-          // Absolute failure
-          await client.query(`UPDATE "NotificationLog" SET status = 'failed' WHERE id = $1`, [id]);
-        }
-      } else {
-        // Exponential backoff (1m, 5m, 30m)
-        let delayMins = 1;
-        if (nextAttempts === 2) delayMins = 5;
-        if (nextAttempts === 3) delayMins = 30;
-
-        await client.query(
-          `UPDATE "NotificationLog" 
-           SET attempts = $1, next_attempt_at = now() + interval '${delayMins} minutes' 
-           WHERE id = $2`,
-          [nextAttempts, id],
-        );
-      }
-    }
-  }
-
-  private static async mockProviderSend(
-    channel: string,
-    patientId: string,
-    message: string,
-  ): Promise<boolean> {
-    // 90% success rate mock
-    const isSuccess = Math.random() > 0.1;
-    console.log(
-      `[MockProvider] Sending via ${channel.toUpperCase()} to ${patientId}: "${message}" -> ${isSuccess ? 'SUCCESS' : 'FAIL'}`,
-    );
-    return isSuccess;
-  }
+      return result;
+    },
+    { connection, concurrency: 10 },
+  );
 }
+
+export const workers = [
+  createWorker('sms-notifications', twilioAdapter),
+  createWorker('whatsapp-notifications', whatsappAdapter),
+  createWorker('email-notifications', emailAdapter),
+  createWorker('push-notifications', {
+    channel: 'PUSH',
+    deliver: async (_n: unknown) => ({ success: true, messageId: 'push-mock' }),
+  }),
+  createWorker('in-app-notifications', {
+    channel: 'IN_APP',
+    deliver: async (_n: unknown) => ({ success: true, messageId: 'inapp-mock' }),
+  }),
+];
+
+export const retryWorker = new Worker(
+  'notification-retry',
+  async (job) => {
+    const { notificationId } = job.data;
+    const n = await prisma.notification.findUnique({ where: { id: notificationId } });
+    if (!n) return;
+    if (n.channel === 'SMS') await smsQueue.add('retry', n);
+    if (n.channel === 'WHATSAPP') await whatsappQueue.add('retry', n);
+    if (n.channel === 'EMAIL') await emailQueue.add('retry', n);
+  },
+  { connection },
+);
+
+// ─────────────────────────────────────────────────────────────
+// EVENT BUS SUBSCRIBER
+// ─────────────────────────────────────────────────────────────
+
+const commandHandler = new NotificationCommandHandler();
+
+// Listen to direct notification triggers from EventBus if any system components emit them directly
+eventBus.subscribe('TRIGGER_NOTIFICATION', async (event) => {
+  try {
+    const payload = event.payload as any;
+    const command = {
+      commandId: uuidv4(),
+      commandVersion: 1,
+      target: 'notification',
+      tenantContext: { hospitalId: event.hospitalId || 'system', branchId: 'default' },
+      actorContext: { actorId: event.actorId || 'system', actorType: 'SYSTEM' },
+      correlationId: event.correlationId || uuidv4(),
+      idempotencyKey: `notify-${event.id}`,
+      timestamp: new Date().toISOString(),
+      payload: {
+        hospitalId: event.hospitalId,
+        patientId: payload.patientId,
+        doctorId: payload.doctorId,
+        templateId: payload.templateId,
+        priority: payload.priority || 'NORMAL',
+        recipient: payload.recipient,
+        variables: payload.variables
+      }
+    };
+    await commandHandler.handleSendNotification(command);
+  } catch (err: any) {
+    logger.error({ action: 'notification_trigger_failed', error: err.message }, 'Failed to handle notification trigger');
+  }
+});
+
+process.stdout.write('[Notification Worker] Started - BullMQ Processors + EventBus Adapter\n');
+
+process.on('SIGINT', async () => {
+  await Promise.all(workers.map((w) => w.close()));
+  await retryWorker.close();
+  process.exit(0);
+});

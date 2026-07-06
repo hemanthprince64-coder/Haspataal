@@ -3905,3 +3905,22 @@ model SearchLog {
   @@index([createdAt])
   @@map("search_logs")
 }
+
+// ============================================================
+// WAVE 4: EVENT INTEGRATION PATTERNS
+// ============================================================
+
+
+model InboxEvent {
+  eventId       String    @map("event_id")
+  handlerName   String    @map("handler_name")
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+  error         String?
+  retryCount    Int       @default(0) @map("retry_count")
+
+  @@id([eventId, handlerName])
+  @@index([status, createdAt])
+  @@map("inbox_events")
+}

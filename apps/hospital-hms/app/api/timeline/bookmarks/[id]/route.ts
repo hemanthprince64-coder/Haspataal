@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineMutationHandler } from '@haspataal/timeline';
 
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const user = await checkRole(req, [Roles.PATIENT, Roles.DOCTOR, Roles.ADMIN]);
     const { id } = await context.params;
-    await TimelineService.removeBookmark(id, user.user_id);
+
+    await TimelineMutationHandler.removeBookmark(id, user.user_id);
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const e = err as Error;

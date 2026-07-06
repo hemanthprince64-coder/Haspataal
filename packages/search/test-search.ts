@@ -4,8 +4,7 @@ import { SearchService } from './src/application/services/search-service';
 import { PostgresSearchProvider } from './src/infrastructure/providers/postgres-provider';
 
 async function run() {
-  const prisma = new PrismaClient();
-  const provider = new PostgresSearchProvider(prisma as any);
+  const provider = new PostgresSearchProvider();
   const search = new SearchService(provider);
 
   console.log('--- Health ---');
@@ -41,7 +40,7 @@ async function run() {
   await provider.delete('00000000-0000-0000-0000-000000000000', 'patient');
   console.log('Deleted test document');
 
-  await prisma.$disconnect();
+
 }
 
 run().catch(console.error);

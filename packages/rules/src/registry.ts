@@ -1,14 +1,11 @@
 import { Rule, Condition, Action } from './types';
+import { prisma } from '@haspataal/db';
 
 export class RuleRegistry {
-  private prisma: any;
-
-  constructor(prismaClient: any) {
-    this.prisma = prismaClient;
-  }
+  constructor() {}
 
   async create(data: Omit<Rule, 'id'> & { id?: string }): Promise<Rule> {
-    const rule = await this.prisma.rule.create({
+    const rule = await prisma.rule.create({
       data: {
         id: data.id,
         hospitalId: data.hospitalId,
@@ -17,8 +14,8 @@ export class RuleRegistry {
         category: data.category,
         triggerType: data.triggerType,
         triggerEvent: data.triggerEvent,
-        conditionJson: data.conditionJson,
-        actionJson: data.actionJson,
+        conditionJson: data.conditionJson as any,
+        actionJson: data.actionJson as any,
         isActive: data.isActive ?? true,
         priority: data.priority ?? 100,
       },
@@ -27,12 +24,12 @@ export class RuleRegistry {
   }
 
   async findById(id: string): Promise<Rule | null> {
-    const rule = await this.prisma.rule.findUnique({ where: { id } });
+    const rule = await prisma.rule.findUnique({ where: { id } });
     return rule ? this.toRule(rule) : null;
   }
 
   async findByEvent(eventType: string, hospitalId?: string): Promise<Rule[]> {
-    const rules = await this.prisma.rule.findMany({
+    const rules = await prisma.rule.findMany({
       where: {
         triggerType: 'EVENT',
         triggerEvent: eventType,
@@ -45,7 +42,7 @@ export class RuleRegistry {
   }
 
   async list(hospitalId?: string, category?: string): Promise<Rule[]> {
-    const rules = await this.prisma.rule.findMany({
+    const rules = await prisma.rule.findMany({
       where: {
         OR: [{ hospitalId: null }, { hospitalId }],
         ...(category && { category }),
@@ -56,7 +53,7 @@ export class RuleRegistry {
   }
 
   async update(id: string, data: Partial<Omit<Rule, 'id'>>): Promise<Rule> {
-    const rule = await this.prisma.rule.update({
+    const rule = await prisma.rule.update({
       where: { id },
       data: {
         name: data.name,
@@ -64,8 +61,8 @@ export class RuleRegistry {
         category: data.category,
         triggerType: data.triggerType,
         triggerEvent: data.triggerEvent,
-        conditionJson: data.conditionJson,
-        actionJson: data.actionJson,
+        conditionJson: data.conditionJson as any,
+        actionJson: data.actionJson as any,
         isActive: data.isActive,
         priority: data.priority,
       },
@@ -74,7 +71,7 @@ export class RuleRegistry {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.rule.delete({ where: { id } });
+    await prisma.rule.delete({ where: { id } });
   }
 
   private toRule(db: any): Rule {

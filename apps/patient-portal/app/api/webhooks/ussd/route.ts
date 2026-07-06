@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { SmsUssdService } from '@/lib/services/sms-ussd';
-
+/**
+ * @deprecated USSD service was removed as part of the 9-wave migration.
+ * This endpoint now returns a placeholder response.
+ * See MIGRATION_PLAN.md Wave 9 for details.
+ */
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get('content-type') || '';
@@ -26,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing phoneNumber' }, { status: 400 });
     }
 
-    const reply = await SmsUssdService.handleUSSDRequest(sessionId, phoneNumber, text, serviceCode);
+    const reply = 'Service temporarily unavailable';
 
     // Most USSD gateways require pure text response with status code 200
     if (

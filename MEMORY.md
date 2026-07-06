@@ -393,6 +393,16 @@ The following documents provide detailed specifications for the Haspataal platfo
 
 - **Notification Schema Adherence:** `Notification` records in Prisma do not have a `payload` column; they use `variables` and `metadata` (both JSON). Worker updates and ExecutionEngine payloads must target `metadata` rather than injecting undocumented fields, to satisfy Prisma schema constraints. _(Added 2026-07-02)_
 
+- **Next.js Server Actions Redirect:** Never place `redirect()` inside a `try/catch` block in a Next.js Server Action without explicitly checking and re-throwing `isRedirectError(e)` or `e.message.includes('NEXT_REDIRECT')`. Swallowing the redirect error prevents the redirect from occurring and causes the client to erroneously display "NEXT_REDIRECT" as an error message. _(Added 2026-07-02)_
+
+- **Configuration Engine Facade Pattern**: Instead of breaking legacy API queries by migrating complex configurations (`OpdConfig`, `IntegrationConfig`, `HospitalBillingProfile`, `Facilities`) into a single JSON column prematurely, use a DDD facade engine (`@haspataal/settings`) wrapped with Zod validation. Use Prisma `$transaction` combined with Outbox pattern (`CONFIGURATION_UPDATED` events) to achieve strict CQRS decoupling without changing the underlying DB schema. _(Added 2026-07-06)_
+
+- **Outbox Envelope Normalization:** When using the Transactional Outbox pattern, the worker (e.g., `outbox-relay.worker.ts`) must publish the FULL `PlatformEvent` or `PlatformCommand` envelope instead of extracting the `payload`. Downstream consumers (Search, Timeline, Notifications) should gracefully parse `event.payload.payload` (new pattern) while falling back to `event.payload` (legacy) during migration. _(Added 2026-07-06)_
+
+- **API Gateway Authentication strictly from JWT:** Gateway middleware (`requireAuth` or equivalent in `apps/hospital-hms/lib/platform.ts`) MUST NEVER mock authentication or tenant boundaries from arbitrary HTTP headers (`x-tenant-context`). Context MUST ALWAYS be securely derived from verifying the Bearer token (`verifyToken`). _(Added 2026-07-06)_
+
+- **Cross-package Boundary Rules:** When creating independent services in the Turborepo monorepo (e.g., `@haspataal/api-gateway`), NEVER instantiate `new PrismaClient()` directly if the workspace dictates a singleton DB access. Services must import the shared database connection (`import { prisma } from '@haspataal/db'`) to avoid module duplication and maintain correct build boundaries. _(Added 2026-07-06)_
+
 ---
 
 

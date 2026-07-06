@@ -30,11 +30,40 @@ export async function middleware(req: Request) {
   try {
     const user = await verifyToken(token);
 
+    // Wave 2: Context Normalization
+    // Inject canonical platform contexts for downstream engine evaluation
+    const requestHeaders = new Headers(req.headers);
+    
+    // Construct TenantContext
+    const tenantContext = {
+      platformId: 'haspataal-core',
+      hospitalId: user.hospital_id,
+      branchId: 'default',
+      activeScope: 'HOSPITAL',
+    };
+    
+    // Construct ActorContext
+    const actorContext = {
+      actorId: user.user_id,
+      actorType: 'USER',
+      userId: user.user_id,
+      roleIds: [user.role],
+      permissionIds: [], // Populated downstream if needed
+      authenticationStrength: 'PASSWORD',
+      delegatedAccess: false,
+    };
+    
+    requestHeaders.set('x-tenant-context', JSON.stringify(tenantContext));
+    requestHeaders.set('x-actor-context', JSON.stringify(actorContext));
+
     // Subscription Check (Mock)
-    // In production, we'd check DB or cached status here.
     // if (user.role === 'admin' && !user.subscription_active) return redirect...
 
-    return NextResponse.next();
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      }
+    });
   } catch (error) {
     if (req.url.includes('/api/')) {
       return NextResponse.json({ error: 'Invalid Token' }, { status: 401 });

@@ -305,3 +305,8 @@ SET request.user_id = 'user-uuid';
 - **Security Team**: security@haspataal.com
 - **Emergency**: +91-XXX-XXX-XXXX
 - **PGP**: Available on request
+
+## Engine Integration Security Boundaries
+- **Tenant Context**: Enforced server-side via API gateway, never trusted from the client.
+- **Circular Recursion**: Hard limits on causation depth (max 10) to prevent event loops.
+- **BFF Portal Projections**: Portals do not speak directly to engines; they speak via Backend-For-Frontend (BFF) layers that enforce scope.

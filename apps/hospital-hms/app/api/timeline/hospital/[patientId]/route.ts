@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineQueryHandler } from '@haspataal/timeline';
+import { createPlatformQueryContext } from '@/lib/platform';
 
 export async function GET(req: Request, context: { params: Promise<{ patientId: string }> }) {
   try {
@@ -11,18 +12,23 @@ export async function GET(req: Request, context: { params: Promise<{ patientId: 
 
     const cursor = searchParams.get('cursor') ?? undefined;
     const filters = {
+      patientId,
       category: searchParams.get('category') ?? undefined,
       severity: searchParams.get('severity') ?? undefined,
       dateFrom: searchParams.get('dateFrom') ?? undefined,
       dateTo: searchParams.get('dateTo') ?? undefined,
     };
 
-    const result = await TimelineService.getHospitalTimeline(
-      patientId,
-      user.hospital_id,
-      cursor,
+    const platformContext = await createPlatformQueryContext(req);
+    platformContext.tenantScope.hospitalId = user.hospital_id;
+
+    const query = {
+      ...platformContext,
       filters,
-    );
+      pagination: { cursor, limit: 50 }
+    };
+
+    const result = await TimelineQueryHandler.getHospitalTimeline(query);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const e = err as Error;

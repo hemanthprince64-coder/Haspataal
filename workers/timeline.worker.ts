@@ -3,6 +3,8 @@ import { Worker, Job } from 'bullmq';
 import { createHash } from 'crypto';
 import IORedis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
+import { eventBus, DomainEvent } from '@haspataal/events';
+import { TimelineCommandHandler } from '@haspataal/timeline';
 
 // ─────────────────────────────────────────────────────────────
 // SETUP
@@ -13,6 +15,8 @@ const prisma = new PrismaClient();
 const redis = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
 });
+
+const commandHandler = new TimelineCommandHandler(redis);
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -319,21 +323,51 @@ const transformerMap: Record<string, TransformerFn> = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// FALLBACK TRANSFORMER
+// EVENT BUS SUBSCRIBER (Adapter -> CommandHandler)
 // ─────────────────────────────────────────────────────────────
 
-function fallbackTransformer(eventType: string): TransformedEvent {
-  console.warn(`[Timeline Worker] No transformer for eventType: "${eventType}". Using fallback.`);
-  return {
-    eventType,
-    category: 'UNKNOWN',
-    module: 'unknown',
-    title: `Event: ${eventType}`,
-    severity: 'LOW',
-    priority: 1,
-    tags: ['unknown'],
+async function onDomainEvent(event: DomainEvent) {
+  const transformer = transformerMap[event.type];
+  if (!transformer) return; // Not a timeline-relevant event
+
+  const rawPayload = event.payload as any;
+  const payload = rawPayload.payload || rawPayload.eventPayload || rawPayload;
+  
+  const transformed = transformer(payload);
+  
+  const patientId = String(payload.patientId || '');
+  if (!patientId) return;
+
+  const command = {
+    commandId: uuidv4(),
+    commandVersion: 1,
+    target: 'timeline',
+    tenantContext: { hospitalId: event.hospitalId || 'system', branchId: 'default' },
+    actorContext: { actorId: event.actorId || 'system', actorType: 'SYSTEM' },
+    correlationId: event.correlationId || uuidv4(),
+    idempotencyKey: `timeline-${event.id}`,
+    timestamp: new Date().toISOString(),
+    payload: {
+      patientId,
+      doctorId: payload.doctorId ? String(payload.doctorId) : undefined,
+      ...transformed,
+      metadata: payload,
+    },
   };
+
+  try {
+    await commandHandler.handleAddToTimeline(command as any);
+  } catch (error: any) {
+    console.error(`[Timeline Adapter] Failed to map event ${event.type} to timeline command:`, error);
+  }
 }
+
+// Subscribe to all known timeline events
+Object.keys(transformerMap).forEach((eventType) => {
+  eventBus.subscribe(eventType, onDomainEvent);
+});
+
+console.log('[Timeline Adapter] Subscribed to EventBus for clinical events.');
 
 // ─────────────────────────────────────────────────────────────
 // INTEGRITY HASH
@@ -362,24 +396,15 @@ async function invalidatePatientCache(patientId: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// WORKER PROCESSOR
+// WORKER PROCESSOR (Processes TimelineEventInput)
 // ─────────────────────────────────────────────────────────────
 
 async function processTimelineJob(job: Job): Promise<void> {
-  const data = job.data as Record<string, unknown>;
-  const eventTypeName = job.name;
-
-  // 1. Extract base fields
+  const data = job.data as Record<string, unknown>; // Now directly matches TimelineEventInput
+  
   const patientId = String(data.patientId ?? '');
-  const hospitalId = data.hospitalId ? String(data.hospitalId) : undefined;
-  const doctorId = data.doctorId ? String(data.doctorId) : undefined;
-  let correlationId = data.correlationId ? String(data.correlationId) : undefined;
-  const sourceSystem = data.sourceSystem ? String(data.sourceSystem) : undefined;
+  const correlationId = data.correlationId ? String(data.correlationId) : uuidv4();
   const timestamp = data.timestamp ? String(data.timestamp) : new Date().toISOString();
-
-  if (!correlationId) {
-    correlationId = uuidv4();
-  }
 
   // 2. De-duplication: check if correlationId already exists
   const existing = await prisma.timelineEvent.findUnique({
@@ -392,40 +417,36 @@ async function processTimelineJob(job: Job): Promise<void> {
     return;
   }
 
-  // 3. Transform domain event to timeline shape
-  const transformer = transformerMap[eventTypeName];
-  const transformed = transformer ? transformer(data) : fallbackTransformer(eventTypeName);
-
   // 4. Compute integrity hash
-  const integrityHash = computeIntegrityHash(patientId, transformed.eventType, timestamp, data);
+  const integrityHash = computeIntegrityHash(patientId, String(data.eventType), timestamp, data.metadata);
 
   // 5. Insert TimelineEvent
   const event = await prisma.timelineEvent.create({
     data: {
       patientId,
-      hospitalId,
-      doctorId,
-      module: transformed.module,
-      entityType: transformed.entityType,
-      entityId: transformed.entityId,
-      eventType: transformed.eventType,
-      category: transformed.category,
-      title: transformed.title,
-      subtitle: transformed.subtitle,
-      summary: transformed.summary,
-      description: transformed.description,
+      hospitalId: data.hospitalId ? String(data.hospitalId) : undefined,
+      doctorId: data.doctorId ? String(data.doctorId) : undefined,
+      module: String(data.module),
+      entityType: data.entityType ? String(data.entityType) : undefined,
+      entityId: data.entityId ? String(data.entityId) : undefined,
+      eventType: String(data.eventType),
+      category: String(data.category),
+      title: String(data.title),
+      subtitle: data.subtitle ? String(data.subtitle) : undefined,
+      summary: data.summary ? String(data.summary) : undefined,
+      description: data.description ? String(data.description) : undefined,
       timestamp: new Date(timestamp),
-      severity: transformed.severity,
-      priority: transformed.priority,
-      tags: transformed.tags,
-      fhirResourceType: transformed.fhirResourceType,
-      fhirMapping: transformed.fhirMapping as any,
+      severity: String(data.severity),
+      priority: Number(data.priority),
+      tags: data.tags as string[],
+      fhirResourceType: data.fhirResourceType ? String(data.fhirResourceType) : undefined,
+      fhirMapping: data.fhirMapping as any,
       correlationId,
-      sourceSystem,
+      sourceSystem: data.sourceSystem ? String(data.sourceSystem) : undefined,
       integrityHash,
       actorType: data.actorType ? String(data.actorType) : undefined,
       actorId: data.actorId ? String(data.actorId) : undefined,
-      metadata: data as any,
+      metadata: data.metadata as any,
     },
   });
 
@@ -446,7 +467,7 @@ async function processTimelineJob(job: Job): Promise<void> {
   await invalidatePatientCache(patientId);
 
   console.log(
-    `[Timeline Worker] ✓ Ingested ${transformed.eventType} for patient ${patientId.substring(0, 8)}... (id: ${event.id})`,
+    `[Timeline Worker] ✓ Ingested ${event.eventType} for patient ${patientId.substring(0, 8)}... (id: ${event.id})`,
   );
 }
 

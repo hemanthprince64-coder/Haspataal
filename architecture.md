@@ -174,3 +174,12 @@ packages/
 - **Event Sourcing**: Full audit trail
 - **CQRS**: Separate read/write models
 - **Multi-region**: DR and low latency
+
+### Six-Engine Integration (In Progress)
+- **Configuration Engine**: Extracted as a Control Plane with Redis caching.
+- **Timeline Engine**: Immutable clinical events mapped via `PlatformEvent`.
+- **Rules Engine**: Idempotent execution with circular loop protection.
+- **Notification Engine**: Robust fallback and delivery queuing.
+- **Journey Engine**: Event-driven pathway progression.
+- **Search Engine**: Decoupled asynchronous indexing.
+- **Integration Runtime**: Formalized via `PlatformEvent`, `PlatformCommand`, and `PlatformQuery` in `packages/platform-contracts`.

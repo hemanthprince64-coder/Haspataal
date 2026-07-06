@@ -17,6 +17,7 @@
     "@haspataal/rules": "*",
     "@haspataal/journey": "*",
     "@haspataal/notify": "*",
+    "@haspataal/config": "*",
     "@prisma/client": "5.10.2",
     "@supabase/supabase-js": "2.98.0",
     "@upstash/ratelimit": "2.0.8",

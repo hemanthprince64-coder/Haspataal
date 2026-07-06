@@ -7,7 +7,7 @@ import { Input } from '@haspataal/ui';
 import { Button } from '@haspataal/ui';
 import { Checkbox } from '@haspataal/ui';
 import { Skeleton } from '@haspataal/ui';
-import { LabTest, Save } from 'lucide-react';
+import { FlaskConical, Save } from 'lucide-react';
 
 export default function DiagnosticPricingPage() {
   const [catalog, setCatalog] = useState([]);
@@ -45,7 +45,7 @@ export default function DiagnosticPricingPage() {
     <div className="animate-fade-in p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-          <LabTest className="h-6 w-6 text-primary" />
+          <FlaskConical className="h-6 w-6 text-primary" />
           Diagnostic Pricing Manager
         </h1>
         <p className="text-muted-foreground text-sm">

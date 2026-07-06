@@ -1,23 +1,10 @@
 import { prisma } from '@haspataal/db';
-import { NotificationEngine } from '@haspataal/notify';
-import { getTimelinePublisher } from '@haspataal/timeline';
-import { Queue } from 'bullmq';
-
-import { JourneyTimelineIntegration } from './timeline';
-
-// Setup Redis connection for Rules Engine Queue
-const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-};
-
-const rulesQueue = new Queue('rules-execution', { connection });
-const notificationEngine = new NotificationEngine();
+import { v4 as uuidv4 } from 'uuid';
 
 export class JourneyEngine {
   /**
    * Enrolls a patient in a care journey, creates stages/milestones,
-   * logs to Timeline Engine, and triggers Rules Engine.
+   * and securely creates Outbox Events for Timeline Engine and Rules Engine.
    */
   static async enroll(payload: {
     templateId: string;
@@ -30,68 +17,109 @@ export class JourneyEngine {
     });
     if (!template) throw new Error('Template not found');
 
-    const instance = await prisma.journeyInstance.create({
-      data: {
-        templateId: payload.templateId,
-        patientId: payload.patientId,
-        hospitalId: payload.hospitalId,
-        currentStage: 'INITIAL',
-        status: 'ACTIVE',
-        startDate: new Date(),
-        careTeam: payload.careTeam ?? {},
-        riskScore: 0,
-      },
-    });
+    const correlationId = uuidv4();
+    const hospitalId = payload.hospitalId || 'system';
 
-    // Create initial milestones from template
-    const stages = (template.stages as any)?.stages || [];
-    const milestones = [];
-    for (const stage of stages) {
-      const milestone = await prisma.journeyMilestone.create({
+    const result = await prisma.$transaction(async (tx) => {
+      const instance = await tx.journeyInstance.create({
         data: {
-          journeyId: instance.id,
-          name: stage.name,
-          category: stage.category || 'CLINICAL',
-          status: 'PENDING',
-          dueDate: stage.dueDate ? new Date(stage.dueDate) : undefined,
+          templateId: payload.templateId,
+          patientId: payload.patientId,
+          hospitalId: payload.hospitalId,
+          currentStage: 'INITIAL',
+          status: 'ACTIVE',
+          startDate: new Date(),
+          careTeam: payload.careTeam ?? {},
+          riskScore: 0,
         },
       });
-      milestones.push(milestone);
-    }
 
-    // 1. Log Journey Enrollment in Timeline Engine
-    await getTimelinePublisher().publish({
-      patientId: payload.patientId,
-      hospitalId: payload.hospitalId,
-      eventType: 'JOURNEY_ENROLLED',
-      category: 'CLINICAL',
-      module: 'CARE_JOURNEY',
-      title: `Enrolled in ${template.name}`,
-      subtitle: `Category: ${template.category}`,
-      description: `Patient enrolled in clinical care journey '${template.name}'.`,
-      entityType: 'JourneyInstance',
-      entityId: instance.id,
-      metadata: {
-        templateId: payload.templateId,
-        journeyId: instance.id,
-        milestonesCount: milestones.length,
-      },
-      timestamp: new Date(),
+      // Create initial milestones from template
+      const stages = (template.stages as any)?.stages || [];
+      const milestones = [];
+      for (const stage of stages) {
+        const milestone = await tx.journeyMilestone.create({
+          data: {
+            journeyId: instance.id,
+            name: stage.name,
+            category: stage.category || 'CLINICAL',
+            status: 'PENDING',
+            dueDate: stage.dueDate ? new Date(stage.dueDate) : undefined,
+          },
+        });
+        milestones.push(milestone);
+      }
+
+      // 1. Log Journey Enrollment in Timeline Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'ADD_TO_TIMELINE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'timeline',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `timeline-journey-enrolled-${instance.id}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              patientId: payload.patientId,
+              hospitalId: payload.hospitalId,
+              eventType: 'JOURNEY_ENROLLED',
+              category: 'CLINICAL',
+              module: 'CARE_JOURNEY',
+              title: `Enrolled in ${template.name}`,
+              subtitle: `Category: ${template.category}`,
+              description: `Patient enrolled in clinical care journey '${template.name}'.`,
+              entityType: 'JourneyInstance',
+              entityId: instance.id,
+              metadata: {
+                templateId: payload.templateId,
+                journeyId: instance.id,
+                milestonesCount: milestones.length,
+              },
+              timestamp: new Date(),
+            },
+          },
+          processed: false,
+        }
+      });
+
+      // 2. Trigger Rules Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'EVALUATE_RULE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'rules',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `rules-journey-enrolled-${instance.id}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              eventType: 'JOURNEY_ENROLLED',
+              patientId: payload.patientId,
+              hospitalId: payload.hospitalId,
+              event: {
+                journeyId: instance.id,
+                templateName: template.name,
+                category: template.category,
+              },
+            }
+          },
+          processed: false,
+        }
+      });
+
+      return instance;
     });
 
-    // 2. Trigger Rules Engine
-    await rulesQueue.add('rules-execution', {
-      eventType: 'JOURNEY_ENROLLED',
-      patientId: payload.patientId,
-      hospitalId: payload.hospitalId,
-      event: {
-        journeyId: instance.id,
-        templateName: template.name,
-        category: template.category,
-      },
-    });
-
-    return instance;
+    return result;
   }
 
   /**
@@ -105,36 +133,94 @@ export class JourneyEngine {
   }
 
   /**
-   * Completes a milestone, logs to Timeline, and triggers Rules.
+   * Completes a milestone, logs to Timeline, and triggers Rules using Outbox.
    */
   static async completeMilestone(milestoneId: string) {
-    const milestone = await prisma.journeyMilestone.update({
-      where: { id: milestoneId },
-      data: { status: 'COMPLETED', completedAt: new Date() },
-      include: { journey: true },
+    const correlationId = uuidv4();
+    
+    return await prisma.$transaction(async (tx) => {
+      const milestone = await tx.journeyMilestone.update({
+        where: { id: milestoneId },
+        data: { status: 'COMPLETED', completedAt: new Date() },
+        include: { journey: true },
+      });
+
+      const hospitalId = milestone.journey.hospitalId || 'system';
+
+      // 1. Log to Timeline Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'ADD_TO_TIMELINE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'timeline',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `timeline-milestone-${milestoneId}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              patientId: milestone.journey.patientId,
+              hospitalId: milestone.journey.hospitalId,
+              eventType: 'MILESTONE_COMPLETED',
+              category: 'CLINICAL',
+              module: 'CARE_JOURNEY',
+              title: `Milestone ${milestone.name} Updated`,
+              subtitle: `Care Journey Event: MILESTONE_COMPLETED`,
+              description: `Journey milestone '${milestone.name}' reached status: ${milestone.status}`,
+              entityType: 'JourneyMilestone',
+              entityId: milestoneId,
+              metadata: {
+                journeyId: milestone.journeyId,
+                milestoneName: milestone.name,
+                milestoneStatus: milestone.status,
+                updatedAt: new Date().toISOString(),
+              },
+              timestamp: new Date(),
+            }
+          },
+          processed: false,
+        }
+      });
+
+      // 2. Trigger Rules Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'EVALUATE_RULE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'rules',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `rules-milestone-${milestoneId}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              eventType: 'MILESTONE_COMPLETED',
+              patientId: milestone.journey.patientId,
+              hospitalId: milestone.journey.hospitalId,
+              event: {
+                journeyId: milestone.journeyId,
+                milestoneId: milestone.id,
+                milestoneName: milestone.name,
+                category: milestone.category,
+              }
+            }
+          },
+          processed: false,
+        }
+      });
+
+      return milestone;
     });
-
-    // 1. Log to Timeline Engine
-    await JourneyTimelineIntegration.logMilestone(milestoneId, 'MILESTONE_COMPLETED');
-
-    // 2. Trigger Rules Engine
-    await rulesQueue.add('rules-execution', {
-      eventType: 'MILESTONE_COMPLETED',
-      patientId: milestone.journey.patientId,
-      hospitalId: milestone.journey.hospitalId,
-      event: {
-        journeyId: milestone.journeyId,
-        milestoneId: milestone.id,
-        milestoneName: milestone.name,
-        category: milestone.category,
-      },
-    });
-
-    return milestone;
   }
 
   /**
-   * Creates a care journey task, logs to Timeline, and triggers Rules.
+   * Creates a care journey task, logs to Timeline, and triggers Rules using Outbox.
    */
   static async createTask(payload: {
     journeyId: string;
@@ -150,103 +236,182 @@ export class JourneyEngine {
     });
     if (!journey) throw new Error('Journey not found');
 
-    const task = await prisma.journeyTask.create({
-      data: {
-        journeyId: payload.journeyId,
-        milestoneId: payload.milestoneId,
-        name: payload.name,
-        category: payload.category,
-        assignedTo: payload.assignedTo,
-        dueDate: payload.dueDate,
-        priority: payload.priority || 'NORMAL',
-        status: 'PENDING',
-      },
-    });
+    const correlationId = uuidv4();
+    const hospitalId = journey.hospitalId || 'system';
 
-    // 1. Log task creation to Timeline Engine
-    await getTimelinePublisher().publish({
-      patientId: journey.patientId,
-      hospitalId: journey.hospitalId,
-      eventType: 'JOURNEY_TASK_CREATED',
-      category: 'CLINICAL',
-      module: 'CARE_JOURNEY',
-      title: `Task Created: ${task.name}`,
-      subtitle: `Category: ${task.category}`,
-      description: `New care journey task '${task.name}' assigned.`,
-      entityType: 'JourneyTask',
-      entityId: task.id,
-      metadata: {
-        journeyId: payload.journeyId,
-        taskId: task.id,
-        milestoneId: payload.milestoneId,
-      },
-      timestamp: new Date(),
-    });
+    return await prisma.$transaction(async (tx) => {
+      const task = await tx.journeyTask.create({
+        data: {
+          journeyId: payload.journeyId,
+          milestoneId: payload.milestoneId,
+          name: payload.name,
+          category: payload.category,
+          assignedTo: payload.assignedTo,
+          dueDate: payload.dueDate,
+          priority: payload.priority || 'NORMAL',
+          status: 'PENDING',
+        },
+      });
 
-    // 2. Trigger Rules Engine
-    await rulesQueue.add('rules-execution', {
-      eventType: 'JOURNEY_TASK_CREATED',
-      patientId: journey.patientId,
-      hospitalId: journey.hospitalId,
-      event: {
-        journeyId: journey.id,
-        taskId: task.id,
-        taskName: task.name,
-        category: task.category,
-      },
-    });
+      // 1. Log task creation to Timeline Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'ADD_TO_TIMELINE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'timeline',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `timeline-task-created-${task.id}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              patientId: journey.patientId,
+              hospitalId: journey.hospitalId,
+              eventType: 'JOURNEY_TASK_CREATED',
+              category: 'CLINICAL',
+              module: 'CARE_JOURNEY',
+              title: `Task Created: ${task.name}`,
+              subtitle: `Category: ${task.category}`,
+              description: `New care journey task '${task.name}' assigned.`,
+              entityType: 'JourneyTask',
+              entityId: task.id,
+              metadata: {
+                journeyId: payload.journeyId,
+                taskId: task.id,
+                milestoneId: payload.milestoneId,
+              },
+              timestamp: new Date(),
+            }
+          },
+          processed: false,
+        }
+      });
 
-    return task;
+      // 2. Trigger Rules Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'EVALUATE_RULE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'rules',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `rules-task-created-${task.id}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              eventType: 'JOURNEY_TASK_CREATED',
+              patientId: journey.patientId,
+              hospitalId: journey.hospitalId,
+              event: {
+                journeyId: journey.id,
+                taskId: task.id,
+                taskName: task.name,
+                category: task.category,
+              },
+            }
+          },
+          processed: false,
+        }
+      });
+
+      return task;
+    });
   }
 
   /**
-   * Completes a task, logs to Timeline, and triggers Rules.
+   * Completes a task, logs to Timeline, and triggers Rules using Outbox.
    */
   static async completeTask(taskId: string) {
-    const task = await prisma.journeyTask.update({
-      where: { id: taskId },
-      data: { status: 'COMPLETED', completedAt: new Date() },
-      include: { journey: true },
-    });
+    const correlationId = uuidv4();
+    
+    return await prisma.$transaction(async (tx) => {
+      const task = await tx.journeyTask.update({
+        where: { id: taskId },
+        data: { status: 'COMPLETED', completedAt: new Date() },
+        include: { journey: true },
+      });
 
-    // 1. Log task completion to Timeline Engine
-    await getTimelinePublisher().publish({
-      patientId: task.journey.patientId,
-      hospitalId: task.journey.hospitalId,
-      eventType: 'JOURNEY_TASK_COMPLETED',
-      category: 'CLINICAL',
-      module: 'CARE_JOURNEY',
-      title: `Task Completed: ${task.name}`,
-      subtitle: `Category: ${task.category}`,
-      description: `Care journey task '${task.name}' completed.`,
-      entityType: 'JourneyTask',
-      entityId: task.id,
-      metadata: {
-        journeyId: task.journeyId,
-        taskId: task.id,
-        milestoneId: task.milestoneId,
-      },
-      timestamp: new Date(),
-    });
+      const hospitalId = task.journey.hospitalId || 'system';
 
-    // 2. Trigger Rules Engine
-    await rulesQueue.add('rules-execution', {
-      eventType: 'JOURNEY_TASK_COMPLETED',
-      patientId: task.journey.patientId,
-      hospitalId: task.journey.hospitalId,
-      event: {
-        journeyId: task.journeyId,
-        taskId: task.id,
-        taskName: task.name,
-        category: task.category,
-      },
-    });
+      // 1. Log task completion to Timeline Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'ADD_TO_TIMELINE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'timeline',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `timeline-task-completed-${taskId}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              patientId: task.journey.patientId,
+              hospitalId: task.journey.hospitalId,
+              eventType: 'JOURNEY_TASK_COMPLETED',
+              category: 'CLINICAL',
+              module: 'CARE_JOURNEY',
+              title: `Task Completed: ${task.name}`,
+              subtitle: `Category: ${task.category}`,
+              description: `Care journey task '${task.name}' completed.`,
+              entityType: 'JourneyTask',
+              entityId: task.id,
+              metadata: {
+                journeyId: task.journeyId,
+                taskId: task.id,
+                milestoneId: task.milestoneId,
+              },
+              timestamp: new Date(),
+            }
+          },
+          processed: false,
+        }
+      });
 
-    return task;
+      // 2. Trigger Rules Engine via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'EVALUATE_RULE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'rules',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `rules-task-completed-${taskId}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              eventType: 'JOURNEY_TASK_COMPLETED',
+              patientId: task.journey.patientId,
+              hospitalId: task.journey.hospitalId,
+              event: {
+                journeyId: task.journeyId,
+                taskId: task.id,
+                taskName: task.name,
+                category: task.category,
+              },
+            }
+          },
+          processed: false,
+        }
+      });
+
+      return task;
+    });
   }
 
   /**
-   * Sends a patient reminder notification via the Notification Engine.
+   * Sends a patient reminder notification via Outbox (Notification Engine).
    */
   static async sendPatientReminder(payload: {
     patientId: string;
@@ -257,35 +422,74 @@ export class JourneyEngine {
     subject?: string;
     metadata?: Record<string, any>;
   }) {
-    // Queue notification via NotificationEngine
-    const response = await notificationEngine.enqueue({
-      patientId: payload.patientId,
-      hospitalId: payload.hospitalId,
-      recipient: payload.recipient,
-      body: payload.body,
-      channel: payload.channel || 'SMS',
-      priority: 'NORMAL',
-      subject: payload.subject,
-      metadata: payload.metadata,
-    });
+    const correlationId = uuidv4();
+    const hospitalId = payload.hospitalId || 'system';
+    
+    return await prisma.$transaction(async (tx) => {
+      // Create SEND_NOTIFICATION_COMMAND via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'SEND_NOTIFICATION_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'notify',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `notify-reminder-${correlationId}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              patientId: payload.patientId,
+              hospitalId: payload.hospitalId,
+              recipient: payload.recipient,
+              body: payload.body,
+              channel: payload.channel || 'SMS',
+              priority: 'NORMAL',
+              subject: payload.subject,
+              metadata: payload.metadata,
+            }
+          },
+          processed: false,
+        }
+      });
 
-    // Log the reminder action to Timeline
-    await getTimelinePublisher().publish({
-      patientId: payload.patientId,
-      hospitalId: payload.hospitalId,
-      eventType: 'PATIENT_REMINDER_SENT',
-      category: 'NOTIFICATION',
-      module: 'CARE_JOURNEY',
-      title: `Reminder Sent: ${payload.subject || 'Care Update'}`,
-      description: `Notification reminder queued via ${response.channel}.`,
-      metadata: {
-        recipient: payload.recipient,
-        channel: response.channel,
-        ...payload.metadata,
-      },
-      timestamp: new Date(),
-    });
+      // Log the reminder action to Timeline via Outbox
+      await tx.outboxEvent.create({
+        data: {
+          id: uuidv4(),
+          eventType: 'ADD_TO_TIMELINE_COMMAND',
+          payload: {
+            commandId: uuidv4(),
+            commandVersion: 1,
+            target: 'timeline',
+            tenantContext: { hospitalId, branchId: 'default' },
+            actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+            correlationId,
+            idempotencyKey: `timeline-reminder-${correlationId}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              patientId: payload.patientId,
+              hospitalId: payload.hospitalId,
+              eventType: 'PATIENT_REMINDER_SENT',
+              category: 'NOTIFICATION',
+              module: 'CARE_JOURNEY',
+              title: `Reminder Sent: ${payload.subject || 'Care Update'}`,
+              description: `Notification reminder queued via ${payload.channel || 'SMS'}.`,
+              metadata: {
+                recipient: payload.recipient,
+                channel: payload.channel || 'SMS',
+                ...payload.metadata,
+              },
+              timestamp: new Date(),
+            }
+          },
+          processed: false,
+        }
+      });
 
-    return response;
+      return { success: true, channel: payload.channel || 'SMS' };
+    });
   }
 }

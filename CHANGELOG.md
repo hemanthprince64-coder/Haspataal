@@ -4,6 +4,16 @@
 
 All notable changes to the Haspataal platform are documented in this file.
 
+## Pre-Integration Phase: Six-Engine Architecture Audit (2026-07-06)
+
+### Audited & Defined
+- **Engine Capabilities**: Mapped responsibilities for Configuration, Timeline, Rules, Notification, Journey, and Search Engines.
+- **Source of Truth**: Enforced single-engine write-ownership for all domain entities.
+- **Shared Contracts**: Designed `TenantContext`, `ActorContext`, `PlatformEvent`, `PlatformCommand`, and `PlatformQuery` in `packages/platform-contracts`.
+- **Integration Guarantees**: Defined Transactional Outbox/Inbox patterns and loop protection strategies.
+- **Rollout Strategy**: Documented 9-wave incremental rollout to deprecate synchronous engine coupling.
+- **Artifacts**: Stored complete audit in `openspec/changes/six-engine-integration/`.
+
 ## Phase 1 Foundation (2026-06-29)
 
 ### Added

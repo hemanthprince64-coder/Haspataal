@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineQueryHandler } from '@haspataal/timeline';
+import { createPlatformQueryContext } from '@/lib/platform';
 
 export async function GET(req: Request, context: { params: Promise<{ patientId: string }> }) {
   try {
     const user = await checkRole(req, [Roles.PATIENT]);
     const { patientId } = await context.params;
 
-    // Patients can only access their own timeline
     if (user.user_id !== patientId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -16,6 +16,7 @@ export async function GET(req: Request, context: { params: Promise<{ patientId: 
     const { searchParams } = new URL(req.url);
     const cursor = searchParams.get('cursor') ?? undefined;
     const filters = {
+      patientId,
       category: searchParams.get('category') ?? undefined,
       severity: searchParams.get('severity') ?? undefined,
       dateFrom: searchParams.get('dateFrom') ?? undefined,
@@ -23,7 +24,14 @@ export async function GET(req: Request, context: { params: Promise<{ patientId: 
       module: searchParams.get('module') ?? undefined,
     };
 
-    const result = await TimelineService.getPatientTimeline(patientId, cursor, filters);
+    const platformContext = await createPlatformQueryContext(req);
+    const query = {
+      ...platformContext,
+      filters,
+      pagination: { cursor, limit: 50 }
+    };
+
+    const result = await TimelineQueryHandler.getPatientTimeline(query);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const e = err as Error;

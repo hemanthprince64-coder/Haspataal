@@ -4,3 +4,5 @@ export { RuleRegistry } from './registry';
 export { RuleValidator } from './validator';
 export { RuleTemplates } from './templates';
 export { type Rule, type Action, type Condition, type RuleContext, type RuleResult } from './types';
+export * from './queries';
+export * from './handlers';

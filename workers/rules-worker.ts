@@ -1,59 +1,73 @@
+import { eventBus, EVENT_TYPES } from '@haspataal/events';
+import { RuleRegistry, RuleCommandHandler } from '@haspataal/rules';
 import { prisma } from '@haspataal/db';
-import { RuleRegistry } from '@haspataal/rules';
-import { ExecutionEngine } from '@haspataal/rules';
-import { Queue, Worker, Job } from 'bullmq';
+import { v4 as uuidv4 } from 'uuid';
+import logger from '../apps/patient-portal/lib/logger';
 
-const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-};
+const registry = new RuleRegistry();
 
-export const rulesQueue = new Queue('rules-execution', { connection });
-export const schedulerQueue = new Queue('rules-scheduler', { connection });
+// In-memory cache to prevent infinite loops (Causation Depth protection)
+// If the same event triggers > 3 chained actions that trigger the same event, we drop it.
+const depthTracker = new Map<string, number>();
 
-const registry = new RuleRegistry(prisma as any);
-const engine = new ExecutionEngine(prisma as any);
+async function onDomainEvent(event: any) {
+  const correlationId = event.correlationId || uuidv4();
+  
+  // Depth tracking
+  const currentDepth = depthTracker.get(correlationId) || 0;
+  if (currentDepth > 10) {
+    logger.warn({ action: 'rule_depth_exceeded', correlationId }, 'Max causation depth exceeded. Dropping event to prevent infinite loop.');
+    return;
+  }
+  depthTracker.set(correlationId, currentDepth + 1);
 
-export const rulesWorker = new Worker(
-  'rules-execution',
-  async (job: Job) => {
-    const { eventType, event, patientId, hospitalId } = job.data;
+  try {
+    // 1. Find rules that match this event type
+    const rules = await registry.findByEvent(event.type, event.hospitalId);
+    if (!rules || rules.length === 0) return;
 
-    const rules = await registry.findByEvent(eventType, hospitalId);
-
+    // 2. Dispatch a command for each rule to execute
     for (const rule of rules) {
-      await engine.execute(rule, {
-        event,
-        patientId,
-        hospitalId,
-        timestamp: new Date(),
-      });
+      if (!rule.isActive) continue;
+
+      const command = {
+        commandId: uuidv4(),
+        commandVersion: 1,
+        target: 'rules',
+        tenantContext: { hospitalId: event.hospitalId || 'system', branchId: 'default' },
+        actorContext: { actorId: event.actorId || 'system', actorType: 'SYSTEM' },
+        correlationId,
+        idempotencyKey: `execute-${rule.id}-${event.id}`,
+        timestamp: new Date().toISOString(),
+        payload: {
+          ruleId: rule.id,
+          event: event.payload,
+          patientId: event.payload?.patientId,
+        },
+      };
+
+      try {
+        await RuleCommandHandler.handleExecuteRule(command as any);
+        logger.info({ action: 'rule_executed', ruleId: rule.id, eventType: event.type }, 'Executed rule');
+      } catch (err: any) {
+        logger.error({ action: 'rule_execution_failed', ruleId: rule.id, error: err.message }, 'Failed to execute rule');
+      }
     }
-  },
-  { connection, concurrency: 5 },
-);
+  } catch (error: any) {
+    logger.error({ action: 'rules_worker_failed', eventId: event.id, error: error.message }, 'Failed to process rules for event');
+  }
+}
 
-export const schedulerWorker = new Worker(
-  'rules-scheduler',
-  async (job: Job) => {
-    const { ruleId, patientId, hospitalId } = job.data;
+// Start listener
+logger.info('Rules Worker Started - Listening to EventBus');
 
-    const rule = await registry.findById(ruleId);
-    if (!rule?.isActive) return;
+// Clean up depth tracker every hour
+setInterval(() => {
+  depthTracker.clear();
+}, 60 * 60 * 1000);
 
-    await engine.execute(rule, {
-      patientId,
-      hospitalId,
-      timestamp: new Date(),
-    });
-  },
-  { connection, concurrency: 3 },
-);
-
-rulesWorker.on('completed', (job) => {
-  console.log(`[RulesWorker] Completed job ${job.id}`);
-});
-
-rulesWorker.on('failed', (job, err) => {
-  console.error(`[RulesWorker] Failed job ${job?.id}:`, err.message);
-});
+// Subscribe to all standard platform events
+const ALL_EVENTS = Object.values(EVENT_TYPES);
+for (const type of ALL_EVENTS) {
+  eventBus.subscribe(type, onDomainEvent);
+}

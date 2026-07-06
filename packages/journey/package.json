@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@haspataal/db": "*",
-    "@haspataal/notify": "*"
+    "@haspataal/platform-contracts": "*",
+    "uuid": "*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

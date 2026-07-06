@@ -1,0 +1,48 @@
+import { z } from 'zod';
+export declare const NotificationChannel: z.ZodEnum<["SMS", "WHATSAPP", "EMAIL", "PUSH", "IN_APP"]>;
+export declare const NotificationPriority: z.ZodEnum<["EMERGENCY", "CRITICAL", "HIGH", "NORMAL", "LOW", "BACKGROUND"]>;
+export declare const NotificationStatus: z.ZodEnum<["QUEUED", "PROCESSING", "SENT", "DELIVERED", "READ", "FAILED", "EXPIRED", "CANCELLED"]>;
+export declare const NotificationInputSchema: z.ZodObject<{
+    hospitalId: z.ZodOptional<z.ZodString>;
+    patientId: z.ZodOptional<z.ZodString>;
+    doctorId: z.ZodOptional<z.ZodString>;
+    templateId: z.ZodOptional<z.ZodString>;
+    channel: z.ZodOptional<z.ZodEnum<["SMS", "WHATSAPP", "EMAIL", "PUSH", "IN_APP"]>>;
+    priority: z.ZodDefault<z.ZodEnum<["EMERGENCY", "CRITICAL", "HIGH", "NORMAL", "LOW", "BACKGROUND"]>>;
+    recipient: z.ZodString;
+    subject: z.ZodOptional<z.ZodString>;
+    body: z.ZodString;
+    variables: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+    metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodAny>>;
+    scheduledAt: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    priority: "EMERGENCY" | "CRITICAL" | "HIGH" | "NORMAL" | "LOW" | "BACKGROUND";
+    recipient: string;
+    body: string;
+    hospitalId?: string | undefined;
+    channel?: "SMS" | "WHATSAPP" | "EMAIL" | "PUSH" | "IN_APP" | undefined;
+    patientId?: string | undefined;
+    doctorId?: string | undefined;
+    templateId?: string | undefined;
+    subject?: string | undefined;
+    variables?: Record<string, any> | undefined;
+    metadata?: Record<string, any> | undefined;
+    scheduledAt?: string | undefined;
+}, {
+    recipient: string;
+    body: string;
+    hospitalId?: string | undefined;
+    channel?: "SMS" | "WHATSAPP" | "EMAIL" | "PUSH" | "IN_APP" | undefined;
+    patientId?: string | undefined;
+    doctorId?: string | undefined;
+    templateId?: string | undefined;
+    priority?: "EMERGENCY" | "CRITICAL" | "HIGH" | "NORMAL" | "LOW" | "BACKGROUND" | undefined;
+    subject?: string | undefined;
+    variables?: Record<string, any> | undefined;
+    metadata?: Record<string, any> | undefined;
+    scheduledAt?: string | undefined;
+}>;
+export type NotificationInput = z.infer<typeof NotificationInputSchema>;
+export type Channel = z.infer<typeof NotificationChannel>;
+export type Priority = z.infer<typeof NotificationPriority>;
+export type Status = z.infer<typeof NotificationStatus>;

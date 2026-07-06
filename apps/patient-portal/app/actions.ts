@@ -15,7 +15,6 @@ import { triagePatient } from '@/lib/medchat/triage-engine';
 import { withErrorMonitoring } from '@/lib/monitoring';
 import { withRateLimit } from '@/lib/rate-limit';
 import { services } from '@/lib/services';
-import { CareLifecycleService } from '@/lib/services/care-lifecycle';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
 import { uploadProfilePhoto } from '@/lib/supabase';
 import {
@@ -1539,58 +1538,7 @@ export async function processVisitAiAction(visitId: string, notes: string) {
   }
 }
 
-// --- Continuous Care Actions ---
-
-export async function getCareTimelineAction(visitId: string) {
-  try {
-    const patient = await requireRole(UserRole.PATIENT, 'session_patient');
-    const state = await CareLifecycleService.getRecoveryStateForPatient(patient.id, visitId);
-    if (!state) return null;
-    const drift = await CareLifecycleService.analyzeRecoveryDrift(state.journeyId);
-    return { ...state, drift };
-  } catch (e: any) {
-    logger.error({ action: 'get_care_timeline_failed', visitId, error: e.message });
-    return null;
-  }
-}
-
-export async function logMedicationAction(
-  careJourneyId: string,
-  medName: string,
-  schedule: string,
-) {
-  try {
-    const patient = await requireRole(UserRole.PATIENT, 'session_patient');
-    return await CareLifecycleService.logMedicationForPatient(
-      patient.id,
-      careJourneyId,
-      medName,
-      schedule,
-    );
-  } catch (e: any) {
-    logger.error({ action: 'log_medication_failed', careJourneyId, error: e.message });
-    throw e;
-  }
-}
-
-export async function submitCheckInAction(
-  careJourneyId: string,
-  dayNumber: number,
-  status: string,
-) {
-  try {
-    const patient = await requireRole(UserRole.PATIENT, 'session_patient');
-    return await CareLifecycleService.submitCheckInForPatient(
-      patient.id,
-      careJourneyId,
-      dayNumber,
-      status as 'BETTER' | 'SAME' | 'WORSE',
-    );
-  } catch (e: any) {
-    logger.error({ action: 'submit_checkin_failed', careJourneyId, error: e.message });
-    throw e;
-  }
-}
+// --- Continuous Care Actions (Migrated to Journey Engine) ---
 // ==================== COMPLIANCE & PRIVACY (DPDP) ====================
 
 export async function recordConsentAction(
@@ -2010,11 +1958,12 @@ export async function loginHospitalWithOtp(
       'Hospital Magic Login Successful',
     );
     await createSession('session_user', result as any);
-
-    redirect('/hospital/dashboard');
   } catch (e: any) {
+    if (e.message && e.message.includes('NEXT_REDIRECT')) throw e;
     return { success: false, message: e.message || 'Login failed.' };
   }
+
+  redirect('/hospital/dashboard');
 }
 
 export async function detectClinicTypeAction(): Promise<ActionResult> {
@@ -2362,4 +2311,11 @@ export async function registerWalkInVisitAction(
   } catch (e: any) {
     return { success: false, message: e.message || 'Failed to create walk-in visit.' };
   }
+}
+
+// ── Placeholder for legacy getCareTimelineAction (Wave 9 migration cleanup) ───────────────
+export async function getCareTimelineAction(visitId: string) {
+  // This was removed during the 9-wave migration.
+  // Returning empty data gracefully so the UI can fall back to its empty state.
+  return null;
 }

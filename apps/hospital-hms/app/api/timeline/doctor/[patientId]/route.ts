@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineQueryHandler } from '@haspataal/timeline';
+import { createPlatformQueryContext } from '@/lib/platform';
 
 export async function GET(req: Request, context: { params: Promise<{ patientId: string }> }) {
   try {
@@ -12,23 +13,29 @@ export async function GET(req: Request, context: { params: Promise<{ patientId: 
     const cursor = searchParams.get('cursor') ?? undefined;
     const summary = searchParams.get('summary') === 'true';
     const filters = {
+      patientId,
       category: searchParams.get('category') ?? undefined,
       severity: searchParams.get('severity') ?? undefined,
       dateFrom: searchParams.get('dateFrom') ?? undefined,
       dateTo: searchParams.get('dateTo') ?? undefined,
     };
 
+    const platformContext = await createPlatformQueryContext(req);
+    // Explicitly set the hospitalId to the user's hospital to prevent data leakage
+    platformContext.tenantScope.hospitalId = user.hospital_id;
+
+    const query = {
+      ...platformContext,
+      filters,
+      pagination: { cursor, limit: 50 }
+    };
+
     if (summary) {
-      const clinicalSummary = await TimelineService.getClinicalSummary(patientId, user.hospital_id);
+      const clinicalSummary = await TimelineQueryHandler.getClinicalSummary(query);
       return NextResponse.json({ clinicalSummary });
     }
 
-    const result = await TimelineService.getDoctorTimeline(
-      patientId,
-      user.hospital_id,
-      cursor,
-      filters,
-    );
+    const result = await TimelineQueryHandler.getDoctorTimeline(query);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const e = err as Error;

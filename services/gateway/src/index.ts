@@ -12,8 +12,7 @@ import cors from 'cors';
 import { randomUUID } from 'crypto';
 import pino from 'pino';
 import { jwtVerify, importSPKI } from 'jose';
-import { PrismaClient } from '@prisma/client';
-
+import { prisma } from '@haspataal/db';
 // ── Logger ───────────────────────────────────────────────────
 
 export const logger = pino({
@@ -44,7 +43,7 @@ const RATE_LIMITS: Record<string, number> = {
 
 // ── Prisma ───────────────────────────────────────────────────
 
-const prisma = new PrismaClient();
+// Using @haspataal/db singleton (imported above)
 
 // ── Redis (optional, graceful fallback) ──────────────────────
 
@@ -446,15 +445,7 @@ app.get(
   },
 );
 
-// ── Escalation Alert Routes (add-retention-followup-escalation) ───────────────
-
-// GET /v1/escalations — list unacknowledged alerts for the logged-in doctor
-// PATCH /v1/escalations/:id/acknowledge — doctor marks alert as reviewed
-
-import { EscalationWorker } from '../../../workers/escalation.worker';
-
-// Worker process runner (for `node workers/escalation.worker.js` or cron)
-EscalationWorker.processQueue().catch((e) => logger.error(e, 'EscalationWorker crash'));
+// ── Escalation Alert Routes (authz verified inline; worker runs in separate process) ───────────────────────────
 
 // :id = escalation alert UUID
 app.get(

@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineQueryHandler } from '@haspataal/timeline';
+import { createPlatformQueryContext } from '@/lib/platform';
 
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.PATIENT]);
     const { id } = await context.params;
-    const result = await TimelineService.verifyIntegrity(id);
+    
+    const platformContext = await createPlatformQueryContext(req);
+    const query = {
+      ...platformContext,
+      filters: { eventId: id },
+    };
+
+    const result = await TimelineQueryHandler.verifyIntegrity(query);
     return NextResponse.json(result);
   } catch (err: unknown) {
     const e = err as Error;

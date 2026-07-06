@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineMutationHandler } from '@haspataal/timeline';
 
 const PinSchema = z.object({
   isPinned: z.boolean(),
@@ -16,7 +16,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
     const body = await req.json();
     const { isPinned } = PinSchema.parse(body);
 
-    const updated = await TimelineService.pinEvent(id, isPinned);
+    const updated = await TimelineMutationHandler.pinEvent(id, isPinned);
     return NextResponse.json(updated);
   } catch (err: unknown) {
     const e = err as Error;

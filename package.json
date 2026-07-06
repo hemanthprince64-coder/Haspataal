@@ -38,7 +38,7 @@
     "dev:patient": "turbo run dev --filter=patient-portal",
     "dev:admin": "turbo run dev --filter=haspataal-admin",
     "dev:gateway": "turbo run dev --filter=@haspataal/api-gateway",
-    "build": "next build",
+    "build": "turbo run build",
     "build:all": "turbo run build",
     "postinstall": "node scripts/prisma-cmd.js generate",
     "migrate": "node scripts/prisma-cmd.js migrate deploy",

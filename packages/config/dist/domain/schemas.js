@@ -1,0 +1,81 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateBillingProfileSchema = exports.UpdateOpdConfigSchema = exports.UpdateHospitalConfigSchema = void 0;
+const zod_1 = require("zod");
+exports.UpdateHospitalConfigSchema = zod_1.z.object({
+    // Identity & Branding
+    logoUrl: zod_1.z.string().url().optional().nullable(),
+    faviconUrl: zod_1.z.string().url().optional().nullable(),
+    brandColor: zod_1.z.string().optional().nullable(),
+    stateRegistrationNumber: zod_1.z.string().optional().nullable(),
+    nabhCertUrl: zod_1.z.string().url().optional().nullable(),
+    nablCertUrl: zod_1.z.string().url().optional().nullable(),
+    // Operational
+    timezone: zod_1.z.string().optional(),
+    workingDays: zod_1.z.array(zod_1.z.string()).optional(),
+    openTime: zod_1.z.string().optional().nullable(),
+    closeTime: zod_1.z.string().optional().nullable(),
+    emergencyContact: zod_1.z.string().optional().nullable(),
+    isMultiBranch: zod_1.z.boolean().optional(),
+    invoicePrefix: zod_1.z.string().optional(),
+    nextInvoiceNumber: zod_1.z.number().int().positive().optional(),
+    gstInclusivePricing: zod_1.z.boolean().optional(),
+    // Branding Templates
+    letterheadTemplate: zod_1.z.string().optional().nullable(),
+    prescriptionHeader: zod_1.z.string().optional().nullable(),
+    prescriptionFooter: zod_1.z.string().optional().nullable(),
+    // Marketplace
+    isListedOnMarketplace: zod_1.z.boolean().optional(),
+    marketplaceTagline: zod_1.z.string().optional().nullable(),
+    marketplaceAbout: zod_1.z.string().optional().nullable(),
+    marketplaceFacilities: zod_1.z.array(zod_1.z.string()).optional(),
+    showConsultationFees: zod_1.z.boolean().optional(),
+    showBedCharges: zod_1.z.boolean().optional(),
+    showPackagePrices: zod_1.z.boolean().optional(),
+    allowOnlineBooking: zod_1.z.boolean().optional(),
+    requiresApproval: zod_1.z.boolean().optional(),
+    cancellationPolicy: zod_1.z.string().optional(),
+    depositRequired: zod_1.z.boolean().optional(),
+    depositAmount: zod_1.z.number().optional().nullable(),
+    rankingScore: zod_1.z.number().optional(),
+    coverImageUrl: zod_1.z.string().url().optional().nullable(),
+    galleryUrls: zod_1.z.array(zod_1.z.string().url()).optional(),
+    insurancePanels: zod_1.z.array(zod_1.z.string()).optional(),
+    customCancellationTerms: zod_1.z.string().optional().nullable(),
+    allowsInstantBooking: zod_1.z.boolean().optional(),
+    specialities: zod_1.z.array(zod_1.z.string()).optional(),
+});
+exports.UpdateOpdConfigSchema = zod_1.z.object({
+    tokenMode: zod_1.z.string().optional(),
+    tokenPrefix: zod_1.z.string().optional(),
+    resetDaily: zod_1.z.boolean().optional(),
+    displayQueueOnTV: zod_1.z.boolean().optional(),
+    allowWalkIn: zod_1.z.boolean().optional(),
+    allowOnline: zod_1.z.boolean().optional(),
+    avgConsultationMinutes: zod_1.z.number().int().positive().optional(),
+    notifyPatientSms: zod_1.z.boolean().optional(),
+    patientsAheadAlert: zod_1.z.number().int().positive().optional(),
+    allowOverbooking: zod_1.z.boolean().optional(),
+    maxOverbookingPercent: zod_1.z.number().int().min(0).optional(),
+    noShowPolicy: zod_1.z.string().optional(),
+    blockAfterNoShows: zod_1.z.number().int().min(0).optional(),
+    noShowCooldownDays: zod_1.z.number().int().min(0).optional(),
+    enableSmartSlots: zod_1.z.boolean().optional(),
+    slotBufferMinutes: zod_1.z.number().int().min(0).optional(),
+    dailySlotCap: zod_1.z.number().int().min(0).optional().nullable(),
+    lunchBreakStart: zod_1.z.string().optional().nullable(),
+    lunchBreakEnd: zod_1.z.string().optional().nullable(),
+    noShowFee: zod_1.z.number().min(0).optional(),
+});
+exports.UpdateBillingProfileSchema = zod_1.z.object({
+    bankAccountNumber: zod_1.z.string().optional().nullable(),
+    bankIfsc: zod_1.z.string().optional().nullable(),
+    gstApplicable: zod_1.z.boolean().optional(),
+    tdsApplicable: zod_1.z.boolean().optional(),
+    commissionPercentage: zod_1.z.number().min(0).max(100).optional().nullable(),
+    payoutCycle: zod_1.z.string().optional().nullable(),
+    invoiceLayout: zod_1.z.string().optional().nullable(),
+    headerText: zod_1.z.string().optional().nullable(),
+    footerText: zod_1.z.string().optional().nullable(),
+});
+//# sourceMappingURL=schemas.js.map

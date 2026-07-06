@@ -1,33 +1,34 @@
-import { prisma } from '@haspataal/db';
-import { z } from 'zod';
-
+import { NotificationCommandHandler, NotificationQueryHandler, NotificationInputSchema } from '@haspataal/notify';
 import { NextResponse } from 'next/server';
-
-const CreateNotificationSchema = z.object({
-  hospitalId: z.string().uuid(),
-  patientId: z.string().uuid().optional(),
-  doctorId: z.string().uuid().optional(),
-  templateId: z.string().uuid().optional(),
-  channel: z.enum(['SMS', 'WHATSAPP', 'EMAIL', 'PUSH', 'IN_APP']),
-  priority: z
-    .enum(['EMERGENCY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'BACKGROUND'])
-    .default('NORMAL'),
-  recipient: z.string(),
-  subject: z.string().optional(),
-  body: z.string(),
-  variables: z.record(z.string(), z.any()).optional(),
-  metadata: z.record(z.string(), z.any()).optional(),
-  scheduledAt: z
-    .string()
-    .optional()
-    .transform((val) => (val ? new Date(val) : undefined)),
-});
+import { checkRole, Roles } from '@/lib/auth/roleGuard';
+import { createPlatformQueryContext } from '@/lib/platform';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: Request) {
   try {
-    const body = CreateNotificationSchema.parse(await req.json());
-    const notification = await prisma.notification.create({ data: body as any });
-    return NextResponse.json({ success: true, data: notification });
+    const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.NURSE]);
+    const body = await req.json();
+
+    const platformContext = await createPlatformQueryContext(req);
+    platformContext.tenantScope.hospitalId = user.hospital_id;
+    platformContext.actorScope.actorId = user.user_id;
+
+    const command = {
+      commandId: uuidv4(),
+      commandVersion: 1,
+      target: 'notifications',
+      tenantContext: platformContext.tenantScope,
+      actorContext: platformContext.actorScope,
+      correlationId: platformContext.correlationId,
+      idempotencyKey: `send-notification-${uuidv4()}`,
+      timestamp: new Date().toISOString(),
+      payload: body,
+    };
+
+    const handler = new NotificationCommandHandler();
+    const result = await handler.handleSendNotification(command as any);
+
+    return NextResponse.json({ success: true, data: result });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 400 });
   }
@@ -35,19 +36,20 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.NURSE]);
     const { searchParams } = new URL(req.url);
-    const hospitalId = searchParams.get('hospitalId') || undefined;
     const status = searchParams.get('status') || undefined;
 
-    const notifications = await prisma.notification.findMany({
-      where: {
-        ...(hospitalId && { hospitalId }),
-        ...(status && { status }),
-      },
-      take: 100,
-      orderBy: { createdAt: 'desc' },
-    });
+    const platformContext = await createPlatformQueryContext(req);
+    platformContext.tenantScope.hospitalId = user.hospital_id;
+    platformContext.actorScope.actorId = user.user_id;
 
+    const query = {
+      ...platformContext,
+      filters: { status },
+    };
+
+    const notifications = await NotificationQueryHandler.getNotifications(query);
     return NextResponse.json({ success: true, data: notifications });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 400 });

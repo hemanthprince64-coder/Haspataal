@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineMutationHandler } from '@haspataal/timeline';
 
 const ExportSchema = z.object({
   patientId: z.string().uuid(),
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const result = await TimelineService.requestExport(patientId, format, user.user_id, filters);
+    const result = await TimelineMutationHandler.requestExport(patientId, format, user.user_id, filters);
 
     return NextResponse.json(result, { status: 202 });
   } catch (err: unknown) {

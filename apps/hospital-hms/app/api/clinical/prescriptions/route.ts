@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';
@@ -66,20 +67,36 @@ export async function POST(req: Request) {
       include: { items: true },
     });
 
-    // Index for search
+    // Index for search via Outbox
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (patient) {
-      const searchService = await getSearchService();
-      await searchService.index({
-        entityType: 'prescription',
-        entityId: prescription.id,
-        hospitalId: user.hospitalId,
-        title: `Prescription for ${patient.name}`,
-        content: items.map((i: any) => i.drugName || i.medicineName).join(', '),
-        metadata: {
-          patientId,
-          appointmentId,
-          itemCount: items.length,
+      await prisma.outboxEvent.create({
+        data: {
+          id: crypto.randomUUID(),
+          eventType: 'INDEX_DOCUMENT_COMMAND',
+          payload: {
+            commandId: crypto.randomUUID(),
+            commandVersion: 1,
+            target: 'search',
+            tenantContext: { hospitalId: user.hospitalId, branchId: user.branchId || 'default' },
+            actorContext: { actorId: user.id, actorType: 'DOCTOR' },
+            correlationId: crypto.randomUUID(),
+            idempotencyKey: `index-prescription-${prescription.id}`,
+            timestamp: new Date().toISOString(),
+            payload: {
+              entityType: 'prescription',
+              entityId: prescription.id,
+              hospitalId: user.hospitalId,
+              title: `Prescription for ${patient.name}`,
+              content: items.map((i: any) => i.drugName || i.medicineName).join(', '),
+              metadata: {
+                patientId,
+                appointmentId,
+                itemCount: items.length,
+              },
+            },
+          },
+          processed: false,
         },
       });
     }
@@ -90,9 +107,3 @@ export async function POST(req: Request) {
   }
 }
 
-async function getSearchService() {
-  const { SearchService, PostgresSearchProvider } = await import('@haspataal/search');
-  const { prisma } = await import('@haspataal/db');
-  const provider = new PostgresSearchProvider(prisma);
-  return new SearchService(provider);
-}

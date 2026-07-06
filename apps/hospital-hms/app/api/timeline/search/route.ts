@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import * as TimelineService from '@/lib/services/timeline';
+import { TimelineQueryHandler } from '@haspataal/timeline';
+import { createPlatformQueryContext } from '@/lib/platform';
 
 export async function GET(req: Request) {
   try {
@@ -13,19 +14,27 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Search query is required' }, { status: 400 });
     }
 
-    const result = await TimelineService.searchTimeline({
-      q,
-      patientId: searchParams.get('patientId') ?? undefined,
-      hospitalId: user.hospital_id,
-      doctorId: searchParams.get('doctorId') ?? undefined,
-      category: searchParams.get('category') ?? undefined,
-      severity: searchParams.get('severity') ?? undefined,
-      dateFrom: searchParams.get('dateFrom') ?? undefined,
-      dateTo: searchParams.get('dateTo') ?? undefined,
-      module: searchParams.get('module') ?? undefined,
-      cursor: searchParams.get('cursor') ?? undefined,
-      limit: Number(searchParams.get('limit') ?? 20),
-    });
+    const platformContext = await createPlatformQueryContext(req);
+    platformContext.tenantScope.hospitalId = user.hospital_id;
+
+    const query = {
+      ...platformContext,
+      filters: {
+        q,
+        patientId: searchParams.get('patientId') ?? undefined,
+        category: searchParams.get('category') ?? undefined,
+        severity: searchParams.get('severity') ?? undefined,
+        dateFrom: searchParams.get('dateFrom') ?? undefined,
+        dateTo: searchParams.get('dateTo') ?? undefined,
+        module: searchParams.get('module') ?? undefined,
+      },
+      pagination: {
+        cursor: searchParams.get('cursor') ?? undefined,
+        limit: Number(searchParams.get('limit') ?? 20),
+      }
+    };
+
+    const result = await TimelineQueryHandler.searchTimeline(query);
 
     return NextResponse.json(result);
   } catch (err: unknown) {

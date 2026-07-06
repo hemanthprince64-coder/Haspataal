@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { SmsUssdService } from '@/lib/services/sms-ussd';
-
+/**
+ * @deprecated SMS/USSD service was removed as part of the 9-wave migration.
+ * This endpoint now returns a placeholder response.
+ * See MIGRATION_PLAN.md Wave 9 for details.
+ */
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get('content-type') || '';
@@ -26,8 +29,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const responseText = await SmsUssdService.handleIncomingSMS(from, body);
-    return NextResponse.json({ ok: true, reply: responseText });
+    // Placeholder: SmsUssdService was removed in Wave 9 migration.
+    return NextResponse.json({ ok: true, reply: 'Service temporarily unavailable' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -1,4 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { prisma } from '@haspataal/db';
+import { Prisma } from '@prisma/client';
 
 import { RankingEngine } from '../../application/services/ranking-engine';
 import { SearchQuery, SearchResponse } from '../../domain/types';
@@ -11,7 +12,7 @@ import {
 } from './index-provider';
 
 export class PostgresSearchProvider implements SearchIndexProvider {
-  constructor(private prisma: PrismaClient) {}
+  // prisma is imported directly from @haspataal/db as a singleton
 
   async search(query: SearchQuery): Promise<SearchResponse> {
     const start = Date.now();
@@ -69,7 +70,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
       orderByClause = Prisma.sql`ORDER BY rank DESC`;
     }
 
-    const results = await this.prisma.$queryRaw<any[]>`
+    const results = await prisma.$queryRaw<any[]>`
       SELECT 
         id, 
         entity_type as "entityType", 
@@ -89,7 +90,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
       OFFSET ${offset}
     `;
 
-    const facetResults = await this.prisma.$queryRaw<any[]>`
+    const facetResults = await prisma.$queryRaw<any[]>`
       SELECT entity_type, count(*) as count
       FROM searchable_entities
       ${whereClause}
@@ -135,7 +136,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
   async index(document: SearchDocument): Promise<void> {
     const textContent = `${document.title} ${document.content || ''}`;
 
-    const existing = await this.prisma.$queryRaw<[{ id: string }]>`
+    const existing = await prisma.$queryRaw<[{ id: string }]>`
       SELECT id FROM searchable_entities
       WHERE entity_type = ${document.entityType} AND entity_id = ${document.entityId}
       LIMIT 1
@@ -144,7 +145,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
     const hId = document.hospitalId || null;
 
     if (existing && existing.length > 0) {
-      await this.prisma.$executeRaw`
+      await prisma.$executeRaw`
         UPDATE searchable_entities SET
           hospital_id = ${hId}::uuid,
           title = ${document.title},
@@ -155,7 +156,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
         WHERE id = ${existing[0].id}::uuid
       `;
     } else {
-      await this.prisma.$executeRaw`
+      await prisma.$executeRaw`
         INSERT INTO searchable_entities (
           id, entity_type, entity_id, hospital_id, title, content, metadata, search_vector, created_at, updated_at
         ) VALUES (
@@ -175,14 +176,14 @@ export class PostgresSearchProvider implements SearchIndexProvider {
   }
 
   async delete(entityId: string, entityType: string): Promise<void> {
-    await this.prisma.searchableEntity.deleteMany({
+    await prisma.searchableEntity.deleteMany({
       where: { entityId, entityType },
     });
   }
 
   async autocomplete(text: string, options: AutocompleteOptions): Promise<AutocompleteResult> {
     const start = Date.now();
-    const results = await this.prisma.searchableEntity.findMany({
+    const results = await prisma.searchableEntity.findMany({
       where: {
         title: { startsWith: text, mode: 'insensitive' },
         ...(options.types ? { entityType: { in: options.types } } : {}),
@@ -204,13 +205,13 @@ export class PostgresSearchProvider implements SearchIndexProvider {
 
   async health(): Promise<IndexHealth> {
     try {
-      const count = await this.prisma.searchableEntity.count();
-      const sizeResult = await this.prisma.$queryRaw<[{ size: bigint }]>`
+      const count = await prisma.searchableEntity.count();
+      const sizeResult = await prisma.$queryRaw<[{ size: bigint }]>`
         SELECT pg_total_relation_size('searchable_entities') as size
       `;
-      const outboxCount = await this.prisma.outboxEvent.count({ where: { processed: false } });
+      const outboxCount = await prisma.outboxEvent.count({ where: { processed: false } });
 
-      const lastIndexedResult = await this.prisma.searchableEntity.findFirst({
+      const lastIndexedResult = await prisma.searchableEntity.findFirst({
         orderBy: { updatedAt: 'desc' },
         select: { updatedAt: true },
       });
