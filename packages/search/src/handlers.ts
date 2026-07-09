@@ -1,5 +1,6 @@
-import { z } from 'zod';
 import { createPlatformCommandSchema, PlatformCommand } from '@haspataal/platform-contracts';
+import { z } from 'zod';
+
 import { SearchService } from './application/services/search-service';
 
 /**
@@ -33,23 +34,29 @@ export const DeleteDocumentCommandSchema = createPlatformCommandSchema(DeleteDoc
 export class SearchCommandHandler {
   constructor(private searchService: SearchService) {}
 
-  async handleIndexDocument(rawCommand: unknown): Promise<void> {
-    const command = IndexDocumentCommandSchema.parse(rawCommand) as PlatformCommand<IndexDocumentPayload>;
+  async handleIndexDocument(rawCommand: unknown, options?: { tx?: any }): Promise<void> {
+    const command = IndexDocumentCommandSchema.parse(
+      rawCommand,
+    ) as PlatformCommand<IndexDocumentPayload>;
     const payload = command.payload;
-    await this.searchService.index({
-      entityType: payload.entityType,
-      entityId: payload.entityId,
-      hospitalId: payload.hospitalId,
-      title: payload.title,
-      content: payload.content,
-      metadata: payload.metadata,
-    });
+    await this.searchService.index(
+      {
+        entityType: payload.entityType,
+        entityId: payload.entityId,
+        hospitalId: payload.hospitalId,
+        title: payload.title,
+        content: payload.content,
+        metadata: payload.metadata,
+      },
+      options?.tx,
+    );
   }
 
-  async handleDeleteDocument(rawCommand: unknown): Promise<void> {
-    const command = DeleteDocumentCommandSchema.parse(rawCommand) as PlatformCommand<DeleteDocumentPayload>;
+  async handleDeleteDocument(rawCommand: unknown, options?: { tx?: any }): Promise<void> {
+    const command = DeleteDocumentCommandSchema.parse(
+      rawCommand,
+    ) as PlatformCommand<DeleteDocumentPayload>;
     const payload = command.payload;
-    await this.searchService.delete(payload.entityId, payload.entityType as any);
+    await this.searchService.delete(payload.entityId, payload.entityType as any, options?.tx);
   }
 }
-

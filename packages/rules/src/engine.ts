@@ -1,14 +1,13 @@
+import { prisma } from '@haspataal/db';
 import { NotificationEngine } from '@haspataal/notify';
 
 import { RuleCompiler } from './compiler';
 import { Rule, Action, RuleContext, RuleResult } from './types';
 
-import { prisma } from '@haspataal/db';
-
 export class ExecutionEngine {
   constructor() {}
 
-  async execute(rule: Rule, context: RuleContext): Promise<RuleResult> {
+  async execute(rule: Rule, context: RuleContext, tx?: any): Promise<RuleResult> {
     const startTime = Date.now();
     const executedActions: Action[] = [];
     const errors: string[] = [];
@@ -22,7 +21,7 @@ export class ExecutionEngine {
 
       for (const action of rule.actionJson as Action[]) {
         try {
-          await this.executeAction(action, context);
+          await this.executeAction(action, context, tx);
           executedActions.push(action);
         } catch (error: any) {
           errors.push(`Action ${action.type} failed: ${error.message}`);
@@ -30,7 +29,15 @@ export class ExecutionEngine {
       }
 
       const executionTimeMs = Date.now() - startTime;
-      await this.logExecution(rule.id, context, 'SUCCESS', executedActions, executionTimeMs);
+      await this.logExecution(
+        rule.id,
+        context,
+        'SUCCESS',
+        executedActions,
+        executionTimeMs,
+        undefined,
+        tx,
+      );
 
       return {
         success: errors.length === 0,
@@ -38,41 +45,41 @@ export class ExecutionEngine {
         errors: errors.length ? errors : undefined,
       };
     } catch (error: any) {
-      await this.logExecution(rule.id, context, 'FAILED', [], 0, { message: error.message });
+      await this.logExecution(rule.id, context, 'FAILED', [], 0, { message: error.message }, tx);
       return { success: false, executedActions, errors: [error.message] };
     }
   }
 
-  private async executeAction(action: Action, context: RuleContext): Promise<void> {
+  private async executeAction(action: Action, context: RuleContext, tx?: any): Promise<void> {
     switch (action.type) {
       case 'create_timeline':
-        await this.createTimelineEvent(action.payload, context);
+        await this.createTimelineEvent(action.payload, context, tx);
         break;
       case 'send_notification':
-        await this.sendNotification(action.payload, context);
+        await this.sendNotification(action.payload, context, tx);
         break;
       case 'update_record':
-        await this.updateRecord(action.payload, context);
+        await this.updateRecord(action.payload, context, tx);
         break;
       case 'call_api':
-        await this.callApi(action.payload, context);
+        await this.callApi(action.payload, context, tx);
         break;
       case 'assign_task':
-        await this.assignTask(action.payload, context);
+        await this.assignTask(action.payload, context, tx);
         break;
       case 'escalate':
-        await this.escalate(action.payload, context);
+        await this.escalate(action.payload, context, tx);
         break;
       case 'complete_milestone':
-        await this.completeMilestone(action.payload, context);
+        await this.completeMilestone(action.payload, context, tx);
         break;
       case 'update_journey_risk':
-        await this.updateJourneyRisk(action.payload, context);
+        await this.updateJourneyRisk(action.payload, context, tx);
         break;
     }
   }
 
-  private async createTimelineEvent(payload: any, context: RuleContext): Promise<void> {
+  private async createTimelineEvent(payload: any, context: RuleContext, tx?: any): Promise<void> {
     if (!context.patientId) {
       throw new Error('patientId required for timeline event creation');
     }
@@ -99,10 +106,10 @@ export class ExecutionEngine {
     });
   }
 
-  private async sendNotification(payload: any, context: RuleContext): Promise<void> {
+  private async sendNotification(payload: any, context: RuleContext, tx?: any): Promise<void> {
     const { randomUUID } = await import('crypto');
     const { createPlatformCommandSchema } = await import('@haspataal/platform-contracts');
-    
+
     // Wave 6: Write PlatformCommand to Outbox instead of synchronous execution
     const commandId = randomUUID();
     const commandPayload = {
@@ -127,26 +134,28 @@ export class ExecutionEngine {
           aggregateId: commandId,
           traceId: randomUUID(),
           tenantId: context.hospitalId,
-        }
+        },
       },
       processed: false,
     };
 
-    await prisma.outboxEvent.create({
+    const db = tx || prisma;
+    await db.outboxEvent.create({
       data: outboxCommand,
     });
   }
 
-  private async updateRecord(payload: any, context: RuleContext): Promise<void> {
+  private async updateRecord(payload: any, context: RuleContext, tx?: any): Promise<void> {
     // Implementation delegates to record update
     const { table, id, data } = payload;
-    await (prisma as any)[table].update({
+    const db = tx || prisma;
+    await (db as any)[table].update({
       where: { id },
       data,
     });
   }
 
-  private async callApi(payload: any, context: RuleContext): Promise<void> {
+  private async callApi(payload: any, context: RuleContext, tx?: any): Promise<void> {
     // Implementation for external API calls
     const response = await fetch(payload.url, {
       method: payload.method || 'POST',
@@ -158,9 +167,10 @@ export class ExecutionEngine {
     }
   }
 
-  private async assignTask(payload: any, context: RuleContext): Promise<void> {
+  private async assignTask(payload: any, context: RuleContext, tx?: any): Promise<void> {
     // Implementation for task assignment
-    await (prisma as any).task.create({
+    const db = tx || prisma;
+    await (db as any).task.create({
       data: {
         title: payload.title,
         description: payload.description,
@@ -173,8 +183,9 @@ export class ExecutionEngine {
     });
   }
 
-  private async escalate(payload: any, context: RuleContext): Promise<void> {
-    await (prisma as any).escalation.create({
+  private async escalate(payload: any, context: RuleContext, tx?: any): Promise<void> {
+    const db = tx || prisma;
+    await (db as any).escalation.create({
       data: {
         level: payload.level || 'DOCTOR',
         reason: payload.reason,
@@ -193,14 +204,16 @@ export class ExecutionEngine {
         metadata: { level: payload.level },
       },
       context,
+      tx,
     );
   }
 
-  private async completeMilestone(payload: any, context: RuleContext): Promise<void> {
+  private async completeMilestone(payload: any, context: RuleContext, tx?: any): Promise<void> {
     const { milestoneId } = payload;
     if (!milestoneId) return;
 
-    await prisma.journeyMilestone.update({
+    const db = tx || prisma;
+    await db.journeyMilestone.update({
       where: { id: milestoneId },
       data: { status: 'COMPLETED', completedAt: new Date() },
     });
@@ -213,14 +226,16 @@ export class ExecutionEngine {
         metadata: { milestoneId },
       },
       context,
+      tx,
     );
   }
 
-  private async updateJourneyRisk(payload: any, context: RuleContext): Promise<void> {
+  private async updateJourneyRisk(payload: any, context: RuleContext, tx?: any): Promise<void> {
     const { journeyId, score, factors } = payload;
     if (!journeyId) return;
 
-    await prisma.journeyRisk.upsert({
+    const db = tx || prisma;
+    await db.journeyRisk.upsert({
       where: { journeyId },
       update: { score, factors },
       create: { journeyId, score, factors },
@@ -234,8 +249,10 @@ export class ExecutionEngine {
     actions: Action[],
     executionTimeMs: number,
     error?: any,
+    tx?: any,
   ): Promise<void> {
-    await prisma.ruleExecution.create({
+    const db = tx || prisma;
+    await db.ruleExecution.create({
       data: {
         ruleId,
         patientId: context.patientId,

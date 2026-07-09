@@ -133,10 +133,11 @@ export class PostgresSearchProvider implements SearchIndexProvider {
     };
   }
 
-  async index(document: SearchDocument): Promise<void> {
+  async index(document: SearchDocument, tx?: any): Promise<void> {
     const textContent = `${document.title} ${document.content || ''}`;
+    const db = tx || prisma;
 
-    const existing = await prisma.$queryRaw<[{ id: string }]>`
+    const existing = await db.$queryRaw<[{ id: string }]>`
       SELECT id FROM searchable_entities
       WHERE entity_type = ${document.entityType} AND entity_id = ${document.entityId}
       LIMIT 1
@@ -145,7 +146,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
     const hId = document.hospitalId || null;
 
     if (existing && existing.length > 0) {
-      await prisma.$executeRaw`
+      await db.$executeRaw`
         UPDATE searchable_entities SET
           hospital_id = ${hId}::uuid,
           title = ${document.title},
@@ -156,7 +157,7 @@ export class PostgresSearchProvider implements SearchIndexProvider {
         WHERE id = ${existing[0].id}::uuid
       `;
     } else {
-      await prisma.$executeRaw`
+      await db.$executeRaw`
         INSERT INTO searchable_entities (
           id, entity_type, entity_id, hospital_id, title, content, metadata, search_vector, created_at, updated_at
         ) VALUES (
@@ -175,8 +176,9 @@ export class PostgresSearchProvider implements SearchIndexProvider {
     }
   }
 
-  async delete(entityId: string, entityType: string): Promise<void> {
-    await prisma.searchableEntity.deleteMany({
+  async delete(entityId: string, entityType: string, tx?: any): Promise<void> {
+    const db = tx || prisma;
+    await db.searchableEntity.deleteMany({
       where: { entityId, entityType },
     });
   }

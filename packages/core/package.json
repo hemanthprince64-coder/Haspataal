@@ -5,7 +5,8 @@
   "types": "./index.ts",
   "dependencies": {
     "@haspataal/db": "*",
-    "@haspataal/types": "*"
+    "@haspataal/types": "*",
+    "libphonenumber-js": "^1.11.0"
   },
   "devDependencies": {
     "typescript": "5.9.3",

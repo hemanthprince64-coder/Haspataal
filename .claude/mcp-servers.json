@@ -59,6 +59,11 @@
       "args": ["-y", "@modelcontextprotocol/server-playwright"],
       "description": "Playwright MCP — browser automation for end-to-end testing, UI verification, and patient portal interactions."
     },
+    "headroom": {
+      "command": "headroom",
+      "args": ["mcp", "server"],
+      "description": "Headroom AI context compression MCP server"
+    },
     "_disabled_by_default": {
       "vercel": {
         "command": "npx",

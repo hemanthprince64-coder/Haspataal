@@ -1,7 +1,8 @@
 import { PlatformCommand, createPlatformCommandSchema } from '@haspataal/platform-contracts';
 import { z } from 'zod';
-import { RuleRegistry } from './registry';
+
 import { ExecutionEngine } from './engine';
+import { RuleRegistry } from './registry';
 import { Rule } from './types';
 
 export const CreateRulePayloadSchema = z.object({
@@ -31,13 +32,17 @@ export const ExecuteRulePayloadSchema = z.object({
 });
 
 export const CreateRuleCommandSchema = createPlatformCommandSchema(CreateRulePayloadSchema as any);
-export const ExecuteRuleCommandSchema = createPlatformCommandSchema(ExecuteRulePayloadSchema as any);
+export const ExecuteRuleCommandSchema = createPlatformCommandSchema(
+  ExecuteRulePayloadSchema as any,
+);
 
 const registry = new RuleRegistry();
 const engine = new ExecutionEngine();
 
 export class RuleCommandHandler {
-  static async handleCreateRule(command: PlatformCommand<z.infer<typeof CreateRulePayloadSchema>>): Promise<Rule> {
+  static async handleCreateRule(
+    command: PlatformCommand<z.infer<typeof CreateRulePayloadSchema>>,
+  ): Promise<Rule> {
     const { hospitalId } = command.tenantContext;
     const payload = command.payload;
 
@@ -47,7 +52,10 @@ export class RuleCommandHandler {
     });
   }
 
-  static async handleExecuteRule(command: PlatformCommand<z.infer<typeof ExecuteRulePayloadSchema>>) {
+  static async handleExecuteRule(
+    command: PlatformCommand<z.infer<typeof ExecuteRulePayloadSchema>>,
+    options?: { tx?: any },
+  ) {
     const { hospitalId } = command.tenantContext;
     const payload = command.payload;
 
@@ -56,12 +64,16 @@ export class RuleCommandHandler {
       throw new Error('Rule not found, inactive, or belongs to a different tenant');
     }
 
-    const result = await engine.execute(rule, {
-      event: payload.event,
-      patientId: payload.patientId,
-      hospitalId,
-      timestamp: new Date(),
-    });
+    const result = await engine.execute(
+      rule,
+      {
+        event: payload.event,
+        patientId: payload.patientId,
+        hospitalId,
+        timestamp: new Date(),
+      },
+      options?.tx,
+    );
 
     return result;
   }

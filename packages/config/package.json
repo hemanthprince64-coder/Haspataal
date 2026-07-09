@@ -10,8 +10,8 @@
     "dev": "tsc -w"
   },
   "dependencies": {
-    "@haspataal/db": "workspace:*",
-    "@haspataal/platform-contracts": "workspace:*",
+    "@haspataal/db": "*",
+    "@haspataal/platform-contracts": "*",
     "zod": "^3.22.4",
     "uuid": "^9.0.1"
   },

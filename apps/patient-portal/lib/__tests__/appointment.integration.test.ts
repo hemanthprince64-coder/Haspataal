@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { execSync } from 'child_process';
 import { PrismaClient } from '@prisma/client';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import bcrypt from 'bcryptjs';
+import { execSync } from 'child_process';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 import { UserRole, BookingStatus } from '../../types';
 
 describe('Appointment Booking Integration (Real PostgreSQL)', () => {
@@ -19,10 +20,22 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
     process.env.DATABASE_URL = dbUrl;
 
     // 2. Run Prisma Migrations
-    execSync('npx prisma migrate deploy', { 
-      env: { ...process.env, DATABASE_URL: dbUrl },
-      stdio: 'inherit' 
-    });
+    execSync(
+      'npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --force-reset --accept-data-loss',
+      {
+        env: { ...process.env, DATABASE_URL: dbUrl, DIRECT_URL: dbUrl },
+        stdio: 'inherit',
+      },
+    );
+
+    const migrations = [
+      'scripts/migrations/10_add_outbox_canonical_columns.sql',
+      'scripts/migrations/11_phase0b_idempotency_dlq.sql',
+    ];
+
+    for (const file of migrations) {
+      execSync(`npx prisma db execute --url="${dbUrl}" --file="${file}"`);
+    }
 
     prisma = new PrismaClient({
       datasources: { db: { url: dbUrl } },
@@ -30,7 +43,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
 
     // 3. Seed Minimum Data
     const hashedPassword = await bcrypt.hash('password123', 12);
-    
+
     // Create Hospital
     const hospital = await prisma.hospitalsMaster.create({
       data: {
@@ -87,7 +100,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
 
   it('Happy Path: should successfully book an appointment', async () => {
     const { services } = await import('../services');
-    
+
     const date = new Date();
     date.setDate(date.getDate() + 1); // Tomorrow
     const slot = '10:00';
@@ -103,10 +116,10 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.status).toBe(BookingStatus.AWAITING_PAYMENT);
-      
+
       // Verify in DB
       const dbRecord = await prisma.appointment.findUnique({
-        where: { id: result.value.id }
+        where: { id: result.value.id },
       });
       expect(dbRecord).not.toBeNull();
       expect(dbRecord?.slot).toBe(slot);
@@ -115,7 +128,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
 
   it('Double Booking Prevention: should return SLOT_TAKEN on second attempt', async () => {
     const { services } = await import('../services');
-    
+
     const date = new Date();
     date.setDate(date.getDate() + 2); // Day after tomorrow
     const slot = '11:00';
@@ -147,7 +160,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
 
   it('Doctor Not Affiliated: should return DOCTOR_NOT_AFFILIATED if no approved affiliation', async () => {
     const { services } = await import('../services');
-    
+
     // Create another hospital with no affiliation for this doctor
     const otherHosp = await prisma.hospitalsMaster.create({
       data: {
@@ -155,12 +168,12 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
         registrationNumber: 'INT-002',
         city: 'Mumbai',
         contactNumber: '1111111111',
-      }
+      },
     });
 
     const date = new Date();
     date.setDate(date.getDate() + 3);
-    
+
     const result = await services.patient.createVisit(otherHosp.id, {
       patientMobile: '7777777777',
       patientName: 'Integration Patient',
@@ -177,7 +190,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
 
   it('Full Slice: Patient books -> Hospital Admin marks as BOOKED (payment approved)', async () => {
     const { services } = await import('../services');
-    
+
     const date = new Date();
     date.setDate(date.getDate() + 4);
     const slot = '14:00';
@@ -191,7 +204,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
       slot,
     });
     expect(bookRes.ok).toBe(true);
-    
+
     if (bookRes.ok) {
       const appointmentId = bookRes.value.id;
 
@@ -199,14 +212,14 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
       const updateRes = await services.patient.updateVisitStatus(
         appointmentId,
         patientId,
-        BookingStatus.BOOKED
+        BookingStatus.BOOKED,
       );
-      
+
       expect(updateRes.status).toBe(BookingStatus.BOOKED);
 
       // 3. Verify in DB
       const dbRecord = await prisma.appointment.findUnique({
-        where: { id: appointmentId }
+        where: { id: appointmentId },
       });
       expect(dbRecord?.status).toBe(BookingStatus.BOOKED);
     }

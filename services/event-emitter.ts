@@ -3,6 +3,9 @@
  * This is the SINGLE function every write operation calls.
  * No Redis dependency — works immediately with just PostgreSQL.
  */
+import { buildCanonicalOutbox, ScopeType, ActorType } from '@haspataal/platform-contracts';
+import { v4 as uuidv4 } from 'uuid';
+
 import logger from '../apps/patient-portal/lib/logger';
 import prisma from '../apps/patient-portal/lib/prisma';
 
@@ -54,6 +57,7 @@ interface EmitEventInput {
  */
 export async function emitEvent(input: EmitEventInput): Promise<void> {
   try {
+    const eventId = uuidv4();
     await prisma.$transaction([
       prisma.eventLog.create({
         data: {
@@ -62,17 +66,23 @@ export async function emitEvent(input: EmitEventInput): Promise<void> {
           patientId: input.patientId || null,
           executedBy: input.executedBy || null,
           payload: input.payload as any,
+          idempotencyKey: `legacy-emit-${eventId}`, // Add basic idempotency key for repair
         },
       }),
       prisma.outboxEvent.create({
-        data: {
+        data: buildCanonicalOutbox({
+          eventId,
           eventType: input.eventType,
           payload: {
             ...input.payload,
             hospitalId: input.hospitalId,
             patientId: input.patientId,
           },
-        },
+          scopeType: input.hospitalId ? ScopeType.HOSPITAL : ScopeType.PLATFORM,
+          hospitalId: input.hospitalId || undefined,
+          actorId: input.executedBy || undefined,
+          actorType: input.executedBy ? ActorType.USER : ActorType.SYSTEM,
+        }) as any,
       }),
     ]);
     logger.info(

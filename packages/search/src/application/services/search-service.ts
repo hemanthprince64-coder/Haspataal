@@ -16,18 +16,21 @@ export class SearchService {
     return this.provider.health();
   }
 
-  async index(document: {
-    entityType: string;
-    entityId: string;
-    hospitalId?: string;
-    title: string;
-    content?: string;
-    metadata?: Record<string, any>;
-  }) {
-    return this.provider.index(document as any);
+  async index(
+    document: {
+      entityType: string;
+      entityId: string;
+      hospitalId?: string;
+      title: string;
+      content?: string;
+      metadata?: Record<string, any>;
+    },
+    tx?: any,
+  ) {
+    return this.provider.index(document as any, tx);
   }
 
-  async delete(entityId: string, entityType: EntityType) {
-    return this.provider.delete(entityId, entityType);
+  async delete(entityId: string, entityType: EntityType, tx?: any) {
+    return this.provider.delete(entityId, entityType, tx);
   }
 }

@@ -1,18 +1,19 @@
 import { prisma } from '@haspataal/db';
+import { buildCanonicalOutbox, ScopeType, ActorType } from '@haspataal/platform-contracts';
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  OpdConfigSchema, 
-  OpdConfigInput, 
-  IntegrationConfigSchema, 
+
+import {
+  OpdConfigSchema,
+  OpdConfigInput,
+  IntegrationConfigSchema,
   IntegrationConfigInput,
   BillingProfileSchema,
   BillingProfileInput,
   FacilitiesSchema,
-  FacilitiesInput
+  FacilitiesInput,
 } from './types';
 
 export class ConfigurationEngine {
-  
   // -- READ OPERATIONS --
 
   static async getOpdConfig(hospitalId: string) {
@@ -21,8 +22,8 @@ export class ConfigurationEngine {
   }
 
   static async getIntegrationConfig(hospitalId: string, provider: any) {
-    const config = await prisma.integrationConfig.findUnique({ 
-      where: { hospitalId_provider: { hospitalId, provider } } 
+    const config = await prisma.integrationConfig.findUnique({
+      where: { hospitalId_provider: { hospitalId, provider } },
     });
     return config || null;
   }
@@ -39,9 +40,13 @@ export class ConfigurationEngine {
 
   // -- WRITE OPERATIONS --
 
-  static async updateOpdConfig(hospitalId: string, payload: OpdConfigInput, actorId: string = 'system') {
+  static async updateOpdConfig(
+    hospitalId: string,
+    payload: OpdConfigInput,
+    actorId: string = 'system',
+  ) {
     const data = OpdConfigSchema.parse(payload);
-    
+
     return await prisma.$transaction(async (tx) => {
       const updated = await tx.opdConfig.upsert({
         where: { hospitalId },
@@ -54,9 +59,14 @@ export class ConfigurationEngine {
     });
   }
 
-  static async updateIntegrationConfig(hospitalId: string, provider: any, payload: IntegrationConfigInput, actorId: string = 'system') {
+  static async updateIntegrationConfig(
+    hospitalId: string,
+    provider: any,
+    payload: IntegrationConfigInput,
+    actorId: string = 'system',
+  ) {
     const data = IntegrationConfigSchema.parse(payload);
-    
+
     return await prisma.$transaction(async (tx) => {
       const updated = await tx.integrationConfig.upsert({
         where: { hospitalId_provider: { hospitalId, provider: provider as any } },
@@ -64,14 +74,24 @@ export class ConfigurationEngine {
         create: { hospitalId, ...data, provider: provider as any },
       });
 
-      await this.emitConfigUpdatedEvent(tx, hospitalId, `IntegrationConfig:${provider}`, updated, actorId);
+      await this.emitConfigUpdatedEvent(
+        tx,
+        hospitalId,
+        `IntegrationConfig:${provider}`,
+        updated,
+        actorId,
+      );
       return updated;
     });
   }
 
-  static async updateBillingProfile(hospitalId: string, payload: BillingProfileInput, actorId: string = 'system') {
+  static async updateBillingProfile(
+    hospitalId: string,
+    payload: BillingProfileInput,
+    actorId: string = 'system',
+  ) {
     const data = BillingProfileSchema.parse(payload);
-    
+
     return await prisma.$transaction(async (tx) => {
       const updated = await tx.hospitalBillingProfile.upsert({
         where: { hospitalId },
@@ -84,9 +104,13 @@ export class ConfigurationEngine {
     });
   }
 
-  static async updateFacilities(hospitalId: string, payload: FacilitiesInput, actorId: string = 'system') {
+  static async updateFacilities(
+    hospitalId: string,
+    payload: FacilitiesInput,
+    actorId: string = 'system',
+  ) {
     const data = FacilitiesSchema.parse(payload);
-    
+
     return await prisma.$transaction(async (tx) => {
       const updated = await tx.hospitalFacilities.upsert({
         where: { hospitalId },
@@ -102,18 +126,18 @@ export class ConfigurationEngine {
   // -- OUTBOX EMITTER --
 
   private static async emitConfigUpdatedEvent(
-    tx: any, 
-    hospitalId: string, 
-    configType: string, 
+    tx: any,
+    hospitalId: string,
+    configType: string,
     newConfig: any,
-    actorId: string
+    actorId: string,
   ) {
     const correlationId = uuidv4();
-    
+
     // We emit an event intended for the Timeline Engine to audit this change
     await tx.outboxEvent.create({
-      data: {
-        id: uuidv4(),
+      data: buildCanonicalOutbox({
+        eventId: uuidv4(),
         eventType: 'ADD_TO_TIMELINE_COMMAND',
         payload: {
           commandId: uuidv4(),
@@ -138,11 +162,14 @@ export class ConfigurationEngine {
               configType,
               newConfig,
             },
-            timestamp: new Date(),
-          }
+          },
         },
-        processed: false,
-      }
+        scopeType: ScopeType.HOSPITAL,
+        hospitalId,
+        actorId,
+        actorType: ActorType.USER,
+        correlationId,
+      }) as any,
     });
   }
 }

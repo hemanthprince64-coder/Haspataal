@@ -2,8 +2,8 @@ import { SearchQuery, SearchResponse, SearchResult, EntityType } from '../../dom
 
 export interface SearchIndexProvider {
   search(query: SearchQuery): Promise<SearchResponse>;
-  index(document: SearchDocument): Promise<void>;
-  delete(entityId: string, entityType: EntityType): Promise<void>;
+  index(document: SearchDocument, tx?: any): Promise<void>;
+  delete(entityId: string, entityType: EntityType, tx?: any): Promise<void>;
   autocomplete(text: string, options: AutocompleteOptions): Promise<AutocompleteResult>;
   health(): Promise<IndexHealth>;
 }

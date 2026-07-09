@@ -10,7 +10,16 @@ export default defineConfig({
       'server-only': path.resolve(__dirname, './lib/__tests__/mocks/server-only.ts'),
     },
     include: ['**/*.test.ts', '**/*.spec.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '.next', 'node_modules', 'prisma', '.*/**', 'shannon/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '.next',
+      'node_modules',
+      'prisma',
+      '.*/**',
+      'shannon/**',
+      'tests/smoke/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

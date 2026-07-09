@@ -10,6 +10,17 @@ type EventType = string;
 // In a real app, these would be initialized elsewhere and injected.
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// Phase 0A EventLog repair: targets the real `event_logs` table (Prisma @@map).
+// `idempotency_key` has a partial unique index (WHERE idempotency_key IS NOT NULL),
+// so ON CONFLICT DO NOTHING is safe even though not every row supplies a key.
+// Exported for unit testing the repair without a live database.
+export const EVENT_LOG_INSERT_SQL = `
+  INSERT INTO event_logs (hospital_id, patient_id, event_type, metadata, idempotency_key)
+  VALUES ($1, $2, $3, $4, $5)
+  ON CONFLICT (idempotency_key) DO NOTHING
+  RETURNING *;
+`;
+
 export class EventService {
   /**
    * Generates a deterministic idempotency key.
@@ -74,16 +85,16 @@ export class EventService {
 
     const client = await pool.connect();
     try {
-      // 1. Write to Single Source of Truth (EventLog) with Idempotency
-      const result = await client.query(
-        `
-        INSERT INTO "EventLog" (hospital_id, patient_id, event_type, metadata, idempotency_key)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (idempotency_key) DO NOTHING
-        RETURNING *;
-        `,
-        [hospitalId, patientId, eventType, JSON.stringify(payload), idempotencyKey],
-      );
+      // 1. Write to Single Source of Truth (event_logs) with Idempotency.
+      // Phase 0A repair: table is `event_logs` (not "EventLog"); the schema now
+      // provides `idempotency_key` (partial unique) and `metadata` (jsonb) columns.
+      const result = await client.query(EVENT_LOG_INSERT_SQL, [
+        hospitalId,
+        patientId,
+        eventType,
+        JSON.stringify(payload),
+        idempotencyKey,
+      ]);
 
       // If no rows were returned, it was a duplicate event
       if (result.rowCount === 0) {

@@ -19,16 +19,19 @@ export class NotificationEngine {
   }
 
   async enqueue(input: NotificationInput): Promise<NotificationInput & { channel: Channel }> {
+    const { notificationId, queueName, channel } = await this.prepareDb(input);
+    await this.dispatchQueue(queueName, notificationId, input.priority);
+    return { ...input, channel };
+  }
+
+  async prepareDb(
+    input: NotificationInput,
+    tx?: any,
+  ): Promise<{ notificationId: string; queueName: string; channel: Channel }> {
     const channel = await NotificationRouter.route(input);
     const queueName = NotificationRouter.getQueueName(channel, input.priority);
-
-    let queue = this.queues.get(queueName);
-    if (!queue) {
-      queue = new Queue(queueName, { connection });
-      this.queues.set(queueName, queue);
-    }
-
-    const notification = await prisma.notification.create({
+    const db = tx || prisma;
+    const notification = await db.notification.create({
       data: {
         hospitalId: input.hospitalId as string,
         patientId: input.patientId,
@@ -45,18 +48,24 @@ export class NotificationEngine {
         status: 'QUEUED',
       } as any,
     });
+    return { notificationId: notification.id, queueName, channel };
+  }
 
+  async dispatchQueue(queueName: string, notificationId: string, priority?: string): Promise<void> {
+    let queue = this.queues.get(queueName);
+    if (!queue) {
+      queue = new Queue(queueName, { connection });
+      this.queues.set(queueName, queue);
+    }
     await queue.add(
       'notification',
-      { notificationId: notification.id },
+      { notificationId },
       {
-        priority: this.getPriorityValue(input.priority),
-        attempts: this.getMaxAttempts(input.priority),
-        backoff: this.getBackoffStrategy(input.priority),
+        priority: this.getPriorityValue(priority as any),
+        attempts: this.getMaxAttempts(priority as any),
+        backoff: this.getBackoffStrategy(priority as any),
       },
     );
-
-    return { ...input, channel };
   }
 
   private getPriorityValue(priority: Priority): number {

@@ -1,6 +1,7 @@
 import { createPlatformCommandSchema, PlatformCommand } from '@haspataal/platform-contracts';
-import { NotificationInputSchema, NotificationInput } from './types';
+
 import { NotificationEngine } from './engine';
+import { NotificationInputSchema, NotificationInput } from './types';
 
 const SendNotificationCommandSchema = createPlatformCommandSchema(NotificationInputSchema);
 
@@ -12,17 +13,33 @@ export class NotificationCommandHandler {
   }
 
   async handleSendNotification(rawCommand: unknown) {
-    // Validate command envelope and payload
-    const command = SendNotificationCommandSchema.parse(rawCommand) as PlatformCommand<NotificationInput>;
-    
-    // Inherit hospital context if not provided explicitly in payload
+    const command = SendNotificationCommandSchema.parse(
+      rawCommand,
+    ) as PlatformCommand<NotificationInput>;
     const input: NotificationInput = {
       ...command.payload,
       hospitalId: command.payload.hospitalId || command.tenantContext.hospitalId,
     };
-
-    // Note: The inbox processor has already guaranteed idempotency before reaching here.
     await this.engine.enqueue(input);
+  }
+
+  async handleSendNotificationPrepareDb(rawCommand: unknown, options?: { tx?: any }) {
+    const command = SendNotificationCommandSchema.parse(
+      rawCommand,
+    ) as PlatformCommand<NotificationInput>;
+    const input: NotificationInput = {
+      ...command.payload,
+      hospitalId: command.payload.hospitalId || command.tenantContext.hospitalId,
+    };
+    return await this.engine.prepareDb(input, options?.tx);
+  }
+
+  async handleSendNotificationDispatch(
+    queueName: string,
+    notificationId: string,
+    priority?: string,
+  ) {
+    await this.engine.dispatchQueue(queueName, notificationId, priority);
   }
 
   async handleCreateTemplate(command: PlatformCommand<any>) {

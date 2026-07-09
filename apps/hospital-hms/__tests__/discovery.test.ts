@@ -1,12 +1,43 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { PrismaClient } from '@prisma/client';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { execSync } from 'child_process';
+import * as path from 'path';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 import { DoctorDiscoveryService } from '../lib/services/doctor-discovery';
 
 describe('DoctorDiscoveryService', () => {
-  let service;
+  let service: DoctorDiscoveryService;
+  let container: StartedPostgreSqlContainer;
+  let prisma: PrismaClient;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16').start();
+    const databaseUrl = container.getConnectionUri();
+    process.env.DATABASE_URL = databaseUrl;
+
+    execSync(
+      'npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --force-reset --accept-data-loss',
+      {
+        env: { ...process.env, DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl },
+      },
+    );
+
+    const migrations = [
+      'scripts/migrations/10_add_outbox_canonical_columns.sql',
+      'scripts/migrations/11_phase0b_idempotency_dlq.sql',
+    ];
+
+    for (const file of migrations) {
+      execSync(`npx prisma db execute --url="${databaseUrl}" --file="${file}"`);
+    }
+    prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
     service = new DoctorDiscoveryService();
+  }, 120_000);
+
+  afterAll(async () => {
+    await prisma?.$disconnect();
+    await container?.stop();
   });
 
   describe('searchDoctors', () => {

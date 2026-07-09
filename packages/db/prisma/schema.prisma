@@ -434,9 +434,9 @@ model Staff {
 model Patient {
   id                       String                  @id @default(uuid())
   name                     String
-  phone                    String                  @unique
+  phone                    String?                 @unique
   email                    String?
-  password                 String
+  password                 String?
   city                     String?
   createdAt                DateTime                @default(now()) @map("created_at")
   abhaAddress              String?                 @unique @map("abha_address")
@@ -496,6 +496,11 @@ model Patient {
   TimelineExport           TimelineExport[]
   TimelineSubscription     TimelineSubscription[]
   TimelineSnapshot         TimelineSnapshot[]
+  // Phase 1: Identity
+  userAccount              UserAccount?
+  contactPoints            PatientContactPoint[]
+  aliasOf                  PatientAlias?          @relation("AliasPatient")
+  aliases                  PatientAlias[]         @relation("CanonicalPatient")
 
   @@index([city])
   @@index([email])
@@ -3924,3 +3929,178 @@ model InboxEvent {
   @@index([status, createdAt])
   @@map("inbox_events")
 }
+
+// ============================================================
+// PHASE 1: CANONICAL PATIENT REGISTRY
+// ============================================================
+
+enum AuthMethodType {
+  MOBILE_OTP
+}
+
+enum AuthStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ContactType {
+  MOBILE
+  EMAIL
+}
+
+enum ContactStatus {
+  ACTIVE
+  UNVERIFIED
+  INACTIVE
+}
+
+enum ContactRelationshipType {
+  SELF
+  PARENT
+  GUARDIAN
+  CAREGIVER
+  EMERGENCY_CONTACT
+  OTHER
+}
+
+enum VerificationChallengeStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  CONSUMED
+}
+
+enum MergeRequestStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  EXECUTED
+  REJECTED
+}
+
+/// One Haspataal login account per human, requiring a verified mobile.
+/// A Patient may exist without a UserAccount (newborns, dependents).
+model UserAccount {
+  id        String        @id @default(cuid())
+  patientId String        @unique @map("patient_id")
+  status    AccountStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  authMethods AuthMethod[]
+
+  @@map("user_accounts")
+}
+
+/// A verified communication route or authentication credential for a Patient.
+/// Same mobile may appear here for multiple Patients (guardian, caregiver contact).
+/// No global uniqueness on hash — only authentication identity has uniqueness.
+model PatientContactPoint {
+  id              String                  @id @default(cuid())
+  patientId       String                  @map("patient_id")
+  type            ContactType
+  relationship    ContactRelationshipType @default(SELF)
+  valueEncrypted  String                  @map("value_encrypted")
+  valueLookupHash String                  @map("value_lookup_hash")
+  lookupKeyVersion String                 @map("lookup_key_version")
+  verifiedAt      DateTime?               @map("verified_at")
+  isPrimary       Boolean                 @default(false) @map("is_primary")
+  status          ContactStatus           @default(UNVERIFIED)
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  authMethods AuthMethod[]
+
+  // Only one primary active contact per patient per type
+  @@index([type, valueLookupHash])
+  @@map("patient_contact_points")
+}
+
+/// Authentication identity for a UserAccount.
+/// identifierLookupHash: HMAC(active_key, normalizedMobile) — rotatable.
+/// claimKey: HMAC(stable_claim_secret, normalizedMobile) — stable for uniqueness enforcement.
+/// @@unique([type, claimKey]) prevents the same mobile from activating two accounts,
+/// even if HMAC key version differs.
+model AuthMethod {
+  id                   String         @id @default(cuid())
+  userAccountId        String         @map("user_account_id")
+  contactPointId       String         @map("contact_point_id")
+  type                 AuthMethodType
+  identifierLookupHash String         @map("identifier_lookup_hash")
+  lookupKeyVersion     String         @map("lookup_key_version")
+  claimKey             String         @map("claim_key")
+  status               AuthStatus     @default(ACTIVE)
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  userAccount  UserAccount         @relation(fields: [userAccountId], references: [id])
+  contactPoint PatientContactPoint @relation(fields: [contactPointId], references: [id])
+
+  // One auth method per account-contact-type combo
+  @@unique([userAccountId, contactPointId, type])
+  // Stable cross-rotation uniqueness: same mobile cannot claim two accounts
+  @@unique([type, claimKey])
+  @@map("auth_methods")
+}
+
+/// A time-limited OTP challenge for mobile verification.
+/// VERIFIED → CONSUMED is an atomic state transition inside activateAccount.
+model MobileVerificationChallenge {
+  id              String                      @id @default(cuid())
+  mobileLookupHash String                     @map("mobile_lookup_hash")
+  mobileEncrypted String                      @map("mobile_encrypted")
+  purpose         String
+  otpDigest       String                      @map("otp_digest")
+  attemptCount    Int                         @default(0) @map("attempt_count")
+  maxAttempts     Int                         @default(3) @map("max_attempts")
+  status          VerificationChallengeStatus @default(PENDING)
+  expiresAt       DateTime                    @map("expires_at")
+  verifiedAt      DateTime?                   @map("verified_at")
+  consumedAt      DateTime?                   @map("consumed_at")
+  createdAt       DateTime                    @default(now()) @map("created_at")
+  updatedAt       DateTime                    @updatedAt @map("updated_at")
+
+  @@index([mobileLookupHash, status])
+  @@map("mobile_verification_challenges")
+}
+
+/// Records an alias (merged) patient identity. Always 1-hop: alias → canonical.
+/// aliasPatientId is unique — a Patient can only be an alias of one canonical.
+model PatientAlias {
+  id                String   @id @default(cuid())
+  aliasPatientId    String   @unique @map("alias_patient_id")
+  canonicalPatientId String  @map("canonical_patient_id")
+  reason            String?
+  mergedAt          DateTime @default(now()) @map("merged_at")
+  mergedBy          String?  @map("merged_by")
+  mergeRequestId    String?  @map("merge_request_id")
+
+  aliasPatient     Patient  @relation("AliasPatient", fields: [aliasPatientId], references: [id])
+  canonicalPatient Patient  @relation("CanonicalPatient", fields: [canonicalPatientId], references: [id])
+
+  @@map("patient_aliases")
+}
+
+/// Governed identity merge request. Human-reviewed before execution.
+/// No automatic merge. REQUESTED → UNDER_REVIEW → APPROVED/REJECTED → EXECUTED.
+model IdentityMergeRequest {
+  id                     String             @id @default(cuid())
+  sourcePatientIds       String[]           @map("source_patient_ids")
+  targetPatientId        String             @map("target_patient_id")
+  status                 MergeRequestStatus @default(REQUESTED)
+  requestedBy            String             @map("requested_by")
+  requesterOrganizationId String?           @map("requester_organization_id")
+  reviewedBy             String?            @map("reviewed_by")
+  approvedBy             String?            @map("approved_by")
+  executedBy             String?            @map("executed_by")
+  reason                 String
+  requestedAt            DateTime           @default(now()) @map("requested_at")
+  reviewedAt             DateTime?          @map("reviewed_at")
+  approvedAt             DateTime?          @map("approved_at")
+  executedAt             DateTime?          @map("executed_at")
+
+  @@map("identity_merge_requests")
+}
+
