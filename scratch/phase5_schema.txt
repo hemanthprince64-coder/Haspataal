@@ -1,0 +1,226 @@
+
+// ==========================================
+// PHASE 5: CANONICAL CLINICAL ORDERS
+// ==========================================
+
+enum OrderType {
+  LAB
+  RADIOLOGY
+  PHARMACY
+  PROCEDURE
+  BLOOD_BANK
+  REFERRAL
+  PHYSIOTHERAPY
+  NUTRITION
+  DIALYSIS
+  CUSTOM
+}
+
+enum OrderStatus {
+  REQUESTED
+  ACCEPTED
+  SCHEDULED
+  IN_PROGRESS
+  PARTIALLY_COMPLETED
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  REJECTED
+}
+
+enum OrderPriority {
+  ROUTINE
+  URGENT
+  STAT
+}
+
+enum ClinicalContext {
+  OPD
+  IPD
+  EMERGENCY
+  ICU
+  NICU
+  LABOUR_ROOM
+  TELEMEDICINE
+  HOME_CARE
+}
+
+model ClinicalOrderCatalog {
+  id              String   @id @default(uuid())
+  hospitalId      String   @map("hospital_id")
+  type            OrderType
+  code            String
+  name            String
+  description     String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  versions        ClinicalOrderCatalogVersion[]
+
+  @@unique([hospitalId, type, code])
+  @@index([hospitalId, type])
+  @@map("clinical_order_catalogs")
+}
+
+model ClinicalOrderCatalogVersion {
+  id              String   @id @default(uuid())
+  catalogId       String   @map("catalog_id")
+  versionNumber   Int      @map("version_number")
+  metadata        Json     @default("{}") // Test parameters, dosage defaults, etc.
+  effectiveFrom   DateTime @default(now()) @map("effective_from")
+  effectiveUntil  DateTime? @map("effective_until")
+  createdBy       String   @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  catalog         ClinicalOrderCatalog @relation(fields: [catalogId], references: [id])
+  orderItems      OrderItem[]
+
+  @@unique([catalogId, versionNumber])
+  @@map("clinical_order_catalog_versions")
+}
+
+model OrderGroup {
+  id              String   @id @default(uuid())
+  hospitalId      String   @map("hospital_id")
+  patientId       String   @map("patient_id")
+  name            String   // e.g., "Sepsis Bundle"
+  orderedBy       String   @map("ordered_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  orders          Order[]
+
+  @@index([hospitalId, patientId])
+  @@map("order_groups")
+}
+
+model Order {
+  id                String          @id @default(uuid())
+  hospitalId        String          @map("hospital_id")
+  patientId         String          @map("patient_id")
+  clinicalContext   ClinicalContext @map("clinical_context")
+  contextId         String?         @map("context_id") // ID of admission, appointment, etc.
+  groupId           String?         @map("group_id")
+  orderedBy         String          @map("ordered_by")
+  activeVersionId   String?         @unique @map("active_version_id")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  group             OrderGroup?     @relation(fields: [groupId], references: [id])
+  activeVersion     OrderVersion?   @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
+  versions          OrderVersion[]
+  items             OrderItem[]
+  executions        OrderExecution[]
+  cancellations     OrderCancellation[]
+  audits            OrderAudit[]
+
+  @@index([hospitalId, patientId])
+  @@index([orderedBy])
+  @@map("orders")
+}
+
+model OrderVersion {
+  id              String      @id @default(uuid())
+  orderId         String      @map("order_id")
+  versionNumber   Int         @map("version_number")
+  status          OrderStatus @default(REQUESTED)
+  priority        OrderPriority @default(ROUTINE)
+  clinicalNotes   String?     @map("clinical_notes")
+  reasonForChange String?     @map("reason_for_change")
+  createdBy       String      @map("created_by")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  order           Order       @relation(fields: [orderId], references: [id])
+  activeFor       Order?      @relation(name: "ActiveVersion")
+
+  @@unique([orderId, versionNumber])
+  @@map("order_versions")
+}
+
+model OrderItem {
+  id                String      @id @default(uuid())
+  orderId           String      @map("order_id")
+  catalogVersionId  String      @map("catalog_version_id")
+  departmentId      String?     @map("department_id") // Receiving department
+  status            OrderStatus @default(REQUESTED)
+  quantity          Int         @default(1)
+  schedule          Json?       // Standing orders: frequency, duration, condition
+  clinicalNotes     String?     @map("clinical_notes")
+  externalSystem    String?     @map("external_system")
+  externalReferenceId String?   @map("external_reference_id")
+  syncStatus        String?     @map("sync_status")
+  lastSyncAt        DateTime?   @map("last_sync_at")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  order             Order       @relation(fields: [orderId], references: [id])
+  catalogVersion    ClinicalOrderCatalogVersion @relation(fields: [catalogVersionId], references: [id])
+  
+  dependenciesAsSource OrderDependency[] @relation("SourceDependency")
+  dependenciesAsTarget OrderDependency[] @relation("TargetDependency")
+
+  @@index([orderId])
+  @@index([departmentId])
+  @@map("order_items")
+}
+
+model OrderDependency {
+  id              String   @id @default(uuid())
+  sourceItemId    String   @map("source_item_id")
+  targetItemId    String   @map("target_item_id")
+  dependencyType  String   // e.g., "BEFORE", "AFTER"
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  sourceItem      OrderItem @relation("SourceDependency", fields: [sourceItemId], references: [id])
+  targetItem      OrderItem @relation("TargetDependency", fields: [targetItemId], references: [id])
+
+  @@unique([sourceItemId, targetItemId])
+  @@map("order_dependencies")
+}
+
+model OrderExecution {
+  id              String   @id @default(uuid())
+  orderId         String   @map("order_id")
+  itemId          String?  @map("item_id")
+  status          String   // Operational status e.g., "COLLECTED", "DISPENSED"
+  performedBy     String   @map("performed_by")
+  departmentId    String   @map("department_id")
+  metadata        Json     @default("{}") // e.g., analyzer machine ID
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  order           Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([departmentId])
+  @@map("order_executions")
+}
+
+model OrderCancellation {
+  id              String   @id @default(uuid())
+  orderId         String   @unique @map("order_id")
+  reason          String
+  cancelledBy     String   @map("cancelled_by")
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  order           Order    @relation(fields: [orderId], references: [id])
+
+  @@map("order_cancellations")
+}
+
+model OrderAudit {
+  id              String   @id @default(uuid())
+  orderId         String   @map("order_id")
+  action          String
+  actorId         String   @map("actor_id")
+  actorRole       String   @map("actor_role")
+  metadata        Json     @default("{}") // Capture overrides, old states, etc.
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  order           Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("order_audits")
+}

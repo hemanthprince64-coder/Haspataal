@@ -32,7 +32,7 @@ async function main() {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '14_z')
+    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '16_z')
     .sort();
 
   for (const file of files) {
@@ -52,11 +52,16 @@ async function main() {
   process.env.DATABASE_URL = dbUrl;
 
   const cmd = `npx prisma migrate diff --from-url "${dbUrl}" --to-schema-datamodel "${schemaPath}" --script`;
-  console.log('Running:', cmd);
-  const diffOutput = execSync(cmd, { cwd: path.join(__dirname, '../') }).toString();
+  console.log(`Running: ${cmd}`);
 
-  fs.writeFileSync(path.join(migrationsDir, '15_phase3_discharge_state_machine.sql'), diffOutput);
-  console.log('Successfully generated 15_phase3_discharge_state_machine.sql!');
+  try {
+    const output = execSync(cmd, { encoding: 'utf-8', cwd: path.join(__dirname, '../') });
+    const outPath = path.join(migrationsDir, '17_phase5_canonical_orders.sql');
+    fs.writeFileSync(outPath, output);
+    console.log('Successfully generated 17_phase5_canonical_orders.sql!');
+  } catch (e) {
+    console.error('Error generating diff:', e);
+  }
 
   await container.stop();
 }

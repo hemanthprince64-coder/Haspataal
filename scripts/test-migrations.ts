@@ -31,7 +31,7 @@ async function main() {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '16_z')
+    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '17_z')
     .sort();
 
   for (const file of files) {

@@ -42,6 +42,14 @@ export class AuthorizationService {
         result = await this.authorizeOperationalMutation(actor, resource, action);
         break;
 
+      case DomainAction.ORDER_CREATE:
+      case DomainAction.ORDER_CANCEL:
+      case DomainAction.ORDER_COMPLETE:
+      case DomainAction.ORDER_OVERRIDE_CDS:
+      case DomainAction.ORDER_EXECUTION_UPDATE:
+        result = this.authorizePhase5Order(actor, action);
+        break;
+
       default:
         result = {
           decision: AuthorizationDecision.DENY,
@@ -274,6 +282,43 @@ export class AuthorizationService {
     return {
       decision: AuthorizationDecision.DENY,
       reason: 'No active clinical or operational assignment found.',
+    };
+  }
+
+  private async authorizePhase5Order(
+    actor: AuthorizeRequest['actor'],
+    action: DomainAction,
+  ): Promise<AuthorizationResult> {
+    if (action === DomainAction.ORDER_CREATE) {
+      if (actor.role === 'DOCTOR' || actor.role === 'NURSE') {
+        return {
+          decision: AuthorizationDecision.ALLOW,
+          reason: 'Authorized clinical role for order creation.',
+        };
+      }
+      return {
+        decision: AuthorizationDecision.DENY,
+        reason: 'Only authorized clinical roles can create orders.',
+      };
+    }
+
+    if (action === DomainAction.ORDER_CANCEL) {
+      if (!actor.permissions?.includes('module:ORDER:action:CANCEL') && actor.role !== 'DOCTOR') {
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Actor lacks order cancellation capability.',
+        };
+      }
+      return {
+        decision: AuthorizationDecision.ALLOW,
+        reason: 'Authorized to cancel orders.',
+      };
+    }
+
+    // Default for execution updates or override
+    return {
+      decision: AuthorizationDecision.ALLOW,
+      reason: 'Authorized for order execution tasks.',
     };
   }
 }
