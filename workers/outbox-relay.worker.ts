@@ -1,18 +1,11 @@
 import { prisma } from '@haspataal/db';
 import { eventBus } from '@haspataal/events';
-import { NotificationCommandHandler } from '@haspataal/notify';
 import { normalizeLegacyOutbox, OutboxDeliveryStatus } from '@haspataal/platform-contracts';
-import { RuleCommandHandler } from '@haspataal/rules';
-import { SearchService, PostgresSearchProvider, SearchCommandHandler } from '@haspataal/search';
-import { TimelineCommandHandler } from '@haspataal/timeline';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 import logger from '../apps/patient-portal/lib/logger';
-
-const timelineHandler = new TimelineCommandHandler();
-const notificationHandler = new NotificationCommandHandler();
-const searchHandler = new SearchCommandHandler(new SearchService(new PostgresSearchProvider()));
+import { dispatchToConsumers } from './consumer-registry';
 
 function parsePayload(raw: unknown): any {
   return typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -72,132 +65,7 @@ async function dispatchOutboxEvent(record: any) {
   const payload = parsePayload(record.payload);
   const envelope = normalizeLegacyOutbox(record);
 
-  switch (record.eventType) {
-    case 'ADD_TO_TIMELINE_COMMAND': {
-      await timelineHandler.handleAddToTimeline(payload, { eventId: record.id });
-      await prisma.$executeRaw`
-        INSERT INTO consumer_idempotency_ledger (event_id, consumer_name, status, processed_at)
-        VALUES (${record.id}, 'Timeline', 'COMPLETED', NOW())
-        ON CONFLICT (event_id, consumer_name) DO NOTHING
-      `;
-      return;
-    }
-    case 'EVALUATE_RULE_COMMAND': {
-      await executeWithPrismaTxIdempotency(record.id, 'Rules', async (tx) => {
-        await RuleCommandHandler.handleExecuteRule(payload, { tx });
-      });
-      return;
-    }
-    case 'INDEX_DOCUMENT_COMMAND': {
-      await executeWithPrismaTxIdempotency(record.id, 'Search', async (tx) => {
-        await searchHandler.handleIndexDocument(payload, { tx });
-      });
-      return;
-    }
-    case 'DELETE_DOCUMENT_COMMAND': {
-      await executeWithPrismaTxIdempotency(record.id, 'Search', async (tx) => {
-        await searchHandler.handleDeleteDocument(payload, { tx });
-      });
-      return;
-    }
-    case 'SEND_NOTIFICATION_COMMAND': {
-      const ledger: any[] =
-        await prisma.$queryRaw`SELECT status FROM consumer_idempotency_ledger WHERE event_id = ${record.id} AND consumer_name = 'Notification' LIMIT 1`;
-
-      if (ledger.length > 0 && ledger[0].status === 'COMPLETED') return;
-
-      let nInfo: { queueName: string; notificationId: string; priority?: string } | undefined;
-
-      if (ledger.length === 0 || ledger[0].status !== 'ENQUEUE_PENDING') {
-        nInfo = await prisma.$transaction(async (tx) => {
-          const res = await notificationHandler.handleSendNotificationPrepareDb(payload, { tx });
-          await tx.$executeRaw`
-            INSERT INTO consumer_idempotency_ledger (event_id, consumer_name, status)
-            VALUES (${record.id}, 'Notification', 'ENQUEUE_PENDING')
-            ON CONFLICT (event_id, consumer_name) DO UPDATE SET status = 'ENQUEUE_PENDING'
-          `;
-          return {
-            queueName: res.queueName,
-            notificationId: res.notificationId,
-            priority: payload?.priority,
-          };
-        });
-      } else {
-        // Recover queue state from Notification table using record.id if needed, but for simplicity:
-        // If we crashed here, we would need the notificationId. Since we don't have it saved directly in ledger,
-        // we'd have to look it up, or we can just skip or add a field to ledger.
-        // For Phase 0B MVP, we'll try to find the notification created.
-        const notif = await (prisma as any).notification.findFirst({
-          where: {
-            hospitalId: payload?.hospitalId,
-            templateId: payload?.templateId,
-            status: 'QUEUED',
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-        if (notif) {
-          nInfo = {
-            queueName: 'notifications',
-            notificationId: notif.id,
-            priority: payload?.priority,
-          };
-        }
-      }
-
-      if (nInfo) {
-        await notificationHandler.handleSendNotificationDispatch(
-          nInfo.queueName,
-          nInfo.notificationId,
-          nInfo.priority,
-        );
-      }
-
-      await prisma.$executeRaw`
-        UPDATE consumer_idempotency_ledger
-        SET status = 'COMPLETED', processed_at = NOW()
-        WHERE event_id = ${record.id} AND consumer_name = 'Notification'
-      `;
-      return;
-    }
-    default: {
-      await eventBus.publish({
-        id: envelope.eventId,
-        type: payload?.eventName ?? record.eventType,
-        payload: domainPayload(payload),
-        timestamp: envelope.occurredAt ?? new Date(),
-        correlationId: envelope.chain.correlationId ?? undefined,
-        sourceSystem: payload?.producer ?? payload?.sourceSystem ?? 'haspataal-outbox',
-        hospitalId: envelope.scope.hospitalId ?? undefined,
-        actorId: envelope.actor.actorId ?? undefined,
-        actorType: envelope.actor.actorType ?? undefined,
-      });
-      await prisma.$executeRaw`
-        INSERT INTO consumer_idempotency_ledger (event_id, consumer_name, status, processed_at)
-        VALUES (${record.id}, 'eventBus', 'COMPLETED', NOW())
-        ON CONFLICT (event_id, consumer_name) DO NOTHING
-      `;
-      return;
-    }
-  }
-}
-
-async function executeWithPrismaTxIdempotency(
-  eventId: string,
-  consumerName: string,
-  logic: (tx: any) => Promise<void>,
-) {
-  const ledger: any[] =
-    await prisma.$queryRaw`SELECT status FROM consumer_idempotency_ledger WHERE event_id = ${eventId} AND consumer_name = ${consumerName} LIMIT 1`;
-  if (ledger.length > 0 && ledger[0].status === 'COMPLETED') return;
-
-  await prisma.$transaction(async (tx) => {
-    await logic(tx);
-    await tx.$executeRaw`
-      INSERT INTO consumer_idempotency_ledger (event_id, consumer_name, status, processed_at)
-      VALUES (${eventId}, ${consumerName}, 'COMPLETED', NOW())
-      ON CONFLICT (event_id, consumer_name) DO UPDATE SET status = 'COMPLETED', processed_at = NOW()
-    `;
-  });
+  await dispatchToConsumers(envelope, payload);
 }
 
 async function processOutbox() {

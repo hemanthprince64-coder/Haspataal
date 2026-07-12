@@ -327,7 +327,7 @@ export function buildCanonicalOutbox(input: BuildCanonicalOutboxInput): RawOutbo
     correlationId: input.correlationId ?? null,
     causationId: input.causationId ?? null,
     depth: input.depth ?? 0,
-    occurredAt: input.occurredAt ?? null,
+    occurredAt: input.occurredAt ?? undefined,
     deliveryStatus: input.deliveryStatus ?? 'PENDING',
   };
 }

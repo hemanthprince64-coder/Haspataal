@@ -1,18 +1,3 @@
-# Phase 3 Hospital Operations - Implementation Walkthrough
-
-## Overview
-Completed implementation of remaining hospital operations modules for the Haspataal Hospital Management System.
-
-## Database Schema Changes (`packages/db/prisma/schema.prisma`)
-
-### Nursing Module Models
-- **NursingNote** (line 3260): Clinical notes by nursing staff, linked to visits/admissions
-- **MAR** (line 3280): Medication administration records with scheduling and status tracking
-
-### Operation Theatre Model
-- **OTSchedule** (line 3301): Surgery scheduling with WHO safety checklists
-
-### ICU/NICU/PICU Model
 - **ICUAdmission** (line 3325): Critical care admissions with APACHE II, PRISM, PELOD scoring
 
 ### Insurance Models

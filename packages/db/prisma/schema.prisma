@@ -499,8 +499,8 @@ model Patient {
   // Phase 1: Identity
   userAccount              UserAccount?
   contactPoints            PatientContactPoint[]
-  aliasOf                  PatientAlias?          @relation("AliasPatient")
-  aliases                  PatientAlias[]         @relation("CanonicalPatient")
+  aliasOf                  PatientAlias?           @relation("AliasPatient")
+  aliases                  PatientAlias[]          @relation("CanonicalPatient")
 
   @@index([city])
   @@index([email])
@@ -602,30 +602,30 @@ model Review {
 }
 
 model Appointment {
-  id                  String                @id @default(uuid())
-  patientId           String                @map("patient_id")
-  doctorId            String                @map("doctor_id")
-  date                DateTime              @db.Date
-  slot                String
-  status              AppointmentStatus     @default(BOOKED)
-  notes               String?
-  createdAt           DateTime              @default(now()) @map("created_at")
-  updatedAt           DateTime              @updatedAt @map("updated_at")
-  deletedAt           DateTime?             @map("deleted_at")
-  hospitalId          String?               @map("hospital_id")
-  idempotencyKey      String?               @unique @map("idempotency_key")
-  patientGlobalId     String?               @map("patient_global_id")
-  slotTime            DateTime?             @map("slot_time")
-  scheduledAt         DateTime?             @map("scheduled_at")
-  confirmationExpiresAt DateTime?            @map("confirmation_expires_at")
-  doctor              DoctorMaster          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  patient             Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  followUps           FollowUp[]
-  PatientPrescription PatientPrescription[]
-  payment             Payment?
-  visit               Visit?
-  invoices            Invoice[]
-  LabOrder            LabOrder[]
+  id                    String                @id @default(uuid())
+  patientId             String                @map("patient_id")
+  doctorId              String                @map("doctor_id")
+  date                  DateTime              @db.Date
+  slot                  String
+  status                AppointmentStatus     @default(BOOKED)
+  notes                 String?
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+  deletedAt             DateTime?             @map("deleted_at")
+  hospitalId            String?               @map("hospital_id")
+  idempotencyKey        String?               @unique @map("idempotency_key")
+  patientGlobalId       String?               @map("patient_global_id")
+  slotTime              DateTime?             @map("slot_time")
+  scheduledAt           DateTime?             @map("scheduled_at")
+  confirmationExpiresAt DateTime?             @map("confirmation_expires_at")
+  doctor                DoctorMaster          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient               Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  followUps             FollowUp[]
+  PatientPrescription   PatientPrescription[]
+  payment               Payment?
+  visit                 Visit?
+  invoices              Invoice[]
+  LabOrder              LabOrder[]
 
   @@unique([doctorId, date, slot])
   @@index([patientId])
@@ -897,6 +897,11 @@ model CareJourney {
   nudges          NudgeSchedule[]
   recoverySteps   RecoveryStep[]
 
+  projectionVersion       Int       @default(1) @map("projection_version")
+  lastProcessedEventId    String?   @map("last_processed_event_id")
+  lastProcessedOccurredAt DateTime? @map("last_processed_occurred_at")
+  rebuiltAt               DateTime? @map("rebuilt_at")
+
   @@map("care_journeys")
 }
 
@@ -1129,19 +1134,19 @@ model PatientMedication {
 }
 
 model VitalRecord {
-  id            String   @id @default(uuid())
-  patientId     String   @map("patient_id")
-  weight        Decimal?
-  height        Decimal?
-  bmi           Decimal?
-  bloodPressure String?  @map("blood_pressure")
-  pulse         Int?
-  respiratoryRate Int?   @map("respiratory_rate")
-  bloodSugar    Decimal? @map("blood_sugar")
-  spo2          Decimal?
-  temperature   Decimal?
-  recordedAt    DateTime @default(now()) @map("recorded_at")
-  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  patientId       String   @map("patient_id")
+  weight          Decimal?
+  height          Decimal?
+  bmi             Decimal?
+  bloodPressure   String?  @map("blood_pressure")
+  pulse           Int?
+  respiratoryRate Int?     @map("respiratory_rate")
+  bloodSugar      Decimal? @map("blood_sugar")
+  spo2            Decimal?
+  temperature     Decimal?
+  recordedAt      DateTime @default(now()) @map("recorded_at")
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([patientId])
   @@map("vital_records")
@@ -1416,9 +1421,26 @@ model DoctorSlotBlock {
 }
 
 model OutboxEvent {
-  id          String    @id @default(uuid())
-  eventType   String    @map("event_type")
-  payload     Json
+  id        String @id @default(uuid())
+  eventType String @map("event_type")
+  payload   Json
+
+  // Phase 0A Canonical Columns
+  eventVersion   Int?      @map("event_version")
+  aggregateType  String?   @map("aggregate_type")
+  aggregateId    String?   @map("aggregate_id")
+  scopeType      String?   @map("scope_type")
+  hospitalId     String?   @map("hospital_id")
+  tenantId       String?   @map("tenant_id")
+  actorId        String?   @map("actor_id")
+  actorType      String?   @map("actor_type")
+  actorRole      String?   @map("actor_role")
+  correlationId  String?   @map("correlation_id")
+  causationId    String?   @map("causation_id")
+  depth          Int?      @default(0)
+  occurredAt     DateTime? @map("occurred_at")
+  deliveryStatus String?   @default("PENDING") @map("delivery_status")
+
   processed   Boolean   @default(false)
   processedAt DateTime? @map("processed_at")
   errorCount  Int       @default(0) @map("error_count")
@@ -1426,6 +1448,9 @@ model OutboxEvent {
   createdAt   DateTime  @default(now()) @map("created_at")
 
   @@index([processed, createdAt])
+  @@index([correlationId])
+  @@index([aggregateId])
+  @@index([deliveryStatus])
   @@map("outbox_events")
 }
 
@@ -1539,31 +1564,134 @@ model FollowUp {
   @@map("follow_ups")
 }
 
+enum ClinicalStatus {
+  ADMITTED
+  DISCHARGE_CLINICALLY_DECIDED
+}
+
+enum DischargeProcessStatus {
+  NOT_INITIATED
+  CLEARANCES_PENDING
+  READY_FOR_DEPARTURE
+}
+
+enum PhysicalPresenceStatus {
+  PRESENT
+  ABSENCE_SUSPECTED
+  DEPARTED_STANDARD
+  DEPARTED_LAMA
+  DEPARTED_WITHOUT_NOTICE
+}
+
+enum LegacyDepartureClassification {
+  NONE
+  LEGACY_DISCHARGED_WITHOUT_AUTHORITATIVE_DEPARTURE_EVIDENCE
+}
+
+enum DeparturePathway {
+  STANDARD
+  LAMA
+  WITHOUT_NOTICE
+  LEGACY_UNCLEAR
+}
+
+enum EvidenceType {
+  MANUAL_ENTRY
+  SYSTEM_OVERRIDE
+  SECURITY_GATE
+  LEGACY_BACKFILL
+}
+
+enum LamaStatus {
+  INITIATED
+  DOCUMENTATION_IN_PROGRESS
+  DOCUMENTED
+  WITHDRAWN
+}
+
+enum AbsenceStatus {
+  SUSPECTED
+  INVESTIGATION_IN_PROGRESS
+  RESOLVED_RETURNED
+  CONFIRMED_DEPARTED
+}
+
+model LamaEpisode {
+  id           String     @id @default(uuid())
+  admissionId  String     @map("admission_id")
+  status       LamaStatus
+  initiatedAt  DateTime   @default(now()) @map("initiated_at")
+  initiatedBy  String     @map("initiated_by")
+  documentedAt DateTime?  @map("documented_at")
+  withdrawnAt  DateTime?  @map("withdrawn_at")
+  admission    Admission  @relation(fields: [admissionId], references: [id])
+
+  @@map("lama_episodes")
+}
+
+model AbsenceEpisode {
+  id          String        @id @default(uuid())
+  admissionId String        @map("admission_id")
+  status      AbsenceStatus
+  suspectedAt DateTime      @default(now()) @map("suspected_at")
+  resolvedAt  DateTime?     @map("resolved_at")
+  admission   Admission     @relation(fields: [admissionId], references: [id])
+
+  @@map("absence_episodes")
+}
+
+model PhysicalDepartureRecord {
+  id                 String           @id @default(uuid())
+  admissionId        String           @unique @map("admission_id")
+  pathway            DeparturePathway
+  confirmedAt        DateTime         @default(now()) @map("confirmed_at")
+  confirmedByActorId String           @map("confirmed_by_actor_id")
+  confirmerRole      String           @map("confirmer_role")
+  evidenceType       EvidenceType
+  sourceWorkflow     String           @map("source_workflow")
+  correlationId      String           @map("correlation_id")
+
+  admission Admission @relation(fields: [admissionId], references: [id])
+
+  @@index([pathway])
+  @@map("physical_departure_records")
+}
+
 model Admission {
-  id                  String          @id @default(uuid())
-  hospitalId          String          @map("hospital_id")
-  patientId           String          @map("patient_id")
-  bedId               String?         @map("bed_id")
-  attendingDoctorId   String?         @map("attending_doctor_id")
-  admissionNumber     String          @map("admission_number")
-  status              String          @default("ADMITTED")
+  id                  String    @id @default(uuid())
+  hospitalId          String    @map("hospital_id")
+  patientId           String    @map("patient_id")
+  bedId               String?   @map("bed_id")
+  attendingDoctorId   String?   @map("attending_doctor_id")
+  admissionNumber     String    @map("admission_number")
+  status              String    @default("ADMITTED")
   reason              String?
-  admittedAt          DateTime        @default(now()) @map("admitted_at")
-  expectedDischargeAt DateTime?       @map("expected_discharge_at")
-  dischargedAt        DateTime?       @map("discharged_at")
-  dischargeSummary    String?         @map("discharge_summary")
-  dailyBedCharge      Decimal?        @map("daily_bed_charge")
-  payload             Json?           @default("{}")
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
-  hospital            HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  patient             Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  bed                 Bed?            @relation(fields: [bedId], references: [id])
-  attendingDoctor     DoctorMaster?   @relation(fields: [attendingDoctorId], references: [id])
-  invoices            Invoice[]
-  NursingNote         NursingNote[]
-  MAR                 MAR[]
-  ICUAdmission        ICUAdmission[]
+  admittedAt          DateTime  @default(now()) @map("admitted_at")
+  expectedDischargeAt DateTime? @map("expected_discharge_at")
+  dischargedAt        DateTime? @map("discharged_at")
+  dischargeSummary    String?   @map("discharge_summary")
+  dailyBedCharge      Decimal?  @map("daily_bed_charge")
+  payload             Json?     @default("{}")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  clinicalStatus                ClinicalStatus?                @map("clinical_status")
+  dischargeProcessStatus        DischargeProcessStatus?        @map("discharge_process_status")
+  physicalPresenceStatus        PhysicalPresenceStatus?        @map("physical_presence_status")
+  legacyDepartureClassification LegacyDepartureClassification? @map("legacy_departure_classification")
+
+  lamaEpisodes    LamaEpisode[]
+  absenceEpisodes AbsenceEpisode[]
+  departureRecord PhysicalDepartureRecord?
+
+  hospital        HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient         Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bed             Bed?            @relation(fields: [bedId], references: [id])
+  attendingDoctor DoctorMaster?   @relation(fields: [attendingDoctorId], references: [id])
+  invoices        Invoice[]
+  NursingNote     NursingNote[]
+  MAR             MAR[]
+  ICUAdmission    ICUAdmission[]
 
   @@unique([hospitalId, admissionNumber])
   @@index([hospitalId, status])
@@ -1665,8 +1793,8 @@ model Notification {
   doctorId      String?         @map("doctor_id")
   templateId    String?         @map("template_id")
   channel       String
-  priority      String            @default("NORMAL")
-  status        String            @default("QUEUED")
+  priority      String          @default("NORMAL")
+  status        String          @default("QUEUED")
   recipient     String
   subject       String?
   body          String
@@ -3005,6 +3133,11 @@ model TimelineEvent {
   versions    TimelineVersion[]
   audits      TimelineAudit[]
 
+  projectionVersion       Int       @default(1) @map("projection_version")
+  lastProcessedEventId    String?   @map("last_processed_event_id")
+  lastProcessedOccurredAt DateTime? @map("last_processed_occurred_at")
+  rebuiltAt               DateTime? @map("rebuilt_at")
+
   @@index([patientId, timestamp(sort: Desc)])
   @@index([hospitalId, patientId])
   @@index([eventType])
@@ -3559,7 +3692,7 @@ model TimelineSubscription {
 }
 
 model TimelineSnapshot {
-  id         String   @id @default(uuid())
+  id           String   @id @default(uuid())
   patientId    String   @map("patient_id")
   snapshotData Json     @map("snapshot_data")
   generatedAt  DateTime @default(now()) @map("generated_at")
@@ -3576,23 +3709,23 @@ model TimelineSnapshot {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Rule {
-  id            String   @id @default(uuid())
-  hospitalId    String?  @map("hospital_id")
+  id            String    @id @default(uuid())
+  hospitalId    String?   @map("hospital_id")
   name          String
   description   String?
-  category      String   @default("CLINICAL")
-  triggerType   String   @map("trigger_type")
-  triggerEvent  String?  @map("trigger_event")
-  conditionJson Json     @map("condition_json")
-  actionJson    Json     @map("action_json")
-  isActive      Boolean  @default(true) @map("is_active")
-  priority      Int      @default(100)
-  version       Int      @default(1)
-  createdBy     String?  @map("created_by")
-  approvedBy    String?  @map("approved_by")
+  category      String    @default("CLINICAL")
+  triggerType   String    @map("trigger_type")
+  triggerEvent  String?   @map("trigger_event")
+  conditionJson Json      @map("condition_json")
+  actionJson    Json      @map("action_json")
+  isActive      Boolean   @default(true) @map("is_active")
+  priority      Int       @default(100)
+  version       Int       @default(1)
+  createdBy     String?   @map("created_by")
+  approvedBy    String?   @map("approved_by")
   approvedAt    DateTime? @map("approved_at")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   @@index([hospitalId])
   @@index([category])
@@ -3601,16 +3734,16 @@ model Rule {
 }
 
 model RuleExecution {
-  id            String   @id @default(uuid())
-  ruleId        String   @map("rule_id")
-  patientId     String?  @map("patient_id")
-  hospitalId    String?  @map("hospital_id")
-  triggeredBy   String   @map("triggered_by")
-  triggeredAt   DateTime @default(now()) @map("triggered_at")
-  status        String   @default("PENDING")
-  resultJson    Json?    @map("result_json")
-  errorJson     Json?    @map("error_json")
-  executionTimeMs Int?    @map("execution_time_ms")
+  id              String   @id @default(uuid())
+  ruleId          String   @map("rule_id")
+  patientId       String?  @map("patient_id")
+  hospitalId      String?  @map("hospital_id")
+  triggeredBy     String   @map("triggered_by")
+  triggeredAt     DateTime @default(now()) @map("triggered_at")
+  status          String   @default("PENDING")
+  resultJson      Json?    @map("result_json")
+  errorJson       Json?    @map("error_json")
+  executionTimeMs Int?     @map("execution_time_ms")
 
   @@index([ruleId])
   @@index([patientId])
@@ -3619,13 +3752,13 @@ model RuleExecution {
 }
 
 model RuleSchedule {
-  id            String   @id @default(uuid())
-  ruleId        String   @map("rule_id")
-  cronExpression String  @map("cron_expression")
-  timezone      String   @default("Asia/Kolkata")
-  nextRunAt     DateTime? @map("next_run_at")
-  lastRunAt     DateTime? @map("last_run_at")
-  isActive      Boolean  @default(true) @map("is_active")
+  id             String    @id @default(uuid())
+  ruleId         String    @map("rule_id")
+  cronExpression String    @map("cron_expression")
+  timezone       String    @default("Asia/Kolkata")
+  nextRunAt      DateTime? @map("next_run_at")
+  lastRunAt      DateTime? @map("last_run_at")
+  isActive       Boolean   @default(true) @map("is_active")
 
   @@index([ruleId])
   @@index([nextRunAt])
@@ -3637,16 +3770,16 @@ model RuleSchedule {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model NotificationProvider {
-  id           String   @id @default(uuid())
-  hospitalId   String?  @map("hospital_id")
-  name         String
-  channel      String
-  type         String
-  config       Json
-  isActive     Boolean  @default(true)
-  priority     Int      @default(100)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  hospitalId String?  @map("hospital_id")
+  name       String
+  channel    String
+  type       String
+  config     Json
+  isActive   Boolean  @default(true)
+  priority   Int      @default(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@index([hospitalId])
   @@index([channel])
@@ -3654,8 +3787,8 @@ model NotificationProvider {
 }
 
 model NotificationCampaign {
-  id          String   @id @default(uuid())
-  hospitalId  String?  @map("hospital_id")
+  id          String    @id @default(uuid())
+  hospitalId  String?   @map("hospital_id")
   name        String
   description String?
   category    String
@@ -3663,24 +3796,24 @@ model NotificationCampaign {
   template    String
   audience    Json
   scheduledAt DateTime? @map("scheduled_at")
-  status      String   @default("DRAFT")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  status      String    @default("DRAFT")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@index([hospitalId])
   @@map("notification_campaigns")
 }
 
 model NotificationDelivery {
-  id            String   @id @default(uuid())
-  notificationId String  @map("notification_id")
-  channel       String
-  provider      String
-  status        String   @default("QUEUED")
-  attempt       Int      @default(1)
-  providerRef   String?  @map("provider_ref")
-  error         String?
-  createdAt     DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  notificationId String   @map("notification_id")
+  channel        String
+  provider       String
+  status         String   @default("QUEUED")
+  attempt        Int      @default(1)
+  providerRef    String?  @map("provider_ref")
+  error          String?
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([notificationId])
   @@map("notification_deliveries")
@@ -3706,12 +3839,12 @@ model NotificationPreference {
 }
 
 model NotificationEvent {
-  id          String   @id @default(uuid())
-  hospitalId  String?  @map("hospital_id")
-  event       String   // e.g., APPOINTMENT_BOOKED
-  payload     Json?
-  processed   Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  hospitalId String?  @map("hospital_id")
+  event      String // e.g., APPOINTMENT_BOOKED
+  payload    Json?
+  processed  Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([hospitalId])
   @@index([event])
@@ -3719,14 +3852,14 @@ model NotificationEvent {
 }
 
 model NotificationAudit {
-  id            String   @id @default(uuid())
-  hospitalId    String?  @map("hospital_id")
-  notificationId String  @map("notification_id")
-  action        String   // SENT, DELIVERED, READ, FAILED
-  actorType     String?  @map("actor_type") // USER, SYSTEM, PROVIDER
-  actorId       String?  @map("actor_id")
-  details       Json?
-  createdAt     DateTime @default(now()) @map("created_at")
+  id             String   @id @default(uuid())
+  hospitalId     String?  @map("hospital_id")
+  notificationId String   @map("notification_id")
+  action         String // SENT, DELIVERED, READ, FAILED
+  actorType      String?  @map("actor_type") // USER, SYSTEM, PROVIDER
+  actorId        String?  @map("actor_id")
+  details        Json?
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([hospitalId])
   @@index([notificationId])
@@ -3747,13 +3880,13 @@ model NotificationProviderHealth {
 }
 
 model NotificationTemplateVersion {
-  id          String   @id @default(uuid())
-  templateId  String   @map("template_id")
-  body        String
-  variables   Json?
-  version     Int      @default(1)
-  createdBy   String?  @map("created_by")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  templateId String   @map("template_id")
+  body       String
+  variables  Json?
+  version    Int      @default(1)
+  createdBy  String?  @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([templateId])
   @@map("notification_template_versions")
@@ -3828,6 +3961,11 @@ model JourneyMilestone {
   journey     JourneyInstance @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   tasks       JourneyTask[]
 
+  projectionVersion       Int       @default(1) @map("projection_version")
+  lastProcessedEventId    String?   @map("last_processed_event_id")
+  lastProcessedOccurredAt DateTime? @map("last_processed_occurred_at")
+  rebuiltAt               DateTime? @map("rebuilt_at")
+
   @@index([journeyId])
   @@map("journey_milestones")
 }
@@ -3864,18 +4002,18 @@ model JourneyRisk {
 }
 
 model SearchableEntity {
-  id          String    @id @default(uuid())
-  entityType  String    @map("entity_type")
-  entityId    String    @map("entity_id")
-  hospitalId  String?   @map("hospital_id")
-  patientId   String?   @map("patient_id")
-  title       String
-  content     String?
-  metadata    Json?
+  id           String                   @id @default(uuid())
+  entityType   String                   @map("entity_type")
+  entityId     String                   @map("entity_id")
+  hospitalId   String?                  @map("hospital_id")
+  patientId    String?                  @map("patient_id")
+  title        String
+  content      String?
+  metadata     Json?
   searchVector Unsupported("tsvector")? @map("search_vector")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+  updatedAt    DateTime                 @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime?                @map("deleted_at")
 
   @@index([searchVector], type: Gin)
   @@index([entityType])
@@ -3884,14 +4022,14 @@ model SearchableEntity {
 }
 
 model SearchSynonym {
-  id          String   @id @default(uuid())
-  term        String   @unique
-  synonyms    String[]
-  category    String?
-  hospitalId  String?  @map("hospital_id")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  term       String   @unique
+  synonyms   String[]
+  category   String?
+  hospitalId String?  @map("hospital_id")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("search_synonyms")
 }
@@ -3915,15 +4053,14 @@ model SearchLog {
 // WAVE 4: EVENT INTEGRATION PATTERNS
 // ============================================================
 
-
 model InboxEvent {
-  eventId       String    @map("event_id")
-  handlerName   String    @map("handler_name")
-  status        String    @default("PENDING")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  processedAt   DateTime? @map("processed_at")
-  error         String?
-  retryCount    Int       @default(0) @map("retry_count")
+  eventId     String    @map("event_id")
+  handlerName String    @map("handler_name")
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+  error       String?
+  retryCount  Int       @default(0) @map("retry_count")
 
   @@id([eventId, handlerName])
   @@index([status, createdAt])
@@ -3997,18 +4134,18 @@ model UserAccount {
 /// Same mobile may appear here for multiple Patients (guardian, caregiver contact).
 /// No global uniqueness on hash — only authentication identity has uniqueness.
 model PatientContactPoint {
-  id              String                  @id @default(cuid())
-  patientId       String                  @map("patient_id")
-  type            ContactType
-  relationship    ContactRelationshipType @default(SELF)
-  valueEncrypted  String                  @map("value_encrypted")
-  valueLookupHash String                  @map("value_lookup_hash")
-  lookupKeyVersion String                 @map("lookup_key_version")
-  verifiedAt      DateTime?               @map("verified_at")
-  isPrimary       Boolean                 @default(false) @map("is_primary")
-  status          ContactStatus           @default(UNVERIFIED)
-  createdAt       DateTime                @default(now()) @map("created_at")
-  updatedAt       DateTime                @updatedAt @map("updated_at")
+  id               String                  @id @default(cuid())
+  patientId        String                  @map("patient_id")
+  type             ContactType
+  relationship     ContactRelationshipType @default(SELF)
+  valueEncrypted   String                  @map("value_encrypted")
+  valueLookupHash  String                  @map("value_lookup_hash")
+  lookupKeyVersion String                  @map("lookup_key_version")
+  verifiedAt       DateTime?               @map("verified_at")
+  isPrimary        Boolean                 @default(false) @map("is_primary")
+  status           ContactStatus           @default(UNVERIFIED)
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
 
   patient     Patient      @relation(fields: [patientId], references: [id])
   authMethods AuthMethod[]
@@ -4048,19 +4185,19 @@ model AuthMethod {
 /// A time-limited OTP challenge for mobile verification.
 /// VERIFIED → CONSUMED is an atomic state transition inside activateAccount.
 model MobileVerificationChallenge {
-  id              String                      @id @default(cuid())
-  mobileLookupHash String                     @map("mobile_lookup_hash")
-  mobileEncrypted String                      @map("mobile_encrypted")
-  purpose         String
-  otpDigest       String                      @map("otp_digest")
-  attemptCount    Int                         @default(0) @map("attempt_count")
-  maxAttempts     Int                         @default(3) @map("max_attempts")
-  status          VerificationChallengeStatus @default(PENDING)
-  expiresAt       DateTime                    @map("expires_at")
-  verifiedAt      DateTime?                   @map("verified_at")
-  consumedAt      DateTime?                   @map("consumed_at")
-  createdAt       DateTime                    @default(now()) @map("created_at")
-  updatedAt       DateTime                    @updatedAt @map("updated_at")
+  id               String                      @id @default(cuid())
+  mobileLookupHash String                      @map("mobile_lookup_hash")
+  mobileEncrypted  String                      @map("mobile_encrypted")
+  purpose          String
+  otpDigest        String                      @map("otp_digest")
+  attemptCount     Int                         @default(0) @map("attempt_count")
+  maxAttempts      Int                         @default(3) @map("max_attempts")
+  status           VerificationChallengeStatus @default(PENDING)
+  expiresAt        DateTime                    @map("expires_at")
+  verifiedAt       DateTime?                   @map("verified_at")
+  consumedAt       DateTime?                   @map("consumed_at")
+  createdAt        DateTime                    @default(now()) @map("created_at")
+  updatedAt        DateTime                    @updatedAt @map("updated_at")
 
   @@index([mobileLookupHash, status])
   @@map("mobile_verification_challenges")
@@ -4069,16 +4206,16 @@ model MobileVerificationChallenge {
 /// Records an alias (merged) patient identity. Always 1-hop: alias → canonical.
 /// aliasPatientId is unique — a Patient can only be an alias of one canonical.
 model PatientAlias {
-  id                String   @id @default(cuid())
-  aliasPatientId    String   @unique @map("alias_patient_id")
-  canonicalPatientId String  @map("canonical_patient_id")
-  reason            String?
-  mergedAt          DateTime @default(now()) @map("merged_at")
-  mergedBy          String?  @map("merged_by")
-  mergeRequestId    String?  @map("merge_request_id")
+  id                 String   @id @default(cuid())
+  aliasPatientId     String   @unique @map("alias_patient_id")
+  canonicalPatientId String   @map("canonical_patient_id")
+  reason             String?
+  mergedAt           DateTime @default(now()) @map("merged_at")
+  mergedBy           String?  @map("merged_by")
+  mergeRequestId     String?  @map("merge_request_id")
 
-  aliasPatient     Patient  @relation("AliasPatient", fields: [aliasPatientId], references: [id])
-  canonicalPatient Patient  @relation("CanonicalPatient", fields: [canonicalPatientId], references: [id])
+  aliasPatient     Patient @relation("AliasPatient", fields: [aliasPatientId], references: [id])
+  canonicalPatient Patient @relation("CanonicalPatient", fields: [canonicalPatientId], references: [id])
 
   @@map("patient_aliases")
 }
@@ -4086,21 +4223,244 @@ model PatientAlias {
 /// Governed identity merge request. Human-reviewed before execution.
 /// No automatic merge. REQUESTED → UNDER_REVIEW → APPROVED/REJECTED → EXECUTED.
 model IdentityMergeRequest {
-  id                     String             @id @default(cuid())
-  sourcePatientIds       String[]           @map("source_patient_ids")
-  targetPatientId        String             @map("target_patient_id")
-  status                 MergeRequestStatus @default(REQUESTED)
-  requestedBy            String             @map("requested_by")
-  requesterOrganizationId String?           @map("requester_organization_id")
-  reviewedBy             String?            @map("reviewed_by")
-  approvedBy             String?            @map("approved_by")
-  executedBy             String?            @map("executed_by")
-  reason                 String
-  requestedAt            DateTime           @default(now()) @map("requested_at")
-  reviewedAt             DateTime?          @map("reviewed_at")
-  approvedAt             DateTime?          @map("approved_at")
-  executedAt             DateTime?          @map("executed_at")
+  id                      String             @id @default(cuid())
+  sourcePatientIds        String[]           @map("source_patient_ids")
+  targetPatientId         String             @map("target_patient_id")
+  status                  MergeRequestStatus @default(REQUESTED)
+  requestedBy             String             @map("requested_by")
+  requesterOrganizationId String?            @map("requester_organization_id")
+  reviewedBy              String?            @map("reviewed_by")
+  approvedBy              String?            @map("approved_by")
+  executedBy              String?            @map("executed_by")
+  reason                  String
+  requestedAt             DateTime           @default(now()) @map("requested_at")
+  reviewedAt              DateTime?          @map("reviewed_at")
+  approvedAt              DateTime?          @map("approved_at")
+  executedAt              DateTime?          @map("executed_at")
 
   @@map("identity_merge_requests")
 }
 
+// Phase 2: Authorization Backbone
+
+enum RelationshipLevel {
+  LONGITUDINAL
+  EPISODIC
+  CONSULTATION
+}
+
+enum RelationshipStatus {
+  PRE_VISIT
+  ACTIVE
+  POST_CARE_FOLLOWUP
+  ENDED
+}
+
+enum RelationshipTrigger {
+  APPOINTMENT_BOOKED
+  CHECK_IN
+  ADMISSION
+  REFERRAL_ACCEPTED
+  BREAK_GLASS
+}
+
+enum TerminationReason {
+  DISCHARGE_COMPLETED
+  LAMA_COMPLETED
+  TRANSFER_ACCEPTED
+  EXPLICIT_REVOCATION
+  EXPIRED
+}
+
+enum CarePurpose {
+  TRIAGE
+  PRIMARY_TREATMENT
+  SECONDARY_CONSULT
+  EMERGENCY
+}
+
+enum CareTeamRole {
+  PRIMARY
+  CO_TREATING
+  CONSULTING
+  NURSE
+  RESIDENT
+}
+
+enum ResponsibilityStatus {
+  ACTIVE
+  TRANSFERRED
+  ENDED
+}
+
+enum TransferStatus {
+  INITIATED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+model DoctorPatientRelationship {
+  id                 String              @id @default(uuid())
+  patientId          String              @map("patient_id")
+  doctorId           String              @map("doctor_id")
+  hospitalId         String?             @map("hospital_id")
+  episodeId          String?             @map("episode_id")
+  originatingEventId String?             @map("originating_event_id")
+  level              RelationshipLevel   @default(EPISODIC)
+  status             RelationshipStatus  @default(ACTIVE)
+  carePurpose        CarePurpose
+  sourceTrigger      RelationshipTrigger
+  activatedAt        DateTime            @default(now()) @map("activated_at")
+  endedAt            DateTime?           @map("ended_at")
+  endedBy            String?             @map("ended_by")
+  terminationReason  TerminationReason?  @map("termination_reason")
+  version            Int                 @default(1)
+
+  @@index([patientId, doctorId, status])
+  @@index([episodeId])
+  @@map("doctor_patient_relationships")
+}
+
+model CareResponsibility {
+  id                String               @id @default(uuid())
+  doctorId          String               @map("doctor_id")
+  patientId         String               @map("patient_id")
+  episodeId         String               @map("episode_id")
+  isPrimary         Boolean              @map("is_primary")
+  status            ResponsibilityStatus @default(ACTIVE)
+  activatedAt       DateTime             @default(now()) @map("activated_at")
+  endedAt           DateTime?            @map("ended_at")
+  terminationReason String?              @map("termination_reason")
+
+  @@index([patientId, episodeId])
+  @@map("care_responsibilities")
+}
+
+model TransferOfCare {
+  id                 String         @id @default(uuid())
+  initiatingDoctorId String         @map("initiating_doctor_id")
+  receivingDoctorId  String         @map("receiving_doctor_id")
+  patientId          String         @map("patient_id")
+  episodeId          String         @map("episode_id")
+  hospitalId         String         @map("hospital_id")
+  status             TransferStatus @default(INITIATED)
+  initiatedAt        DateTime       @default(now()) @map("initiated_at")
+  acceptedAt         DateTime?      @map("accepted_at")
+  rejectedAt         DateTime?      @map("rejected_at")
+  reason             String
+  version            Int            @default(1)
+
+  @@map("transfer_of_cares")
+}
+
+model BreakGlassActivation {
+  id          String           @id @default(uuid())
+  actorId     String           @map("actor_id")
+  patientId   String           @map("patient_id")
+  hospitalId  String           @map("hospital_id")
+  episodeId   String?          @map("episode_id")
+  reason      String
+  activatedAt DateTime         @default(now()) @map("activated_at")
+  expiresAt   DateTime         @map("expires_at")
+  status      BreakGlassStatus @default(ACTIVE)
+  reviewState ReviewState      @default(PENDING) @map("review_state")
+  version     Int              @default(1)
+
+  @@map("break_glass_activations")
+}
+
+enum BreakGlassStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum ReviewState {
+  PENDING
+  REVIEWED
+  FLAGGED
+}
+
+enum CareDepartureStatus {
+  NONE
+  DISCHARGE_CLINICALLY_DECIDED
+  LAMA_INITIATED
+  ABSCONDING_SUSPECTED
+  PATIENT_PHYSICALLY_LEFT_STANDARD
+  PATIENT_PHYSICALLY_LEFT_LAMA
+  PATIENT_PHYSICALLY_LEFT_WITHOUT_NOTICE
+}
+
+model ConsumerIdempotencyLedger {
+  eventId      String   @map("event_id")
+  consumerName String   @map("consumer_name")
+  status       String
+  processedAt  DateTime @default(now()) @map("processed_at")
+
+  @@id([eventId, consumerName])
+  @@map("consumer_idempotency_ledger")
+}
+
+model ProjectionCheckpoint {
+  projectionName    String    @id @map("projection_name")
+  consumerName      String    @map("consumer_name")
+  lastEventId       String?   @map("last_event_id")
+  lastOccurredAt    DateTime? @map("last_occurred_at")
+  replayStatus      String    @default("ACTIVE") @map("replay_status") // ACTIVE, REPLAYING, ERROR
+  replayStartedAt   DateTime? @map("replay_started_at")
+  replayCompletedAt DateTime? @map("replay_completed_at")
+  projectionVersion Int       @default(1) @map("projection_version")
+
+  @@map("projection_checkpoints")
+}
+
+model AnalyticsPatientProjection {
+  patientId             String    @id @map("patient_id")
+  totalAdmissions       Int       @default(0) @map("total_admissions")
+  totalOutpatientVisits Int       @default(0) @map("total_outpatient_visits")
+  totalLamas            Int       @default(0) @map("total_lamas")
+  firstVisitDate        DateTime? @map("first_visit_date")
+  lastVisitDate         DateTime? @map("last_visit_date")
+
+  projectionVersion       Int       @default(1) @map("projection_version")
+  lastProcessedEventId    String?   @map("last_processed_event_id")
+  lastProcessedOccurredAt DateTime? @map("last_processed_occurred_at")
+  rebuiltAt               DateTime? @map("rebuilt_at")
+
+  @@map("analytics_patient_projections")
+}
+
+model AnalyticsAdmissionProjection {
+  admissionId           String    @id @map("admission_id")
+  patientId             String    @map("patient_id")
+  hospitalId            String    @map("hospital_id")
+  admissionDate         DateTime  @map("admission_date")
+  clinicalDischargeDate DateTime? @map("clinical_discharge_date")
+  physicalDepartureDate DateTime? @map("physical_departure_date")
+  departureType         String?   @map("departure_type")
+  lengthOfStayHours     Float?    @map("length_of_stay_hours")
+
+  projectionVersion       Int       @default(1) @map("projection_version")
+  lastProcessedEventId    String?   @map("last_processed_event_id")
+  lastProcessedOccurredAt DateTime? @map("last_processed_occurred_at")
+  rebuiltAt               DateTime? @map("rebuilt_at")
+
+  @@index([hospitalId])
+  @@map("analytics_admission_projections")
+}
+
+model AnalyticsHospitalProjection {
+  hospitalId          String @id @map("hospital_id")
+  activeAdmissions    Int    @default(0) @map("active_admissions")
+  totalAdmissions     Int    @default(0) @map("total_admissions")
+  totalDischarges     Int    @default(0) @map("total_discharges")
+  averageLengthOfStay Float? @map("average_length_of_stay")
+
+  projectionVersion       Int       @default(1) @map("projection_version")
+  lastProcessedEventId    String?   @map("last_processed_event_id")
+  lastProcessedOccurredAt DateTime? @map("last_processed_occurred_at")
+  rebuiltAt               DateTime? @map("rebuilt_at")
+
+  @@map("analytics_hospital_projections")
+}

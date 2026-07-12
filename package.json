@@ -57,6 +57,7 @@
     "worker:notify": "npx ts-node --project workers/tsconfig.json workers/notification-worker.ts",
     "worker:rules": "npx ts-node --project workers/tsconfig.json workers/rules-worker.ts",
     "audit": "npx tsx scripts/quality-audit.ts",
+    "events:replay": "npx tsx scripts/replay-events.ts",
     "clean": "turbo run clean && Remove-Item -Recurse -Force .next, apps/**/.next, packages/**/dist -ErrorAction SilentlyContinue"
   },
   "lint-staged": {

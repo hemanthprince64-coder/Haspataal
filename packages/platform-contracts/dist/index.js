@@ -32,3 +32,4 @@ __exportStar(require('./envelopes'), exports);
 __exportStar(require('./errors'), exports);
 __exportStar(require('./config'), exports);
 __exportStar(require('./events/outbox'), exports);
+__exportStar(require('./events/consumer'), exports);

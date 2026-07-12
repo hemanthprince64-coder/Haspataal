@@ -1,3 +1,7 @@
+// ─────────────────────────────────────────────────────────────
+// PUBLISHER
+// ─────────────────────────────────────────────────────────────
+import { prisma } from '@haspataal/db';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
@@ -141,12 +145,6 @@ export const TimelineEventSchema = z.object({
 
 export type TimelineEventInput = z.input<typeof TimelineEventSchema>;
 
-// ─────────────────────────────────────────────────────────────
-// PUBLISHER
-// ─────────────────────────────────────────────────────────────
-
-import { prisma } from '@haspataal/db';
-
 export class TimelinePublisher {
   constructor(redisConnection?: IORedis) {
     // Kept for backwards compatibility if anyone passes redis, but no longer used for publishing
@@ -179,7 +177,10 @@ export class TimelinePublisher {
           commandVersion: 1,
           target: 'timeline',
           tenantContext: { hospitalId: parsed.hospitalId || 'system', branchId: 'default' },
-          actorContext: { actorId: parsed.actorId || 'system', actorType: parsed.actorType || 'SYSTEM' },
+          actorContext: {
+            actorId: parsed.actorId || 'system',
+            actorType: parsed.actorType || 'SYSTEM',
+          },
           correlationId,
           idempotencyKey: `timeline-publish-${correlationId}`,
           timestamp: new Date().toISOString(),
@@ -197,7 +198,6 @@ export class TimelinePublisher {
   }
 }
 
-
 // ─────────────────────────────────────────────────────────────
 // SINGLETON (for use in Next.js App Router / server actions)
 // ─────────────────────────────────────────────────────────────
@@ -211,6 +211,4 @@ export function getTimelinePublisher(): TimelinePublisher {
   return _publisher;
 }
 
-export * from './handlers';
-export * from './queries';
-export * from './mutations';
+export * from './timeline.consumer';

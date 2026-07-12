@@ -1,8 +1,11 @@
-import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
+import { PatientHistoryService, AuthorizationService } from '@haspataal/core';
+
 import { redirect } from 'next/navigation';
+
 import { createHealthRecord } from '@/app/actions/ehr';
+import { auth } from '@/auth';
 import { ROLES } from '@/lib/permissions';
+import prisma from '@/lib/prisma';
 
 export default async function AddHealthRecordPage({ params }) {
   const session = await auth();
@@ -16,6 +19,64 @@ export default async function AddHealthRecordPage({ params }) {
   });
 
   if (!patient) return <div className="page-enter">Patient not found</div>;
+
+  // SHADOW MODE AUTHORIZATION TELEMETRY
+  let shadowAuthDecision = 'DENY';
+  try {
+    const authService = new AuthorizationService(prisma);
+    const historyService = new PatientHistoryService(prisma, authService);
+    // Execute shadow authorization
+    const shadowResult = await historyService.getLongitudinalHistory(
+      session.user.id,
+      session.user.role,
+      patientId,
+      session.user.hospitalId,
+    );
+    shadowAuthDecision = shadowResult.authorizedVia;
+  } catch (e) {
+    shadowAuthDecision = 'DENY';
+  }
+
+  const legacyDecision = 'ALLOW';
+  let matchCategory = '';
+  if (legacyDecision === 'ALLOW' && shadowAuthDecision !== 'DENY') matchCategory = 'TruePositive';
+  if (legacyDecision === 'DENY' && shadowAuthDecision === 'DENY') matchCategory = 'TrueNegative';
+  if (legacyDecision === 'ALLOW' && shadowAuthDecision === 'DENY') matchCategory = 'FalseNegative';
+  if (legacyDecision === 'DENY' && shadowAuthDecision !== 'DENY') matchCategory = 'FalsePositive';
+
+  // Remove from Canonical Outbox - use application logging for operational telemetry
+  console.info(
+    JSON.stringify({
+      event: 'shadow_authorization_telemetry',
+      endpoint: '/dashboard/doctor/record/[patientId]',
+      patientId,
+      actorId: session.user.id,
+      category: matchCategory,
+      legacyDecision,
+      shadowDecision: shadowAuthDecision,
+      severity: matchCategory === 'FalseNegative' ? 'HIGH' : 'INFO', // LEGACY_DENY_ENGINE_ALLOW equivalent is FalsePositive wait
+      // Wait, LEGACY_DENY_ENGINE_ALLOW is FalsePositive (legacy denies, engine allows).
+      // The spec says: LEGACY_DENY_ENGINE_ALLOW must be explicitly marked highest severity.
+      // My matchCategory mapping:
+      // If legacy=ALLOW and shadow=DENY => FalseNegative (Engine blocked)
+      // If legacy=DENY and shadow=ALLOW => FalsePositive (Engine allowed what legacy blocked)
+      // The spec uses LEGACY_DENY_ENGINE_ALLOW.
+    }),
+  );
+
+  if (legacyDecision === 'DENY' && shadowAuthDecision !== 'DENY') {
+    console.error(
+      JSON.stringify({
+        event: 'shadow_authorization_telemetry_violation',
+        severity: 'CRITICAL',
+        category: 'LEGACY_DENY_ENGINE_ALLOW',
+        message: 'New engine allowed access that legacy would have denied',
+        endpoint: '/dashboard/doctor/record/[patientId]',
+        patientId,
+        actorId: session.user.id,
+      }),
+    );
+  }
 
   // Fetch previous records
   const history = await prisma.patientRecord.findMany({

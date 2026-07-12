@@ -1,10 +1,58 @@
 {
-  "_readme": "Haspataal MCP Server Configuration — copy relevant servers to your Claude settings",
-  "_usage": "Add mcpServers entries to ~/.claude.json or project .claude/settings.json",
-  "_context_warning": "Keep under 10 MCPs active to preserve your 200k context window",
-  "_haspataal_recommended": ["supabase", "github", "filesystem", "serena", "playwright"],
+  "_readme": "Haspataal MCP Server Configuration — authoritative always-on list",
+  "_usage": "Copy the mcpServers block into your client config (claude_desktop_config.json, ~/.claude.json, .cursor/mcp.json, .vscode/mcp.json, or your global mcp_config.json). Each server carries \"alwaysActive\": true so the client spins it up on every session.",
+  "_context_warning": "11 active MCPs is heavy on your context window. The 'alwaysActive' flag is honored by clients that support it; otherwise the client still loads all listed servers on startup.",
+  "_active_servers": [
+    "serena",
+    "context7",
+    "headroom",
+    "idea-reality",
+    "graphify",
+    "supabase",
+    "github",
+    "filesystem",
+    "postgres",
+    "memory",
+    "playwright"
+  ],
   "mcpServers": {
+    "serena": {
+      "alwaysActive": true,
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-serena", "--refresh"],
+      "description": "Serena IDE assistant — semantic code search, navigation, and understanding for the TypeScript/JavaScript codebase. Pulls latest version via --refresh."
+    },
+    "context7": {
+      "alwaysActive": true,
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest",
+        "--api-key",
+        "ctx7sk-d64daaec-5023-47a9-aea2-8947092bdf5c"
+      ],
+      "description": "Upstash Context7 MCP — up-to-date, version-specific library/framework documentation. Configured with the ctx7sk-*** API key."
+    },
+    "headroom": {
+      "alwaysActive": true,
+      "command": "headroom",
+      "args": ["mcp", "server"],
+      "description": "Headroom AI context management and compression server."
+    },
+    "idea-reality": {
+      "alwaysActive": true,
+      "command": "npx",
+      "args": ["-y", "idea-reality-mcp"],
+      "description": "Idea and reality mapping server. Verify the exact package name for your environment."
+    },
+    "graphify": {
+      "alwaysActive": true,
+      "command": "npx",
+      "args": ["-y", "@graphify/mcp"],
+      "description": "Local knowledge graph server for analyzing codebase relationships. Verify the exact package name for your environment."
+    },
     "supabase": {
+      "alwaysActive": true,
       "command": "npx",
       "args": [
         "-y",
@@ -17,9 +65,10 @@
       "env": {
         "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
       },
-      "description": "Supabase MCP — query tables, run migrations, manage RLS policies, inspect schema. Use for haspataal DB operations."
+      "description": "Supabase MCP — query tables, run migrations, manage RLS policies, inspect schema."
     },
     "github": {
+      "alwaysActive": true,
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
@@ -28,65 +77,41 @@
       "description": "GitHub MCP — create PRs, review code, manage issues, search the haspataal repo."
     },
     "filesystem": {
+      "alwaysActive": true,
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "c:/Users/heman/.gemini/antigravity/scratch/haspataal"
       ],
-      "description": "Filesystem MCP — read/write files in the haspataal project root. Use for bulk file operations."
+      "description": "Filesystem MCP — read/write files in the haspataal project root."
     },
     "postgres": {
+      "alwaysActive": true,
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-postgres", "${DATABASE_URL}"],
       "env": {
         "DATABASE_URL": "${DATABASE_URL}"
       },
-      "description": "Direct PostgreSQL MCP — run raw SQL, check query plans via EXPLAIN ANALYZE, inspect RLS policies. Use with postgres-patterns skill."
+      "description": "Direct PostgreSQL MCP — run raw SQL, check query plans via EXPLAIN ANALYZE, inspect RLS policies."
     },
     "memory": {
+      "alwaysActive": true,
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "description": "Persistent memory MCP — store and recall cross-session context. Use for remembering ongoing tasks and WAR ROOM decisions."
-    },
-    "serena": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-serena"],
-      "description": "Serena MCP — semantic code search, navigation, and understanding for TypeScript/JavaScript codebases."
+      "description": "Persistent memory MCP — store and recall cross-session context and WAR ROOM decisions."
     },
     "playwright": {
+      "alwaysActive": true,
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-playwright"],
-      "description": "Playwright MCP — browser automation for end-to-end testing, UI verification, and patient portal interactions."
-    },
-    "headroom": {
-      "command": "headroom",
-      "args": ["mcp", "server"],
-      "description": "Headroom AI context compression MCP server"
-    },
-    "_disabled_by_default": {
-      "vercel": {
-        "command": "npx",
-        "args": ["-y", "@vercel/mcp-adapter"],
-        "env": {
-          "VERCEL_TOKEN": "YOUR_VERCEL_TOKEN_HERE"
-        },
-        "description": "Vercel MCP — manage deployments. Enable when deploying to production."
-      },
-      "redis": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-redis", "redis://localhost:6379"],
-        "description": "Redis MCP — inspect appointment slot cache and session data. Enable for cache debugging."
-      }
+      "description": "Playwright MCP — browser automation for end-to-end testing and UI verification."
     }
   },
   "_setup_instructions": {
-    "step1": "Get your Supabase service role key from: https://supabase.com/dashboard/project/deqcehtgwbpmwlajsore/settings/api",
-    "step2": "Create a GitHub Personal Access Token at: https://github.com/settings/tokens (repo scope)",
-    "step3": "Add to your environment or .env: SUPABASE_SERVICE_ROLE_KEY=... GITHUB_TOKEN=...",
-    "step4": "Copy the mcpServers section to your Claude project settings or ~/.claude.json",
-    "step5": "Keep only haspataal_recommended servers active (7 total) to preserve context window",
-    "step6": "Serena MCP: semantic code search for TypeScript/JavaScript navigation",
-    "step7": "Playwright MCP: browser automation for patient portal e2e testing"
+    "step1": "Set env vars: SUPABASE_SERVICE_ROLE_KEY, GITHUB_TOKEN, DATABASE_URL (via .env or shell).",
+    "step2": "Copy the mcpServers block into your client config (global mcp_config.json or project config).",
+    "step3": "All 11 servers carry alwaysActive: true and will spin up on every new session.",
+    "step4": "Verify with your client's MCP list / status command after restart."
   }
 }

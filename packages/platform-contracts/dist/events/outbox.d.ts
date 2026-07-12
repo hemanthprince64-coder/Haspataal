@@ -128,13 +128,13 @@ export declare const canonicalEventEnvelopeSchema: z.ZodObject<
       'strip',
       z.ZodTypeAny,
       {
+        scopeType: 'PLATFORM' | 'HOSPITAL' | null;
         hospitalId: string | null;
-        scopeType: 'HOSPITAL' | 'PLATFORM' | null;
         tenantId: string | null;
       },
       {
+        scopeType: 'PLATFORM' | 'HOSPITAL' | null;
         hospitalId: string | null;
-        scopeType: 'HOSPITAL' | 'PLATFORM' | null;
         tenantId: string | null;
       }
     >;
@@ -163,12 +163,12 @@ export declare const canonicalEventEnvelopeSchema: z.ZodObject<
       {
         actorId: string | null;
         actorType:
-          | 'SYSTEM'
-          | 'USER'
           | 'PATIENT'
           | 'DOCTOR'
           | 'NURSE'
           | 'ADMIN'
+          | 'USER'
+          | 'SYSTEM'
           | 'HOSPITAL_SYSTEM'
           | 'PLATFORM_SYSTEM'
           | 'WORKER'
@@ -178,12 +178,12 @@ export declare const canonicalEventEnvelopeSchema: z.ZodObject<
       {
         actorId: string | null;
         actorType:
-          | 'SYSTEM'
-          | 'USER'
           | 'PATIENT'
           | 'DOCTOR'
           | 'NURSE'
           | 'ADMIN'
+          | 'USER'
+          | 'SYSTEM'
           | 'HOSPITAL_SYSTEM'
           | 'PLATFORM_SYSTEM'
           | 'WORKER'
@@ -218,27 +218,26 @@ export declare const canonicalEventEnvelopeSchema: z.ZodObject<
   z.ZodTypeAny,
   {
     eventId: string;
-    eventVersion: number;
-    occurredAt: Date | null;
     eventType: string;
+    eventVersion: number;
     aggregate: {
       aggregateType: string | null;
       aggregateId: string | null;
     };
     scope: {
+      scopeType: 'PLATFORM' | 'HOSPITAL' | null;
       hospitalId: string | null;
-      scopeType: 'HOSPITAL' | 'PLATFORM' | null;
       tenantId: string | null;
     };
     actor: {
       actorId: string | null;
       actorType:
-        | 'SYSTEM'
-        | 'USER'
         | 'PATIENT'
         | 'DOCTOR'
         | 'NURSE'
         | 'ADMIN'
+        | 'USER'
+        | 'SYSTEM'
         | 'HOSPITAL_SYSTEM'
         | 'PLATFORM_SYSTEM'
         | 'WORKER'
@@ -250,32 +249,32 @@ export declare const canonicalEventEnvelopeSchema: z.ZodObject<
       causationId: string | null;
       depth: number;
     };
+    occurredAt: Date | null;
     normalizedFromLegacy: boolean;
     payload?: unknown;
   },
   {
     eventId: string;
-    eventVersion: number;
-    occurredAt: Date | null;
     eventType: string;
+    eventVersion: number;
     aggregate: {
       aggregateType: string | null;
       aggregateId: string | null;
     };
     scope: {
+      scopeType: 'PLATFORM' | 'HOSPITAL' | null;
       hospitalId: string | null;
-      scopeType: 'HOSPITAL' | 'PLATFORM' | null;
       tenantId: string | null;
     };
     actor: {
       actorId: string | null;
       actorType:
-        | 'SYSTEM'
-        | 'USER'
         | 'PATIENT'
         | 'DOCTOR'
         | 'NURSE'
         | 'ADMIN'
+        | 'USER'
+        | 'SYSTEM'
         | 'HOSPITAL_SYSTEM'
         | 'PLATFORM_SYSTEM'
         | 'WORKER'
@@ -287,6 +286,7 @@ export declare const canonicalEventEnvelopeSchema: z.ZodObject<
       causationId: string | null;
       depth: number;
     };
+    occurredAt: Date | null;
     normalizedFromLegacy: boolean;
     payload?: unknown;
   }

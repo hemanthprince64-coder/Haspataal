@@ -1,4 +1,13 @@
 'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+exports.InMemoryIdempotencyLedger =
+  exports.canonicalEventEnvelopeSchema =
+  exports.OutboxDeliveryStatus =
+  exports.ActorType =
+  exports.ScopeType =
+    void 0;
+exports.normalizeLegacyOutbox = normalizeLegacyOutbox;
+exports.buildCanonicalOutbox = buildCanonicalOutbox;
 /**
  * Phase 0A — Canonical Event Envelope (backward-compatible foundation).
  *
@@ -13,15 +22,6 @@
  *    and NEVER fabricate hospital / actor / aggregate identity.
  *  - The raw `payload` is preserved untouched (never rewritten).
  */
-Object.defineProperty(exports, '__esModule', { value: true });
-exports.InMemoryIdempotencyLedger =
-  exports.canonicalEventEnvelopeSchema =
-  exports.OutboxDeliveryStatus =
-  exports.ActorType =
-  exports.ScopeType =
-    void 0;
-exports.normalizeLegacyOutbox = normalizeLegacyOutbox;
-exports.buildCanonicalOutbox = buildCanonicalOutbox;
 const zod_1 = require('zod');
 // ---------------------------------------------------------------------------
 // Enums
@@ -214,7 +214,7 @@ function buildCanonicalOutbox(input) {
     correlationId: input.correlationId ?? null,
     causationId: input.causationId ?? null,
     depth: input.depth ?? 0,
-    occurredAt: input.occurredAt ?? null,
+    occurredAt: input.occurredAt ?? undefined,
     deliveryStatus: input.deliveryStatus ?? 'PENDING',
   };
 }

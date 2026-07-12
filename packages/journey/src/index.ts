@@ -7,3 +7,4 @@ export { JourneyEngine } from './engine';
 export { RiskEngine } from './risk';
 export type { JourneyCategory, JourneyStatus, TaskStatus } from './types';
 export * from './queries';
+export * from './journey.consumer';

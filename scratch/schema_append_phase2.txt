@@ -1,0 +1,113 @@
+
+// Phase 2: Authorization Backbone
+
+enum RelationshipLevel {
+  LONGITUDINAL
+  EPISODIC
+  CONSULTATION
+}
+
+enum RelationshipStatus {
+  PRE_VISIT
+  ACTIVE
+  POST_CARE_FOLLOWUP
+  ENDED
+}
+
+enum RelationshipTrigger {
+  APPOINTMENT_BOOKED
+  CHECK_IN
+  ADMISSION
+  REFERRAL_ACCEPTED
+  BREAK_GLASS
+}
+
+enum TerminationReason {
+  DISCHARGE_COMPLETED
+  LAMA_COMPLETED
+  TRANSFER_ACCEPTED
+  EXPLICIT_REVOCATION
+  EXPIRED
+}
+
+enum CarePurpose {
+  TRIAGE
+  PRIMARY_TREATMENT
+  SECONDARY_CONSULT
+  EMERGENCY
+}
+
+enum CareTeamRole {
+  PRIMARY
+  CO_TREATING
+  CONSULTING
+  NURSE
+  RESIDENT
+}
+
+enum ResponsibilityStatus {
+  ACTIVE
+  TRANSFERRED
+  ENDED
+}
+
+enum TransferStatus {
+  INITIATED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+model DoctorPatientRelationship {
+  id                 String    @id @default(uuid())
+  patientId          String    @map("patient_id")
+  doctorId           String    @map("doctor_id")
+  hospitalId         String?   @map("hospital_id")
+  episodeId          String?   @map("episode_id")
+  originatingEventId String?   @map("originating_event_id")
+  level              RelationshipLevel @default(EPISODIC)
+  status             RelationshipStatus @default(ACTIVE)
+  carePurpose        CarePurpose
+  sourceTrigger      RelationshipTrigger
+  activatedAt        DateTime  @default(now()) @map("activated_at")
+  endedAt            DateTime? @map("ended_at")
+  endedBy            String?   @map("ended_by")
+  terminationReason  TerminationReason? @map("termination_reason")
+  version            Int       @default(1)
+  
+  @@index([patientId, doctorId, status])
+  @@index([episodeId])
+  @@map("doctor_patient_relationships")
+}
+
+model CareResponsibility {
+  id                String   @id @default(uuid())
+  doctorId          String   @map("doctor_id")
+  patientId         String   @map("patient_id")
+  episodeId         String   @map("episode_id")
+  isPrimary         Boolean  @map("is_primary")
+  status            ResponsibilityStatus @default(ACTIVE)
+  activatedAt       DateTime @default(now()) @map("activated_at")
+  endedAt           DateTime? @map("ended_at")
+  terminationReason String?  @map("termination_reason")
+
+  @@index([patientId, episodeId])
+  @@map("care_responsibilities")
+}
+
+model TransferOfCare {
+  id                 String   @id @default(uuid())
+  initiatingDoctorId String   @map("initiating_doctor_id")
+  receivingDoctorId  String   @map("receiving_doctor_id")
+  patientId          String   @map("patient_id")
+  episodeId          String   @map("episode_id")
+  hospitalId         String   @map("hospital_id")
+  status             TransferStatus @default(INITIATED)
+  initiatedAt        DateTime @default(now()) @map("initiated_at")
+  acceptedAt         DateTime? @map("accepted_at")
+  rejectedAt         DateTime? @map("rejected_at")
+  reason             String
+  version            Int      @default(1)
+  
+  @@map("transfer_of_cares")
+}

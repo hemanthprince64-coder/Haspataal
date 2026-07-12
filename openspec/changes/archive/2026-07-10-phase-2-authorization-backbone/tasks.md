@@ -1,0 +1,28 @@
+- [x] 1. Schema and migration (Create migration 13 and Prisma models).
+- [x] 2. Authorization contracts and enums (Define new authorization enums and types).
+- [x] 3. Central `authorize()` engine (Implement the core `authorize` function).
+- [x] 4. Doctor-Patient Relationship lifecycle (Implement models and logic for DoctorPatientRelationship).
+- [x] 5. Care Responsibility lifecycle (Implement models and logic for CareResponsibility).
+- [x] 6. Transfer of Care state machine (Implement atomicity and transfer logic).
+- [x] 7. Care Team authorization (Implement logic for Co-treating, Consulting, Nurses).
+- [x] 8. Break Glass (Implement Break Glass emergency access logic with OverrideLog reuse).
+- [x] 9. Platform-level Identity Authority checks (Implement SUPER_ADMIN check for IDENTITY_MERGE_EXECUTE).
+- [x] 10. Audit/OverrideLog reuse (Extend AuditLog and wire it into the engine).
+- [x] 11. Canonical Outbox producers (Emit `authorization_decision_denied` events).
+- [x] 12. HMS provider-side history service (Create PatientHistoryService for the pilot).
+- [x] 13. Shadow-mode pilot integration (Integrate shadow telemetry in the HMS records route).
+- [x] 14. Full PostgreSQL tests (Write integration tests for the new engine).
+- [x] 15. Phase 0A/0B/1 regressions (Ensure no breaking changes to foundations).
+- [x] 16. Final implementation report (Compile results).
+
+## Phase 2 Remediation
+- [x] R1. Correct Break Glass schema/policy.
+- [x] R2. Correct care-team authorization predicates.
+- [x] R3. Remove shadow telemetry from Outbox.
+- [x] R4. Remove ordinary DENY events from canonical Outbox.
+- [x] R5. Correct Identity Authority predicate.
+- [x] R6. Add physical-departure authorization contract.
+- [x] R7. Add/repair real PostgreSQL test infrastructure.
+- [x] R8. Run Phase 2 matrix (47 scenarios).
+- [x] R9. Run Phase 0A/0B/1 regressions.
+- [x] R10. Produce final verification report (A-S).

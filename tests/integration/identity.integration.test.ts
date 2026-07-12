@@ -53,6 +53,11 @@ beforeAll(async () => {
   }
 
   prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+  await prisma.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "patient_contact_points_primary_idx"
+    ON "patient_contact_points" ("patient_id", "type")
+    WHERE is_primary = true
+  `);
 }, 120_000);
 
 afterAll(async () => {
@@ -116,7 +121,7 @@ describe('A. Migration & Schema Verification', () => {
     expect(result.length).toBe(1);
   });
 
-  it.skip('partial primary contact index exists', async () => {
+  it('partial primary contact index exists', async () => {
     const result = await prisma.$queryRaw<any[]>`
       SELECT indexname FROM pg_indexes
       WHERE tablename = 'patient_contact_points'

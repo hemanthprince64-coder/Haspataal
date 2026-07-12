@@ -8,6 +8,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './'),
       'server-only': path.resolve(__dirname, './lib/__tests__/mocks/server-only.ts'),
+      '@haspataal/timeline': path.resolve(__dirname, './packages/timeline/src/index.ts'),
+      '@haspataal/journey': path.resolve(__dirname, './packages/journey/src/index.ts'),
+      '@haspataal/platform-contracts': path.resolve(
+        __dirname,
+        './packages/platform-contracts/src/index.ts',
+      ),
+      '@haspataal/events': path.resolve(__dirname, './packages/events/src/index.ts'),
+      '@haspataal/search': path.resolve(__dirname, './packages/search/src/index.ts'),
+      '@haspataal/notify': path.resolve(__dirname, './packages/notify/src/index.ts'),
+      '@haspataal/db': path.resolve(__dirname, './packages/db/index.ts'),
     },
     include: ['**/*.test.ts', '**/*.spec.ts'],
     exclude: [
