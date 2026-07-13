@@ -2067,6 +2067,7 @@ enum Role {
   BILLING
   PHARMACIST
   LAB_TECH
+  PATHOLOGIST
   PATIENT
 }
 
@@ -4987,6 +4988,19 @@ enum LaboratoryExecutionStatus {
   CANCELLED
 }
 
+enum SpecimenType {
+  BLOOD
+  SERUM
+  PLASMA
+  URINE
+  STOOL
+  CSF
+  SPUTUM
+  SWAB
+  TISSUE
+  OTHER
+}
+
 enum SpecimenStatus {
   EXPECTED
   COLLECTED
@@ -5064,8 +5078,8 @@ model Specimen {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  barcode      String @unique
-  specimenType String @map("specimen_type")
+  barcode      String       @unique
+  specimenType SpecimenType @map("specimen_type")
 
   status SpecimenStatus @default(EXPECTED)
 
@@ -5102,9 +5116,10 @@ model AnalyzerQueue {
   executionItemId String                  @map("execution_item_id")
   executionItem   LaboratoryExecutionItem @relation(fields: [executionItemId], references: [id])
 
-  analyzerId    String? @map("analyzer_id")
-  priority      Int     @default(0) // Higher number = higher priority
-  queuePosition Int     @default(0) @map("queue_position")
+  analyzerId    String?         @map("analyzer_id")
+  analyzer      AnalyzerDevice? @relation(fields: [analyzerId], references: [id])
+  priority      Int             @default(0) // Higher number = higher priority
+  queuePosition Int             @default(0) @map("queue_position")
 
   status  LaboratoryExecutionStatus @default(IN_ANALYZER_QUEUE)
   retries Int                       @default(0)
@@ -5113,6 +5128,19 @@ model AnalyzerQueue {
 
   @@index([analyzerId, priority])
   @@map("analyzer_queues")
+}
+
+model AnalyzerDevice {
+  id         String  @id @default(uuid())
+  hospitalId String  @map("hospital_id")
+  name       String
+  model      String?
+  vendor     String?
+  status     String  @default("ACTIVE")
+
+  queues AnalyzerQueue[]
+
+  @@map("analyzer_devices")
 }
 
 model LaboratoryResult {
@@ -5142,10 +5170,14 @@ model LaboratoryResultVersion {
 
   versionNumber Int @map("version_number")
 
-  values          Json // Measured values
-  referenceRanges Json? @map("reference_ranges")
-  abnormalFlags   Json? @map("abnormal_flags")
-  units           Json?
+  values            Json // Measured values
+  referenceRanges   Json? @map("reference_ranges")
+  abnormalFlags     Json? @map("abnormal_flags")
+  units             Json?
+  flags             Json?
+  instrumentFlags   Json? @map("instrument_flags")
+  verificationNotes Json? @map("verification_notes")
+  comments          Json?
 
   verifiedAt DateTime? @map("verified_at")
   verifiedBy String?   @map("verified_by")
@@ -5159,6 +5191,20 @@ model LaboratoryResultVersion {
 
   @@unique([resultId, versionNumber])
   @@map("laboratory_result_versions")
+}
+
+model CriticalValueRule {
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  testCode   String @map("test_code")
+
+  condition      String // e.g. ">", "<", "=", "BETWEEN"
+  threshold      Float?
+  upperThreshold Float? @map("upper_threshold")
+
+  severity String // e.g. "CRITICAL", "ABNORMAL"
+
+  @@map("critical_value_rules")
 }
 
 model CriticalValueNotification {

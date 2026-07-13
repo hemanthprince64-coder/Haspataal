@@ -50,6 +50,11 @@ export class AuthorizationService {
         result = this.authorizePhase5Order(actor, action);
         break;
 
+      case DomainAction.LAB_RESULT_ENTRY:
+      case DomainAction.LAB_RESULT_VERIFY:
+        result = this.authorizePhase5BLab(actor, action);
+        break;
+
       default:
         result = {
           decision: AuthorizationDecision.DENY,
@@ -319,6 +324,42 @@ export class AuthorizationService {
     return {
       decision: AuthorizationDecision.ALLOW,
       reason: 'Authorized for order execution tasks.',
+    };
+  }
+
+  private authorizePhase5BLab(
+    actor: AuthorizeRequest['actor'],
+    action: DomainAction,
+  ): AuthorizationResult {
+    if (action === DomainAction.LAB_RESULT_ENTRY) {
+      if (actor.role === 'LAB_TECH' || actor.role === 'PATHOLOGIST') {
+        return {
+          decision: AuthorizationDecision.ALLOW,
+          reason: 'Authorized clinical role for lab result entry.',
+        };
+      }
+      return {
+        decision: AuthorizationDecision.DENY,
+        reason: 'Only LAB_TECH or PATHOLOGIST can enter lab results.',
+      };
+    }
+
+    if (action === DomainAction.LAB_RESULT_VERIFY) {
+      if (actor.role === 'PATHOLOGIST') {
+        return {
+          decision: AuthorizationDecision.ALLOW,
+          reason: 'Authorized clinical role for lab result verification.',
+        };
+      }
+      return {
+        decision: AuthorizationDecision.DENY,
+        reason: 'Only PATHOLOGIST can verify lab results.',
+      };
+    }
+
+    return {
+      decision: AuthorizationDecision.DENY,
+      reason: 'Action not supported.',
     };
   }
 }

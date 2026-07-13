@@ -3,20 +3,62 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class CriticalValueService {
   constructor(private prisma: PrismaClient) {}
+
+  async evaluateRules(hospitalId: string, values: Record<string, any>): Promise<string[]> {
+    const flags: string[] = [];
+    const rules = await this.prisma.criticalValueRule.findMany({
+      where: { hospitalId },
+    });
+
+    for (const rule of rules) {
+      const val = values[rule.testCode];
+      if (val === undefined || val === null) continue;
+      const numVal = parseFloat(val);
+      if (isNaN(numVal)) continue;
+
+      let match = false;
+      switch (rule.condition) {
+        case '>':
+          match = numVal > (rule.threshold ?? 0);
+          break;
+        case '<':
+          match = numVal < (rule.threshold ?? 0);
+          break;
+        case '=':
+          match = numVal === (rule.threshold ?? 0);
+          break;
+        case '>=':
+          match = numVal >= (rule.threshold ?? 0);
+          break;
+        case '<=':
+          match = numVal <= (rule.threshold ?? 0);
+          break;
+        case 'BETWEEN':
+          match = numVal >= (rule.threshold ?? 0) && numVal <= (rule.upperThreshold ?? 0);
+          break;
+      }
+      if (match) {
+        flags.push(rule.severity);
+      }
+    }
+    return [...new Set(flags)];
+  }
+
   async detectAndNotify(resultVersionId: string, recipientId: string) {
-    // Detect if abnormal flags contain "CRITICAL"
     return await this.prisma.$transaction(async (tx) => {
       const version = await tx.laboratoryResultVersion.findUniqueOrThrow({
         where: { id: resultVersionId },
         include: { result: true },
       });
 
-      const flags = version.abnormalFlags as any;
-      if (!flags || !Array.isArray(flags) || !flags.includes('CRITICAL')) {
+      const flags = (version.abnormalFlags as string[]) || [];
+      const newerFlags = (version.flags as string[]) || [];
+      const allFlags = [...flags, ...newerFlags];
+
+      if (!allFlags.includes('CRITICAL')) {
         return null;
       }
 
-      // Check if already notified for this version
       const existing = await tx.criticalValueNotification.findFirst({
         where: { resultVersionId, recipientId },
       });

@@ -3,6 +3,51 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class ResultService {
   constructor(private prisma: PrismaClient) {}
+
+  private async evaluateRules(
+    tx: any,
+    hospitalId: string,
+    values: Record<string, any>,
+  ): Promise<string[]> {
+    const flags: string[] = [];
+    const rules = await tx.criticalValueRule.findMany({
+      where: { hospitalId },
+    });
+
+    for (const rule of rules) {
+      const val = values[rule.testCode];
+      if (val === undefined || val === null) continue;
+      const numVal = parseFloat(val);
+      if (isNaN(numVal)) continue;
+
+      let match = false;
+      switch (rule.condition) {
+        case '>':
+          match = numVal > (rule.threshold ?? 0);
+          break;
+        case '<':
+          match = numVal < (rule.threshold ?? 0);
+          break;
+        case '=':
+          match = numVal === (rule.threshold ?? 0);
+          break;
+        case '>=':
+          match = numVal >= (rule.threshold ?? 0);
+          break;
+        case '<=':
+          match = numVal <= (rule.threshold ?? 0);
+          break;
+        case 'BETWEEN':
+          match = numVal >= (rule.threshold ?? 0) && numVal <= (rule.upperThreshold ?? 0);
+          break;
+      }
+      if (match) {
+        flags.push(rule.severity);
+      }
+    }
+    return [...new Set(flags)];
+  }
+
   async enter(
     hospitalId: string,
     patientId: string,
@@ -11,6 +56,10 @@ export class ResultService {
     referenceRanges?: any,
     abnormalFlags?: any,
     units?: any,
+    flags?: any,
+    instrumentFlags?: any,
+    verificationNotes?: any,
+    comments?: any,
   ) {
     return await this.prisma.$transaction(async (tx) => {
       // Find or create LaboratoryResult
@@ -29,6 +78,12 @@ export class ResultService {
         });
       }
 
+      // Evaluate rules for critical flags
+      const derivedFlags = await this.evaluateRules(tx, hospitalId, values || {});
+      const mergedFlags = Array.from(
+        new Set([...(flags || []), ...(abnormalFlags || []), ...derivedFlags]),
+      );
+
       // Find current max version
       const latestVersion = await tx.laboratoryResultVersion.findFirst({
         where: { resultId: result.id },
@@ -41,10 +96,16 @@ export class ResultService {
         data: {
           resultId: result.id,
           versionNumber: nextVersionNumber,
-          values: JSON.parse(JSON.stringify(values)),
+          values: values ? JSON.parse(JSON.stringify(values)) : {},
           referenceRanges: referenceRanges ? JSON.parse(JSON.stringify(referenceRanges)) : null,
-          abnormalFlags: abnormalFlags ? JSON.parse(JSON.stringify(abnormalFlags)) : null,
+          abnormalFlags: mergedFlags.length > 0 ? JSON.parse(JSON.stringify(mergedFlags)) : null,
+          flags: mergedFlags.length > 0 ? JSON.parse(JSON.stringify(mergedFlags)) : null,
           units: units ? JSON.parse(JSON.stringify(units)) : null,
+          instrumentFlags: instrumentFlags ? JSON.parse(JSON.stringify(instrumentFlags)) : null,
+          verificationNotes: verificationNotes
+            ? JSON.parse(JSON.stringify(verificationNotes))
+            : null,
+          comments: comments ? JSON.parse(JSON.stringify(comments)) : null,
         },
       });
 
@@ -209,16 +270,23 @@ export class ResultService {
     referenceRanges?: any,
     abnormalFlags?: any,
     units?: any,
+    flags?: any,
+    instrumentFlags?: any,
+    verificationNotes?: any,
+    comments?: any,
   ) {
-    // Uses similar flow to enter() but sets status to AMENDED
     const entry = await this.enter(
-      'auto', // these are dummy since we only enter if not exists
+      'auto',
       'auto',
       executionItemId,
       values,
       referenceRanges,
       abnormalFlags,
       units,
+      flags,
+      instrumentFlags,
+      verificationNotes,
+      comments,
     );
 
     return await this.prisma.$transaction(async (tx) => {
@@ -229,7 +297,27 @@ export class ResultService {
         data: { status: 'AMENDED' },
       });
 
-      // No need to change verifiedBy or releasedBy, they are null on the new draft version until verified again.
+      const item = await tx.laboratoryExecutionItem.findUnique({
+        where: { id: executionItemId },
+      });
+
+      if (item) {
+        await tx.outboxEvent.create({
+          data: {
+            id: uuidv4(),
+            aggregateType: 'LaboratoryExecution',
+            aggregateId: item.executionId,
+            eventType: 'RESULT_AMENDED',
+            payload: JSON.parse(
+              JSON.stringify({
+                executionItemId,
+                resultId: result.id,
+                amendedBy,
+              }),
+            ),
+          },
+        });
+      }
 
       return result;
     });

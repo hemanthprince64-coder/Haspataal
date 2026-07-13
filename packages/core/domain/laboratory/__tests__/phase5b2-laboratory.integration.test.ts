@@ -29,7 +29,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
     process.env.DATABASE_URL = dbUrl;
     process.env.DIRECT_URL = dbUrl;
 
-    execSync(`npx prisma db push --schema ../db/prisma/schema.prisma --accept-data-loss`, {
+    execSync(`npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss`, {
       env: { ...process.env, DATABASE_URL: dbUrl, DIRECT_URL: dbUrl },
     });
 
@@ -128,7 +128,14 @@ describe('Phase 5B.2 Final Verification Gate', () => {
       include: { items: true },
     });
 
-    return { hospital, user, patient, catalogVersion, order: updatedOrder };
+    const analyzer = await prisma.analyzerDevice.create({
+      data: {
+        hospitalId: hospital.id,
+        name: 'Test Analyzer',
+      },
+    });
+
+    return { hospital, user, patient, catalogVersion, order: updatedOrder, analyzer };
   };
 
   it('A. Consumer Provisioning', async () => {
@@ -151,7 +158,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('B. Specimen Collection', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
 
     const specimen = await specimenService.collect(
@@ -174,7 +181,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('C. Specimen Rejection', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -207,7 +214,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('D. Analyzer Queue', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -225,8 +232,8 @@ describe('Phase 5B.2 Final Verification Gate', () => {
     const execution2 = await executionService.startExecution(order2.id);
     const item2 = execution2!.items[0];
 
-    const queue1 = await analyzerService.queue(item.id, 0, 'MACHINE-A');
-    const queue2 = await analyzerService.queue(item2.id, 1, 'MACHINE-A'); // Higher priority
+    const queue1 = await analyzerService.queue(item.id, 0, analyzer.id);
+    const queue2 = await analyzerService.queue(item2.id, 1, analyzer.id); // Higher priority
 
     expect(queue1.queuePosition).toBe(1);
     expect(queue2.queuePosition).toBe(1); // different priority queue, wait, they shouldn't share positions if priority is different, our implementation does that correctly by finding last in same priority.
@@ -237,7 +244,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('E. Result Immutability', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -272,7 +279,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('F. Critical Value Detection', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -299,7 +306,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('G. Concurrent Verification', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -319,7 +326,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('H. Transactional Outbox', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -352,7 +359,7 @@ describe('Phase 5B.2 Final Verification Gate', () => {
   });
 
   it('K. Cancellation', async () => {
-    const { hospital, patient, user, order } = await setupData();
+    const { hospital, patient, user, order, analyzer } = await setupData();
     const execution = await executionService.startExecution(order.id);
     const item = execution!.items[0];
 
@@ -376,5 +383,188 @@ describe('Phase 5B.2 Final Verification Gate', () => {
 
     const updatedSpecimen = await prisma.specimen.findUnique({ where: { id: specimen.id } });
     expect(updatedSpecimen!.status).toBe('COLLECTED'); // Preserved specimen
+  });
+
+  it('M. Barcode Collision', async () => {
+    const { hospital, patient, user, order, analyzer } = await setupData();
+    const execution = await executionService.startExecution(order.id);
+    const item = execution!.items[0];
+
+    // Attempt to collect two specimens with same barcode simultaneously
+    const collect1 = specimenService.collect(
+      hospital.id,
+      patient.id,
+      item.id,
+      'BLOOD',
+      user.id,
+      'COLLISION-123',
+    );
+    const collect2 = specimenService.collect(
+      hospital.id,
+      patient.id,
+      item.id,
+      'SERUM',
+      user.id,
+      'COLLISION-123',
+    );
+
+    await expect(Promise.all([collect1, collect2])).rejects.toThrow();
+
+    const specimens = await prisma.specimen.findMany({
+      where: { barcode: 'COLLISION-123' },
+    });
+
+    expect(specimens.length).toBe(1); // Only one should succeed
+  });
+
+  it('N. Lost Specimen', async () => {
+    const { hospital, patient, user, order, analyzer } = await setupData();
+    const execution = await executionService.startExecution(order.id);
+    const item = execution!.items[0];
+
+    const specimen = await specimenService.collect(
+      hospital.id,
+      patient.id,
+      item.id,
+      'BLOOD',
+      user.id,
+      'LOST-123',
+    );
+    expect(specimen.status).toBe('COLLECTED');
+
+    await specimenService.reject(specimen.id, user.id, 'OTHER', 'Sample lost');
+
+    const updatedItem = await prisma.laboratoryExecutionItem.findUnique({ where: { id: item.id } });
+    expect(updatedItem!.specimenId).toBeNull(); // Requires recollection
+
+    // Recollect
+    const newSpecimen = await specimenService.collect(
+      hospital.id,
+      patient.id,
+      item.id,
+      'BLOOD',
+      user.id,
+      'FOUND-123',
+    );
+    expect(newSpecimen.status).toBe('COLLECTED');
+    expect(newSpecimen.barcode).toBe('FOUND-123');
+  });
+
+  it('O. Duplicate Verification', async () => {
+    const { hospital, patient, user, order, analyzer } = await setupData();
+    const execution = await executionService.startExecution(order.id);
+    const item = execution!.items[0];
+
+    await resultService.enter(hospital.id, patient.id, item.id, { hb: 15.0 });
+
+    // Pathologist 2
+    const user2 = await prisma.staff.create({
+      data: {
+        hospitalId: hospital.id,
+        name: 'Pathologist 2',
+        email: `test2-${Date.now()}@test.com`,
+        mobile: `88888${Math.floor(Math.random() * 100000)}`,
+        role: 'PATHOLOGIST',
+        isActive: true,
+        password: 'hash',
+      },
+    });
+
+    await Promise.all([
+      resultService.verify(item.id, user.id).catch((e) => e),
+      resultService.verify(item.id, user2.id).catch((e) => e),
+    ]);
+
+    const result = await prisma.laboratoryResult.findUnique({
+      where: { executionItemId: item.id },
+      include: { executionItems: true },
+    });
+
+    expect(result!.status).toBe('VERIFIED');
+    const version = await prisma.laboratoryResultVersion.findUnique({
+      where: { id: result!.activeVersionId! },
+    });
+    expect([user.id, user2.id]).toContain(version!.verifiedBy);
+  });
+
+  it('P. Critical Value Replay', async () => {
+    const { hospital, patient, user, order, analyzer } = await setupData();
+
+    // Setup Critical Value Rule
+    await prisma.criticalValueRule.create({
+      data: {
+        hospitalId: hospital.id,
+        testCode: 'k',
+        condition: '>',
+        threshold: 6.5,
+        severity: 'CRITICAL',
+      },
+    });
+
+    const execution = await executionService.startExecution(order.id);
+    const item = execution!.items[0];
+
+    // Trigger rule
+    const { version } = await resultService.enter(hospital.id, patient.id, item.id, { k: 7.0 });
+
+    const notification1 = await criticalValueService.detectAndNotify(version.id, user.id);
+    expect(notification1).not.toBeNull();
+
+    // Replay
+    const notification2 = await criticalValueService.detectAndNotify(version.id, user.id);
+    expect(notification1!.id).toBe(notification2!.id); // Should return existing, not create duplicate
+  });
+
+  it('Q. Analyzer Failure', async () => {
+    const { hospital, patient, user, order, analyzer } = await setupData();
+    const execution = await executionService.startExecution(order.id);
+    const item = execution!.items[0];
+
+    const specimen = await specimenService.collect(
+      hospital.id,
+      patient.id,
+      item.id,
+      'BLOOD',
+      user.id,
+      'FAIL-123',
+    );
+    await specimenService.receive(specimen.id, user.id);
+
+    const queue = await analyzerService.queue(item.id, 0, analyzer.id);
+    await analyzerService.start(queue.id);
+
+    const updatedQueue = await prisma.analyzerQueue.update({
+      where: { id: queue.id },
+      data: { status: 'IN_ANALYZER_QUEUE', retries: 1 },
+    });
+
+    expect(updatedQueue.status).toBe('IN_ANALYZER_QUEUE');
+    expect(updatedQueue.retries).toBe(1);
+  });
+
+  it('R. Result Amendment', async () => {
+    const { hospital, patient, user, order, analyzer } = await setupData();
+    const execution = await executionService.startExecution(order.id);
+    const item = execution!.items[0];
+
+    const { version: v1 } = await resultService.enter(hospital.id, patient.id, item.id, {
+      hb: 12.0,
+    });
+    await resultService.verify(item.id, user.id);
+    await resultService.release(item.id, user.id);
+
+    const amended = await resultService.amend(item.id, user.id, { hb: 12.5 });
+
+    const allVersions = await prisma.laboratoryResultVersion.findMany({
+      where: { resultId: amended.id },
+      orderBy: { versionNumber: 'asc' },
+    });
+
+    expect(allVersions.length).toBe(2);
+    expect(allVersions[0].versionNumber).toBe(1);
+    expect(allVersions[0].values).toEqual({ hb: 12.0 });
+    expect(allVersions[1].versionNumber).toBe(2);
+    expect(allVersions[1].values).toEqual({ hb: 12.5 });
+    expect(amended.status).toBe('AMENDED');
   });
 });
