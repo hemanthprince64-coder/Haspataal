@@ -32,7 +32,7 @@ async function main() {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '16_z')
+    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '17_z')
     .sort();
 
   for (const file of files) {
@@ -56,9 +56,9 @@ async function main() {
 
   try {
     const output = execSync(cmd, { encoding: 'utf-8', cwd: path.join(__dirname, '../') });
-    const outPath = path.join(migrationsDir, '17_phase5_canonical_orders.sql');
+    const outPath = path.join(migrationsDir, '18_phase5b1_pharmacy_execution.sql');
     fs.writeFileSync(outPath, output);
-    console.log('Successfully generated 17_phase5_canonical_orders.sql!');
+    console.log('Successfully generated 18_phase5b1_pharmacy_execution.sql!');
   } catch (e) {
     console.error('Error generating diff:', e);
   }

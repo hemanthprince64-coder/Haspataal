@@ -4542,6 +4542,9 @@ model ClinicalOrderCatalogVersion {
   catalog    ClinicalOrderCatalog @relation(fields: [catalogId], references: [id])
   orderItems OrderItem[]
 
+  inventoryItems        InventoryItem[]
+  pharmacySubstitutions PharmacySubstitution[]
+
   @@unique([catalogId, versionNumber])
   @@map("clinical_order_catalog_versions")
 }
@@ -4573,13 +4576,14 @@ model Order {
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  group         OrderGroup?         @relation(fields: [groupId], references: [id])
-  activeVersion OrderVersion?       @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
-  versions      OrderVersion[]
-  items         OrderItem[]
-  executions    OrderExecution[]
-  cancellations OrderCancellation[]
-  audits        OrderAudit[]
+  group             OrderGroup?         @relation(fields: [groupId], references: [id])
+  activeVersion     OrderVersion?       @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
+  versions          OrderVersion[]
+  items             OrderItem[]
+  executions        OrderExecution[]
+  cancellations     OrderCancellation[]
+  audits            OrderAudit[]
+  pharmacyExecution PharmacyExecution?
 
   @@index([hospitalId, patientId])
   @@index([orderedBy])
@@ -4625,6 +4629,9 @@ model OrderItem {
 
   dependenciesAsSource OrderDependency[] @relation("SourceDependency")
   dependenciesAsTarget OrderDependency[] @relation("TargetDependency")
+
+  pharmacyExecutionItem PharmacyExecutionItem?
+  marAttempts           MedicationAdministrationAttempt[]
 
   @@index([orderId])
   @@index([departmentId])
@@ -4689,4 +4696,226 @@ model OrderAudit {
 
   @@index([orderId])
   @@map("order_audits")
+}
+
+// ==========================================
+// Phase 5B.1: Pharmacy Execution Engine
+// ==========================================
+
+enum PharmacyExecutionStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  STOCK_RESERVED
+  PARTIALLY_DISPENSED
+  FULLY_DISPENSED
+  COMPLETED
+  CANCELLED
+}
+
+enum StockReservationStatus {
+  ACTIVE
+  RELEASED
+  CONSUMED
+  EXPIRED
+}
+
+enum MARAttemptStatus {
+  ADMINISTERED
+  REFUSED
+  MISSED
+  OMITTED
+}
+
+// ------------------------------------------
+// Pharmacy Verification & Execution
+// ------------------------------------------
+
+model PharmacyExecution {
+  id              String   @id @default(uuid())
+  hospitalId      String   @map("hospital_id")
+  patientId       String   @map("patient_id")
+  
+  orderId         String   @unique @map("order_id")
+  order           Order    @relation(fields: [orderId], references: [id])
+  
+  status          PharmacyExecutionStatus @default(PENDING_VERIFICATION)
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  items           PharmacyExecutionItem[]
+  verifications   PharmacyVerification[]
+  dispenses       PharmacyExecutionDispense[]
+
+  @@index([hospitalId, patientId])
+  @@map("pharmacy_executions")
+}
+
+model PharmacyVerification {
+  id              String   @id @default(uuid())
+  executionId     String   @map("execution_id")
+  execution       PharmacyExecution @relation(fields: [executionId], references: [id])
+  
+  verifiedBy      String   @map("verified_by")
+  verifiedAt      DateTime @default(now()) @map("verified_at")
+  reason          String?
+  override        Boolean  @default(false)
+  notes           String?
+
+  @@map("pharmacy_verifications")
+}
+
+model PharmacyExecutionItem {
+  id                 String   @id @default(uuid())
+  executionId        String   @map("execution_id")
+  execution          PharmacyExecution @relation(fields: [executionId], references: [id])
+  
+  orderItemId        String   @unique @map("order_item_id")
+  orderItem          OrderItem @relation(fields: [orderItemId], references: [id])
+  
+  prescribedQuantity Int      @map("prescribed_quantity")
+  dispensedQuantity  Int      @default(0) @map("dispensed_quantity")
+  
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  substitutions      PharmacySubstitution[]
+  reservations       StockReservation[]
+  dispenseItems      PharmacyExecutionDispenseItem[]
+
+  @@map("pharmacy_execution_items")
+}
+
+model PharmacySubstitution {
+  id                           String   @id @default(uuid())
+  executionItemId              String   @map("execution_item_id")
+  executionItem                PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
+  
+  substitutedCatalogVersionId  String   @map("substituted_catalog_version_id")
+  substitutedCatalogVersion    ClinicalOrderCatalogVersion @relation(fields: [substitutedCatalogVersionId], references: [id])
+  
+  reason                       String
+  approvedBy                   String   @map("approved_by")
+  createdAt                    DateTime @default(now()) @map("created_at")
+
+  @@map("pharmacy_substitutions")
+}
+
+// ------------------------------------------
+// Operational Inventory
+// ------------------------------------------
+
+model InventoryItem {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @map("hospital_id")
+  catalogVersionId   String   @map("catalog_version_id")
+  catalogVersion     ClinicalOrderCatalogVersion @relation(fields: [catalogVersionId], references: [id])
+  
+  batches            InventoryBatch[]
+  
+  @@unique([hospitalId, catalogVersionId])
+  @@map("inventory_items")
+}
+
+model InventoryBatch {
+  id                 String   @id @default(uuid())
+  inventoryItemId    String   @map("inventory_item_id")
+  inventoryItem      InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  
+  batchNumber        String   @map("batch_number")
+  expiryDate         DateTime @map("expiry_date")
+  currentStock       Int      @map("current_stock")
+  
+  reservations       StockReservation[]
+  
+  @@unique([inventoryItemId, batchNumber])
+  @@map("inventory_batches")
+}
+
+model StockReservation {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @map("hospital_id")
+  
+  batchId            String   @map("batch_id")
+  batch              InventoryBatch @relation(fields: [batchId], references: [id])
+  
+  executionItemId    String   @map("execution_item_id")
+  executionItem      PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
+  
+  quantity           Int
+  status             StockReservationStatus @default(ACTIVE)
+  
+  createdAt          DateTime @default(now()) @map("created_at")
+  expiresAt          DateTime @map("expires_at")
+  
+  dispenseItems      PharmacyExecutionDispenseItem[]
+
+  @@map("stock_reservations")
+}
+
+// ------------------------------------------
+// Dispensing
+// ------------------------------------------
+
+model PharmacyExecutionDispense {
+  id              String   @id @default(uuid())
+  executionId     String   @map("execution_id")
+  execution       PharmacyExecution @relation(fields: [executionId], references: [id])
+  
+  dispensedAt     DateTime @default(now()) @map("dispensed_at")
+  dispensedById   String   @map("dispensed_by_id")
+  
+  items           PharmacyExecutionDispenseItem[]
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("pharmacy_execution_dispenses")
+}
+
+model PharmacyExecutionDispenseItem {
+  id                 String   @id @default(uuid())
+  dispenseId         String   @map("dispense_id")
+  dispense           PharmacyExecutionDispense @relation(fields: [dispenseId], references: [id])
+  
+  executionItemId    String   @map("execution_item_id")
+  executionItem      PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
+  
+  reservationId      String?  @map("reservation_id")
+  reservation        StockReservation? @relation(fields: [reservationId], references: [id])
+  
+  quantityDispensed  Int      @map("quantity_dispensed")
+
+  marAttempts        MedicationAdministrationAttempt[]
+
+  @@map("pharmacy_execution_dispense_items")
+}
+
+// ------------------------------------------
+// Administration
+// ------------------------------------------
+
+model MedicationAdministrationAttempt {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @map("hospital_id")
+  patientId          String   @map("patient_id")
+  
+  orderItemId        String   @map("order_item_id")
+  orderItem          OrderItem @relation(fields: [orderItemId], references: [id])
+  
+  dispenseItemId     String?  @map("dispense_item_id")
+  dispenseItem       PharmacyExecutionDispenseItem? @relation(fields: [dispenseItemId], references: [id])
+  
+  scheduledFor       DateTime? @map("scheduled_for")
+  status             MARAttemptStatus @default(ADMINISTERED)
+  attemptedAt        DateTime @default(now()) @map("attempted_at")
+  attemptedById      String   @map("attempted_by_id")
+  clinicalNotes      String?  @map("clinical_notes")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId, patientId])
+  @@index([orderItemId])
+  @@map("medication_administration_attempts")
 }
