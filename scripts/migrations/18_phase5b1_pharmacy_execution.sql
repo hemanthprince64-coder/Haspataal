@@ -2,7 +2,13 @@
 CREATE TYPE "PharmacyExecutionStatus" AS ENUM ('PENDING_VERIFICATION', 'VERIFIED', 'STOCK_RESERVED', 'PARTIALLY_DISPENSED', 'FULLY_DISPENSED', 'COMPLETED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "StockReservationStatus" AS ENUM ('ACTIVE', 'RELEASED', 'CONSUMED', 'EXPIRED');
+CREATE TYPE "StockReservationStatus" AS ENUM ('ACTIVE', 'CONSUMED', 'RELEASED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "InventoryBatchStatus" AS ENUM ('ACTIVE', 'RECALLED', 'DEPLETED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "InventoryTransactionType" AS ENUM ('RESERVE', 'UNRESERVE', 'DISPENSE', 'RETURN', 'PURCHASE', 'TRANSFER_IN', 'TRANSFER_OUT', 'ADJUSTMENT', 'EXPIRED', 'DAMAGED', 'DESTROYED');
 
 -- CreateEnum
 CREATE TYPE "MARAttemptStatus" AS ENUM ('ADMINISTERED', 'REFUSED', 'MISSED', 'OMITTED');
@@ -73,9 +79,28 @@ CREATE TABLE "inventory_batches" (
     "inventory_item_id" TEXT NOT NULL,
     "batch_number" TEXT NOT NULL,
     "expiry_date" TIMESTAMP(3) NOT NULL,
-    "current_stock" INTEGER NOT NULL,
+    "physical_stock" INTEGER NOT NULL,
+    "reserved_stock" INTEGER NOT NULL DEFAULT 0,
+    "status" "InventoryBatchStatus" NOT NULL DEFAULT 'ACTIVE',
 
     CONSTRAINT "inventory_batches_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "inventory_transactions" (
+    "id" TEXT NOT NULL,
+    "batch_id" TEXT NOT NULL,
+    "type" "InventoryTransactionType" NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "balance_after" INTEGER NOT NULL,
+    "reference_type" TEXT,
+    "reference_id" TEXT,
+    "actor_id" TEXT NOT NULL,
+    "occurred_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "correlation_id" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "inventory_transactions_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -149,6 +174,12 @@ CREATE UNIQUE INDEX "inventory_items_hospital_id_catalog_version_id_key" ON "inv
 CREATE UNIQUE INDEX "inventory_batches_inventory_item_id_batch_number_key" ON "inventory_batches"("inventory_item_id", "batch_number");
 
 -- CreateIndex
+CREATE INDEX "inventory_transactions_batch_id_idx" ON "inventory_transactions"("batch_id");
+
+-- CreateIndex
+CREATE INDEX "inventory_transactions_occurred_at_idx" ON "inventory_transactions"("occurred_at");
+
+-- CreateIndex
 CREATE INDEX "medication_administration_attempts_hospital_id_patient_id_idx" ON "medication_administration_attempts"("hospital_id", "patient_id");
 
 -- CreateIndex
@@ -177,6 +208,9 @@ ALTER TABLE "inventory_items" ADD CONSTRAINT "inventory_items_catalog_version_id
 
 -- AddForeignKey
 ALTER TABLE "inventory_batches" ADD CONSTRAINT "inventory_batches_inventory_item_id_fkey" FOREIGN KEY ("inventory_item_id") REFERENCES "inventory_items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "inventory_transactions" ADD CONSTRAINT "inventory_transactions_batch_id_fkey" FOREIGN KEY ("batch_id") REFERENCES "inventory_batches"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "stock_reservations" ADD CONSTRAINT "stock_reservations_batch_id_fkey" FOREIGN KEY ("batch_id") REFERENCES "inventory_batches"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

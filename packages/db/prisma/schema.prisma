@@ -4714,9 +4714,30 @@ enum PharmacyExecutionStatus {
 
 enum StockReservationStatus {
   ACTIVE
-  RELEASED
   CONSUMED
+  RELEASED
   EXPIRED
+}
+
+enum InventoryBatchStatus {
+  ACTIVE
+  RECALLED
+  DEPLETED
+  EXPIRED
+}
+
+enum InventoryTransactionType {
+  RESERVE
+  UNRESERVE
+  DISPENSE
+  RETURN
+  PURCHASE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+  EXPIRED
+  DAMAGED
+  DESTROYED
 }
 
 enum MARAttemptStatus {
@@ -4824,12 +4845,39 @@ model InventoryBatch {
   
   batchNumber        String   @map("batch_number")
   expiryDate         DateTime @map("expiry_date")
-  currentStock       Int      @map("current_stock")
+  physicalStock      Int      @map("physical_stock")
+  reservedStock      Int      @default(0) @map("reserved_stock")
+  status             InventoryBatchStatus @default(ACTIVE)
   
   reservations       StockReservation[]
+  transactions       InventoryTransaction[]
   
   @@unique([inventoryItemId, batchNumber])
   @@map("inventory_batches")
+}
+
+model InventoryTransaction {
+  id              String   @id @default(uuid())
+  
+  batchId         String   @map("batch_id")
+  batch           InventoryBatch @relation(fields: [batchId], references: [id])
+  
+  type            InventoryTransactionType
+  quantity        Int
+  balanceAfter    Int      @map("balance_after") // Always represents physicalStock after transaction
+  
+  referenceType   String?  @map("reference_type") // e.g., 'RESERVATION', 'DISPENSE', 'ADJUSTMENT'
+  referenceId     String?  @map("reference_id")
+  
+  actorId         String   @map("actor_id")
+  occurredAt      DateTime @default(now()) @map("occurred_at")
+  correlationId   String?  @map("correlation_id")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([batchId])
+  @@index([occurredAt])
+  @@map("inventory_transactions")
 }
 
 model StockReservation {

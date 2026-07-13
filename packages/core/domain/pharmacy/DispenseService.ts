@@ -12,6 +12,9 @@ export class PharmacyDispenseService {
     dispenses: { executionItemId: string; quantity: number }[],
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
+      // 1. Lock the execution record
+      await tx.$executeRaw`SELECT id FROM pharmacy_executions WHERE id = ${executionId} FOR UPDATE`;
+
       const execution = await tx.pharmacyExecution.findUnique({
         where: { id: executionId },
         include: {
@@ -21,9 +24,7 @@ export class PharmacyDispenseService {
         },
       });
 
-      if (!execution) {
-        throw new Error(`Execution ${executionId} not found`);
-      }
+      if (!execution) throw new Error(`Execution ${executionId} not found`);
 
       if (
         execution.status === PharmacyExecutionStatus.COMPLETED ||
@@ -70,7 +71,7 @@ export class PharmacyDispenseService {
           );
 
           // Create dispense item
-          await tx.pharmacyExecutionDispenseItem.create({
+          const dispenseItemRecord = await tx.pharmacyExecutionDispenseItem.create({
             data: {
               dispenseId: dispenseRecord.id,
               executionItemId: item.id,
@@ -86,6 +87,28 @@ export class PharmacyDispenseService {
             data: {
               quantity: newReservationQuantity,
               status: newReservationQuantity === 0 ? 'CONSUMED' : 'ACTIVE',
+            },
+          });
+
+          // Deduct from batch physical and reserved stock
+          const updatedBatch = await tx.inventoryBatch.update({
+            where: { id: reservation.batchId },
+            data: {
+              physicalStock: { decrement: consumedFromThisReservation },
+              reservedStock: { decrement: consumedFromThisReservation },
+            },
+          });
+
+          // Ledger Transaction
+          await tx.inventoryTransaction.create({
+            data: {
+              batchId: reservation.batchId,
+              type: 'DISPENSE',
+              quantity: -consumedFromThisReservation,
+              balanceAfter: updatedBatch.physicalStock,
+              referenceType: 'DISPENSE',
+              referenceId: dispenseItemRecord.id,
+              actorId: dispensedById,
             },
           });
 
@@ -116,9 +139,12 @@ export class PharmacyDispenseService {
         // Emit milestone event to Outbox
         await tx.outboxEvent.create({
           data: {
-            aggregateType: 'ORDER',
-            aggregateId: execution.orderId,
-            eventType: 'MEDICATION_DISPENSED',
+            aggregateType: 'PHARMACY_EXECUTION',
+            aggregateId: execution.id,
+            eventType:
+              newDispensedQuantity === item.prescribedQuantity
+                ? 'MEDICATION_FULLY_DISPENSED'
+                : 'MEDICATION_PARTIALLY_DISPENSED',
             payload: {
               executionId: execution.id,
               orderId: execution.orderId,
@@ -128,6 +154,8 @@ export class PharmacyDispenseService {
               dispensedAt: new Date().toISOString(),
               dispensedBy: dispensedById,
             },
+            hospitalId: execution.hospitalId,
+            actorId: dispensedById,
           },
         });
       }

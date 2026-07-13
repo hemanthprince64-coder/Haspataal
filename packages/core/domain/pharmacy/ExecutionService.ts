@@ -1,7 +1,12 @@
-import { PrismaClient, PharmacyExecutionStatus, OrderStatus } from '@prisma/client';
+import { PrismaClient, PharmacyExecutionStatus, OrderStatus, Prisma } from '@prisma/client';
+
+import { PharmacyInventoryService } from './InventoryService';
 
 export class PharmacyExecutionService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(
+    private prisma: PrismaClient,
+    private inventoryService: PharmacyInventoryService,
+  ) {}
 
   /**
    * Initializes a PharmacyExecution record for a canonical order.
@@ -32,9 +37,7 @@ export class PharmacyExecutionService {
       }
 
       // 2. Filter for pharmacy-relevant order items
-      const pharmacyItems = order.items.filter(
-        (item) => item.status !== OrderStatus.REQUESTED && item.status !== OrderStatus.CANCELLED,
-      );
+      const pharmacyItems = order.items.filter((item) => item.status !== OrderStatus.CANCELLED);
 
       if (pharmacyItems.length === 0) {
         // Just return smoothly if no items to execute (e.g. order contains lab tests only)
@@ -70,7 +73,11 @@ export class PharmacyExecutionService {
   /**
    * Cancel an execution, rolling back reservations if necessary.
    */
-  async cancelExecution(orderId: string, providedTx?: Prisma.TransactionClient): Promise<void> {
+  async cancelExecution(
+    orderId: string,
+    actorId: string,
+    providedTx?: Prisma.TransactionClient,
+  ): Promise<void> {
     const run = async (tx: Prisma.TransactionClient) => {
       const execution = await tx.pharmacyExecution.findUnique({
         where: { orderId },
@@ -91,15 +98,21 @@ export class PharmacyExecutionService {
       for (const item of execution.items) {
         const activeReservations = item.reservations.filter((r) => r.status === 'ACTIVE');
         for (const reservation of activeReservations) {
-          await tx.stockReservation.update({
-            where: { id: reservation.id },
-            data: { status: 'RELEASED' },
-          });
+          await this.inventoryService.unreserveStock(reservation.id, actorId, tx);
 
-          // Restore inventory batch stock
-          await tx.inventoryBatch.update({
-            where: { id: reservation.batchId },
-            data: { currentStock: { increment: reservation.quantity } },
+          await tx.outboxEvent.create({
+            data: {
+              eventType: 'STOCK_RELEASED',
+              payload: {
+                executionId: execution.id,
+                reservationId: reservation.id,
+                itemId: item.id,
+              },
+              aggregateType: 'PHARMACY_EXECUTION',
+              aggregateId: execution.id,
+              hospitalId: execution.hospitalId,
+              actorId,
+            },
           });
         }
       }

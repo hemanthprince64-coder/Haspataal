@@ -43,12 +43,17 @@ export class MARService {
         throw new Error(`Order item ${orderItemId} not found`);
       }
 
+      // Determine event type based on status
+      let eventType = 'MEDICATION_ADMINISTERED';
+      if (attempt.status === MARAttemptStatus.REFUSED) eventType = 'MEDICATION_REFUSED';
+      else if (attempt.status === MARAttemptStatus.OMITTED) eventType = 'MEDICATION_OMITTED';
+
       // Emit milestone event to Outbox
       await tx.outboxEvent.create({
         data: {
           aggregateType: 'ORDER',
           aggregateId: orderItem.orderId,
-          eventType: 'MEDICATION_ADMINISTERED',
+          eventType,
           payload: {
             marAttemptId: attempt.id,
             orderId: orderItem.orderId,
@@ -59,6 +64,8 @@ export class MARService {
             attemptedBy: attemptedById,
             notes: options.clinicalNotes,
           },
+          hospitalId,
+          actorId: attemptedById,
         },
       });
 
