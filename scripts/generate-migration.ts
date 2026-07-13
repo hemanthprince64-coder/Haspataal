@@ -10,6 +10,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main() {
+  const targetFilename = process.argv[2];
+  if (!targetFilename || !targetFilename.endsWith('.sql')) {
+    console.error('Usage: npx ts-node generate-migration.ts <migration_name.sql>');
+    process.exit(1);
+  }
+
   const container = await new PostgreSqlContainer('postgres:16').start();
   const dbUrl = container.getConnectionUri();
   console.log('Postgres container started at:', dbUrl);
@@ -32,7 +38,7 @@ async function main() {
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql') && f >= '10_' && f <= '17_z')
+    .filter((f) => f.endsWith('.sql') && f >= '10_' && f < targetFilename)
     .sort();
 
   for (const file of files) {
@@ -56,9 +62,9 @@ async function main() {
 
   try {
     const output = execSync(cmd, { encoding: 'utf-8', cwd: path.join(__dirname, '../') });
-    const outPath = path.join(migrationsDir, '18_phase5b1_pharmacy_execution.sql');
+    const outPath = path.join(migrationsDir, targetFilename);
     fs.writeFileSync(outPath, output);
-    console.log('Successfully generated 18_phase5b1_pharmacy_execution.sql!');
+    console.log(`Successfully generated ${targetFilename}!`);
   } catch (e) {
     console.error('Error generating diff:', e);
   }

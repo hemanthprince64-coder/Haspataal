@@ -4576,14 +4576,15 @@ model Order {
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  group             OrderGroup?         @relation(fields: [groupId], references: [id])
-  activeVersion     OrderVersion?       @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
-  versions          OrderVersion[]
-  items             OrderItem[]
-  executions        OrderExecution[]
-  cancellations     OrderCancellation[]
-  audits            OrderAudit[]
-  pharmacyExecution PharmacyExecution?
+  group               OrderGroup?          @relation(fields: [groupId], references: [id])
+  activeVersion       OrderVersion?        @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
+  versions            OrderVersion[]
+  items               OrderItem[]
+  executions          OrderExecution[]
+  cancellations       OrderCancellation[]
+  audits              OrderAudit[]
+  pharmacyExecution   PharmacyExecution?
+  LaboratoryExecution LaboratoryExecution?
 
   @@index([hospitalId, patientId])
   @@index([orderedBy])
@@ -4630,8 +4631,9 @@ model OrderItem {
   dependenciesAsSource OrderDependency[] @relation("SourceDependency")
   dependenciesAsTarget OrderDependency[] @relation("TargetDependency")
 
-  pharmacyExecutionItem PharmacyExecutionItem?
-  marAttempts           MedicationAdministrationAttempt[]
+  pharmacyExecutionItem   PharmacyExecutionItem?
+  marAttempts             MedicationAdministrationAttempt[]
+  LaboratoryExecutionItem LaboratoryExecutionItem?
 
   @@index([orderId])
   @@index([departmentId])
@@ -4752,72 +4754,72 @@ enum MARAttemptStatus {
 // ------------------------------------------
 
 model PharmacyExecution {
-  id              String   @id @default(uuid())
-  hospitalId      String   @map("hospital_id")
-  patientId       String   @map("patient_id")
-  
-  orderId         String   @unique @map("order_id")
-  order           Order    @relation(fields: [orderId], references: [id])
-  
-  status          PharmacyExecutionStatus @default(PENDING_VERIFICATION)
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  patientId  String @map("patient_id")
 
-  items           PharmacyExecutionItem[]
-  verifications   PharmacyVerification[]
-  dispenses       PharmacyExecutionDispense[]
+  orderId String @unique @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  status PharmacyExecutionStatus @default(PENDING_VERIFICATION)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items         PharmacyExecutionItem[]
+  verifications PharmacyVerification[]
+  dispenses     PharmacyExecutionDispense[]
 
   @@index([hospitalId, patientId])
   @@map("pharmacy_executions")
 }
 
 model PharmacyVerification {
-  id              String   @id @default(uuid())
-  executionId     String   @map("execution_id")
-  execution       PharmacyExecution @relation(fields: [executionId], references: [id])
-  
-  verifiedBy      String   @map("verified_by")
-  verifiedAt      DateTime @default(now()) @map("verified_at")
-  reason          String?
-  override        Boolean  @default(false)
-  notes           String?
+  id          String            @id @default(uuid())
+  executionId String            @map("execution_id")
+  execution   PharmacyExecution @relation(fields: [executionId], references: [id])
+
+  verifiedBy String   @map("verified_by")
+  verifiedAt DateTime @default(now()) @map("verified_at")
+  reason     String?
+  override   Boolean  @default(false)
+  notes      String?
 
   @@map("pharmacy_verifications")
 }
 
 model PharmacyExecutionItem {
-  id                 String   @id @default(uuid())
-  executionId        String   @map("execution_id")
-  execution          PharmacyExecution @relation(fields: [executionId], references: [id])
-  
-  orderItemId        String   @unique @map("order_item_id")
-  orderItem          OrderItem @relation(fields: [orderItemId], references: [id])
-  
-  prescribedQuantity Int      @map("prescribed_quantity")
-  dispensedQuantity  Int      @default(0) @map("dispensed_quantity")
-  
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id          String            @id @default(uuid())
+  executionId String            @map("execution_id")
+  execution   PharmacyExecution @relation(fields: [executionId], references: [id])
 
-  substitutions      PharmacySubstitution[]
-  reservations       StockReservation[]
-  dispenseItems      PharmacyExecutionDispenseItem[]
+  orderItemId String    @unique @map("order_item_id")
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  prescribedQuantity Int @map("prescribed_quantity")
+  dispensedQuantity  Int @default(0) @map("dispensed_quantity")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  substitutions PharmacySubstitution[]
+  reservations  StockReservation[]
+  dispenseItems PharmacyExecutionDispenseItem[]
 
   @@map("pharmacy_execution_items")
 }
 
 model PharmacySubstitution {
-  id                           String   @id @default(uuid())
-  executionItemId              String   @map("execution_item_id")
-  executionItem                PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
-  
-  substitutedCatalogVersionId  String   @map("substituted_catalog_version_id")
-  substitutedCatalogVersion    ClinicalOrderCatalogVersion @relation(fields: [substitutedCatalogVersionId], references: [id])
-  
-  reason                       String
-  approvedBy                   String   @map("approved_by")
-  createdAt                    DateTime @default(now()) @map("created_at")
+  id              String                @id @default(uuid())
+  executionItemId String                @map("execution_item_id")
+  executionItem   PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
+
+  substitutedCatalogVersionId String                      @map("substituted_catalog_version_id")
+  substitutedCatalogVersion   ClinicalOrderCatalogVersion @relation(fields: [substitutedCatalogVersionId], references: [id])
+
+  reason     String
+  approvedBy String   @map("approved_by")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@map("pharmacy_substitutions")
 }
@@ -4827,53 +4829,53 @@ model PharmacySubstitution {
 // ------------------------------------------
 
 model InventoryItem {
-  id                 String   @id @default(uuid())
-  hospitalId         String   @map("hospital_id")
-  catalogVersionId   String   @map("catalog_version_id")
-  catalogVersion     ClinicalOrderCatalogVersion @relation(fields: [catalogVersionId], references: [id])
-  
-  batches            InventoryBatch[]
-  
+  id               String                      @id @default(uuid())
+  hospitalId       String                      @map("hospital_id")
+  catalogVersionId String                      @map("catalog_version_id")
+  catalogVersion   ClinicalOrderCatalogVersion @relation(fields: [catalogVersionId], references: [id])
+
+  batches InventoryBatch[]
+
   @@unique([hospitalId, catalogVersionId])
   @@map("inventory_items")
 }
 
 model InventoryBatch {
-  id                 String   @id @default(uuid())
-  inventoryItemId    String   @map("inventory_item_id")
-  inventoryItem      InventoryItem @relation(fields: [inventoryItemId], references: [id])
-  
-  batchNumber        String   @map("batch_number")
-  expiryDate         DateTime @map("expiry_date")
-  physicalStock      Int      @map("physical_stock")
-  reservedStock      Int      @default(0) @map("reserved_stock")
-  status             InventoryBatchStatus @default(ACTIVE)
-  
-  reservations       StockReservation[]
-  transactions       InventoryTransaction[]
-  
+  id              String        @id @default(uuid())
+  inventoryItemId String        @map("inventory_item_id")
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  batchNumber   String               @map("batch_number")
+  expiryDate    DateTime             @map("expiry_date")
+  physicalStock Int                  @map("physical_stock")
+  reservedStock Int                  @default(0) @map("reserved_stock")
+  status        InventoryBatchStatus @default(ACTIVE)
+
+  reservations StockReservation[]
+  transactions InventoryTransaction[]
+
   @@unique([inventoryItemId, batchNumber])
   @@map("inventory_batches")
 }
 
 model InventoryTransaction {
-  id              String   @id @default(uuid())
-  
-  batchId         String   @map("batch_id")
-  batch           InventoryBatch @relation(fields: [batchId], references: [id])
-  
-  type            InventoryTransactionType
-  quantity        Int
-  balanceAfter    Int      @map("balance_after") // Always represents physicalStock after transaction
-  
-  referenceType   String?  @map("reference_type") // e.g., 'RESERVATION', 'DISPENSE', 'ADJUSTMENT'
-  referenceId     String?  @map("reference_id")
-  
-  actorId         String   @map("actor_id")
-  occurredAt      DateTime @default(now()) @map("occurred_at")
-  correlationId   String?  @map("correlation_id")
+  id String @id @default(uuid())
 
-  createdAt       DateTime @default(now()) @map("created_at")
+  batchId String         @map("batch_id")
+  batch   InventoryBatch @relation(fields: [batchId], references: [id])
+
+  type         InventoryTransactionType
+  quantity     Int
+  balanceAfter Int                      @map("balance_after") // Always represents physicalStock after transaction
+
+  referenceType String? @map("reference_type") // e.g., 'RESERVATION', 'DISPENSE', 'ADJUSTMENT'
+  referenceId   String? @map("reference_id")
+
+  actorId       String   @map("actor_id")
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+  correlationId String?  @map("correlation_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([batchId])
   @@index([occurredAt])
@@ -4881,22 +4883,22 @@ model InventoryTransaction {
 }
 
 model StockReservation {
-  id                 String   @id @default(uuid())
-  hospitalId         String   @map("hospital_id")
-  
-  batchId            String   @map("batch_id")
-  batch              InventoryBatch @relation(fields: [batchId], references: [id])
-  
-  executionItemId    String   @map("execution_item_id")
-  executionItem      PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
-  
-  quantity           Int
-  status             StockReservationStatus @default(ACTIVE)
-  
-  createdAt          DateTime @default(now()) @map("created_at")
-  expiresAt          DateTime @map("expires_at")
-  
-  dispenseItems      PharmacyExecutionDispenseItem[]
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+
+  batchId String         @map("batch_id")
+  batch   InventoryBatch @relation(fields: [batchId], references: [id])
+
+  executionItemId String                @map("execution_item_id")
+  executionItem   PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
+
+  quantity Int
+  status   StockReservationStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  dispenseItems PharmacyExecutionDispenseItem[]
 
   @@map("stock_reservations")
 }
@@ -4906,35 +4908,35 @@ model StockReservation {
 // ------------------------------------------
 
 model PharmacyExecutionDispense {
-  id              String   @id @default(uuid())
-  executionId     String   @map("execution_id")
-  execution       PharmacyExecution @relation(fields: [executionId], references: [id])
-  
-  dispensedAt     DateTime @default(now()) @map("dispensed_at")
-  dispensedById   String   @map("dispensed_by_id")
-  
-  items           PharmacyExecutionDispenseItem[]
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id          String            @id @default(uuid())
+  executionId String            @map("execution_id")
+  execution   PharmacyExecution @relation(fields: [executionId], references: [id])
+
+  dispensedAt   DateTime @default(now()) @map("dispensed_at")
+  dispensedById String   @map("dispensed_by_id")
+
+  items PharmacyExecutionDispenseItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("pharmacy_execution_dispenses")
 }
 
 model PharmacyExecutionDispenseItem {
-  id                 String   @id @default(uuid())
-  dispenseId         String   @map("dispense_id")
-  dispense           PharmacyExecutionDispense @relation(fields: [dispenseId], references: [id])
-  
-  executionItemId    String   @map("execution_item_id")
-  executionItem      PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
-  
-  reservationId      String?  @map("reservation_id")
-  reservation        StockReservation? @relation(fields: [reservationId], references: [id])
-  
-  quantityDispensed  Int      @map("quantity_dispensed")
+  id         String                    @id @default(uuid())
+  dispenseId String                    @map("dispense_id")
+  dispense   PharmacyExecutionDispense @relation(fields: [dispenseId], references: [id])
 
-  marAttempts        MedicationAdministrationAttempt[]
+  executionItemId String                @map("execution_item_id")
+  executionItem   PharmacyExecutionItem @relation(fields: [executionItemId], references: [id])
+
+  reservationId String?           @map("reservation_id")
+  reservation   StockReservation? @relation(fields: [reservationId], references: [id])
+
+  quantityDispensed Int @map("quantity_dispensed")
+
+  marAttempts MedicationAdministrationAttempt[]
 
   @@map("pharmacy_execution_dispense_items")
 }
@@ -4944,26 +4946,234 @@ model PharmacyExecutionDispenseItem {
 // ------------------------------------------
 
 model MedicationAdministrationAttempt {
-  id                 String   @id @default(uuid())
-  hospitalId         String   @map("hospital_id")
-  patientId          String   @map("patient_id")
-  
-  orderItemId        String   @map("order_item_id")
-  orderItem          OrderItem @relation(fields: [orderItemId], references: [id])
-  
-  dispenseItemId     String?  @map("dispense_item_id")
-  dispenseItem       PharmacyExecutionDispenseItem? @relation(fields: [dispenseItemId], references: [id])
-  
-  scheduledFor       DateTime? @map("scheduled_for")
-  status             MARAttemptStatus @default(ADMINISTERED)
-  attemptedAt        DateTime @default(now()) @map("attempted_at")
-  attemptedById      String   @map("attempted_by_id")
-  clinicalNotes      String?  @map("clinical_notes")
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  patientId  String @map("patient_id")
 
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  orderItemId String    @map("order_item_id")
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  dispenseItemId String?                        @map("dispense_item_id")
+  dispenseItem   PharmacyExecutionDispenseItem? @relation(fields: [dispenseItemId], references: [id])
+
+  scheduledFor  DateTime?        @map("scheduled_for")
+  status        MARAttemptStatus @default(ADMINISTERED)
+  attemptedAt   DateTime         @default(now()) @map("attempted_at")
+  attemptedById String           @map("attempted_by_id")
+  clinicalNotes String?          @map("clinical_notes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([hospitalId, patientId])
   @@index([orderItemId])
   @@map("medication_administration_attempts")
+}
+
+// ------------------------------------------
+// Laboratory Execution Engine
+// ------------------------------------------
+
+enum LaboratoryExecutionStatus {
+  PENDING_COLLECTION
+  COLLECTION_IN_PROGRESS
+  COLLECTED
+  RECEIVED
+  IN_ANALYZER_QUEUE
+  ANALYZING
+  RESULT_ENTERED
+  RESULT_VERIFIED
+  RELEASED
+  CANCELLED
+}
+
+enum SpecimenStatus {
+  EXPECTED
+  COLLECTED
+  RECEIVED
+  REJECTED
+  LOST
+  EXPIRED
+}
+
+enum ResultStatus {
+  DRAFT
+  VERIFIED
+  RELEASED
+  AMENDED
+}
+
+enum SpecimenRejectionReason {
+  HEMOLYZED
+  CLOTTED
+  INSUFFICIENT
+  WRONG_CONTAINER
+  LABEL_MISMATCH
+  EXPIRED
+  OTHER
+}
+
+model LaboratoryExecution {
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  patientId  String @map("patient_id")
+
+  orderId String @unique @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  orderVersionId String @map("order_version_id")
+
+  status LaboratoryExecutionStatus @default(PENDING_COLLECTION)
+
+  items LaboratoryExecutionItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId, patientId])
+  @@index([status])
+  @@map("laboratory_executions")
+}
+
+model LaboratoryExecutionItem {
+  id          String              @id @default(uuid())
+  executionId String              @map("execution_id")
+  execution   LaboratoryExecution @relation(fields: [executionId], references: [id])
+
+  orderItemId String    @unique @map("order_item_id")
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  specimenId String?   @map("specimen_id")
+  specimen   Specimen? @relation(fields: [specimenId], references: [id])
+
+  resultId String?           @map("result_id")
+  result   LaboratoryResult? @relation(fields: [resultId], references: [id])
+
+  status LaboratoryExecutionStatus @default(PENDING_COLLECTION)
+
+  queueEntries AnalyzerQueue[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("laboratory_execution_items")
+}
+
+model Specimen {
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  patientId  String @map("patient_id")
+
+  barcode      String @unique
+  specimenType String @map("specimen_type")
+
+  status SpecimenStatus @default(EXPECTED)
+
+  collectionTime DateTime? @map("collection_time")
+  collectorId    String?   @map("collector_id")
+
+  executionItems LaboratoryExecutionItem[]
+  attempts       SpecimenCollectionAttempt[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId, patientId])
+  @@map("specimens")
+}
+
+model SpecimenCollectionAttempt {
+  id         String   @id @default(uuid())
+  specimenId String   @map("specimen_id")
+  specimen   Specimen @relation(fields: [specimenId], references: [id])
+
+  status        SpecimenStatus
+  attemptedAt   DateTime       @default(now()) @map("attempted_at")
+  attemptedById String         @map("attempted_by_id")
+
+  rejectionReason SpecimenRejectionReason? @map("rejection_reason")
+  notes           String?
+
+  @@map("specimen_collection_attempts")
+}
+
+model AnalyzerQueue {
+  id              String                  @id @default(uuid())
+  executionItemId String                  @map("execution_item_id")
+  executionItem   LaboratoryExecutionItem @relation(fields: [executionItemId], references: [id])
+
+  analyzerId    String? @map("analyzer_id")
+  priority      Int     @default(0) // Higher number = higher priority
+  queuePosition Int     @default(0) @map("queue_position")
+
+  status  LaboratoryExecutionStatus @default(IN_ANALYZER_QUEUE)
+  retries Int                       @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([analyzerId, priority])
+  @@map("analyzer_queues")
+}
+
+model LaboratoryResult {
+  id              String @id @default(uuid())
+  executionItemId String @unique @map("execution_item_id")
+
+  hospitalId String @map("hospital_id")
+  patientId  String @map("patient_id")
+
+  status          ResultStatus @default(DRAFT)
+  activeVersionId String?      @map("active_version_id")
+
+  versions       LaboratoryResultVersion[]
+  executionItems LaboratoryExecutionItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId, patientId])
+  @@map("laboratory_results")
+}
+
+model LaboratoryResultVersion {
+  id       String           @id @default(uuid())
+  resultId String           @map("result_id")
+  result   LaboratoryResult @relation(fields: [resultId], references: [id])
+
+  versionNumber Int @map("version_number")
+
+  values          Json // Measured values
+  referenceRanges Json? @map("reference_ranges")
+  abnormalFlags   Json? @map("abnormal_flags")
+  units           Json?
+
+  verifiedAt DateTime? @map("verified_at")
+  verifiedBy String?   @map("verified_by")
+
+  releasedAt DateTime? @map("released_at")
+  releasedBy String?   @map("released_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  notifications CriticalValueNotification[]
+
+  @@unique([resultId, versionNumber])
+  @@map("laboratory_result_versions")
+}
+
+model CriticalValueNotification {
+  id              String                  @id @default(uuid())
+  resultVersionId String                  @map("result_version_id")
+  resultVersion   LaboratoryResultVersion @relation(fields: [resultVersionId], references: [id])
+
+  recipientId String @map("recipient_id")
+
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  acknowledgedBy String?   @map("acknowledged_by")
+
+  escalated Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("critical_value_notifications")
 }
