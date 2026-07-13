@@ -1,0 +1,1 @@
+- **ESLint in Tests:** When writing tests (especially with Vitest/Prisma mocks), use `@ts-expect-error` instead of `@ts-ignore` to bypass TypeScript compiler checks, as `@typescript-eslint/ban-ts-comment` is actively enforced and will fail pre-commit hooks. _(Added 2026-07-13)_
