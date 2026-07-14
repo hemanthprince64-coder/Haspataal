@@ -230,6 +230,9 @@ model HospitalsMaster {
   InsuranceClaim           InsuranceClaim[]
   ProcedureExecution       ProcedureExecution[]
   ProcedureRoom            ProcedureRoom[]
+  HospitalBloodBankPolicy  HospitalBloodBankPolicy[]
+  BloodBankExecution       BloodBankExecution[]
+  BloodUnit                BloodUnit[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -504,6 +507,8 @@ model Patient {
   aliasOf                  PatientAlias?           @relation("AliasPatient")
   aliases                  PatientAlias[]          @relation("CanonicalPatient")
   ProcedureExecution       ProcedureExecution[]
+  BloodBankExecution       BloodBankExecution[]
+  TransfusionEpisode       TransfusionEpisode[]
 
   @@index([city])
   @@index([email])
@@ -4592,6 +4597,7 @@ model Order {
   LaboratoryExecution LaboratoryExecution?
   radiologyExecution  RadiologyExecution?
   ProcedureExecution  ProcedureExecution?
+  BloodBankExecution  BloodBankExecution?
 
   @@index([hospitalId, patientId])
   @@index([orderedBy])
@@ -4643,6 +4649,7 @@ model OrderItem {
   LaboratoryExecutionItem LaboratoryExecutionItem?
   radiologyExecutionItem  RadiologyExecutionItem?
   ProcedureExecutionItem  ProcedureExecutionItem?
+  BloodBankExecutionItem  BloodBankExecutionItem?
 
   @@index([orderId])
   @@index([departmentId])
@@ -5766,4 +5773,262 @@ model ProcedureCriticalIncident {
   session ProcedureSession @relation(fields: [sessionId], references: [id])
 
   @@map("procedure_critical_incident")
+}
+
+enum BloodComponentType {
+  PACKED_RBC
+  WHOLE_BLOOD
+  PLATELETS
+  FRESH_FROZEN_PLASMA
+  CRYOPRECIPITATE
+  GRANULOCYTES
+}
+
+enum BloodRequestStatus {
+  REQUESTED
+  APPROVED
+  CROSSMATCH_PENDING
+  CROSSMATCH_COMPLETE
+  ALLOCATED
+  ISSUED
+  TRANSFUSION_STARTED
+  TRANSFUSION_COMPLETED
+  CANCELLED
+}
+
+enum CrossmatchStatus {
+  PENDING
+  COMPATIBLE
+  INCOMPATIBLE
+  EXPIRED
+}
+
+enum TransfusionStatus {
+  NOT_STARTED
+  STARTED
+  PAUSED
+  COMPLETED
+  STOPPED
+}
+
+enum ReactionSeverity {
+  MILD
+  MODERATE
+  SEVERE
+  LIFE_THREATENING
+}
+
+enum BloodUnitStatus {
+  AVAILABLE
+  RESERVED
+  ISSUED
+  TRANSFUSED
+  DISCARDED
+  QUARANTINED
+}
+
+enum AllocationPolicy {
+  FIFO
+  FEFO
+  MANUAL_OVERRIDE
+}
+
+enum TransfusionReactionOutcome {
+  RESOLVED
+  ESCALATED
+  FATAL
+}
+
+enum TransfusionReactionStatus {
+  RECORDED
+  CLINICAL_REVIEW
+  RESOLVED
+  ESCALATED
+}
+
+model HospitalBloodBankPolicy {
+  id                             String             @id @default(uuid())
+  hospitalId                     String
+  hospital                       HospitalsMaster    @relation(fields: [hospitalId], references: [id])
+  componentType                  BloodComponentType
+  defaultCrossmatchValidityHours Int
+  maximumReservationHours        Int
+  emergencyReleaseEnabled        Boolean            @default(true)
+  doubleVerificationRequired     Boolean            @default(true)
+  bedsideVerificationRequired    Boolean            @default(true)
+  allocationPolicy               AllocationPolicy   @default(FIFO)
+
+  @@unique([hospitalId, componentType])
+}
+
+model BloodBankExecution {
+  id          String             @id @default(uuid())
+  orderId     String             @unique
+  order       Order              @relation(fields: [orderId], references: [id])
+  hospitalId  String
+  hospital    HospitalsMaster    @relation(fields: [hospitalId], references: [id])
+  patientId   String
+  patient     Patient            @relation(fields: [patientId], references: [id])
+  status      BloodRequestStatus @default(REQUESTED)
+  requestedAt DateTime           @default(now())
+
+  items     BloodBankExecutionItem[]
+  audits    BloodBankAudit[]
+  overrides EmergencyBloodOverride[]
+}
+
+model BloodBankExecutionItem {
+  id                String             @id @default(uuid())
+  executionId       String
+  execution         BloodBankExecution @relation(fields: [executionId], references: [id])
+  orderItemId       String             @unique
+  orderItem         OrderItem          @relation(fields: [orderItemId], references: [id])
+  componentType     BloodComponentType
+  requestedVolumeMl Float?
+  requestedUnits    Int
+  status            BloodRequestStatus @default(REQUESTED)
+
+  crossmatches Crossmatch[]
+  allocations  BloodAllocation[]
+  issues       BloodIssue[]
+}
+
+model EmergencyBloodOverride {
+  id                    String             @id @default(uuid())
+  executionId           String
+  execution             BloodBankExecution @relation(fields: [executionId], references: [id])
+  reason                String
+  authorizedBy          String
+  approvedAt            DateTime           @default(now())
+  overrideType          String             @default("UNCROSSMATCHED_O_NEGATIVE")
+  clinicalJustification String
+}
+
+model BloodUnit {
+  id                    String             @id @default(uuid())
+  hospitalId            String
+  hospital              HospitalsMaster    @relation(fields: [hospitalId], references: [id])
+  isbt128DonationNumber String             @unique
+  componentCode         String
+  componentType         BloodComponentType
+  bloodGroupABO         String
+  bloodGroupRh          String
+  collectionDate        DateTime
+  expiryDate            DateTime
+  currentStatus         BloodUnitStatus    @default(AVAILABLE)
+
+  crossmatches Crossmatch[]
+  allocations  BloodAllocation[]
+  issues       BloodIssue[]
+}
+
+model Crossmatch {
+  id              String                 @id @default(uuid())
+  executionItemId String
+  executionItem   BloodBankExecutionItem @relation(fields: [executionItemId], references: [id])
+  bloodUnitId     String
+  bloodUnit       BloodUnit              @relation(fields: [bloodUnitId], references: [id])
+  status          CrossmatchStatus       @default(PENDING)
+  technicianId    String
+  performedAt     DateTime?
+  expiryAt        DateTime?
+
+  @@unique([executionItemId, bloodUnitId])
+}
+
+model BloodAllocation {
+  id              String                 @id @default(uuid())
+  executionItemId String
+  executionItem   BloodBankExecutionItem @relation(fields: [executionItemId], references: [id])
+  bloodUnitId     String
+  bloodUnit       BloodUnit              @relation(fields: [bloodUnitId], references: [id])
+  allocatedAt     DateTime               @default(now())
+  allocatedBy     String
+  expiresAt       DateTime?
+  active          Boolean                @default(true)
+
+  @@unique([executionItemId, bloodUnitId])
+}
+
+model BloodIssue {
+  id              String                 @id @default(uuid())
+  executionItemId String
+  executionItem   BloodBankExecutionItem @relation(fields: [executionItemId], references: [id])
+  bloodUnitId     String
+  bloodUnit       BloodUnit              @relation(fields: [bloodUnitId], references: [id])
+  issuedAt        DateTime               @default(now())
+  issuedBy        String
+  issuedTo        String
+  active          Boolean                @default(true)
+
+  transfusionEpisode TransfusionEpisode?
+
+  @@unique([executionItemId, bloodUnitId])
+}
+
+model BedsideVerification {
+  id                   String             @id @default(uuid())
+  transfusionEpisodeId String             @unique
+  transfusionEpisode   TransfusionEpisode @relation(fields: [transfusionEpisodeId], references: [id])
+  patientVerified      Boolean            @default(false)
+  unitVerified         Boolean            @default(false)
+  componentVerified    Boolean            @default(false)
+  performedBy          String
+  performedAt          DateTime           @default(now())
+}
+
+model TransfusionEpisode {
+  id                   String            @id @default(uuid())
+  issueId              String            @unique
+  issue                BloodIssue        @relation(fields: [issueId], references: [id])
+  patientId            String
+  patient              Patient           @relation(fields: [patientId], references: [id])
+  status               TransfusionStatus @default(NOT_STARTED)
+  startedAt            DateTime?
+  stoppedAt            DateTime?
+  administeringNurseId String?
+
+  verification BedsideVerification?
+  observations TransfusionObservation[]
+  reaction     TransfusionReaction?
+}
+
+model TransfusionObservation {
+  id               String             @id @default(uuid())
+  episodeId        String
+  episode          TransfusionEpisode @relation(fields: [episodeId], references: [id])
+  observationTime  DateTime           @default(now())
+  observerId       String
+  stage            String // BASELINE, 15_MIN, HOURLY, COMPLETION
+  temperature      Float?
+  pulse            Int?
+  bloodPressure    String? // "120/80"
+  respiratoryRate  Int?
+  oxygenSaturation Int?
+}
+
+model TransfusionReaction {
+  id                     String                      @id @default(uuid())
+  episodeId              String                      @unique
+  episode                TransfusionEpisode          @relation(fields: [episodeId], references: [id])
+  status                 TransfusionReactionStatus   @default(RECORDED)
+  severity               ReactionSeverity
+  suspectedCause         String?
+  symptoms               String
+  investigationRequested Boolean                     @default(false)
+  management             String?
+  outcome                TransfusionReactionOutcome?
+  recordedAt             DateTime                    @default(now())
+  recordedBy             String
+  resolutionTime         DateTime?
+}
+
+model BloodBankAudit {
+  id          String             @id @default(uuid())
+  executionId String
+  execution   BloodBankExecution @relation(fields: [executionId], references: [id])
+  action      String
+  performedBy String
+  timestamp   DateTime           @default(now())
+  details     Json
 }

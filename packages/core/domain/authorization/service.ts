@@ -73,6 +73,16 @@ export class AuthorizationService {
         result = this.authorizePhase5B4Procedure(actor, action);
         break;
 
+      case DomainAction.BLOOD_REQUEST_CREATE:
+      case DomainAction.BLOOD_CROSSMATCH:
+      case DomainAction.BLOOD_ALLOCATE:
+      case DomainAction.BLOOD_ISSUE:
+      case DomainAction.TRANSFUSION_START:
+      case DomainAction.TRANSFUSION_COMPLETE:
+      case DomainAction.TRANSFUSION_REACTION:
+        result = this.authorizePhase5B5BloodBank(actor, action);
+        break;
+
       default:
         result = {
           decision: AuthorizationDecision.DENY,

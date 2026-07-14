@@ -626,3 +626,6 @@ The following documents provide detailed specifications for the Haspataal platfo
 - **Prisma Test Environment**: When schema changes are made via 
 px prisma db push, 
 px prisma generate must also run to regenerate the client types. If running via test frameworks and a migration script fails, the JS client may become stale leading to false positive test errors on missing properties or unmapped fields. _(Added 2026-07-13)_
+
+### Lesson Learned: Test Integration with Catalog
+When creating Order items in tests, they must relate to a valid ClinicalOrderCatalogVersion if the catalogVersionId field is required. Instead of using raw items: { create: [] } with non-existent IDs, first mock the ClinicalOrderCatalog and ClinicalOrderCatalogVersion using prisma.clinicalOrderCatalog.create, then reference the catalogVersion.id in OrderItem.create. Also, standardize outbox relay signatures across domains (e.g., 	his.outbox.createEvent(tx, patientId, eventType, payload)) rather than inventing domain-specific method signatures like publish().
