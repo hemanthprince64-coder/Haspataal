@@ -55,6 +55,24 @@ export class AuthorizationService {
         result = this.authorizePhase5BLab(actor, action);
         break;
 
+      case DomainAction.RADIOLOGY_SCHEDULE:
+      case DomainAction.RADIOLOGY_ARRIVE:
+      case DomainAction.RADIOLOGY_ACQUIRE:
+      case DomainAction.RADIOLOGY_REPORT_PRELIMINARY:
+      case DomainAction.RADIOLOGY_REPORT_FINAL:
+      case DomainAction.RADIOLOGY_REPORT_AMEND:
+        result = this.authorizePhase5B3Radiology(actor, action);
+        break;
+
+      case DomainAction.PROCEDURE_SCHEDULE:
+      case DomainAction.PROCEDURE_START:
+      case DomainAction.PROCEDURE_COMPLETE:
+      case DomainAction.PROCEDURE_REPORT_DRAFT:
+      case DomainAction.PROCEDURE_REPORT_FINAL:
+      case DomainAction.PROCEDURE_CANCEL:
+        result = this.authorizePhase5B4Procedure(actor, action);
+        break;
+
       default:
         result = {
           decision: AuthorizationDecision.DENY,
@@ -361,5 +379,158 @@ export class AuthorizationService {
       decision: AuthorizationDecision.DENY,
       reason: 'Action not supported.',
     };
+  }
+
+  private authorizePhase5B3Radiology(
+    actor: AuthorizeRequest['actor'],
+    action: DomainAction,
+  ): AuthorizationResult {
+    switch (action) {
+      case DomainAction.RADIOLOGY_SCHEDULE:
+      case DomainAction.RADIOLOGY_ARRIVE:
+        if (['SCHEDULER', 'FRONT_DESK', 'RECEPTION', 'RADIOLOGY_TECH'].includes(actor.role)) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized role for scheduling/arrival.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only Front Desk or Technicians can schedule/arrive patients.',
+        };
+
+      case DomainAction.RADIOLOGY_ACQUIRE:
+        if (actor.role === 'RADIOLOGY_TECH') {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized role for image acquisition.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only Radiology Technicians can acquire images.',
+        };
+
+      case DomainAction.RADIOLOGY_REPORT_PRELIMINARY:
+        if (['RADIOLOGIST', 'CONSULTANT_RADIOLOGIST'].includes(actor.role)) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized role for preliminary reporting.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only Radiologists can enter preliminary reports.',
+        };
+
+      case DomainAction.RADIOLOGY_REPORT_FINAL:
+        if (['CONSULTANT_RADIOLOGIST', 'SENIOR_RADIOLOGIST', 'RADIOLOGIST'].includes(actor.role)) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized role for final verification.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only Radiologists can verify final reports.',
+        };
+
+      case DomainAction.RADIOLOGY_REPORT_AMEND:
+        if (
+          actor.permissions?.includes('module:RADIOLOGY:action:AMEND') ||
+          ['CONSULTANT_RADIOLOGIST', 'SENIOR_RADIOLOGIST'].includes(actor.role)
+        ) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized to amend reports.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Actor lacks report amendment capability.',
+        };
+
+      default:
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Action not supported.',
+        };
+    }
+  }
+  private authorizePhase5B4Procedure(
+    actor: AuthorizeRequest['actor'],
+    action: DomainAction,
+  ): AuthorizationResult {
+    switch (action) {
+      case DomainAction.PROCEDURE_SCHEDULE:
+        if (
+          ['OT_SCHEDULER', 'NURSE', 'DOCTOR', 'SURGEON'].includes(actor.role) ||
+          actor.permissions?.includes('module:PROCEDURE:action:SCHEDULE')
+        ) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized to schedule procedures.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Actor lacks procedure scheduling capability.',
+        };
+
+      case DomainAction.PROCEDURE_START:
+      case DomainAction.PROCEDURE_COMPLETE:
+        if (['OT_NURSE', 'NURSE', 'SURGEON', 'ANESTHETIST', 'DOCTOR'].includes(actor.role)) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized to execute procedure steps.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only authorized OT staff can execute procedures.',
+        };
+
+      case DomainAction.PROCEDURE_REPORT_DRAFT:
+        if (['SURGEON', 'DOCTOR', 'ANESTHETIST'].includes(actor.role)) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized to draft procedure reports.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only surgeons or doctors can draft procedure reports.',
+        };
+
+      case DomainAction.PROCEDURE_REPORT_FINAL:
+        if (['SURGEON', 'CONSULTANT_SURGEON'].includes(actor.role)) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized to finalize procedure reports.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Only surgeons can finalize procedure reports.',
+        };
+
+      case DomainAction.PROCEDURE_CANCEL:
+        if (
+          ['SURGEON', 'CONSULTANT_SURGEON', 'OT_SCHEDULER', 'DOCTOR'].includes(actor.role) ||
+          actor.permissions?.includes('module:PROCEDURE:action:CANCEL')
+        ) {
+          return {
+            decision: AuthorizationDecision.ALLOW,
+            reason: 'Authorized to cancel procedures.',
+          };
+        }
+        return {
+          decision: AuthorizationDecision.DENY,
+          reason: 'Actor lacks procedure cancellation capability.',
+        };
+
+      default:
+        return { decision: AuthorizationDecision.DENY, reason: 'Action not supported.' };
+    }
   }
 }

@@ -228,6 +228,8 @@ model HospitalsMaster {
   ICUAdmission             ICUAdmission[]
   InsuranceVerification    InsuranceVerification[]
   InsuranceClaim           InsuranceClaim[]
+  ProcedureExecution       ProcedureExecution[]
+  ProcedureRoom            ProcedureRoom[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -501,6 +503,7 @@ model Patient {
   contactPoints            PatientContactPoint[]
   aliasOf                  PatientAlias?           @relation("AliasPatient")
   aliases                  PatientAlias[]          @relation("CanonicalPatient")
+  ProcedureExecution       ProcedureExecution[]
 
   @@index([city])
   @@index([email])
@@ -4543,8 +4546,9 @@ model ClinicalOrderCatalogVersion {
   catalog    ClinicalOrderCatalog @relation(fields: [catalogId], references: [id])
   orderItems OrderItem[]
 
-  inventoryItems        InventoryItem[]
-  pharmacySubstitutions PharmacySubstitution[]
+  inventoryItems         InventoryItem[]
+  pharmacySubstitutions  PharmacySubstitution[]
+  ProcedureExecutionItem ProcedureExecutionItem[]
 
   @@unique([catalogId, versionNumber])
   @@map("clinical_order_catalog_versions")
@@ -4586,6 +4590,8 @@ model Order {
   audits              OrderAudit[]
   pharmacyExecution   PharmacyExecution?
   LaboratoryExecution LaboratoryExecution?
+  radiologyExecution  RadiologyExecution?
+  ProcedureExecution  ProcedureExecution?
 
   @@index([hospitalId, patientId])
   @@index([orderedBy])
@@ -4635,6 +4641,8 @@ model OrderItem {
   pharmacyExecutionItem   PharmacyExecutionItem?
   marAttempts             MedicationAdministrationAttempt[]
   LaboratoryExecutionItem LaboratoryExecutionItem?
+  radiologyExecutionItem  RadiologyExecutionItem?
+  ProcedureExecutionItem  ProcedureExecutionItem?
 
   @@index([orderId])
   @@index([departmentId])
@@ -5222,4 +5230,540 @@ model CriticalValueNotification {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("critical_value_notifications")
+}
+
+// ==========================================
+// Phase 5B.3: Radiology Execution Engine
+// ==========================================
+
+enum RadiologyExecutionStatus {
+  PENDING_SCHEDULING
+  SCHEDULED
+  ARRIVED
+  ACQUIRING
+  ACQUIRED
+  REPORTING
+  REPORT_VERIFIED
+  RELEASED
+  CANCELLED
+}
+
+enum RadiologyReportStatus {
+  DRAFT
+  PRELIMINARY
+  FINAL
+  AMENDED
+}
+
+enum ModalityType {
+  XRAY
+  CT
+  MRI
+  US
+  PET
+  NM
+  FLORO
+}
+
+enum ContrastType {
+  IODINE
+  BARIUM
+  GADOLINIUM
+  MICROBUBBLES
+  NONE
+}
+
+model RadiologyExecution {
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  patientId  String @map("patient_id")
+
+  orderId String @unique @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  status RadiologyExecutionStatus @default(PENDING_SCHEDULING)
+
+  appointmentId String?               @map("appointment_id")
+  appointment   RadiologyAppointment? @relation(fields: [appointmentId], references: [id])
+
+  items    RadiologyExecutionItem[]
+  sessions AcquisitionSession[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([hospitalId, patientId])
+  @@map("radiology_executions")
+}
+
+model RadiologyExecutionItem {
+  id          String             @id @default(uuid())
+  executionId String             @map("execution_id")
+  execution   RadiologyExecution @relation(fields: [executionId], references: [id])
+
+  orderItemId String    @unique @map("order_item_id")
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+
+  status RadiologyExecutionStatus @default(PENDING_SCHEDULING)
+
+  modality ModalityType
+
+  report                 RadiologyReport?
+  contrastAdministration ContrastAdministration?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([executionId])
+  @@map("radiology_execution_items")
+}
+
+model RadiologyAppointment {
+  id         String   @id @default(uuid())
+  hospitalId String   @map("hospital_id")
+  patientId  String   @map("patient_id")
+  startTime  DateTime @map("start_time")
+  endTime    DateTime @map("end_time")
+
+  modalityId String         @map("modality_id")
+  modality   ModalityDevice @relation(fields: [modalityId], references: [id])
+
+  status RadiologyExecutionStatus @default(SCHEDULED) // Reusing status for simplicity
+
+  executions RadiologyExecution[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([modalityId, startTime, endTime])
+  @@map("radiology_appointments")
+}
+
+model ModalityDevice {
+  id         String @id @default(uuid())
+  hospitalId String @map("hospital_id")
+  name       String
+
+  modality      ModalityType
+  status        String       @default("ACTIVE") // ACTIVE, MAINTENANCE, OFFLINE
+  location      String?
+  manufacturer  String?
+  model         String?
+  aeTitle       String?      @map("ae_title")
+  supportsDicom Boolean      @default(true) @map("supports_dicom")
+
+  appointments RadiologyAppointment[]
+  sessions     AcquisitionSession[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("modality_devices")
+}
+
+model AcquisitionSession {
+  id String @id @default(uuid())
+
+  executionId String             @map("execution_id")
+  execution   RadiologyExecution @relation(fields: [executionId], references: [id])
+
+  modalityId String         @map("modality_id")
+  modality   ModalityDevice @relation(fields: [modalityId], references: [id])
+
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  status      String    @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, FAILED, REPEATED
+
+  studies ImagingStudy[]
+
+  @@index([executionId])
+  @@map("radiology_acquisition_sessions")
+}
+
+model ImagingStudy {
+  id               String @id @default(uuid())
+  studyInstanceUID String @unique @map("study_instance_uid") // DICOM
+  accessionNumber  String @unique @map("accession_number")
+
+  sessionId String             @map("session_id")
+  session   AcquisitionSession @relation(fields: [sessionId], references: [id])
+
+  dicomStudyDate String? @map("dicom_study_date")
+  dicomStudyTime String? @map("dicom_study_time")
+
+  series  ImagingSeries[]
+  reports RadiologyReport[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("imaging_studies")
+}
+
+model ImagingSeries {
+  id                String       @id @default(uuid())
+  seriesInstanceUID String       @unique @map("series_instance_uid") // DICOM
+  studyId           String       @map("study_id")
+  study             ImagingStudy @relation(fields: [studyId], references: [id])
+
+  seriesNumber Int          @map("series_number")
+  modality     ModalityType
+
+  instances ImagingInstance[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("imaging_series")
+}
+
+model ImagingInstance {
+  id             String        @id @default(uuid())
+  sopInstanceUID String        @unique @map("sop_instance_uid") // DICOM
+  seriesId       String        @map("series_id")
+  series         ImagingSeries @relation(fields: [seriesId], references: [id])
+
+  instanceNumber Int     @map("instance_number")
+  storageUri     String  @map("storage_uri")
+  mimeType       String  @map("mime_type")
+  checksum       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("imaging_instances")
+}
+
+model ContrastAdministration {
+  id              String                 @id @default(uuid())
+  executionItemId String                 @unique @map("execution_item_id")
+  executionItem   RadiologyExecutionItem @relation(fields: [executionItemId], references: [id])
+
+  contrastType     ContrastType @map("contrast_type")
+  agentName        String       @map("agent_name")
+  lotNumber        String?      @map("lot_number")
+  dose             Float
+  unit             String
+  route            String
+  startedAt        DateTime     @map("started_at")
+  completedAt      DateTime?    @map("completed_at")
+  reactionObserved Boolean      @default(false) @map("reaction_observed")
+  reactionSeverity String?      @map("reaction_severity")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contrast_administrations")
+}
+
+model RadiologyReport {
+  id String @id @default(uuid())
+
+  executionItemId String                 @unique @map("execution_item_id")
+  executionItem   RadiologyExecutionItem @relation(fields: [executionItemId], references: [id])
+
+  studyId String?       @map("study_id")
+  study   ImagingStudy? @relation(fields: [studyId], references: [id])
+
+  status RadiologyReportStatus @default(DRAFT)
+
+  activeVersionId String?                 @unique @map("active_version_id")
+  activeVersion   RadiologyReportVersion? @relation(name: "ActiveReportVersion", fields: [activeVersionId], references: [id])
+
+  versions RadiologyReportVersion[]
+  findings RadiologyCriticalFinding[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([executionItemId])
+  @@map("radiology_reports")
+}
+
+model RadiologyReportVersion {
+  id String @id @default(uuid())
+
+  reportId String          @map("report_id")
+  report   RadiologyReport @relation(fields: [reportId], references: [id])
+
+  versionNumber Int    @map("version_number")
+  text          String @db.Text
+  enteredBy     String @map("entered_by")
+
+  verifiedBy String?   @map("verified_by")
+  verifiedAt DateTime? @map("verified_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  activeFor RadiologyReport? @relation(name: "ActiveReportVersion")
+
+  @@unique([reportId, versionNumber])
+  @@map("radiology_report_versions")
+}
+
+model RadiologyCriticalFinding {
+  id String @id @default(uuid())
+
+  reportId String          @map("report_id")
+  report   RadiologyReport @relation(fields: [reportId], references: [id])
+
+  finding             String
+  severity            String
+  notifiedDoctor      String?   @map("notified_doctor")
+  notifiedNurse       String?   @map("notified_nurse")
+  acknowledgedBy      String?   @map("acknowledged_by")
+  acknowledgedAt      DateTime? @map("acknowledged_at")
+  communicationLog    String?   @map("communication_log") @db.Text
+  communicationMethod String?   @map("communication_method")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("radiology_critical_findings")
+}
+
+// PHASE 5B.4: PROCEDURE EXECUTION ENGINE
+// ==========================================
+
+enum ProcedureExecutionStatus {
+  PENDING
+  SCHEDULED
+  PRE_OP
+  IN_PROGRESS
+  RECOVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum ProcedurePriority {
+  ELECTIVE
+  URGENT
+  EMERGENCY
+}
+
+enum ProcedureRoomStatus {
+  AVAILABLE
+  IN_USE
+  CLEANING
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum ProcedureChecklistStatus {
+  PENDING
+  SIGN_IN_COMPLETE
+  TIME_OUT_COMPLETE
+  SIGN_OUT_COMPLETE
+}
+
+enum ProcedureOutcome {
+  SUCCESS
+  PARTIAL_SUCCESS
+  ABORTED
+  COMPLICATION
+  DEATH
+}
+
+enum AnesthesiaType {
+  LOCAL
+  REGIONAL
+  GENERAL
+  SEDATION
+  NONE
+}
+
+enum ProcedureCancellationReason {
+  PATIENT_REFUSAL
+  MEDICAL_CONTRAINDICATION
+  EQUIPMENT_FAILURE
+  STAFF_UNAVAILABLE
+  EMERGENCY_PREEMPTION
+  NO_SHOW
+  OTHER
+}
+
+model ProcedureExecution {
+  id         String                   @id @default(uuid())
+  hospitalId String                   @map("hospital_id")
+  patientId  String                   @map("patient_id")
+  orderId    String                   @unique @map("order_id")
+  status     ProcedureExecutionStatus @default(PENDING)
+  priority   ProcedurePriority        @default(ELECTIVE)
+  surgeonId  String?                  @map("surgeon_id")
+  roomId     String?                  @map("room_id")
+  createdAt  DateTime                 @default(now()) @map("created_at")
+  updatedAt  DateTime                 @updatedAt @map("updated_at")
+
+  order       Order                    @relation(fields: [orderId], references: [id])
+  hospital    HospitalsMaster          @relation(fields: [hospitalId], references: [id])
+  patient     Patient                  @relation(fields: [patientId], references: [id])
+  items       ProcedureExecutionItem[]
+  appointment ProcedureAppointment?
+  session     ProcedureSession?
+  report      ProcedureReport?
+
+  @@map("procedure_execution")
+}
+
+model ProcedureExecutionItem {
+  id               String                   @id @default(uuid())
+  executionId      String                   @map("execution_id")
+  orderItemId      String                   @unique @map("order_item_id")
+  catalogVersionId String                   @map("catalog_version_id")
+  status           ProcedureExecutionStatus @default(PENDING)
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @updatedAt @map("updated_at")
+
+  execution      ProcedureExecution          @relation(fields: [executionId], references: [id])
+  orderItem      OrderItem                   @relation(fields: [orderItemId], references: [id])
+  catalogVersion ClinicalOrderCatalogVersion @relation(fields: [catalogVersionId], references: [id])
+
+  @@map("procedure_execution_item")
+}
+
+model ProcedureAppointment {
+  id                 String            @id @default(uuid())
+  executionId        String            @unique @map("execution_id")
+  roomId             String            @map("room_id")
+  scheduledStartTime DateTime          @map("scheduled_start_time")
+  scheduledEndTime   DateTime          @map("scheduled_end_time")
+  status             AppointmentStatus @default(BOOKED)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  execution ProcedureExecution @relation(fields: [executionId], references: [id])
+  room      ProcedureRoom      @relation(fields: [roomId], references: [id])
+
+  @@map("procedure_appointment")
+}
+
+model ProcedureRoom {
+  id         String              @id @default(uuid())
+  hospitalId String              @map("hospital_id")
+  name       String
+  roomType   String              @map("room_type") // OT, CATH_LAB, ENDOSCOPY
+  status     ProcedureRoomStatus @default(AVAILABLE)
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  hospital     HospitalsMaster        @relation(fields: [hospitalId], references: [id])
+  appointments ProcedureAppointment[]
+  sessions     ProcedureSession[]
+
+  @@map("procedure_room")
+}
+
+model ProcedureSession {
+  id                 String                       @id @default(uuid())
+  executionId        String                       @unique @map("execution_id")
+  roomId             String                       @map("room_id")
+  patientEnteredAt   DateTime?                    @map("patient_entered_at")
+  procedureStartedAt DateTime?                    @map("procedure_started_at")
+  procedureEndedAt   DateTime?                    @map("procedure_ended_at")
+  patientExitedAt    DateTime?                    @map("patient_exited_at")
+  outcome            ProcedureOutcome?
+  cancellationReason ProcedureCancellationReason? @map("cancellation_reason")
+  createdAt          DateTime                     @default(now()) @map("created_at")
+  updatedAt          DateTime                     @updatedAt @map("updated_at")
+
+  execution  ProcedureExecution          @relation(fields: [executionId], references: [id])
+  room       ProcedureRoom               @relation(fields: [roomId], references: [id])
+  checklist  ProcedureChecklist?
+  anesthesia AnesthesiaEpisode?
+  implants   ImplantUsage[]
+  incidents  ProcedureCriticalIncident[]
+
+  @@map("procedure_session")
+}
+
+model ProcedureChecklist {
+  id        String                   @id @default(uuid())
+  sessionId String                   @unique @map("session_id")
+  status    ProcedureChecklistStatus @default(PENDING)
+  signInAt  DateTime?                @map("sign_in_at")
+  signInBy  String?                  @map("sign_in_by")
+  timeOutAt DateTime?                @map("time_out_at")
+  timeOutBy String?                  @map("time_out_by")
+  signOutAt DateTime?                @map("sign_out_at")
+  signOutBy String?                  @map("sign_out_by")
+  createdAt DateTime                 @default(now()) @map("created_at")
+  updatedAt DateTime                 @updatedAt @map("updated_at")
+
+  session ProcedureSession @relation(fields: [sessionId], references: [id])
+
+  @@map("procedure_checklist")
+}
+
+model AnesthesiaEpisode {
+  id             String         @id @default(uuid())
+  sessionId      String         @unique @map("session_id")
+  anesthesiaType AnesthesiaType @map("anesthesia_type")
+  anesthetistId  String         @map("anesthetist_id")
+  inductionAt    DateTime?      @map("induction_at")
+  emergenceAt    DateTime?      @map("emergence_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  session ProcedureSession @relation(fields: [sessionId], references: [id])
+
+  @@map("anesthesia_episode")
+}
+
+model ImplantUsage {
+  id           String   @id @default(uuid())
+  sessionId    String   @map("session_id")
+  implantName  String   @map("implant_name")
+  serialNumber String?  @map("serial_number")
+  lotNumber    String?  @map("lot_number")
+  manufacturer String?  @map("manufacturer")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  session ProcedureSession @relation(fields: [sessionId], references: [id])
+
+  @@map("implant_usage")
+}
+
+model ProcedureReport {
+  id              String   @id @default(uuid())
+  executionId     String   @unique @map("execution_id")
+  status          String   @default("DRAFT") // DRAFT, FINAL, AMENDED
+  activeVersionId String?  @unique @map("active_version_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  execution     ProcedureExecution       @relation(fields: [executionId], references: [id])
+  activeVersion ProcedureReportVersion?  @relation("ProcedureReportActiveVersion", fields: [activeVersionId], references: [id])
+  versions      ProcedureReportVersion[] @relation("ProcedureReportVersions")
+
+  @@map("procedure_report")
+}
+
+model ProcedureReportVersion {
+  id            String   @id @default(uuid())
+  reportId      String   @map("report_id")
+  versionNumber Int      @map("version_number")
+  text          String
+  reason        String?
+  authorId      String   @map("author_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  report          ProcedureReport  @relation("ProcedureReportVersions", fields: [reportId], references: [id])
+  activeForReport ProcedureReport? @relation("ProcedureReportActiveVersion")
+
+  @@unique([reportId, versionNumber])
+  @@map("procedure_report_version")
+}
+
+model ProcedureCriticalIncident {
+  id             String    @id @default(uuid())
+  sessionId      String    @map("session_id")
+  description    String
+  detectedAt     DateTime  @map("detected_at")
+  detectedBy     String    @map("detected_by")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  acknowledgedBy String?   @map("acknowledged_by")
+  resolution     String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  session ProcedureSession @relation(fields: [sessionId], references: [id])
+
+  @@map("procedure_critical_incident")
 }
