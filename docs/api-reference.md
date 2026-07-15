@@ -1,0 +1,163 @@
+# Haspataal API Reference
+
+Generated: 2026-07-15T13:21:06.503Z
+
+## Endpoints
+
+- DELETE apps/hospital-hms/app/api/timeline/bookmarks/[id]/route.ts
+- DELETE apps/patient-portal/app/api/hospital/billing/copay/[id]/route.ts
+- GET apps/hospital-hms/app/api/admin/timeline/analytics/route.ts
+- GET apps/hospital-hms/app/api/appointments/pending/route.ts
+- GET apps/hospital-hms/app/api/debug/health/route.ts
+- GET apps/hospital-hms/app/api/diagnostics/route.ts
+- GET apps/hospital-hms/app/api/doctors/availability/route.ts
+- GET apps/hospital-hms/app/api/doctors/public/route.ts
+- GET apps/hospital-hms/app/api/doctors/search/route.ts
+- GET apps/hospital-hms/app/api/hospital/dashboard-test/route.ts
+- GET apps/hospital-hms/app/api/notifications/analytics/route.ts
+- GET apps/hospital-hms/app/api/notifications/metrics/route.ts
+- GET apps/hospital-hms/app/api/patient/route.ts
+- GET apps/hospital-hms/app/api/records/route.js
+- GET apps/hospital-hms/app/api/records/route.ts
+- GET apps/hospital-hms/app/api/timeline/doctor/[patientId]/route.ts
+- GET apps/hospital-hms/app/api/timeline/events/[id]/verify/route.ts
+- GET apps/hospital-hms/app/api/timeline/export/[jobId]/route.ts
+- GET apps/hospital-hms/app/api/timeline/hospital/[patientId]/route.ts
+- GET apps/hospital-hms/app/api/timeline/patient/[patientId]/route.ts
+- GET apps/hospital-hms/app/api/timeline/search/route.ts
+- GET apps/patient-portal/app/api/health/route.ts
+- GET apps/patient-portal/app/api/hospital/diagnostics/orders/[id]/route.ts
+- GET apps/patient-portal/app/api/hospital/insurance/route.ts
+- GET apps/patient-portal/app/api/hospital/ipd/beds/route.ts
+- GET apps/patient-portal/app/api/hospital/setup/completion/route.ts
+- GET apps/patient-portal/app/api/hospitals/[hospitalId]/analytics/revenue/route.ts
+- GET apps/patient-portal/app/api/hospitals/[hospitalId]/dashboard/metrics/route.ts
+- GET apps/patient-portal/app/api/hospitals/[hospitalId]/events/route.ts
+- GET apps/patient-portal/app/api/hospitals/[hospitalId]/followups/route.ts
+- GET apps/patient-portal/app/api/hospitals/[hospitalId]/notifications/today/route.ts
+- GET apps/patient-portal/app/api/hospitals/[hospitalId]/retention/kpi/route.ts
+- GET apps/patient-portal/app/api/marketplace/doctors/route.ts
+- GET apps/patient-portal/app/api/marketplace/hospitals/route.ts
+- GET apps/patient-portal/app/api/patient/records/route.ts
+- GET apps/patient-portal/app/api/patient/slots/route.ts
+- GET, DELETE apps/patient-portal/app/api/hospital/setup/staff/route.ts
+- GET, DELETE apps/patient-portal/app/api/hospital/staff/invites/route.ts
+- GET, PATCH apps/hospital-hms/app/api/doctor/queue/route.ts
+- GET, PATCH apps/hospital-hms/app/api/ward/route.ts
+- GET, POST apps/hospital-hms/app/api/admin/applications/route.ts
+- GET, POST apps/hospital-hms/app/api/clinical/complaints/route.ts
+- GET, POST apps/hospital-hms/app/api/clinical/prescriptions/route.ts
+- GET, POST apps/hospital-hms/app/api/clinical/vitals/route.ts
+- GET, POST apps/hospital-hms/app/api/discharge/route.ts
+- GET, POST apps/hospital-hms/app/api/doctors/certifications/route.ts
+- GET, POST apps/hospital-hms/app/api/doctors/documents/route.ts
+- GET, POST apps/hospital-hms/app/api/doctors/route.ts
+- GET, POST apps/hospital-hms/app/api/hospital/doctors/invite/route.ts
+- GET, POST apps/hospital-hms/app/api/hospital/settings/route.ts
+- GET, POST apps/hospital-hms/app/api/icu/route.ts
+- GET, POST apps/hospital-hms/app/api/ipd/admissions/route.ts
+- GET, POST apps/hospital-hms/app/api/journeys/route.ts
+- GET, POST apps/hospital-hms/app/api/lab/orders/route.ts
+- GET, POST apps/hospital-hms/app/api/notifications/campaigns/route.ts
+- GET, POST apps/hospital-hms/app/api/notifications/route.ts
+- GET, POST apps/hospital-hms/app/api/notifications/templates/route.ts
+- GET, POST apps/hospital-hms/app/api/patients/route.ts
+- GET, POST apps/hospital-hms/app/api/pharmacy/route.ts
+- GET, POST apps/hospital-hms/app/api/rules/route.ts
+- GET, POST apps/hospital-hms/app/api/search/route.ts
+- GET, POST apps/hospital-hms/app/api/timeline/bookmarks/route.ts
+- GET, POST apps/hospital-hms/app/api/visits/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/anc/export/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/anc/profile/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/anc/visit/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/billing/copay/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/billing/gateways/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/billing/invoices/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/billing/packages/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/billing/services/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/branches/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/departments/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/diagnostics/orders/[id]/documents/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/diagnostics/orders/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/diagnostics/pricing/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/doctors/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/integrations/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/ipd/admissions/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/notifications/templates/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/opd/appointments/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/opd/queue/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/pharmacy/dispense/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/pharmacy/stock/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/pharmacy/suppliers/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/retention/rules/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/setup/stage/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/setup/workflow/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/staff/route.ts
+- GET, POST apps/patient-portal/app/api/hospital/wards/beds/route.ts
+- GET, POST apps/patient-portal/app/api/patient/lab-orders/route.ts
+- GET, POST apps/patient-portal/app/api/patient/reviews/route.ts
+- GET, POST, DELETE apps/patient-portal/app/api/hospital/notifications/mappings/route.ts
+- GET, POST, PATCH apps/hospital-hms/app/api/diagnostics/orders/route.ts
+- GET, POST, PATCH apps/hospital-hms/app/api/nursing/route.ts
+- GET, POST, PATCH apps/hospital-hms/app/api/ot/route.ts
+- GET, POST, PATCH apps/hospital-hms/app/api/ward/beds/route.ts
+- GET, POST, PATCH apps/patient-portal/app/api/hospital/followups/route.ts
+- GET, POST, PUT apps/hospital-hms/app/api/doctors/education/route.ts
+- GET, POST, PUT apps/patient-portal/app/api/hospital/notifications/route.ts
+- GET, POST, PUT, DELETE apps/patient-portal/app/api/hospital/roles-permissions/route.ts
+- GET, PUT apps/hospital-hms/app/api/doctors/verification/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/billing/packages/[id]/services/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/billing/profile/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/identity/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/marketplace/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/opd-config/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/setup/marketplace/route.ts
+- GET, PUT apps/patient-portal/app/api/hospital/staff/permissions/route.ts
+- PATCH apps/hospital-hms/app/api/appointments/confirmation/route.ts
+- PATCH apps/hospital-hms/app/api/ipd/admissions/[id]/route.ts
+- PATCH apps/hospital-hms/app/api/lab/samples/route.ts
+- PATCH apps/hospital-hms/app/api/timeline/events/[id]/pin/route.ts
+- PATCH apps/patient-portal/app/api/hospital/diagnostics/documents/[documentId]/route.ts
+- POST apps/hospital-hms/app/api/admin/applications/approve/route.ts
+- POST apps/hospital-hms/app/api/billing/route.ts
+- POST apps/hospital-hms/app/api/hospital/auth/login/route.ts
+- POST apps/hospital-hms/app/api/hospital/auth/register/route.ts
+- POST apps/hospital-hms/app/api/ipd/admissions/[id]/abscond/route.ts
+- POST apps/hospital-hms/app/api/ipd/admissions/[id]/departure/route.ts
+- POST apps/hospital-hms/app/api/ipd/admissions/[id]/discharge/route.ts
+- POST apps/hospital-hms/app/api/ipd/admissions/[id]/lama/route.ts
+- POST apps/hospital-hms/app/api/payments/create-order/route.js
+- POST apps/hospital-hms/app/api/payments/verify/route.js
+- POST apps/hospital-hms/app/api/rules/execute/route.ts
+- POST apps/hospital-hms/app/api/timeline/export/route.ts
+- POST apps/hospital-hms/app/api/upload/route.js
+- POST apps/hospital-hms/app/api/webhooks/razorpay/route.ts
+- POST apps/patient-portal/app/api/ai/process-visit/route.ts
+- POST apps/patient-portal/app/api/hospital/anc/referral/route.ts
+- POST apps/patient-portal/app/api/hospital/asha/visit-log/route.ts
+- POST apps/patient-portal/app/api/hospital/billing/appointments/route.ts
+- POST apps/patient-portal/app/api/hospital/billing/invoices/[id]/finalize/route.ts
+- POST apps/patient-portal/app/api/hospital/billing/invoices/[id]/pay/route.ts
+- POST apps/patient-portal/app/api/hospital/billing/procedure/route.ts
+- POST apps/patient-portal/app/api/hospital/billing/radiology/route.ts
+- POST apps/patient-portal/app/api/hospital/billing/test-gateway/route.ts
+- POST apps/patient-portal/app/api/hospital/departments/[id]/units/route.ts
+- POST apps/patient-portal/app/api/hospital/diagnostics/orders/[id]/results/route.ts
+- POST apps/patient-portal/app/api/hospital/ipd/admissions/[id]/discharge/route.ts
+- POST apps/patient-portal/app/api/hospital/opd/handoffs/route.ts
+- POST apps/patient-portal/app/api/hospital/setup/activate/route.ts
+- POST apps/patient-portal/app/api/hospital/staff/invite/route.ts
+- POST apps/patient-portal/app/api/hospitals/[hospitalId]/followups/[followupId]/remind/route.ts
+- POST apps/patient-portal/app/api/schedule/regenerate/route.ts
+- POST apps/patient-portal/app/api/sync/replay/route.ts
+- POST apps/patient-portal/app/api/webhooks/payment/route.ts
+- POST apps/patient-portal/app/api/webhooks/sms-ussd/route.ts
+- POST apps/patient-portal/app/api/webhooks/ussd/route.ts
+- POST, PATCH apps/hospital-hms/app/api/insurance/route.ts
+- PUT apps/patient-portal/app/api/hospital/departments/[id]/units/reorder/route.ts
+- PUT, DELETE apps/patient-portal/app/api/hospital/billing/packages/[id]/route.ts
+- PUT, DELETE apps/patient-portal/app/api/hospital/billing/services/[id]/route.ts
+- PUT, DELETE apps/patient-portal/app/api/hospital/branches/[id]/route.ts
+- PUT, DELETE apps/patient-portal/app/api/hospital/departments/[id]/route.ts
+- PUT, DELETE apps/patient-portal/app/api/hospital/staff/[id]/route.ts
+- PUT, DELETE apps/patient-portal/app/api/hospital/units/[id]/route.ts

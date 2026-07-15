@@ -515,6 +515,7 @@ model Patient {
   @@index([city])
   @@index([email])
   @@index([role])
+  @@index([name])
   @@map("patients")
 }
 
@@ -579,6 +580,7 @@ model PatientPrescription {
   pharmacyDispenses PharmacyDispense[]
 
   @@index([patientId])
+  @@index([patientId, createdAt])
   @@map("patient_prescriptions")
 }
 
@@ -782,6 +784,9 @@ model DiagnosticOrder {
   @@index([hospitalId])
   @@index([patientId])
   @@index([doctorId])
+  @@index([orderStatus])
+  @@index([hospitalId, patientId])
+  @@index([hospitalId, orderStatus])
   @@map("diagnostic_orders")
 }
 
@@ -1750,6 +1755,7 @@ model Invoice {
   @@index([patientId])
   @@index([appointmentId])
   @@index([admissionId])
+  @@index([hospitalId, patientId])
   @@map("invoices")
 }
 
@@ -1793,6 +1799,8 @@ model InvoicePayment {
 
   @@index([hospitalId])
   @@index([invoiceId])
+  @@index([hospitalId, status])
+  @@index([hospitalId, paidAt])
   @@map("invoice_payments")
 }
 
@@ -1849,6 +1857,9 @@ model PharmacyDispense {
   @@index([hospitalId])
   @@index([patientId])
   @@index([invoiceId])
+  @@index([prescriptionId])
+  @@index([hospitalId, patientId])
+  @@index([hospitalId, status])
   @@map("pharmacy_dispenses")
 }
 
@@ -1938,6 +1949,7 @@ model Bill {
   @@index([hospitalId])
   @@index([status])
   @@index([source])
+  @@index([hospitalId, status])
   @@map("bills")
 }
 
@@ -2001,6 +2013,8 @@ model LabOrder {
   @@index([doctorId])
   @@index([visitId])
   @@index([status])
+  @@index([hospitalId, patientId, status])
+  @@index([hospitalId, status])
   @@map("lab_orders")
 }
 

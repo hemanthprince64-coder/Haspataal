@@ -636,3 +636,7 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Projection Metrics**: Consumers record processing latency (durationMs) in the ledger, which serves as foundational projection performance metrics.
 
 - **Phase 6 Canonical Referral Engine**: Implemented `ReferralExecution` and `CareTransfer` domain models. Separated clinical intent (Referral Order) from execution (ReferralExecution). Added tracking for outbound/inbound referrals with explicit state machines (`ReferralStatus`, `CareTransferStatus`), FHIR preparation fields, and `ReferralCommunication` tracking for closed-loop auditing.
+
+- **Gateway CSRF Protection:** Added securityHeaders, csrfMiddleware, and csrfProtection to API Gateway state-mutating endpoints (POST, PATCH) to prevent cross-site request forgery attacks.
+- **Session Environment Awareness:** Updated session.ts to explicitly check VERCEL or NEXT_PHASE flags to securely manage NEXTAUTH_SECRET bypass during build/CI phases while maintaining strict enforcement in production.
+- **Performance Indexing (Phase 6):** Applied composite indexes ([hospitalId, status], [hospitalId, patientId]) across heavy models (Bills, Invoices, PharmacyDispenses, LabOrders) to eliminate sequential scans on tenant-scoped queries.

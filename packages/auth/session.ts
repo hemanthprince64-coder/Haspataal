@@ -1,14 +1,17 @@
-import 'server-only';
 import { SignJWT, jwtVerify } from 'jose';
+import 'server-only';
+
 import { cookies } from 'next/headers';
+
 import { UserRole } from '../types';
 
 const secretKey = process.env.NEXTAUTH_SECRET;
-// In production, we require the secret. During build (NEXT_PHASE) or CI, we can skip or use a dummy.
 if (!secretKey && process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
   throw new Error('NEXTAUTH_SECRET is required for session signing');
 }
 const key = new TextEncoder().encode(secretKey || 'dummy-secret-for-build-purposes-only');
+const isProduction = process.env.NODE_ENV === 'production';
+const isBuild = !!process.env.NEXT_PHASE || !!process.env.VERCEL;
 
 interface SessionPayload {
   user: {
@@ -50,7 +53,7 @@ export async function createSession(
 
   cookieStore.set(name, session, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     expires: expiresAt,
     sameSite: 'lax',
     path: '/',

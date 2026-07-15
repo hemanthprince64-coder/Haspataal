@@ -6,13 +6,19 @@
 //   - Request correlation IDs (X-Request-ID)
 //   - Route-prefix proxying
 // ============================================================
-
-import express from 'express';
+import {
+  securityHeaders,
+  csrfProtection,
+  csrfMiddleware,
+  setCsrfCookie,
+} from '@haspataal/auth/middleware';
+import { prisma } from '@haspataal/db';
 import cors from 'cors';
 import { randomUUID } from 'crypto';
-import pino from 'pino';
+import express from 'express';
 import { jwtVerify, importSPKI } from 'jose';
-import { prisma } from '@haspataal/db';
+import pino from 'pino';
+
 // ── Logger ───────────────────────────────────────────────────
 
 export const logger = pino({
@@ -82,6 +88,17 @@ app.use(
     credentials: true,
   }),
 );
+
+// ── Security Middleware ────────────────────────────────────────
+
+app.use(securityHeaders);
+app.use(csrfMiddleware);
+app.use((req: any, res, next) => {
+  if (!req.cookies?.csrf_token) {
+    setCsrfCookie(res);
+  }
+  next();
+});
 
 // ── Middleware: Correlation ID ────────────────────────────────
 
@@ -295,9 +312,9 @@ app.get('/v1/search/doctors', rateLimiter, async (req: any, res) => {
   }
 });
 
-// ── Appointments (Auth + Rate Limited) ───────────────────────
+// ── Appointments (Auth + Rate Limited + CSRF) ─────────────────
 
-app.post('/v1/appointments', requireAuth, rateLimiter, async (req: any, res) => {
+app.post('/v1/appointments', csrfProtection, requireAuth, rateLimiter, async (req: any, res) => {
   const { doctorId, hospitalId, scheduledAt, notes, slot } = req.body;
 
   if (!doctorId || !scheduledAt || !slot) {
@@ -350,33 +367,39 @@ app.post('/v1/appointments', requireAuth, rateLimiter, async (req: any, res) => 
   }
 });
 
-app.patch('/v1/appointments/:id/status', requireAuth, rateLimiter, async (req: any, res) => {
-  const { status } = req.body;
-  const validStatuses = ['CONFIRMED', 'CANCELLED', 'COMPLETED'];
+app.patch(
+  '/v1/appointments/:id/status',
+  csrfProtection,
+  requireAuth,
+  rateLimiter,
+  async (req: any, res) => {
+    const { status } = req.body;
+    const validStatuses = ['CONFIRMED', 'CANCELLED', 'COMPLETED'];
 
-  if (!validStatuses.includes(status)) {
-    return res.status(400).json({
-      success: false,
-      error: `Status must be one of: ${validStatuses.join(', ')}`,
-      code: 'VALIDATION_ERROR',
-    });
-  }
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Status must be one of: ${validStatuses.join(', ')}`,
+        code: 'VALIDATION_ERROR',
+      });
+    }
 
-  try {
-    const appointment = await prisma.appointment.update({
-      where: { id: req.params.id },
-      data: { status },
-    });
-    req.log.info({ appointmentId: req.params.id, newStatus: status }, 'Status updated');
-    res.json({ success: true, data: appointment });
-  } catch {
-    res.status(404).json({
-      success: false,
-      error: 'Appointment not found',
-      code: 'NOT_FOUND',
-    });
-  }
-});
+    try {
+      const appointment = await prisma.appointment.update({
+        where: { id: req.params.id },
+        data: { status },
+      });
+      req.log.info({ appointmentId: req.params.id, newStatus: status }, 'Status updated');
+      res.json({ success: true, data: appointment });
+    } catch {
+      res.status(404).json({
+        success: false,
+        error: 'Appointment not found',
+        code: 'NOT_FOUND',
+      });
+    }
+  },
+);
 
 // ── Hospital Endpoints (RBAC + Tenant Isolation) ─────────────
 
@@ -455,8 +478,8 @@ app.get(
   rateLimiter,
   async (req: any, res) => {
     try {
-      const userId     = req.user?.sub || req.user?.userId;
-      const limit      = Math.min(parseInt((req.query.limit as string) || '50', 10), 200);
+      const userId = req.user?.sub || req.user?.userId;
+      const limit = Math.min(parseInt((req.query.limit as string) || '50', 10), 200);
       const acknowledged = req.query.acknowledged === 'true';
 
       // Scope by doctor if not super-admin
@@ -471,15 +494,17 @@ app.get(
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          patient:     { select: { name: true, phone: true } },
-          hospital:    { select: { displayName: true } },
+          patient: { select: { name: true, phone: true } },
+          hospital: { select: { displayName: true } },
         },
       });
 
       res.json({ success: true, data: alerts, meta: { count: alerts.length, acknowledged } });
     } catch (error: any) {
       req.log.error({ error: error.message }, 'Escalation list failed');
-      res.status(500).json({ success: false, error: 'Failed to fetch escalations', code: 'INTERNAL_ERROR' });
+      res
+        .status(500)
+        .json({ success: false, error: 'Failed to fetch escalations', code: 'INTERNAL_ERROR' });
     }
   },
 );
@@ -487,6 +512,7 @@ app.get(
 // PATCH /v1/escalations/:id/acknowledge — doctor marks alert as reviewed
 app.patch(
   '/v1/escalations/:id/acknowledge',
+  csrfProtection,
   requireAuth,
   requireRole('doctor', 'DOCTOR', 'hospital_admin', 'HOSPITAL_ADMIN', 'super_admin', 'SUPER_ADMIN'),
   rateLimiter,
@@ -509,8 +535,8 @@ app.patch(
       }
 
       await prisma.escalationAlert.update({
-        where:   { id: alertId },
-        data:    { isAcknowledged: true, acknowledgedAt: new Date() },
+        where: { id: alertId },
+        data: { isAcknowledged: true, acknowledgedAt: new Date() },
       });
 
       res.status(204).send();
