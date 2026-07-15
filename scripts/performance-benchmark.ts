@@ -15,7 +15,7 @@ interface BenchmarkResult {
 
 const results: BenchmarkResult[] = [];
 
-function measureWorkflow(name: string, fn: () => Promise<void>, target: number) {
+async function measureWorkflow(name: string, fn: () => Promise<void>, target: number) {
   const samples: number[] = [];
   const iterations = 10;
 

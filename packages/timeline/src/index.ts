@@ -212,3 +212,5 @@ export function getTimelinePublisher(): TimelinePublisher {
 }
 
 export * from './timeline.consumer';
+export * from './queries';
+export * from './mutations';

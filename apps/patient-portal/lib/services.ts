@@ -1,9 +1,12 @@
+import {
+  hospitalRegistrationsCounter,
+  appointmentsCreatedCounter,
+} from '@haspataal/core/lib/metrics';
 import { logger, logAudit } from '@haspataal/logger';
 import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
 import { z } from 'zod';
 
-import { hospitalRegistrationsCounter, appointmentsCreatedCounter } from '@/lib/metrics';
 import { emitEvent } from '@/services/event-emitter';
 
 import {

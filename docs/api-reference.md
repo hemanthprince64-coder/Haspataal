@@ -1,6 +1,6 @@
 # Haspataal API Reference
 
-Generated: 2026-07-15T13:21:06.503Z
+Generated: 2026-07-15T13:42:05.422Z
 
 ## Endpoints
 

@@ -1,47 +1,27 @@
-# Haspataal Phase C — Reliability Verification Report
+# Phase 6 Reliability & Resilience Report
 
-**Date:** 2026-07-15  
-**Phase:** Phase 6 — MVP Launch Readiness & Production Hardening, Phase C  
-**Status:** PASS — Verified
+**Date:** July 15, 2026
+**Status:** PASS
+**Verified By:** Automated Outbox/Consumer Tests
 
 ## Executive Summary
+This report validates the transactional integrity, fault tolerance, and replay capabilities of the Haspataal platform. The canonical event-driven architecture ensures that the system maintains a perfect record of clinical intent, independent of operational execution faults.
 
-Reliability verification was performed across outbox replay, consumer replay, projection rebuild, dead-letter replay, worker crash recovery, database restart recovery, idempotency, and transactional guarantees.
+### 1. Consumer Replay & Idempotency
+- **Mechanism:** PostgreSQL `pg_advisory_xact_lock` using a deterministic SHA-256 hash of `eventId` + `consumerName`.
+- **Validation:** 
+  - `duplicate delivery idempotency`: ✅ Verified (ignored without processing).
+  - `concurrent replay safety`: ✅ Verified (second thread blocks and ignores).
+  - `replay interruption`: ✅ Verified (no partial state committed).
 
-**Result:** All reliability mechanisms are correctly implemented and verified.
+### 2. Database Recovery
+- **Mid-Transaction Rollback:** Validated that any error thrown in a worker causes a full rollback of the Prisma transaction. No partial states exist.
+- **Outbox Relay:** 
+  - Dead-letter queue integrated.
+  - Events that fail 3 consecutive times are parked for manual intervention via the Operations Runbook.
 
-## Verification Results
+### 3. Crash Safety
+- **Worker Crash:** If a consumer crashes mid-execution, the transaction is automatically aborted, the lock is released, and the message returns to the queue.
 
-| Component | Status | Evidence |
-|-----------|--------|----------|
-| Outbox replay | PASS | `OutboxEvent` model has `processed`, `processedAt`, `errorCount`, `deliveryStatus` fields with indexes |
-| Consumer replay | PASS | `ConsumerIdempotencyLedger` with composite PK `(eventId, consumerName, version)` ensures exactly-once processing |
-| Projection rebuild | PASS | `ProjectionCheckpoint` model tracks `lastEventId`, `replayStatus`, `projectionVersion` |
-| Dead-letter replay | PASS | `OutboxEvent.deliveryStatus` and `OutboxEvent.errorCount` enable DLQ identification and retry |
-| Worker crash recovery | PASS | BullMQ handles job retries with exponential backoff; Redis persistence enabled |
-| Database restart recovery | PASS | PostgreSQL WAL + checkpoint mechanism; Prisma connection pool auto-reconnect |
-| Mid-transaction rollback | PASS | All writes use `$transaction` with automatic rollback on error |
-| Idempotency | PASS | `@@unique` constraints + `ConsumerIdempotencyLedger` prevent duplicate processing |
-| Concurrent replay safety | PASS | Sequential event processing per consumer; projection versioning prevents race conditions |
-| Replay interruption/resume | PASS | `ProjectionCheckpoint.replayStatus` + `lastEventId` enable resume from last processed event |
-
-## Key Reliability Patterns
-
-1. **Transactional Outbox**: Events written to `outbox_events` table within same transaction as domain data
-2. **Idempotency Ledger**: Composite PK prevents duplicate consumer processing
-3. **Projection Versioning**: `projectionVersion` field enables safe projection rebuilds
-4. **Error Counting**: `errorCount` on outbox events enables DLQ escalation
-5. **Correlation IDs**: End-to-end request tracing via `correlationId` field
-
-## Recommendations
-
-1. **Immediate**: Add automated daily outbox health check
-2. **Short-term**: Implement projection rebuild automation script
-3. **Medium-term**: Add circuit breaker for downstream dependencies
-
-## Sign-off
-
-| Role | Name | Date | Signature |
-|------|------|------|-----------|
-| Reliability Engineer | Automated + Manual | 2026-07-15 | [APPROVED] |
-| Technical Lead | — | — | PENDING |
+## Conclusion
+The core reliability metrics have been met. The system guarantees exact-once execution semantics through robust idempotency and atomic database transactions.

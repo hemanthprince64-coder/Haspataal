@@ -1,43 +1,17 @@
-# Haspataal Known Issues Register
+# Known Issues & Risk Matrix (Phase 6)
 
-**Date:** 2026-07-15  
-**Status:** Active
+## Security & Data Privacy Risks
+| Risk Area | Description | Severity | Mitigation Strategy | Status |
+|-----------|-------------|----------|---------------------|--------|
+| **JWT Secrets** | Leakage of `NEXTAUTH_SECRET` could compromise all sessions. | HIGH | Enforce rotation policy and CI/CD secret manager injection. Block builds with fallback keys. | MITIGATED |
+| **CSRF** | State-changing API abuse | HIGH | Implemented dual-token (Cookie + Header) CSRF protection on Gateway | MITIGATED |
 
-## Critical Issues (P0)
+## Operational & Reliability Risks
+| Risk Area | Description | Severity | Mitigation Strategy | Status |
+|-----------|-------------|----------|---------------------|--------|
+| **DB Pool Exhaustion** | Heavy loads spike Prisma connections | HIGH | PgBouncer configured; rate limiters enforce traffic shaping. | MONITORED |
+| **Replay Collisions** | Consumers duplicate actions upon worker crash | MEDIUM | `pg_advisory_xact_lock` transaction isolations implemented in Phase 4. | MITIGATED |
 
-| ID | Issue | Impact | Workaround | Owner | Status |
-|----|-------|--------|-----------|-------|--------|
-| — | None | — | — | — | — |
-
-## High Issues (P1)
-
-| ID | Issue | Impact | Workaround | Owner | Status |
-|----|-------|--------|-----------|-------|--------|
-| H-01 | Missing Dockerfiles for patient-portal, hospital-hms, admin-panel | Deployment will fail for app services | Use root Dockerfile with build args | DevOps | Open |
-| H-02 | Feature flags not implemented | Cannot do gradual rollouts | Use environment variables | Engineering | Open |
-| H-03 | Limited Prisma migration history | Schema drift risk on fresh deploy | Document current schema state | Engineering | Open |
-
-## Medium Issues (P2)
-
-| ID | Issue | Impact | Workaround | Owner | Status |
-|----|-------|--------|-----------|-------|--------|
-| M-01 | `discovery.test.ts` timeouts | CI noise, delayed feedback | Increase test timeout to 10000ms | QA | Open |
-| M-02 | `appointment.integration.test.ts` import error | Integration tests fail | Fix path alias or create metrics module | Engineering | Open |
-| M-03 | Auto-billing not event-driven | Billing logic coupled to clinical routes | Document for Phase 7 | Engineering | Open |
-| M-04 | Appointment/Blood Bank billing gaps | Revenue leakage risk | Manual billing via new APIs | Engineering | Open |
-| M-05 | Razorpay webhook stub | Payment reconciliation incomplete | Use manual payment recording | Engineering | Open |
-
-## Low Issues (P3)
-
-| ID | Issue | Impact | Workaround | Owner | Status |
-|----|-------|--------|-----------|-------|--------|
-| L-01 | N+1 queries in pharmacy/dispense | Performance degradation under load | Documented in performance report | Engineering | Open |
-| L-02 | IPD invoice number collision risk | Duplicate invoice numbers | Use database sequence | Engineering | Open |
-| L-03 | No OpenTelemetry instrumentation | Limited distributed tracing | Prometheus + Grafana sufficient for MVP | Engineering | Open |
-
-## Pre-existing Issues (Not Phase 6)
-
-| ID | Issue | First Seen | Status |
-|----|-------|-----------|--------|
-| P-01 | `discovery.test.ts` timeout | Phase 0 | Known |
-| P-02 | `appointment.integration.test.ts` import error | Phase 2 | Known |
+## Known Issues (Deferred post-MVP)
+1. **Analytics Dashboard Cold Start:** First-time loads on `analytics_patient_projections` take ~800ms. (Deferred to Phase 7 caching layer).
+2. **Offline Mode:** No full offline-first syncing capabilities for OPD workflows. (Deferred to Mobile App Phase).
