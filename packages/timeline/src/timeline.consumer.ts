@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export class TimelineConsumer implements EventConsumer {
   public readonly consumerName = 'Timeline';
+  consumerVersion = 1;
 
   supportedEvents(): EventType[] {
     return [

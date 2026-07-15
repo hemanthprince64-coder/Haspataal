@@ -5,6 +5,7 @@ import { PharmacyExecutionService } from './ExecutionService';
 
 export class PharmacyConsumer implements EventConsumer {
   public consumerName = 'PharmacyConsumer';
+  consumerVersion = 1;
 
   constructor(private executionService: PharmacyExecutionService) {}
 

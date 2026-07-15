@@ -6,6 +6,7 @@ const searchHandler = new SearchCommandHandler(new SearchService(new PostgresSea
 
 export class SearchConsumer implements EventConsumer {
   public readonly consumerName = 'Search';
+  consumerVersion = 1;
 
   supportedEvents(): EventType[] {
     return ['INDEX_DOCUMENT_COMMAND', 'DELETE_DOCUMENT_COMMAND'];

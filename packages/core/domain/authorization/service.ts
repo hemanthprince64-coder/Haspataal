@@ -83,6 +83,18 @@ export class AuthorizationService {
         result = this.authorizePhase5B5BloodBank(actor, action);
         break;
 
+      case DomainAction.REFERRAL_CREATE:
+      case DomainAction.REFERRAL_SEND:
+      case DomainAction.REFERRAL_ACCEPT:
+      case DomainAction.REFERRAL_DECLINE:
+      case DomainAction.REFERRAL_COMPLETE:
+      case DomainAction.REFERRAL_CANCEL:
+      case DomainAction.CARE_TRANSFER_REQUEST:
+      case DomainAction.CARE_TRANSFER_EXECUTE:
+      case DomainAction.CONSULTATION_COMPLETE:
+        result = this.authorizePhase5B6Referral(actor, action);
+        break;
+
       default:
         result = {
           decision: AuthorizationDecision.DENY,
@@ -542,5 +554,37 @@ export class AuthorizationService {
       default:
         return { decision: AuthorizationDecision.DENY, reason: 'Action not supported.' };
     }
+  }
+
+  private authorizePhase5B6Referral(
+    actor: AuthorizeRequest['actor'],
+    action: DomainAction,
+  ): AuthorizationResult {
+    const allowedRoles = ['DOCTOR', 'NURSE', 'HOSPITAL_ADMIN', 'SUPER_ADMIN'];
+
+    if (!allowedRoles.includes(actor.role)) {
+      return {
+        decision: AuthorizationDecision.DENY,
+        reason: `Role ${actor.role} is not permitted to perform referral action ${action}.`,
+      };
+    }
+
+    // Care Transfer Execute requires elevated privileges — only doctors
+    if (
+      action === DomainAction.CARE_TRANSFER_EXECUTE &&
+      actor.role !== 'DOCTOR' &&
+      actor.role !== 'HOSPITAL_ADMIN' &&
+      actor.role !== 'SUPER_ADMIN'
+    ) {
+      return {
+        decision: AuthorizationDecision.DENY,
+        reason: 'Only Doctors or Administrators can execute care transfers.',
+      };
+    }
+
+    return {
+      decision: AuthorizationDecision.ALLOW,
+      reason: `Actor ${actor.id} (${actor.role}) authorized for referral action ${action}.`,
+    };
   }
 }

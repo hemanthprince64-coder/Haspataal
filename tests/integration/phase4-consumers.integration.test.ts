@@ -18,7 +18,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
     await prisma.journeyMilestone.deleteMany({});
     await prisma.analyticsPatientProjection.deleteMany({});
     await prisma.analyticsAdmissionProjection.deleteMany({});
-    await prisma.notificationIntent.deleteMany({});
+    await prisma.notification.deleteMany({});
     await prisma.projectionCheckpoint.deleteMany({});
     await prisma.bed.deleteMany({});
   });
@@ -230,8 +230,8 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
       await dispatchToConsumers(e2);
 
       const timelines = await prisma.timelineEvent.findMany({
-        where: { admissionId },
-        orderBy: { eventDate: 'asc' },
+        where: { entityId: admissionId },
+        orderBy: { timestamp: 'asc' },
       });
       expect(timelines.length).toBe(3);
       expect(timelines[0].eventType).toBe('PATIENT_ADMITTED');
@@ -245,7 +245,17 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
       const envelope: CanonicalEventEnvelope = {
         eventId,
         eventType: 'SEND_NOTIFICATION_COMMAND',
-        payload: { userId: randomUUID(), message: 'Hello' },
+        payload: {
+          commandId: eventId,
+          commandVersion: 1,
+          target: 'notification',
+          tenantContext: { hospitalId: randomUUID() },
+          actorContext: { actorId: 'system', actorType: 'SYSTEM' },
+          correlationId: eventId,
+          idempotencyKey: eventId,
+          timestamp: new Date().toISOString(),
+          payload: { type: 'SMS', recipient: '+123', templateId: 'test', variables: {} },
+        },
         occurredAt: new Date(),
         scope: { hospitalId: randomUUID() },
         version: 1,
@@ -254,19 +264,20 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
       await dispatchToConsumers(envelope);
       await dispatchToConsumers(envelope);
 
-      const intents = await prisma.notificationIntent.findMany({ where: { eventId } });
+      const intents = await prisma.notification.findMany();
       expect(intents.length).toBe(1);
     });
   });
 
   describe('H. Bed Consumer Proof', () => {
     it('Bed goes to CLEANING only on physical departure', async () => {
+      const hId = randomUUID();
+      await prisma.hospital.create({ data: { id: hId, name: 'T', slug: hId, status: 'ACTIVE' } });
       const bed = await prisma.bed.create({
         data: {
           id: randomUUID(),
-          hospitalId: randomUUID(),
-          wardId: randomUUID(),
-          roomNumber: '101',
+          hospitalId: hId,
+
           bedNumber: 'A',
           status: 'OCCUPIED',
         },
@@ -336,12 +347,12 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
 
       // Verify Timeline committed (because each consumer has its own transaction)
       const timelineLedger = await prisma.consumerIdempotencyLedger.findUnique({
-        where: { eventId_consumerName: { eventId, consumerName: 'Timeline' } },
+        where: { eventId_consumerName_version: { version: 1, eventId, consumerName: 'Timeline' } },
       });
       expect(timelineLedger?.status).toBe('COMPLETED');
 
       const journeyLedger = await prisma.consumerIdempotencyLedger.findUnique({
-        where: { eventId_consumerName: { eventId, consumerName: 'Journey' } },
+        where: { eventId_consumerName_version: { version: 1, eventId, consumerName: 'Journey' } },
       });
       expect(journeyLedger).toBeNull(); // Did not commit
     });
@@ -375,11 +386,13 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
       };
       await dispatchToConsumers(envelope);
 
-      const timeline = await prisma.timelineEvent.findFirst({ where: { admissionId } });
+      const timeline = await prisma.timelineEvent.findFirst({ where: { entityId: admissionId } });
       const analytics = await prisma.analyticsAdmissionProjection.findFirst({
         where: { admissionId },
       });
-      const journey = await prisma.journeyInstance.findFirst({ where: { admissionId } });
+      const journey = await prisma.journeyInstance.findFirst({
+        where: { patientId: envelope.payload.patientId },
+      });
 
       expect(timeline).toBeDefined();
       expect(analytics).toBeDefined();
@@ -410,14 +423,14 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
       await expect(dispatchToConsumers(envelope)).rejects.toThrow('DLQ Test');
 
       let timelineLedger = await prisma.consumerIdempotencyLedger.findUnique({
-        where: { eventId_consumerName: { eventId, consumerName: 'Timeline' } },
+        where: { eventId_consumerName_version: { version: 1, eventId, consumerName: 'Timeline' } },
       });
       expect(timelineLedger).toBeNull();
 
       await dispatchToConsumers(envelope);
 
       timelineLedger = await prisma.consumerIdempotencyLedger.findUnique({
-        where: { eventId_consumerName: { eventId, consumerName: 'Timeline' } },
+        where: { eventId_consumerName_version: { version: 1, eventId, consumerName: 'Timeline' } },
       });
       expect(timelineLedger?.status).toBe('COMPLETED');
     });
@@ -427,13 +440,20 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
     it('Updates Checkpoint and resumes after interruption safely', async () => {
       const consumerName = 'Timeline';
       await prisma.projectionCheckpoint.upsert({
-        where: { consumerName },
-        create: { consumerName, lastProcessedEventId: 'evt-123', projectionVersion: 1 },
-        update: { lastProcessedEventId: 'evt-123' },
+        where: { projectionName: consumerName },
+        create: {
+          projectionName: consumerName,
+          consumerName,
+          lastEventId: 'evt-123',
+          projectionVersion: 1,
+        },
+        update: { lastEventId: 'evt-123' },
       });
 
-      const cp = await prisma.projectionCheckpoint.findUnique({ where: { consumerName } });
-      expect(cp?.lastProcessedEventId).toBe('evt-123');
+      const cp = await prisma.projectionCheckpoint.findUnique({
+        where: { projectionName: consumerName },
+      });
+      expect(cp?.lastEventId).toBe('evt-123');
     });
   });
 });

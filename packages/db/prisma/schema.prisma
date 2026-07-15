@@ -458,6 +458,8 @@ model Patient {
   emergencyContactName     String?                 @map("emergency_contact_name")
   emergencyContactPhone    String?                 @map("emergency_contact_phone")
   consents                 Consent[]
+  referralExecutions       ReferralExecution[]
+  careTransfers            CareTransfer[]
   emergencyContactRelation String?                 @map("emergency_contact_relation")
   maritalStatus            String?                 @map("marital_status")
   occupation               String?
@@ -2651,6 +2653,17 @@ model InternalReferral {
 
 enum ReferralStatus {
   PENDING
+  DRAFT
+  SUBMITTED
+  SENT
+  ACCEPTED
+  DECLINED
+  APPOINTMENT_SCHEDULED
+  CONSULTATION_IN_PROGRESS
+  CONSULTATION_COMPLETED
+  CARE_TRANSFER_REQUESTED
+  CARE_TRANSFER_ACCEPTED
+  CARE_TRANSFER_COMPLETED
   COMPLETED
   EXPIRED
   CANCELLED
@@ -2660,6 +2673,7 @@ enum ReferralPriority {
   ROUTINE
   URGENT
   EMERGENCY
+  STAT
 }
 
 // 3. Consultant Revenue Share & Settlements (Multi-speciality Engine 2)
@@ -4404,10 +4418,12 @@ enum CareDepartureStatus {
 model ConsumerIdempotencyLedger {
   eventId      String   @map("event_id")
   consumerName String   @map("consumer_name")
+  version      Int      @default(1)
   status       String
   processedAt  DateTime @default(now()) @map("processed_at")
+  durationMs   Int?     @map("duration_ms")
 
-  @@id([eventId, consumerName])
+  @@id([eventId, consumerName, version])
   @@map("consumer_idempotency_ledger")
 }
 
@@ -4598,6 +4614,7 @@ model Order {
   radiologyExecution  RadiologyExecution?
   ProcedureExecution  ProcedureExecution?
   BloodBankExecution  BloodBankExecution?
+  ReferralExecution   ReferralExecution?
 
   @@index([hospitalId, patientId])
   @@index([orderedBy])
@@ -4654,6 +4671,7 @@ model OrderItem {
   @@index([orderId])
   @@index([departmentId])
   @@map("order_items")
+  referralItem           ReferralExecutionItem?
 }
 
 model OrderDependency {
@@ -6031,4 +6049,222 @@ model BloodBankAudit {
   performedBy String
   timestamp   DateTime           @default(now())
   details     Json
+}
+
+// ============================================================
+// PHASE 5B.6 � REFERRAL & CARE COORDINATION EXECUTION ENGINE
+// ============================================================
+
+enum ReferralType {
+  INTERNAL_SAME_DEPARTMENT
+  INTERNAL_CROSS_DEPARTMENT
+  INTERNAL_CROSS_HOSPITAL
+  EXTERNAL_HOSPITAL
+  SECOND_OPINION
+  FOLLOW_UP_REFERRAL
+  TUMOR_BOARD
+}
+
+
+
+
+
+enum ReferralOutcome {
+  ADVICE_ONLY
+  TRANSFER_ACCEPTED
+  TRANSFER_DECLINED
+  FURTHER_FOLLOW_UP_REQUIRED
+  CLOSED
+}
+
+enum CommunicationStatus {
+  SENT
+  DELIVERED
+  OPENED
+  ACKNOWLEDGED
+  FAILED
+}
+
+enum CareTransferStatus {
+  REQUESTED
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  REVOKED
+}
+
+model ReferralExecution {
+  id                   String            @id @default(uuid())
+  orderId              String            @unique @map("order_id")
+  order                Order             @relation(fields: [orderId], references: [id])
+  hospitalId           String            @map("hospital_id")
+  patientId            String            @map("patient_id")
+  patient              Patient           @relation(fields: [patientId], references: [id])
+  referralType         ReferralType      @map("referral_type")
+  status               ReferralStatus    @default(DRAFT) @map("status")
+  priority             ReferralPriority  @default(ROUTINE) @map("priority")
+  clinicalSummary      String            @map("clinical_summary")
+  reasonForReferral    String            @map("reason_for_referral")
+  requestingDoctorId   String            @map("requesting_doctor_id")
+  requestedAt          DateTime          @default(now()) @map("requested_at")
+  sentAt               DateTime?         @map("sent_at")
+  completedAt          DateTime?         @map("completed_at")
+  cancelledAt          DateTime?         @map("cancelled_at")
+  cancellationReason   String?           @map("cancellation_reason")
+  expiresAt            DateTime?         @map("expires_at")
+
+  // FHIR Preparation Fields (reserved � not yet integrated)
+  fhirServiceRequestId String?           @map("fhir_service_request_id")
+  fhirTaskId           String?           @map("fhir_task_id")
+
+  items                ReferralExecutionItem[]
+  communications       ReferralCommunication[]
+  careTransfer         CareTransfer?
+  auditLog             ReferralAudit[]
+
+  @@map("referral_executions")
+}
+
+model ReferralExecutionItem {
+  id                     String             @id @default(uuid())
+  executionId            String             @map("execution_id")
+  execution              ReferralExecution  @relation(fields: [executionId], references: [id])
+  orderItemId            String             @unique @map("order_item_id")
+  orderItem              OrderItem          @relation(fields: [orderItemId], references: [id])
+  status                 ReferralStatus     @default(DRAFT)
+  specialtyCode          String?            @map("specialty_code")
+  departmentCode         String?            @map("department_code")
+
+  recipients             ReferralRecipient[]
+  appointments           ReferralAppointment[]
+  responses              ReferralResponse[]
+  outcomeReport          ReferralOutcomeReport?
+
+  @@map("referral_execution_items")
+}
+
+model ReferralRecipient {
+  id                     String                 @id @default(uuid())
+  executionItemId        String                 @map("execution_item_id")
+  executionItem          ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
+  recipientType          String                 @map("recipient_type") // DOCTOR, DEPARTMENT, HOSPITAL, TEAM
+  recipientId            String?                @map("recipient_id")   // Internal doctor/dept ID
+  recipientName          String                 @map("recipient_name")
+  recipientHospitalId    String?                @map("recipient_hospital_id")
+  recipientSpecialty     String?                @map("recipient_specialty")
+
+  // FHIR Preparation Fields
+  fhirPractitionerId     String?                @map("fhir_practitioner_id")
+  fhirOrganizationId     String?                @map("fhir_organization_id")
+  fhirEndpointId         String?                @map("fhir_endpoint_id")
+
+  acknowledgedAt         DateTime?              @map("acknowledged_at")
+  acceptedAt             DateTime?              @map("accepted_at")
+  declinedAt             DateTime?              @map("declined_at")
+  declineReason          String?                @map("decline_reason")
+  addedAt                DateTime               @default(now()) @map("added_at")
+
+  @@map("referral_recipients")
+}
+
+model ReferralCommunication {
+  id                   String              @id @default(uuid())
+  executionId          String              @map("execution_id")
+  execution            ReferralExecution   @relation(fields: [executionId], references: [id])
+  channel              String              // EMAIL, SMS, WHATSAPP, IN_APP, FAX
+  recipientAddress     String              @map("recipient_address")
+  subject              String?
+  bodyHash             String              @map("body_hash")   // SHA-256 of message body � no PHI stored
+  status               CommunicationStatus @default(SENT)
+  sentAt               DateTime            @default(now()) @map("sent_at")
+  deliveredAt          DateTime?           @map("delivered_at")
+  openedAt             DateTime?           @map("opened_at")
+  acknowledgedAt       DateTime?           @map("acknowledged_at")
+  isReminder           Boolean             @default(false) @map("is_reminder")
+  isEscalation         Boolean             @default(false) @map("is_escalation")
+  sentBy               String              @map("sent_by")
+
+  @@map("referral_communications")
+}
+
+model ReferralAppointment {
+  id                   String                 @id @default(uuid())
+  executionItemId      String                 @map("execution_item_id")
+  executionItem        ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
+  scheduledAt          DateTime               @map("scheduled_at")
+  scheduledBy          String                 @map("scheduled_by")
+  locationDescription  String?                @map("location_description")
+  appointmentType      String                 @default("OUTPATIENT") @map("appointment_type")
+  status               String                 @default("SCHEDULED")
+  confirmedAt          DateTime?              @map("confirmed_at")
+  attendedAt           DateTime?              @map("attended_at")
+  cancelledAt          DateTime?              @map("cancelled_at")
+  notes                String?
+
+  @@map("referral_appointments")
+}
+
+model ReferralResponse {
+  id                   String                 @id @default(uuid())
+  executionItemId      String                 @map("execution_item_id")
+  executionItem        ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
+  respondedBy          String                 @map("responded_by")
+  respondedAt          DateTime               @default(now()) @map("responded_at")
+  decision             String                 // ACCEPTED, DECLINED
+  declineReason        String?                @map("decline_reason")
+  clinicalNotes        String?                @map("clinical_notes")
+  isAdviceOnly         Boolean                @default(false) @map("is_advice_only")
+
+  @@map("referral_responses")
+}
+
+model CareTransfer {
+  id                   String             @id @default(uuid())
+  executionId          String             @unique @map("execution_id")
+  execution            ReferralExecution  @relation(fields: [executionId], references: [id])
+  fromDoctorId         String             @map("from_doctor_id")
+  toDoctorId           String             @map("to_doctor_id")
+  patientId            String             @map("patient_id")
+  patient              Patient            @relation(fields: [patientId], references: [id])
+  status               CareTransferStatus @default(REQUESTED)
+  requestedAt          DateTime           @default(now()) @map("requested_at")
+  requestedBy          String             @map("requested_by")
+  clinicalJustification String            @map("clinical_justification")
+  acceptedAt           DateTime?          @map("accepted_at")
+  acceptedBy           String?            @map("accepted_by")
+  rejectedAt           DateTime?          @map("rejected_at")
+  rejectedBy           String?            @map("rejected_by")
+  rejectionReason      String?            @map("rejection_reason")
+  completedAt          DateTime?          @map("completed_at")
+  relationshipId       String?            @map("relationship_id")  // FK to DoctorPatientRelationship after transfer
+
+  @@map("care_transfers")
+}
+
+model ReferralOutcomeReport {
+  id                   String                 @id @default(uuid())
+  executionItemId      String                 @unique @map("execution_item_id")
+  executionItem        ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
+  outcome              ReferralOutcome
+  reportedBy           String                 @map("reported_by")
+  reportedAt           DateTime               @default(now()) @map("reported_at")
+  clinicalFinding      String?                @map("clinical_finding")
+  recommendationSummary String?               @map("recommendation_summary")
+  followUpRequired     Boolean                @default(false) @map("follow_up_required")
+  followUpDays         Int?                   @map("follow_up_days")
+  closedAt             DateTime?              @map("closed_at")
+
+  @@map("referral_outcome_reports")
+}
+
+model ReferralAudit {
+  id          String            @id @default(uuid())
+  executionId String            @map("execution_id")
+  execution   ReferralExecution @relation(fields: [executionId], references: [id])
+  action      String
+  performedBy String            @map("performed_by")
+  timestamp   DateTime          @default(now())
+  details     Json
+
+  @@map("referral_audits")
 }

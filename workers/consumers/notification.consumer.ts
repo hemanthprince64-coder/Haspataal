@@ -6,6 +6,7 @@ const notificationHandler = new NotificationCommandHandler();
 
 export class NotificationConsumer implements EventConsumer {
   public readonly consumerName = 'Notification';
+  consumerVersion = 1;
 
   supportedEvents(): EventType[] {
     return ['SEND_NOTIFICATION_COMMAND'];

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export class BedConsumer implements EventConsumer {
   public readonly consumerName = 'Bed';
+  consumerVersion = 1;
 
   supportedEvents(): EventType[] {
     return [

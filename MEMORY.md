@@ -629,3 +629,10 @@ px prisma generate must also run to regenerate the client types. If running via 
 
 ### Lesson Learned: Test Integration with Catalog
 When creating Order items in tests, they must relate to a valid ClinicalOrderCatalogVersion if the catalogVersionId field is required. Instead of using raw items: { create: [] } with non-existent IDs, first mock the ClinicalOrderCatalog and ClinicalOrderCatalogVersion using prisma.clinicalOrderCatalog.create, then reference the catalogVersion.id in OrderItem.create. Also, standardize outbox relay signatures across domains (e.g., 	his.outbox.createEvent(tx, patientId, eventType, payload)) rather than inventing domain-specific method signatures like publish().
+
+## Phase 4 Hardening - Idempotency & Resiliency
+- **Consumer Versioning**: Adding ersion to the ConsumerIdempotencyLedger (along with eventId and consumerName) enables safe logic updates, so version 2 of a consumer can replay previously processed events without conflict.
+- **Replay Locks**: PostgreSQL advisory locks (pg_advisory_xact_lock) at the transaction level prevent concurrent race conditions when multiple identical events are replayed or processed simultaneously for the same consumer.
+- **Projection Metrics**: Consumers record processing latency (durationMs) in the ledger, which serves as foundational projection performance metrics.
+
+- **Phase 6 Canonical Referral Engine**: Implemented `ReferralExecution` and `CareTransfer` domain models. Separated clinical intent (Referral Order) from execution (ReferralExecution). Added tracking for outbound/inbound referrals with explicit state machines (`ReferralStatus`, `CareTransferStatus`), FHIR preparation fields, and `ReferralCommunication` tracking for closed-loop auditing.

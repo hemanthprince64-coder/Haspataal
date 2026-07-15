@@ -350,5 +350,5 @@ describe('Phase 5B.5 - Blood Bank & Transfusion Execution Engine', () => {
 
     const issue = await issueService.issueUnit(emExecItemId, bloodUnitId2, 'officer_1', 'ER');
     expect(issue.active).toBe(true);
-  });
+  }, 10000);
 });

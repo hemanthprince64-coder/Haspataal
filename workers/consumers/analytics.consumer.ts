@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export class AnalyticsConsumer implements EventConsumer {
   public readonly consumerName = 'Analytics';
+  consumerVersion = 1;
 
   supportedEvents(): EventType[] {
     return [

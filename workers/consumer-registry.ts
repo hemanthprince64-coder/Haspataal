@@ -7,6 +7,7 @@ import {
   CanonicalEventEnvelope,
 } from '@haspataal/platform-contracts';
 import { TimelineConsumer } from '@haspataal/timeline';
+import crypto from 'crypto';
 
 import { AnalyticsConsumer } from './consumers/analytics.consumer';
 import { BedConsumer } from './consumers/bed.consumer';
@@ -21,21 +22,37 @@ outboxConsumerRegistry.register(new NotificationConsumer());
 outboxConsumerRegistry.register(new SearchConsumer());
 outboxConsumerRegistry.register(new AnalyticsConsumer());
 
+function generateIntegerHash(input: string): number {
+  const hash = crypto.createHash('sha256').update(input).digest();
+  // Read first 4 bytes as a 32-bit integer for the advisory lock key
+  return hash.readInt32BE(0);
+}
+
 export async function executeWithPrismaTxIdempotency(
   eventId: string,
   consumerName: string,
+  version: number,
   logic: (tx: any) => Promise<void>,
 ) {
-  const ledger: any[] =
-    await prisma.$queryRaw`SELECT status FROM consumer_idempotency_ledger WHERE event_id = ${eventId} AND consumer_name = ${consumerName} LIMIT 1`;
-  if (ledger.length > 0 && ledger[0].status === 'COMPLETED') return;
+  const lockKey = generateIntegerHash(`${eventId}-${consumerName}-${version}`);
 
   await prisma.$transaction(async (tx) => {
+    // Acquire transaction-level advisory lock
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${lockKey})`;
+
+    const ledger: any[] =
+      await tx.$queryRaw`SELECT status FROM consumer_idempotency_ledger WHERE event_id = ${eventId} AND consumer_name = ${consumerName} AND version = ${version} LIMIT 1`;
+
+    if (ledger.length > 0 && ledger[0].status === 'COMPLETED') return;
+
+    const start = Date.now();
     await logic(tx);
+    const durationMs = Date.now() - start;
+
     await tx.$executeRaw`
-      INSERT INTO consumer_idempotency_ledger (event_id, consumer_name, status, processed_at)
-      VALUES (${eventId}, ${consumerName}, 'COMPLETED', NOW())
-      ON CONFLICT (event_id, consumer_name) DO UPDATE SET status = 'COMPLETED', processed_at = NOW()
+      INSERT INTO consumer_idempotency_ledger (event_id, consumer_name, version, status, processed_at, duration_ms)
+      VALUES (${eventId}, ${consumerName}, ${version}, 'COMPLETED', NOW(), ${durationMs})
+      ON CONFLICT (event_id, consumer_name, version) DO UPDATE SET status = 'COMPLETED', processed_at = NOW(), duration_ms = ${durationMs}
     `;
   });
 }
@@ -47,26 +64,31 @@ export async function dispatchToConsumers(envelope: CanonicalEventEnvelope, orig
   // If there are specific consumers for this event, route to them
   if (consumers.length > 0) {
     for (const consumer of consumers) {
-      await executeWithPrismaTxIdempotency(envelope.eventId, consumer.consumerName, async (tx) => {
-        await consumer.handle(envelope, tx);
-      });
+      await executeWithPrismaTxIdempotency(
+        envelope.eventId,
+        consumer.consumerName,
+        consumer.consumerVersion || 1,
+        async (tx) => {
+          await consumer.handle(envelope, tx);
+        },
+      );
     }
   }
 
   // Generic event bus publisher as a fallback or parallel consumer (like legacy relay)
   // For Phase 4, we keep this to support non-durable downstream apps until they migrate to Registry.
-  await executeWithPrismaTxIdempotency(envelope.eventId, 'eventBus', async () => {
+  await executeWithPrismaTxIdempotency(envelope.eventId, 'eventBus', 1, async () => {
     await eventBus.publish({
       id: envelope.eventId,
       type: effectiveEventType,
       payload: originalPayload,
       timestamp: envelope.occurredAt ?? new Date(),
-      correlationId: envelope.chain.correlationId ?? undefined,
+      correlationId: envelope.chain?.correlationId ?? undefined,
       sourceSystem:
         originalPayload?.producer ?? originalPayload?.sourceSystem ?? 'haspataal-outbox',
       hospitalId: envelope.scope.hospitalId ?? undefined,
-      actorId: envelope.actor.actorId ?? undefined,
-      actorType: envelope.actor.actorType ?? undefined,
+      actorId: envelope.actor?.actorId ?? undefined,
+      actorType: envelope.actor?.actorType ?? undefined,
     });
   });
 }

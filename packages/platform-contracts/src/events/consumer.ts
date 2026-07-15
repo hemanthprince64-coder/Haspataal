@@ -6,6 +6,7 @@ export type EventType = string;
 
 export interface EventConsumer {
   consumerName: string;
+  consumerVersion: number;
   supportedEvents(): EventType[];
   handle(event: CanonicalEventEnvelope, tx: Prisma.TransactionClient): Promise<void>;
 }
