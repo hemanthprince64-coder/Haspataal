@@ -5,6 +5,8 @@
 Haspataal is a multi-tenant hospital SaaS platform targeting India's tier-2 and tier-3 cities.
 Reliability, data privacy (RLS), and sub-30s doctor UX are non-negotiable.
 
+**Core Philosophy:** Every major capability should strengthen the platform as a whole, not just solve one department's problem. This ensures Haspataal remains a coherent hospital platform as it grows from individual hospitals into a networked healthcare ecosystem.
+
 ## ⚠️ Session Protocol (MANDATORY)
 
 1. **READ FIRST:** At the start of every session or conversation, **always read this `MEMORY.md` file before doing any work.** No exceptions.
@@ -642,3 +644,31 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Performance Indexing (Phase 6):** Applied composite indexes ([hospitalId, status], [hospitalId, patientId]) across heavy models (Bills, Invoices, PharmacyDispenses, LabOrders) to eliminate sequential scans on tenant-scoped queries.
 
 - **Phase 6 Launch Readiness (Tests & Validation):** During integration testing, ensure that internal monorepo dependencies (e.g., `@haspataal/core/lib/metrics`) are explicitly exported and imported with proper workspace paths to prevent `Cannot find package` errors. Additionally, assure all handler methods (e.g., `TimelineQueryHandler`, `TimelineMutationHandler`) are correctly re-exported at the package `index.ts` boundary (`packages/timeline/src/index.ts`) before validating cross-package imports in the test runner.
+
+- **MVP 1.1 Pilot Validation & Code Freeze:** Development phase formally concluded. Strict code freeze established. Built 'Release Readiness Dashboard' to track 8 objective launch gates. Issues are now tracked with strict severity bounds (P0-P3) and daily pilot review metrics (e.g. 'How many times did staff need help').
+- **MVP 1.2 Post-Pilot Stabilization (2026-07-19):** Applied targeted resilience and usability fixes based on concurrency validation and pilot observations.
+  - **Pessimistic Locking:** Deployed `SELECT ... FOR UPDATE` via `tx.$queryRaw` within a `prisma.$transaction` for pharmacy dispensing to guarantee safe inventory decrements under high concurrency.
+  - **Phone Normalization:** Enforced strict `replace(/\D/g, '').slice(-10)` normalization for mobile numbers at both *write time* (patient creation) and *search time* (fast registration lookup) to prevent +91 and spacing variations from breaking fuzzy search.
+  - **Clinical UX Context:** Doctors require longitudinal history (diagnoses, allergies, medications, labs) presented simultaneously alongside active encounter entry to minimize context switching and improve patient safety.
+  - **Emergency Redesign:** Replaced continuous UI animations (pulsing elements) with static, high-contrast states in clinical environments to reduce staff distraction. Focused on explicit actions (Activate/Cancel) over toggles.
+- **MVP 1.3 Production Hardening (2026-07-19):**
+  - **Change Advisory Process:** All production changes require documented reason, risk, rollback plan, approval, and deployment windows outside peak hours (8 AM - 2 PM).
+  - **Versioned Release Notes:** Operational teams must receive structured notes detailing new features, schema changes, and rollback instructions for every deployment.
+  - **MTTR Metrics:** Operational incidents (outages, printer failures) must now track Mean Time To Recovery (MTTR) as a primary metric.
+  - **Offline-First Resilience:** Integrated IndexedDB `sync-queue` for reception and `localStorage` auto-saving for consultation drafts to combat intermittent internet outages.
+  - **Emergency Workflow Governance:** Enforced strict billing API blocks on "Unknown Emergency" records to force demographic reconciliation before discharge, alongside a 24-hour SLA SLA escalation.
+  - **CDS Lite:** Implemented zero-latency, client-side string matching to warn doctors of duplicate therapies or allergy conflicts immediately upon data entry.
+- **Phased Rollout Strategy & Multi-Site Findings (2026-07-19):**
+  - **Site 1:** Muzaffarpur pilot continuation (focusing on offline/governance metrics).
+  - **Sites 2-3:** Simulated validation confirmed impenetrable RLS tenant isolation, successful global identity workflows, and flawless offline recovery. 
+  - **Future Philosophy:** All subsequent development phases must be driven exclusively by observed operational needs across multiple hospitals, avoiding speculative feature bloat.
+- **Future Roadmap:**
+  - **MVP 1.5:** Laboratory Integration, Radiology Integration, Operational Dashboards, Pharmacy Analytics.
+  - **MVP 1.6:** Integration Hub, External Connectors, Advanced Reporting, Multi-site administration enhancements.
+  - **Platform 2.0:** Patient-facing ecosystem, Broader interoperability, Network-wide analytics, Advanced clinical capabilities.
+- **MVP 1.4 Completion & Disaster Recovery Governance (2026-07-19):**
+  - **Cross-Tenant Logistics:** Executed Chain of Custody transfers using a dedicated `NetworkOperationsService` with an elevated, RLS-bypassing Prisma instance. This confirms normal user traffic must never bypass RLS, leaving cross-tenant operations to securely governed sagas.
+  - **Single Invoice Co-Pay Architecture:** TPA workflows use a state machine (`PRE_AUTH_PENDING` -> `APPROVED` -> `SETTLED`) over boolean flags, and Co-Pays are tracked on a single Invoice to maintain financial simplicity rather than generating duplicate bills.
+  - **Disaster Recovery (DR) RPO Guarantee:** Achieved 0-second Recovery Point Objective (RPO) via synchronous replication / Point-In-Time-Recovery (PITR) WAL archiving. The architectural guarantee must always be explicitly documented to align operational expectations.
+  - **DR Integrity Governance:** DR Drills are now mandatory operational requirements (e.g. Quarterly restores, Annual full-scale simulations). Restores must not just test availability, but explicitly validate Tenant RLS Isolation, Financial Ledger totals, and Offline Queue replay resilience.
+  - **Comprehensive Resiliency Matrix:** Future DR testing must expand beyond primary database failure to include: Application server failure, Reverse proxy/load balancer failure, Cache (Redis) failure, Background worker failure, Network partitions, Storage exhaustion, and Database Index corruption.
