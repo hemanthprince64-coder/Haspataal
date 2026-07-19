@@ -6973,3 +6973,60 @@ model CopilotSession {
 
   @@map("copilot_sessions")
 }
+
+// ===================== APPROVAL PLATFORM =====================
+
+model ApprovalPolicy {
+  id               String   @id @default(uuid())
+  name             String
+  targetType       String   @map("target_type")
+  approvalStrategy String   @map("approval_strategy") // ALL | ANY | MAJORITY | SEQUENTIAL
+  requiredRoles    String[] @map("required_roles")
+  timeoutHours     Int      @default(24) @map("timeout_hours")
+  onTimeout        String   @default("REJECT") // REJECT | APPROVE | ESCALATE
+  escalationRoles  String[] @map("escalation_roles")
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  @@map("approval_policies")
+}
+
+model ApprovalRequest {
+  id         String   @id @default(uuid())
+  policyId   String   @map("policy_id")
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  steps ApprovalStep[]
+
+  @@map("approval_requests")
+}
+
+model ApprovalStep {
+  id           String @id @default(uuid())
+  requestId    String @map("request_id")
+  requiredRole String @map("required_role")
+  status       String @default("PENDING")
+  orderIndex   Int    @default(0) @map("order_index")
+
+  request   ApprovalRequest    @relation(fields: [requestId], references: [id])
+  responses ApprovalResponse[]
+
+  @@map("approval_steps")
+}
+
+model ApprovalResponse {
+  id        String   @id @default(uuid())
+  stepId    String   @map("step_id")
+  userId    String   @map("user_id")
+  decision  String // APPROVED | REJECTED
+  comments  String?
+  createdAt DateTime @default(now())
+
+  step ApprovalStep @relation(fields: [stepId], references: [id])
+
+  @@map("approval_responses")
+}

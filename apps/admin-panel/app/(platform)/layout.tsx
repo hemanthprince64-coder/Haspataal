@@ -42,8 +42,17 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">
                 Operations
               </div>
-              <a href="/operations" className="block px-3 py-2 rounded-md hover:bg-gray-200">
-                Operations Center
+              <a
+                href="/orchestration/incident"
+                className="block px-3 py-2 rounded-md hover:bg-gray-200"
+              >
+                Incident Center
+              </a>
+              <a
+                href="/automation"
+                className="block px-3 py-2 bg-purple-50 text-purple-700 font-medium rounded-md hover:bg-purple-100 mt-2"
+              >
+                ⚡ Automation Studio
               </a>
               <a href="/security" className="block px-3 py-2 rounded-md hover:bg-gray-200">
                 Security Center
