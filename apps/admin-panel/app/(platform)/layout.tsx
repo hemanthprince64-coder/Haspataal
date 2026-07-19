@@ -39,7 +39,46 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                 Subscription & SaaS
               </a>
 
-              {/* Add more nav items from spec module table... */}
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">
+                Operations
+              </div>
+              <a href="/operations" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Operations Center
+              </a>
+              <a href="/security" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Security Center
+              </a>
+              <a href="/audit" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Audit Logs
+              </a>
+              <a href="/compliance" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Compliance
+              </a>
+              <a href="/incidents" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Incidents
+              </a>
+              <a href="/recommendations" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Recommendations
+              </a>
+              <a href="/orchestration" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Workflows
+              </a>
+
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">
+                Ecosystem
+              </div>
+              <a href="/marketplace" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Capability Marketplace
+              </a>
+              <a href="/gateway" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                API Gateway
+              </a>
+              <a href="/developer" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Developer Portal
+              </a>
+              <a href="/events" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                Event Bus Console
+              </a>
             </nav>
           </aside>
 

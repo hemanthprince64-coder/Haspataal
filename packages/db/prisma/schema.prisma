@@ -214,16 +214,16 @@ model HospitalsMaster {
   copayRules               CoPayRule[]
   // Clinic Tier — new scalar fields
 
-  facilityType             FacilityType              @default(HOSPITAL) @map("facility_type")
-  gstExempt                Boolean                   @default(false) @map("gst_exempt")
-  clinicTier               ClinicTier?               @map("clinic_tier")
-  operatingHours           Json?                     @map("operating_hours") // { "open": "09:00", "close": "21:00" }
+  facilityType             FacilityType                @default(HOSPITAL) @map("facility_type")
+  gstExempt                Boolean                     @default(false) @map("gst_exempt")
+  clinicTier               ClinicTier?                 @map("clinic_tier")
+  operatingHours           Json?                       @map("operating_hours") // { "open": "09:00", "close": "21:00" }
   // Onboarding Redesign Fields
-  approvalDocumentUrl      String?                   @map("approval_document_url")
-  medicalCouncilNumber     String?                   @map("medical_council_number")
-  latitude                 Float?                    @map("latitude")
-  longitude                Float?                    @map("longitude")
-  googleLocationUrl        String?                   @map("google_location_url")
+  approvalDocumentUrl      String?                     @map("approval_document_url")
+  medicalCouncilNumber     String?                     @map("medical_council_number")
+  latitude                 Float?                      @map("latitude")
+  longitude                Float?                      @map("longitude")
+  googleLocationUrl        String?                     @map("google_location_url")
   clinicOperationalProfile ClinicOperationalProfile?
   internalReferrals        InternalReferral[]
   consultantSettlements    ConsultantSettlement[]
@@ -242,6 +242,7 @@ model HospitalsMaster {
   BloodUnit                BloodUnit[]
   networkMemberships       HospitalNetworkMembership[]
   subscription             Subscription?
+  HospitalCapability       HospitalCapability[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -4690,11 +4691,11 @@ model OrderItem {
   radiologyExecutionItem  RadiologyExecutionItem?
   ProcedureExecutionItem  ProcedureExecutionItem?
   BloodBankExecutionItem  BloodBankExecutionItem?
+  referralItem            ReferralExecutionItem?
 
   @@index([orderId])
   @@index([departmentId])
   @@map("order_items")
-  referralItem           ReferralExecutionItem?
 }
 
 model OrderDependency {
@@ -6088,10 +6089,6 @@ enum ReferralType {
   TUMOR_BOARD
 }
 
-
-
-
-
 enum ReferralOutcome {
   ADVICE_ONLY
   TRANSFER_ACCEPTED
@@ -6117,165 +6114,165 @@ enum CareTransferStatus {
 }
 
 model ReferralExecution {
-  id                   String            @id @default(uuid())
-  orderId              String            @unique @map("order_id")
-  order                Order             @relation(fields: [orderId], references: [id])
-  hospitalId           String            @map("hospital_id")
-  patientId            String            @map("patient_id")
-  patient              Patient           @relation(fields: [patientId], references: [id])
-  referralType         ReferralType      @map("referral_type")
-  status               ReferralStatus    @default(DRAFT) @map("status")
-  priority             ReferralPriority  @default(ROUTINE) @map("priority")
-  clinicalSummary      String            @map("clinical_summary")
-  reasonForReferral    String            @map("reason_for_referral")
-  requestingDoctorId   String            @map("requesting_doctor_id")
-  requestedAt          DateTime          @default(now()) @map("requested_at")
-  sentAt               DateTime?         @map("sent_at")
-  completedAt          DateTime?         @map("completed_at")
-  cancelledAt          DateTime?         @map("cancelled_at")
-  cancellationReason   String?           @map("cancellation_reason")
-  expiresAt            DateTime?         @map("expires_at")
+  id                 String           @id @default(uuid())
+  orderId            String           @unique @map("order_id")
+  order              Order            @relation(fields: [orderId], references: [id])
+  hospitalId         String           @map("hospital_id")
+  patientId          String           @map("patient_id")
+  patient            Patient          @relation(fields: [patientId], references: [id])
+  referralType       ReferralType     @map("referral_type")
+  status             ReferralStatus   @default(DRAFT) @map("status")
+  priority           ReferralPriority @default(ROUTINE) @map("priority")
+  clinicalSummary    String           @map("clinical_summary")
+  reasonForReferral  String           @map("reason_for_referral")
+  requestingDoctorId String           @map("requesting_doctor_id")
+  requestedAt        DateTime         @default(now()) @map("requested_at")
+  sentAt             DateTime?        @map("sent_at")
+  completedAt        DateTime?        @map("completed_at")
+  cancelledAt        DateTime?        @map("cancelled_at")
+  cancellationReason String?          @map("cancellation_reason")
+  expiresAt          DateTime?        @map("expires_at")
 
   // FHIR Preparation Fields (reserved � not yet integrated)
-  fhirServiceRequestId String?           @map("fhir_service_request_id")
-  fhirTaskId           String?           @map("fhir_task_id")
+  fhirServiceRequestId String? @map("fhir_service_request_id")
+  fhirTaskId           String? @map("fhir_task_id")
 
-  items                ReferralExecutionItem[]
-  communications       ReferralCommunication[]
-  careTransfer         CareTransfer?
-  auditLog             ReferralAudit[]
+  items          ReferralExecutionItem[]
+  communications ReferralCommunication[]
+  careTransfer   CareTransfer?
+  auditLog       ReferralAudit[]
 
   @@map("referral_executions")
 }
 
 model ReferralExecutionItem {
-  id                     String             @id @default(uuid())
-  executionId            String             @map("execution_id")
-  execution              ReferralExecution  @relation(fields: [executionId], references: [id])
-  orderItemId            String             @unique @map("order_item_id")
-  orderItem              OrderItem          @relation(fields: [orderItemId], references: [id])
-  status                 ReferralStatus     @default(DRAFT)
-  specialtyCode          String?            @map("specialty_code")
-  departmentCode         String?            @map("department_code")
+  id             String            @id @default(uuid())
+  executionId    String            @map("execution_id")
+  execution      ReferralExecution @relation(fields: [executionId], references: [id])
+  orderItemId    String            @unique @map("order_item_id")
+  orderItem      OrderItem         @relation(fields: [orderItemId], references: [id])
+  status         ReferralStatus    @default(DRAFT)
+  specialtyCode  String?           @map("specialty_code")
+  departmentCode String?           @map("department_code")
 
-  recipients             ReferralRecipient[]
-  appointments           ReferralAppointment[]
-  responses              ReferralResponse[]
-  outcomeReport          ReferralOutcomeReport?
+  recipients    ReferralRecipient[]
+  appointments  ReferralAppointment[]
+  responses     ReferralResponse[]
+  outcomeReport ReferralOutcomeReport?
 
   @@map("referral_execution_items")
 }
 
 model ReferralRecipient {
-  id                     String                 @id @default(uuid())
-  executionItemId        String                 @map("execution_item_id")
-  executionItem          ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
-  recipientType          String                 @map("recipient_type") // DOCTOR, DEPARTMENT, HOSPITAL, TEAM
-  recipientId            String?                @map("recipient_id")   // Internal doctor/dept ID
-  recipientName          String                 @map("recipient_name")
-  recipientHospitalId    String?                @map("recipient_hospital_id")
-  recipientSpecialty     String?                @map("recipient_specialty")
+  id                  String                @id @default(uuid())
+  executionItemId     String                @map("execution_item_id")
+  executionItem       ReferralExecutionItem @relation(fields: [executionItemId], references: [id])
+  recipientType       String                @map("recipient_type") // DOCTOR, DEPARTMENT, HOSPITAL, TEAM
+  recipientId         String?               @map("recipient_id") // Internal doctor/dept ID
+  recipientName       String                @map("recipient_name")
+  recipientHospitalId String?               @map("recipient_hospital_id")
+  recipientSpecialty  String?               @map("recipient_specialty")
 
   // FHIR Preparation Fields
-  fhirPractitionerId     String?                @map("fhir_practitioner_id")
-  fhirOrganizationId     String?                @map("fhir_organization_id")
-  fhirEndpointId         String?                @map("fhir_endpoint_id")
+  fhirPractitionerId String? @map("fhir_practitioner_id")
+  fhirOrganizationId String? @map("fhir_organization_id")
+  fhirEndpointId     String? @map("fhir_endpoint_id")
 
-  acknowledgedAt         DateTime?              @map("acknowledged_at")
-  acceptedAt             DateTime?              @map("accepted_at")
-  declinedAt             DateTime?              @map("declined_at")
-  declineReason          String?                @map("decline_reason")
-  addedAt                DateTime               @default(now()) @map("added_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  acceptedAt     DateTime? @map("accepted_at")
+  declinedAt     DateTime? @map("declined_at")
+  declineReason  String?   @map("decline_reason")
+  addedAt        DateTime  @default(now()) @map("added_at")
 
   @@map("referral_recipients")
 }
 
 model ReferralCommunication {
-  id                   String              @id @default(uuid())
-  executionId          String              @map("execution_id")
-  execution            ReferralExecution   @relation(fields: [executionId], references: [id])
-  channel              String              // EMAIL, SMS, WHATSAPP, IN_APP, FAX
-  recipientAddress     String              @map("recipient_address")
-  subject              String?
-  bodyHash             String              @map("body_hash")   // SHA-256 of message body � no PHI stored
-  status               CommunicationStatus @default(SENT)
-  sentAt               DateTime            @default(now()) @map("sent_at")
-  deliveredAt          DateTime?           @map("delivered_at")
-  openedAt             DateTime?           @map("opened_at")
-  acknowledgedAt       DateTime?           @map("acknowledged_at")
-  isReminder           Boolean             @default(false) @map("is_reminder")
-  isEscalation         Boolean             @default(false) @map("is_escalation")
-  sentBy               String              @map("sent_by")
+  id               String              @id @default(uuid())
+  executionId      String              @map("execution_id")
+  execution        ReferralExecution   @relation(fields: [executionId], references: [id])
+  channel          String // EMAIL, SMS, WHATSAPP, IN_APP, FAX
+  recipientAddress String              @map("recipient_address")
+  subject          String?
+  bodyHash         String              @map("body_hash") // SHA-256 of message body � no PHI stored
+  status           CommunicationStatus @default(SENT)
+  sentAt           DateTime            @default(now()) @map("sent_at")
+  deliveredAt      DateTime?           @map("delivered_at")
+  openedAt         DateTime?           @map("opened_at")
+  acknowledgedAt   DateTime?           @map("acknowledged_at")
+  isReminder       Boolean             @default(false) @map("is_reminder")
+  isEscalation     Boolean             @default(false) @map("is_escalation")
+  sentBy           String              @map("sent_by")
 
   @@map("referral_communications")
 }
 
 model ReferralAppointment {
-  id                   String                 @id @default(uuid())
-  executionItemId      String                 @map("execution_item_id")
-  executionItem        ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
-  scheduledAt          DateTime               @map("scheduled_at")
-  scheduledBy          String                 @map("scheduled_by")
-  locationDescription  String?                @map("location_description")
-  appointmentType      String                 @default("OUTPATIENT") @map("appointment_type")
-  status               String                 @default("SCHEDULED")
-  confirmedAt          DateTime?              @map("confirmed_at")
-  attendedAt           DateTime?              @map("attended_at")
-  cancelledAt          DateTime?              @map("cancelled_at")
-  notes                String?
+  id                  String                @id @default(uuid())
+  executionItemId     String                @map("execution_item_id")
+  executionItem       ReferralExecutionItem @relation(fields: [executionItemId], references: [id])
+  scheduledAt         DateTime              @map("scheduled_at")
+  scheduledBy         String                @map("scheduled_by")
+  locationDescription String?               @map("location_description")
+  appointmentType     String                @default("OUTPATIENT") @map("appointment_type")
+  status              String                @default("SCHEDULED")
+  confirmedAt         DateTime?             @map("confirmed_at")
+  attendedAt          DateTime?             @map("attended_at")
+  cancelledAt         DateTime?             @map("cancelled_at")
+  notes               String?
 
   @@map("referral_appointments")
 }
 
 model ReferralResponse {
-  id                   String                 @id @default(uuid())
-  executionItemId      String                 @map("execution_item_id")
-  executionItem        ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
-  respondedBy          String                 @map("responded_by")
-  respondedAt          DateTime               @default(now()) @map("responded_at")
-  decision             String                 // ACCEPTED, DECLINED
-  declineReason        String?                @map("decline_reason")
-  clinicalNotes        String?                @map("clinical_notes")
-  isAdviceOnly         Boolean                @default(false) @map("is_advice_only")
+  id              String                @id @default(uuid())
+  executionItemId String                @map("execution_item_id")
+  executionItem   ReferralExecutionItem @relation(fields: [executionItemId], references: [id])
+  respondedBy     String                @map("responded_by")
+  respondedAt     DateTime              @default(now()) @map("responded_at")
+  decision        String // ACCEPTED, DECLINED
+  declineReason   String?               @map("decline_reason")
+  clinicalNotes   String?               @map("clinical_notes")
+  isAdviceOnly    Boolean               @default(false) @map("is_advice_only")
 
   @@map("referral_responses")
 }
 
 model CareTransfer {
-  id                   String             @id @default(uuid())
-  executionId          String             @unique @map("execution_id")
-  execution            ReferralExecution  @relation(fields: [executionId], references: [id])
-  fromDoctorId         String             @map("from_doctor_id")
-  toDoctorId           String             @map("to_doctor_id")
-  patientId            String             @map("patient_id")
-  patient              Patient            @relation(fields: [patientId], references: [id])
-  status               CareTransferStatus @default(REQUESTED)
-  requestedAt          DateTime           @default(now()) @map("requested_at")
-  requestedBy          String             @map("requested_by")
-  clinicalJustification String            @map("clinical_justification")
-  acceptedAt           DateTime?          @map("accepted_at")
-  acceptedBy           String?            @map("accepted_by")
-  rejectedAt           DateTime?          @map("rejected_at")
-  rejectedBy           String?            @map("rejected_by")
-  rejectionReason      String?            @map("rejection_reason")
-  completedAt          DateTime?          @map("completed_at")
-  relationshipId       String?            @map("relationship_id")  // FK to DoctorPatientRelationship after transfer
+  id                    String             @id @default(uuid())
+  executionId           String             @unique @map("execution_id")
+  execution             ReferralExecution  @relation(fields: [executionId], references: [id])
+  fromDoctorId          String             @map("from_doctor_id")
+  toDoctorId            String             @map("to_doctor_id")
+  patientId             String             @map("patient_id")
+  patient               Patient            @relation(fields: [patientId], references: [id])
+  status                CareTransferStatus @default(REQUESTED)
+  requestedAt           DateTime           @default(now()) @map("requested_at")
+  requestedBy           String             @map("requested_by")
+  clinicalJustification String             @map("clinical_justification")
+  acceptedAt            DateTime?          @map("accepted_at")
+  acceptedBy            String?            @map("accepted_by")
+  rejectedAt            DateTime?          @map("rejected_at")
+  rejectedBy            String?            @map("rejected_by")
+  rejectionReason       String?            @map("rejection_reason")
+  completedAt           DateTime?          @map("completed_at")
+  relationshipId        String?            @map("relationship_id") // FK to DoctorPatientRelationship after transfer
 
   @@map("care_transfers")
 }
 
 model ReferralOutcomeReport {
-  id                   String                 @id @default(uuid())
-  executionItemId      String                 @unique @map("execution_item_id")
-  executionItem        ReferralExecutionItem  @relation(fields: [executionItemId], references: [id])
-  outcome              ReferralOutcome
-  reportedBy           String                 @map("reported_by")
-  reportedAt           DateTime               @default(now()) @map("reported_at")
-  clinicalFinding      String?                @map("clinical_finding")
+  id                    String                @id @default(uuid())
+  executionItemId       String                @unique @map("execution_item_id")
+  executionItem         ReferralExecutionItem @relation(fields: [executionItemId], references: [id])
+  outcome               ReferralOutcome
+  reportedBy            String                @map("reported_by")
+  reportedAt            DateTime              @default(now()) @map("reported_at")
+  clinicalFinding       String?               @map("clinical_finding")
   recommendationSummary String?               @map("recommendation_summary")
-  followUpRequired     Boolean                @default(false) @map("follow_up_required")
-  followUpDays         Int?                   @map("follow_up_days")
-  closedAt             DateTime?              @map("closed_at")
+  followUpRequired      Boolean               @default(false) @map("follow_up_required")
+  followUpDays          Int?                  @map("follow_up_days")
+  closedAt              DateTime?             @map("closed_at")
 
   @@map("referral_outcome_reports")
 }
@@ -6291,6 +6288,7 @@ model ReferralAudit {
 
   @@map("referral_audits")
 }
+
 // ===================== PLATFORM IDENTITY =====================
 enum AdminRole {
   PLATFORM_ADMIN
@@ -6299,71 +6297,76 @@ enum AdminRole {
 }
 
 model PlatformAdmin {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  name         String
-  role         AdminRole  @default(PLATFORM_ADMIN)
-  mfaEnabled   Boolean    @default(false)
-  status       String     @default("ACTIVE") // ACTIVE | DISABLED
-  lastLoginAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  networkId    String?    // set when role = NETWORK_ADMIN
-  permissions  Json?      @default("{}")
-  sessions     AdminSession[]
-  apiTokens    ApiToken[]
+  id          String         @id @default(uuid())
+  email       String         @unique
+  name        String
+  role        AdminRole      @default(PLATFORM_ADMIN)
+  mfaEnabled  Boolean        @default(false)
+  status      String         @default("ACTIVE") // ACTIVE | DISABLED
+  lastLoginAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  networkId   String? // set when role = NETWORK_ADMIN
+  permissions Json?          @default("{}")
+  sessions    AdminSession[]
+  apiTokens   ApiToken[]
+
   @@map("platform_admins")
 }
 
 model AdminSession {
-  id          String   @id @default(uuid())
-  adminId     String   @map("admin_id")
-  ip          String?
-  userAgent   String?  @map("user_agent")
-  deviceHash  String?  @map("device_hash")
-  expiresAt   DateTime @map("expires_at")
-  createdAt   DateTime @default(now())
-  revokedAt   DateTime? @map("revoked_at")
-  admin       PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  id         String        @id @default(uuid())
+  adminId    String        @map("admin_id")
+  ip         String?
+  userAgent  String?       @map("user_agent")
+  deviceHash String?       @map("device_hash")
+  expiresAt  DateTime      @map("expires_at")
+  createdAt  DateTime      @default(now())
+  revokedAt  DateTime?     @map("revoked_at")
+  admin      PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
   @@index([adminId])
   @@map("admin_sessions")
 }
 
 model ApiToken {
-  id          String   @id @default(uuid())
-  adminId     String   @map("admin_id")
+  id          String        @id @default(uuid())
+  adminId     String        @map("admin_id")
   name        String
-  hashedToken String   @map("hashed_token")
+  hashedToken String        @map("hashed_token")
   scopes      String[] // e.g. ["hospital:read","event:replay"]
-  lastUsedAt  DateTime? @map("last_used_at")
-  expiresAt   DateTime? @map("expires_at")
-  createdAt   DateTime @default(now())
-  revokedAt   DateTime? @map("revoked_at")
+  lastUsedAt  DateTime?     @map("last_used_at")
+  expiresAt   DateTime?     @map("expires_at")
+  createdAt   DateTime      @default(now())
+  revokedAt   DateTime?     @map("revoked_at")
   admin       PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
   @@map("api_tokens")
 }
 
 // ===================== NETWORKS / ORGS =====================
 model Network {
-  id           String   @id @default(uuid())
+  id           String                      @id @default(uuid())
   name         String
-  parentOrgId  String?  @map("parent_org_id")
+  parentOrgId  String?                     @map("parent_org_id")
   region       String?
-  ownerAdminId String?  @map("owner_admin_id")
-  createdAt    DateTime @default(now())
+  ownerAdminId String?                     @map("owner_admin_id")
+  createdAt    DateTime                    @default(now())
   hospitals    HospitalNetworkMembership[]
+
   @@map("networks")
 }
 
 // Link table: hospital <-> network membership
 model HospitalNetworkMembership {
-  id          String   @id @default(uuid())
-  hospitalId  String   @map("hospital_id")
-  networkId   String   @map("network_id")
-  role        String   @default("MEMBER") // MEMBER | HUB | SPOKE
-  joinedAt    DateTime @default(now())
-  hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  network     Network        @relation(fields: [networkId], references: [id], onDelete: Cascade)
+  id         String          @id @default(uuid())
+  hospitalId String          @map("hospital_id")
+  networkId  String          @map("network_id")
+  role       String          @default("MEMBER") // MEMBER | HUB | SPOKE
+  joinedAt   DateTime        @default(now())
+  hospital   HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  network    Network         @relation(fields: [networkId], references: [id], onDelete: Cascade)
+
   @@unique([hospitalId, networkId])
   @@map("hospital_network_membership")
 }
@@ -6371,133 +6374,142 @@ model HospitalNetworkMembership {
 // ===================== PLATFORM RBAC =====================
 // Orthogonal to hospital-scoped RolePermission. Governs platform/network scope.
 model PlatformPermission {
-  id        String   @id @default(uuid())
-  adminId   String   @map("admin_id")
-  scope     String   // PLATFORM | NETWORK | HOSPITAL
-  resource  String   // hospitals | subscriptions | flags | integrations ...
-  action    String   // read | write | approve | suspend
-  allowed   Boolean  @default(true)
+  id         String  @id @default(uuid())
+  adminId    String  @map("admin_id")
+  scope      String // PLATFORM | NETWORK | HOSPITAL
+  resource   String // hospitals | subscriptions | flags | integrations ...
+  action     String // read | write | approve | suspend
+  allowed    Boolean @default(true)
   conditions Json?   @default("{}")
+
   @@unique([adminId, scope, resource, action])
   @@map("platform_permissions")
 }
 
 // ===================== FEATURE FLAGS =====================
 model FeatureFlag {
-  id           String   @id @default(uuid())
-  key          String   @unique // e.g. "ai_scribe", "abdm_v2"
-  name         String
-  description  String?
-  enabled      Boolean  @default(false)
-  rolloutType  String   @default("GLOBAL") // GLOBAL | CANARY | BETA | OFF
-  rolloutPct   Int      @default(0) @map("rollout_pct")
-  betaHospitalIds String[] @map("beta_hospital_ids")
-  createdBy    String   @map("created_by")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  history      FeatureFlagHistory[]
+  id              String               @id @default(uuid())
+  key             String               @unique // e.g. "ai_scribe", "abdm_v2"
+  name            String
+  description     String?
+  enabled         Boolean              @default(false)
+  rolloutType     String               @default("GLOBAL") // GLOBAL | CANARY | BETA | OFF
+  rolloutPct      Int                  @default(0) @map("rollout_pct")
+  betaHospitalIds String[]             @map("beta_hospital_ids")
+  createdBy       String               @map("created_by")
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  history         FeatureFlagHistory[]
+
   @@map("feature_flags")
 }
 
 model FeatureFlagHistory {
-  id        String   @id @default(uuid())
-  flagId    String   @map("flag_id")
-  changedBy String   @map("changed_by")
+  id        String      @id @default(uuid())
+  flagId    String      @map("flag_id")
+  changedBy String      @map("changed_by")
   prev      Json?
   next      Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   flag      FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+
   @@map("feature_flag_history")
 }
 
 // ===================== SUBSCRIPTIONS / SaaS =====================
 model Plan {
-  id           String   @id @default(uuid())
+  id           String         @id @default(uuid())
   name         String
-  code         String   @unique // STARTER | GROWTH | ENTERPRISE
-  priceMonthly Decimal  @map("price_monthly")
-  priceAnnual  Decimal  @map("price_annual")
-  quota        Json     // { beds, doctors, storageGb, aiCredits }
+  code         String         @unique // STARTER | GROWTH | ENTERPRISE
+  priceMonthly Decimal        @map("price_monthly")
+  priceAnnual  Decimal        @map("price_annual")
+  quota        Json // { beds, doctors, storageGb, aiCredits }
   features     String[]
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now())
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime       @default(now())
   subs         Subscription[]
+
   @@map("plans")
 }
 
 model Subscription {
-  id            String    @id @default(uuid())
-  hospitalId    String    @unique @map("hospital_id")
-  planId        String    @map("plan_id")
-  status        String    @default("TRIAL") // TRIAL | ACTIVE | PAST_DUE | CANCELLED
-  startDate     DateTime  @map("start_date")
-  endDate       DateTime? @map("end_due")
-  trialEndsAt   DateTime? @map("trial_ends_at")
-  seatsUsed     Int       @default(0) @map("seats_used")
-  usageMeters   Json?     @map("usage_meters") // { storageGb, aiCredits, apiCalls }
-  createdAt     DateTime  @default(now())
-  hospital      HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  plan          Plan          @relation(fields: [planId], references: [id])
-  invoices      PlatformInvoice[]
+  id          String            @id @default(uuid())
+  hospitalId  String            @unique @map("hospital_id")
+  planId      String            @map("plan_id")
+  status      String            @default("TRIAL") // TRIAL | ACTIVE | PAST_DUE | CANCELLED
+  startDate   DateTime          @map("start_date")
+  endDate     DateTime?         @map("end_due")
+  trialEndsAt DateTime?         @map("trial_ends_at")
+  seatsUsed   Int               @default(0) @map("seats_used")
+  usageMeters Json?             @map("usage_meters") // { storageGb, aiCredits, apiCalls }
+  createdAt   DateTime          @default(now())
+  hospital    HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  plan        Plan              @relation(fields: [planId], references: [id])
+  invoices    PlatformInvoice[]
+
   @@map("subscriptions")
 }
 
 model PlatformInvoice {
-  id            String   @id @default(uuid())
-  subscriptionId String  @map("subscription_id")
-  number        String   @unique
-  amount        Decimal
-  tax           Decimal  @default(0)
-  status        String   @default("UNPAID") // UNPAID | PAID | REFUNDED | FAILED
-  periodStart   DateTime @map("period_start")
-  periodEnd     DateTime @map("period_end")
-  paidAt        DateTime? @map("paid_at")
-  createdAt     DateTime @default(now())
-  subscription  Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  subscriptionId String       @map("subscription_id")
+  number         String       @unique
+  amount         Decimal
+  tax            Decimal      @default(0)
+  status         String       @default("UNPAID") // UNPAID | PAID | REFUNDED | FAILED
+  periodStart    DateTime     @map("period_start")
+  periodEnd      DateTime     @map("period_end")
+  paidAt         DateTime?    @map("paid_at")
+  createdAt      DateTime     @default(now())
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
   @@map("platform_invoices")
 }
 
 // ===================== WEBHOOK / EVENT REGISTRY (platform) =====================
 model WebhookSubscription {
-  id           String   @id @default(uuid())
-  name         String
-  hospitalId   String?  @map("hospital_id") // NULL = platform-wide
-  url          String
-  secret       String
-  eventTypes   String[] @map("event_types")
-  isActive     Boolean  @default(true) @map("is_active")
-  retryPolicy  Json?    @map("retry_policy")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  deliveries   WebhookDelivery[]
+  id          String            @id @default(uuid())
+  name        String
+  hospitalId  String?           @map("hospital_id") // NULL = platform-wide
+  url         String
+  secret      String
+  eventTypes  String[]          @map("event_types")
+  isActive    Boolean           @default(true) @map("is_active")
+  retryPolicy Json?             @map("retry_policy")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deliveries  WebhookDelivery[]
+
   @@map("webhook_subscriptions")
 }
 
 model WebhookDelivery {
-  id            String   @id @default(uuid())
-  subscriptionId String  @map("subscription_id")
-  eventId       String?  @map("event_id")
-  statusCode    Int?     @map("status_code")
-  attempts      Int      @default(0)
-  nextRetryAt   DateTime? @map("next_retry_at")
-  lastError     String?  @map("last_error")
-  deliveredAt   DateTime? @map("delivered_at")
-  createdAt     DateTime @default(now())
-  subscription  WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  id             String              @id @default(uuid())
+  subscriptionId String              @map("subscription_id")
+  eventId        String?             @map("event_id")
+  statusCode     Int?                @map("status_code")
+  attempts       Int                 @default(0)
+  nextRetryAt    DateTime?           @map("next_retry_at")
+  lastError      String?             @map("last_error")
+  deliveredAt    DateTime?           @map("delivered_at")
+  createdAt      DateTime            @default(now())
+  subscription   WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
   @@map("webhook_deliveries")
 }
 
 // ===================== CONSENT / COMPLIANCE =====================
 model ConsentRecord {
-  id           String   @id @default(uuid())
-  hospitalId   String   @map("hospital_id")
-  patientId    String   @map("patient_id")
-  purpose      String   // CONSULT | RESEARCH | SHARING | MARKETING
-  status       String   @default("GRANTED") // GRANTED | REVOKED | EXPIRED
-  grantedAt    DateTime @default(now()) @map("granted_at")
-  revokedAt    DateTime? @map("revoked_at")
-  expiresAt    DateTime? @map("expires_at")
-  artifactUrl  String?  @map("artifact_url") // signed consent PDF
+  id          String    @id @default(uuid())
+  hospitalId  String    @map("hospital_id")
+  patientId   String    @map("patient_id")
+  purpose     String // CONSULT | RESEARCH | SHARING | MARKETING
+  status      String    @default("GRANTED") // GRANTED | REVOKED | EXPIRED
+  grantedAt   DateTime  @default(now()) @map("granted_at")
+  revokedAt   DateTime? @map("revoked_at")
+  expiresAt   DateTime? @map("expires_at")
+  artifactUrl String?   @map("artifact_url") // signed consent PDF
+
   @@index([hospitalId, patientId])
   @@map("consent_records")
 }
@@ -6506,22 +6518,24 @@ model DataExportRequest {
   id          String   @id @default(uuid())
   hospitalId  String?  @map("hospital_id")
   requestedBy String   @map("requested_by")
-  type        String   // ERASURE | EXPORT | BREACH_REPORT
+  type        String // ERASURE | EXPORT | BREACH_REPORT
   status      String   @default("PENDING") // PENDING | PROCESSING | DONE | FAILED
   filters     Json?
   resultUrl   String?  @map("result_url")
   createdAt   DateTime @default(now())
+
   @@map("data_export_requests")
 }
 
 // ===================== MASTER DATA =====================
 model MasterCode {
-  id          String   @id @default(uuid())
-  system      String   // ICD10 | LOINC | SNOMED | MEDICINE | CITY | STATE | INSURER
-  code        String
-  label       String
-  parentCode  String?  @map("parent_code")
-  extra       Json?
+  id         String  @id @default(uuid())
+  system     String // ICD10 | LOINC | SNOMED | MEDICINE | CITY | STATE | INSURER
+  code       String
+  label      String
+  parentCode String? @map("parent_code")
+  extra      Json?
+
   @@unique([system, code])
   @@index([system])
   @@map("master_codes")
@@ -6530,13 +6544,14 @@ model MasterCode {
 // ===================== UNIVERSAL SEARCH INDEX =====================
 model SearchEntity {
   id          String   @id @default(uuid())
-  kind        String   // hospital | doctor | patient | invoice | prescription | audit | event | report | user | config
+  kind        String // hospital | doctor | patient | invoice | prescription | audit | event | report | user | config
   refId       String   @map("ref_id")
   hospitalId  String?  @map("hospital_id")
   tenantScope String   @default("PLATFORM") // PLATFORM | NETWORK | HOSPITAL
   title       String
   payload     Json?
   updatedAt   DateTime @updatedAt
+
   @@index([kind, hospitalId])
   @@index([title])
   @@map("search_entities")
@@ -6561,39 +6576,38 @@ model PlatformTimelineEvent {
   @@map("platform_timeline_events")
 }
 
-
 model HospitalHealthSnapshot {
-  id               String   @id @default(uuid())
-  hospitalId       String   @map("hospital_id")
-  timestamp        DateTime @default(now())
-  overallScore     Int      @map("overall_score")
-  clinicalScore    Int      @map("clinical_score")
-  infrastructureScore Int   @map("infrastructure_score")
-  securityScore    Int      @map("security_score")
-  complianceScore  Int      @map("compliance_score")
-  financialScore   Int      @map("financial_score")
-  performanceScore Int      @map("performance_score")
+  id                  String   @id @default(uuid())
+  hospitalId          String   @map("hospital_id")
+  timestamp           DateTime @default(now())
+  overallScore        Int      @map("overall_score")
+  clinicalScore       Int      @map("clinical_score")
+  infrastructureScore Int      @map("infrastructure_score")
+  securityScore       Int      @map("security_score")
+  complianceScore     Int      @map("compliance_score")
+  financialScore      Int      @map("financial_score")
+  performanceScore    Int      @map("performance_score")
 
   @@index([hospitalId, timestamp])
   @@map("hospital_health_snapshots")
 }
 
 model WorkflowMetric {
-  id              String    @id @default(uuid())
-  workflowId      String    @map("workflow_id")
-  instanceId      String    @map("instance_id")
-  entityType      String    @map("entity_type")
-  entityId        String    @map("entity_id")
-  startedAt       DateTime  @map("started_at")
-  completedAt     DateTime? @map("completed_at")
-  durationMs      Int?      @map("duration_ms")
-  waitTimeMs      Int?      @map("wait_time_ms")
-  executionTimeMs Int?      @map("execution_time_ms")
-  retryCount      Int       @default(0) @map("retry_count")
-  failureCount    Int       @default(0) @map("failure_count")
-  slaBreached     Boolean   @default(false) @map("sla_breached")
-  manualIntervention Boolean @default(false) @map("manual_intervention")
-  finalStatus     String    @map("final_status") // e.g. COMPLETED, FAILED, DEAD_LETTER
+  id                 String    @id @default(uuid())
+  workflowId         String    @map("workflow_id")
+  instanceId         String    @map("instance_id")
+  entityType         String    @map("entity_type")
+  entityId           String    @map("entity_id")
+  startedAt          DateTime  @map("started_at")
+  completedAt        DateTime? @map("completed_at")
+  durationMs         Int?      @map("duration_ms")
+  waitTimeMs         Int?      @map("wait_time_ms")
+  executionTimeMs    Int?      @map("execution_time_ms")
+  retryCount         Int       @default(0) @map("retry_count")
+  failureCount       Int       @default(0) @map("failure_count")
+  slaBreached        Boolean   @default(false) @map("sla_breached")
+  manualIntervention Boolean   @default(false) @map("manual_intervention")
+  finalStatus        String    @map("final_status") // e.g. COMPLETED, FAILED, DEAD_LETTER
 
   @@index([workflowId, entityId])
   @@index([completedAt])
@@ -6601,34 +6615,79 @@ model WorkflowMetric {
 }
 
 model Incident {
-  id              String    @id @default(uuid())
-  title           String
-  description     String?
-  severity        String    // e.g. CRITICAL, HIGH, MEDIUM, LOW
-  status          String    @default("DETECTED") // DETECTED, ASSIGNED, ACKNOWLEDGED, MITIGATED, RESOLVED, POSTMORTEM
-  detectedAt      DateTime  @default(now()) @map("detected_at")
-  resolvedAt      DateTime? @map("resolved_at")
-  assignedTo      String?   @map("assigned_to")
-  component       String?   // e.g. REDIS, WEBHOOK, ABDM
-  hospitalId      String?   @map("hospital_id")
-  workflowInstanceId String? @map("workflow_instance_id")
+  id                 String    @id @default(uuid())
+  title              String
+  description        String?
+  severity           String // e.g. CRITICAL, HIGH, MEDIUM, LOW
+  status             String    @default("DETECTED") // DETECTED, ASSIGNED, ACKNOWLEDGED, MITIGATED, RESOLVED, POSTMORTEM
+  detectedAt         DateTime  @default(now()) @map("detected_at")
+  resolvedAt         DateTime? @map("resolved_at")
+  assignedTo         String?   @map("assigned_to")
+  component          String? // e.g. REDIS, WEBHOOK, ABDM
+  hospitalId         String?   @map("hospital_id")
+  workflowInstanceId String?   @map("workflow_instance_id")
 
   @@index([status, detectedAt])
   @@map("incidents")
 }
 
 model PlatformRecommendation {
-  id              String   @id @default(uuid())
-  hospitalId      String?  @map("hospital_id")
-  networkId       String?  @map("network_id")
-  type            String   // e.g. ENABLE_QUEUE_OPTIMIZATION, RENEW_LICENSE, STORAGE_WARNING
-  message         String
-  actionUrl       String?  @map("action_url")
-  priority        String   @default("LOW") // HIGH, MEDIUM, LOW
-  isDismissed     Boolean  @default(false) @map("is_dismissed")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid())
+  hospitalId  String?  @map("hospital_id")
+  networkId   String?  @map("network_id")
+  type        String // e.g. ENABLE_QUEUE_OPTIMIZATION, RENEW_LICENSE, STORAGE_WARNING
+  message     String
+  actionUrl   String?  @map("action_url")
+  priority    String   @default("LOW") // HIGH, MEDIUM, LOW
+  isDismissed Boolean  @default(false) @map("is_dismissed")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([hospitalId, isDismissed])
   @@map("platform_recommendations")
 }
 
+// ===================== CAPABILITY REGISTRY =====================
+
+model CapabilityRegistry {
+  id                    String   @id @default(uuid())
+  key                   String   @unique // e.g., "emr_core", "abdm_integration", "pacs_viewer"
+  name                  String
+  category              String // CLINICAL | BILLING | INTEGRATION | AI | COMMUNICATION | IDENTITY | ANALYTICS
+  description           String?
+  version               String   @default("1.0.0")
+  dependencies          String[] @default([]) // Array of capability keys required for this to function
+  conflicts             String[] @default([]) // Array of capability keys this conflicts with
+  visibility            String   @default("PUBLIC") // PUBLIC | INTERNAL | BETA
+  defaultEnabled        Boolean  @default(false)
+  requiresConfiguration Boolean  @default(false)
+  deprecated            Boolean  @default(false)
+  createdAt             DateTime @default(now())
+
+  hospitalCapabilities HospitalCapability[]
+
+  @@map("capability_registry")
+}
+
+model HospitalCapability {
+  id                String    @id @default(uuid())
+  hospitalId        String    @map("hospital_id")
+  capabilityKey     String    @map("capability_key")
+  status            String    @default("ACTIVE") // ACTIVE | SUSPENDED | PENDING_CONFIG
+  grantedBy         String // SUBSCRIPTION | FEATURE_FLAG | MANUAL_GRANT
+  referenceId       String? // ID of the plan, flag, or admin who granted it
+  effectiveFrom     DateTime  @default(now()) @map("effective_from")
+  expiresAt         DateTime? @map("expires_at")
+  sourcePriority    Int       @default(0) // Higher number = higher precedence
+  reason            String?
+  lastEvaluated     DateTime  @default(now()) @map("last_evaluated")
+  configurationHash String?   @map("configuration_hash")
+  config            Json? // Configuration for this capability
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  hospital   HospitalsMaster    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  capability CapabilityRegistry @relation(fields: [capabilityKey], references: [key], onDelete: Cascade)
+
+  @@unique([hospitalId, capabilityKey])
+  @@map("hospital_capabilities")
+}

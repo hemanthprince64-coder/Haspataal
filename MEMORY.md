@@ -679,3 +679,8 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Incident Modeling:** Platform incidents should be treated as just another workflow definition, with states mapped to standard incident phases (Detected -> Assigned -> Mitigated -> Resolved).
 - **Proactive Operations:** A recommendation engine mapping to specific workflows (via actionUrl) turns passive dashboards into actionable operations centers.
 
+## Knowledge Base Entry: Phase D Integration & Capability Registry
+- **Capability Resolver Pattern:** The Capability Registry should act strictly as a catalog. A centralized `CapabilityResolver` should compute effective capabilities at runtime based on subscriptions, feature flags, overrides, and dependencies, serving as the single source of truth across the platform.
+- **Dependency Chains:** Capabilities must define their dependencies (e.g., Telemedicine depends on Appointments and Billing). This prevents invalid state where a parent capability is active but its core requirements are disabled.
+- **Product Suites vs Isolated Integrations:** The Capability Marketplace groups features into cohesive suites (e.g., Communication Suite = SMS, WhatsApp, Email) rather than treating them as disconnected integrations, simplifying administration.
+
