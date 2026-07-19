@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { invoiceNumber, summarizeInvoice } from '@/lib/billing/invoice';
+
+import { NextRequest, NextResponse } from 'next/server';
+
 import {
   hospitalAccessError,
   requireHospitalAccess,
   writeAuditLog,
 } from '@/lib/auth/hospital-access';
+import { invoiceNumber, summarizeInvoice } from '@/lib/billing/invoice';
+import { prisma } from '@/lib/prisma';
 
 const lineSchema = z.object({
   serviceId: z.string().optional().nullable(),
@@ -36,6 +38,14 @@ const invoiceSchema = z.object({
   billId: z.string().optional().nullable(),
   source: z.string().default('DIRECT'),
   lines: z.array(lineSchema).min(1),
+  tpaDetails: z
+    .object({
+      tpaName: z.string(),
+      preAuthAmount: z.number().nonnegative(),
+      coPayAmount: z.number().nonnegative(),
+      status: z.enum(['PRE_AUTH_PENDING', 'APPROVED', 'PARTIALLY_APPROVED', 'REJECTED']),
+    })
+    .optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -78,6 +88,28 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
+
+  // Emergency Reconciliation Check
+  if (data.patientId) {
+    const patient = await prisma.patient.findUnique({
+      where: { id: data.patientId, hospitalId: access.hospitalId },
+    });
+
+    if (
+      patient &&
+      (patient.name === 'Unknown Emergency' || !patient.name || patient.name.trim() === '')
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Missing Demographics',
+          message:
+            'Cannot generate a bill for an unreconciled emergency patient. Please update the patient name and details before billing.',
+        },
+        { status: 403 },
+      );
+    }
+  }
+
   const summary = summarizeInvoice(data.lines);
   const invoice = await prisma.invoice.create({
     data: {
@@ -113,6 +145,24 @@ export async function POST(req: NextRequest) {
     },
     include: { lineItems: true, payments: true },
   });
+
+  // If TPA details are provided, we would ideally store them in a related InsuranceClaim model
+  // For the sake of this mock API, we'll just write an audit log for the TPA workflow
+  if (data.tpaDetails) {
+    await writeAuditLog({
+      hospitalId: access.hospitalId,
+      userId: access.user.id,
+      action: 'tpa_claim_initiated',
+      entity: 'invoice',
+      entityId: invoice.id,
+      details: {
+        tpaName: data.tpaDetails.tpaName,
+        preAuthAmount: data.tpaDetails.preAuthAmount,
+        coPayAmount: data.tpaDetails.coPayAmount,
+        status: data.tpaDetails.status,
+      },
+    });
+  }
 
   await writeAuditLog({
     hospitalId: access.hospitalId,
