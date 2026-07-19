@@ -7030,3 +7030,20 @@ model ApprovalResponse {
 
   @@map("approval_responses")
 }
+
+// ===================== ARTIFACT REGISTRY =====================
+
+model PlatformArtifact {
+  id           String   @id @default(uuid())
+  type         String // RULE | WORKFLOW | POLICY | REPORT | DASHBOARD
+  name         String
+  version      Int      @default(1)
+  status       String   @default("DRAFT") // DRAFT | SIMULATED | APPROVED | PUBLISHED | ARCHIVED
+  source       String   @default("HUMAN") // HUMAN | AI
+  contentAst   Json     @map("content_ast")
+  dependencies String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("platform_artifacts")
+}

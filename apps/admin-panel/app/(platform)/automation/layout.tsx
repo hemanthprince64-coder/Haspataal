@@ -42,6 +42,12 @@ export default function AutomationStudioLayout({ children }: { children: React.R
             📈 Analytics
           </Link>
           <Link
+            href="/automation/authoring"
+            className="block px-3 py-2 text-sm text-purple-700 bg-purple-50 font-medium rounded-md hover:bg-purple-100"
+          >
+            ✨ AI Authoring
+          </Link>
+          <Link
             href="/automation/simulations"
             className="block px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-200"
           >

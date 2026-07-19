@@ -13,10 +13,10 @@ export default function VisualRuleBuilderPage() {
         </div>
         <div className="flex gap-3">
           <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors">
-            🧪 Run Simulation
+            🧪 Simulation Lab
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors">
-            Publish Rule
+          <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-sm transition-colors shadow-sm">
+            ✨ Generate with AI
           </button>
         </div>
       </div>
