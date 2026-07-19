@@ -6926,3 +6926,50 @@ model KnowledgeGraphEdge {
   @@index([targetNodeId])
   @@map("kg_edges")
 }
+
+// ===================== DECISION ENGINE & COPILOT =====================
+
+model DecisionRule {
+  id              String   @id @default(uuid())
+  name            String
+  domain          String // OPERATIONAL | CLINICAL | FINANCIAL
+  condition       Json
+  actionType      String   @map("action_type")
+  priority        Int      @default(0)
+  enabled         Boolean  @default(true)
+  cooldownHours   Int      @default(24) @map("cooldown_hours")
+  owner           String?
+  version         String   @default("1.0.0")
+  rollbackVersion String?  @map("rollback_version")
+  createdAt       DateTime @default(now())
+
+  @@map("decision_rules")
+}
+
+model DecisionExecutionPlan {
+  id             String   @id @default(uuid())
+  predictionId   String   @map("prediction_id")
+  ruleId         String   @map("rule_id")
+  proposedAction Json     @map("proposed_action")
+  status         String   @default("PENDING_APPROVAL") // PENDING_APPROVAL | EXECUTED | REJECTED | TIMEOUT
+  createdAt      DateTime @default(now())
+
+  @@map("decision_execution_plans")
+}
+
+model CopilotSession {
+  id                  String   @id @default(uuid())
+  agentType           String   @map("agent_type")
+  userId              String   @map("user_id")
+  hospitalId          String?  @map("hospital_id")
+  contextSnapshot     Json?    @map("context_snapshot")
+  conversationSummary String?  @map("conversation_summary")
+  toolCalls           Json?    @map("tool_calls")
+  citations           Json?
+  tokenUsage          Int      @default(0) @map("token_usage")
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("copilot_sessions")
+}

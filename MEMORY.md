@@ -694,4 +694,7 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Predictive Architecture (Modular Domains):** Predictive Intelligence must not be a monolith. It is split into independent domains (Operational, Business, Clinical, Financial, Customer Success) that evaluate domain-specific ML models.
 - **Feature Store & Feature Registry:** All predictive models must reuse standardized features (`FeatureRegistry`) computed and accessed via a `FeatureStore`, preventing divergent definitions of metrics like "Revenue" or "Adoption".
 - **Semantic Overlay (Knowledge Graph):** The Knowledge Graph must NEVER duplicate transactional databases. It acts purely as a semantic overlay mapping relationships (`KnowledgeGraphNode` & `KnowledgeGraphEdge`) to enrich AI Copilot context and intent detection before hitting SQL.
+- **Decision Engine (Standalone):** The Decision Engine acts independently between predictions and workflows. It enforces `DecisionRules`, producing a `DecisionExecutionPlan` rather than executing immediately. Copilots consume and explain these decisions rather than making them.
+- **Specialized Copilots:** Instead of a single LLM assistant, Copilots are separated by domain (Operations, Clinical, Finance, Executive, Compliance, Developer). Each has access only to explicitly registered tools (`ToolRegistry`) and specific contexts.
+- **Separation of Explanation:** Explanation generation (`packages/explanation`) is isolated from prediction and decision logic, allowing tailored messaging based on the audience.
 

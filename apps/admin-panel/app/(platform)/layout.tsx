@@ -94,6 +94,12 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               <a href="/executive/cmo" className="block px-3 py-2 rounded-md hover:bg-gray-200">
                 CMO Dashboard
               </a>
+              <a
+                href="/copilot"
+                className="block px-3 py-2 bg-blue-50 text-blue-700 font-medium rounded-md hover:bg-blue-100 mt-2"
+              >
+                ✨ AI Copilot
+              </a>
             </nav>
           </aside>
 
