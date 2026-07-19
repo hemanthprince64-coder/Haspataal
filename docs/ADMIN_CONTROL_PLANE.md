@@ -1,3 +1,4 @@
+
 # Haspataal Admin Control Plane — Enterprise Design Spec
 
 > Status: Implementation-ready design. Built on top of the **existing** foundation

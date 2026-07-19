@@ -672,3 +672,10 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
   - **Disaster Recovery (DR) RPO Guarantee:** Achieved 0-second Recovery Point Objective (RPO) via synchronous replication / Point-In-Time-Recovery (PITR) WAL archiving. The architectural guarantee must always be explicitly documented to align operational expectations.
   - **DR Integrity Governance:** DR Drills are now mandatory operational requirements (e.g. Quarterly restores, Annual full-scale simulations). Restores must not just test availability, but explicitly validate Tenant RLS Isolation, Financial Ledger totals, and Offline Queue replay resilience.
   - **Comprehensive Resiliency Matrix:** Future DR testing must expand beyond primary database failure to include: Application server failure, Reverse proxy/load balancer failure, Cache (Redis) failure, Background worker failure, Network partitions, Storage exhaustion, and Database Index corruption.
+
+## Knowledge Base Entry: Phase C Control Plane
+- **State Decoupling Strategy:** Monolithic 'status' fields lead to race conditions. Decoupled states (Onboarding, Operational, Compliance, etc.) prevent workflow collision.
+- **Workflow Observability:** Differentiating between \waitTimeMs\ (manual/queue time) and \executionTimeMs\ (system time) is essential for accurate SLA tracking in business workflows.
+- **Incident Modeling:** Platform incidents should be treated as just another workflow definition, with states mapped to standard incident phases (Detected -> Assigned -> Mitigated -> Resolved).
+- **Proactive Operations:** A recommendation engine mapping to specific workflows (via actionUrl) turns passive dashboards into actionable operations centers.
+

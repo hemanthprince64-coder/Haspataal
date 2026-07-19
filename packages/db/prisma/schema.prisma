@@ -109,8 +109,15 @@ model HospitalsMaster {
   pincode                  String?
   contactNumber            String?                     @map("contact_number")
   officialEmail            String?                     @map("official_email")
-  verificationStatus       String                      @default("pending") @map("verification_status")
+  verificationStatus       String                      @default("PENDING") @map("verification_status")
   accountStatus            String                      @default("inactive") @map("account_status")
+  onboardingState          String                      @default("CREATED") @map("onboarding_state")
+  operationalStatus        String                      @default("ACTIVE") @map("operational_status")
+  subscriptionStatus       String                      @default("TRIAL") @map("subscription_status")
+  complianceStatus         String                      @default("PENDING") @map("compliance_status")
+  healthStatus             String                      @default("UNKNOWN") @map("health_status")
+  healthScore              Int?                        @map("health_score")
+  healthMetrics            Json?                       @map("health_metrics")
   name                     String?                     @ignore
   password                 String?                     @ignore
   adminUserId              String?                     @map("admin_user_id")
@@ -233,6 +240,8 @@ model HospitalsMaster {
   HospitalBloodBankPolicy  HospitalBloodBankPolicy[]
   BloodBankExecution       BloodBankExecution[]
   BloodUnit                BloodUnit[]
+  networkMemberships       HospitalNetworkMembership[]
+  subscription             Subscription?
 
   @@index([city])
   @@map("hospitals_master")
@@ -6282,3 +6291,344 @@ model ReferralAudit {
 
   @@map("referral_audits")
 }
+// ===================== PLATFORM IDENTITY =====================
+enum AdminRole {
+  PLATFORM_ADMIN
+  NETWORK_ADMIN
+  HOSPITAL_ADMIN
+}
+
+model PlatformAdmin {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  role         AdminRole  @default(PLATFORM_ADMIN)
+  mfaEnabled   Boolean    @default(false)
+  status       String     @default("ACTIVE") // ACTIVE | DISABLED
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  networkId    String?    // set when role = NETWORK_ADMIN
+  permissions  Json?      @default("{}")
+  sessions     AdminSession[]
+  apiTokens    ApiToken[]
+  @@map("platform_admins")
+}
+
+model AdminSession {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  ip          String?
+  userAgent   String?  @map("user_agent")
+  deviceHash  String?  @map("device_hash")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime? @map("revoked_at")
+  admin       PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  @@index([adminId])
+  @@map("admin_sessions")
+}
+
+model ApiToken {
+  id          String   @id @default(uuid())
+  adminId     String   @map("admin_id")
+  name        String
+  hashedToken String   @map("hashed_token")
+  scopes      String[] // e.g. ["hospital:read","event:replay"]
+  lastUsedAt  DateTime? @map("last_used_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime? @map("revoked_at")
+  admin       PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  @@map("api_tokens")
+}
+
+// ===================== NETWORKS / ORGS =====================
+model Network {
+  id           String   @id @default(uuid())
+  name         String
+  parentOrgId  String?  @map("parent_org_id")
+  region       String?
+  ownerAdminId String?  @map("owner_admin_id")
+  createdAt    DateTime @default(now())
+  hospitals    HospitalNetworkMembership[]
+  @@map("networks")
+}
+
+// Link table: hospital <-> network membership
+model HospitalNetworkMembership {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  networkId   String   @map("network_id")
+  role        String   @default("MEMBER") // MEMBER | HUB | SPOKE
+  joinedAt    DateTime @default(now())
+  hospital    HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  network     Network        @relation(fields: [networkId], references: [id], onDelete: Cascade)
+  @@unique([hospitalId, networkId])
+  @@map("hospital_network_membership")
+}
+
+// ===================== PLATFORM RBAC =====================
+// Orthogonal to hospital-scoped RolePermission. Governs platform/network scope.
+model PlatformPermission {
+  id        String   @id @default(uuid())
+  adminId   String   @map("admin_id")
+  scope     String   // PLATFORM | NETWORK | HOSPITAL
+  resource  String   // hospitals | subscriptions | flags | integrations ...
+  action    String   // read | write | approve | suspend
+  allowed   Boolean  @default(true)
+  conditions Json?   @default("{}")
+  @@unique([adminId, scope, resource, action])
+  @@map("platform_permissions")
+}
+
+// ===================== FEATURE FLAGS =====================
+model FeatureFlag {
+  id           String   @id @default(uuid())
+  key          String   @unique // e.g. "ai_scribe", "abdm_v2"
+  name         String
+  description  String?
+  enabled      Boolean  @default(false)
+  rolloutType  String   @default("GLOBAL") // GLOBAL | CANARY | BETA | OFF
+  rolloutPct   Int      @default(0) @map("rollout_pct")
+  betaHospitalIds String[] @map("beta_hospital_ids")
+  createdBy    String   @map("created_by")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  history      FeatureFlagHistory[]
+  @@map("feature_flags")
+}
+
+model FeatureFlagHistory {
+  id        String   @id @default(uuid())
+  flagId    String   @map("flag_id")
+  changedBy String   @map("changed_by")
+  prev      Json?
+  next      Json?
+  createdAt DateTime @default(now())
+  flag      FeatureFlag @relation(fields: [flagId], references: [id], onDelete: Cascade)
+  @@map("feature_flag_history")
+}
+
+// ===================== SUBSCRIPTIONS / SaaS =====================
+model Plan {
+  id           String   @id @default(uuid())
+  name         String
+  code         String   @unique // STARTER | GROWTH | ENTERPRISE
+  priceMonthly Decimal  @map("price_monthly")
+  priceAnnual  Decimal  @map("price_annual")
+  quota        Json     // { beds, doctors, storageGb, aiCredits }
+  features     String[]
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now())
+  subs         Subscription[]
+  @@map("plans")
+}
+
+model Subscription {
+  id            String    @id @default(uuid())
+  hospitalId    String    @unique @map("hospital_id")
+  planId        String    @map("plan_id")
+  status        String    @default("TRIAL") // TRIAL | ACTIVE | PAST_DUE | CANCELLED
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime? @map("end_due")
+  trialEndsAt   DateTime? @map("trial_ends_at")
+  seatsUsed     Int       @default(0) @map("seats_used")
+  usageMeters   Json?     @map("usage_meters") // { storageGb, aiCredits, apiCalls }
+  createdAt     DateTime  @default(now())
+  hospital      HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  plan          Plan          @relation(fields: [planId], references: [id])
+  invoices      PlatformInvoice[]
+  @@map("subscriptions")
+}
+
+model PlatformInvoice {
+  id            String   @id @default(uuid())
+  subscriptionId String  @map("subscription_id")
+  number        String   @unique
+  amount        Decimal
+  tax           Decimal  @default(0)
+  status        String   @default("UNPAID") // UNPAID | PAID | REFUNDED | FAILED
+  periodStart   DateTime @map("period_start")
+  periodEnd     DateTime @map("period_end")
+  paidAt        DateTime? @map("paid_at")
+  createdAt     DateTime @default(now())
+  subscription  Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  @@map("platform_invoices")
+}
+
+// ===================== WEBHOOK / EVENT REGISTRY (platform) =====================
+model WebhookSubscription {
+  id           String   @id @default(uuid())
+  name         String
+  hospitalId   String?  @map("hospital_id") // NULL = platform-wide
+  url          String
+  secret       String
+  eventTypes   String[] @map("event_types")
+  isActive     Boolean  @default(true) @map("is_active")
+  retryPolicy  Json?    @map("retry_policy")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deliveries   WebhookDelivery[]
+  @@map("webhook_subscriptions")
+}
+
+model WebhookDelivery {
+  id            String   @id @default(uuid())
+  subscriptionId String  @map("subscription_id")
+  eventId       String?  @map("event_id")
+  statusCode    Int?     @map("status_code")
+  attempts      Int      @default(0)
+  nextRetryAt   DateTime? @map("next_retry_at")
+  lastError     String?  @map("last_error")
+  deliveredAt   DateTime? @map("delivered_at")
+  createdAt     DateTime @default(now())
+  subscription  WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  @@map("webhook_deliveries")
+}
+
+// ===================== CONSENT / COMPLIANCE =====================
+model ConsentRecord {
+  id           String   @id @default(uuid())
+  hospitalId   String   @map("hospital_id")
+  patientId    String   @map("patient_id")
+  purpose      String   // CONSULT | RESEARCH | SHARING | MARKETING
+  status       String   @default("GRANTED") // GRANTED | REVOKED | EXPIRED
+  grantedAt    DateTime @default(now()) @map("granted_at")
+  revokedAt    DateTime? @map("revoked_at")
+  expiresAt    DateTime? @map("expires_at")
+  artifactUrl  String?  @map("artifact_url") // signed consent PDF
+  @@index([hospitalId, patientId])
+  @@map("consent_records")
+}
+
+model DataExportRequest {
+  id          String   @id @default(uuid())
+  hospitalId  String?  @map("hospital_id")
+  requestedBy String   @map("requested_by")
+  type        String   // ERASURE | EXPORT | BREACH_REPORT
+  status      String   @default("PENDING") // PENDING | PROCESSING | DONE | FAILED
+  filters     Json?
+  resultUrl   String?  @map("result_url")
+  createdAt   DateTime @default(now())
+  @@map("data_export_requests")
+}
+
+// ===================== MASTER DATA =====================
+model MasterCode {
+  id          String   @id @default(uuid())
+  system      String   // ICD10 | LOINC | SNOMED | MEDICINE | CITY | STATE | INSURER
+  code        String
+  label       String
+  parentCode  String?  @map("parent_code")
+  extra       Json?
+  @@unique([system, code])
+  @@index([system])
+  @@map("master_codes")
+}
+
+// ===================== UNIVERSAL SEARCH INDEX =====================
+model SearchEntity {
+  id          String   @id @default(uuid())
+  kind        String   // hospital | doctor | patient | invoice | prescription | audit | event | report | user | config
+  refId       String   @map("ref_id")
+  hospitalId  String?  @map("hospital_id")
+  tenantScope String   @default("PLATFORM") // PLATFORM | NETWORK | HOSPITAL
+  title       String
+  payload     Json?
+  updatedAt   DateTime @updatedAt
+  @@index([kind, hospitalId])
+  @@index([title])
+  @@map("search_entities")
+}
+
+model PlatformTimelineEvent {
+  id            String   @id @default(uuid())
+  entityType    String   @map("entity_type") // e.g., "HOSPITAL", "NETWORK"
+  entityId      String   @map("entity_id")
+  eventType     String   @map("event_type") // e.g., "HospitalDocumentsUploaded"
+  previousState String?  @map("previous_state")
+  newState      String   @map("new_state")
+  actorId       String?  @map("actor_id")
+  actorRole     String?  @map("actor_role")
+  correlationId String?  @map("correlation_id")
+  workflowId    String?  @map("workflow_id")
+  metadata      Json?    @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId, createdAt])
+  @@index([correlationId])
+  @@map("platform_timeline_events")
+}
+
+
+model HospitalHealthSnapshot {
+  id               String   @id @default(uuid())
+  hospitalId       String   @map("hospital_id")
+  timestamp        DateTime @default(now())
+  overallScore     Int      @map("overall_score")
+  clinicalScore    Int      @map("clinical_score")
+  infrastructureScore Int   @map("infrastructure_score")
+  securityScore    Int      @map("security_score")
+  complianceScore  Int      @map("compliance_score")
+  financialScore   Int      @map("financial_score")
+  performanceScore Int      @map("performance_score")
+
+  @@index([hospitalId, timestamp])
+  @@map("hospital_health_snapshots")
+}
+
+model WorkflowMetric {
+  id              String    @id @default(uuid())
+  workflowId      String    @map("workflow_id")
+  instanceId      String    @map("instance_id")
+  entityType      String    @map("entity_type")
+  entityId        String    @map("entity_id")
+  startedAt       DateTime  @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  durationMs      Int?      @map("duration_ms")
+  waitTimeMs      Int?      @map("wait_time_ms")
+  executionTimeMs Int?      @map("execution_time_ms")
+  retryCount      Int       @default(0) @map("retry_count")
+  failureCount    Int       @default(0) @map("failure_count")
+  slaBreached     Boolean   @default(false) @map("sla_breached")
+  manualIntervention Boolean @default(false) @map("manual_intervention")
+  finalStatus     String    @map("final_status") // e.g. COMPLETED, FAILED, DEAD_LETTER
+
+  @@index([workflowId, entityId])
+  @@index([completedAt])
+  @@map("workflow_metrics")
+}
+
+model Incident {
+  id              String    @id @default(uuid())
+  title           String
+  description     String?
+  severity        String    // e.g. CRITICAL, HIGH, MEDIUM, LOW
+  status          String    @default("DETECTED") // DETECTED, ASSIGNED, ACKNOWLEDGED, MITIGATED, RESOLVED, POSTMORTEM
+  detectedAt      DateTime  @default(now()) @map("detected_at")
+  resolvedAt      DateTime? @map("resolved_at")
+  assignedTo      String?   @map("assigned_to")
+  component       String?   // e.g. REDIS, WEBHOOK, ABDM
+  hospitalId      String?   @map("hospital_id")
+  workflowInstanceId String? @map("workflow_instance_id")
+
+  @@index([status, detectedAt])
+  @@map("incidents")
+}
+
+model PlatformRecommendation {
+  id              String   @id @default(uuid())
+  hospitalId      String?  @map("hospital_id")
+  networkId       String?  @map("network_id")
+  type            String   // e.g. ENABLE_QUEUE_OPTIMIZATION, RENEW_LICENSE, STORAGE_WARNING
+  message         String
+  actionUrl       String?  @map("action_url")
+  priority        String   @default("LOW") // HIGH, MEDIUM, LOW
+  isDismissed     Boolean  @default(false) @map("is_dismissed")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([hospitalId, isDismissed])
+  @@map("platform_recommendations")
+}
+

@@ -6,3 +6,4 @@ export * from './security';
 export * from './middleware';
 export * from './refresh-token';
 export * from './lib/require-hospital-staff';
+export * from './platform-auth';

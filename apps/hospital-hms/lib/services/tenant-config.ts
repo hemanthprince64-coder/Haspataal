@@ -65,17 +65,28 @@ export class TenantConfigService {
    * Useful for progressive rollouts.
    */
   async isFeatureEnabled(hospitalId: string, featureFlag: string): Promise<boolean> {
-    const config = await prisma.integrationConfig.findFirst({
-      where: {
-        hospitalId,
-        provider: 'FEATURE_FLAGS',
-        status: 'ACTIVE',
-      },
+    const flag = await prisma.featureFlag.findUnique({
+      where: { key: featureFlag },
     });
 
-    if (!config || !config.credentials) return false;
-    const flags = config.credentials as Record<string, boolean>;
-    return !!flags[featureFlag];
+    if (!flag || !flag.enabled || flag.rolloutType === 'OFF') return false;
+    if (flag.rolloutType === 'GLOBAL') return true;
+    if (flag.rolloutType === 'BETA') {
+      return flag.betaHospitalIds.includes(hospitalId);
+    }
+
+    if (flag.rolloutType === 'CANARY') {
+      let hash = 0;
+      const str = `${hospitalId}:${featureFlag}`;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+      }
+      const bucket = Math.abs(hash) % 100;
+      return bucket < flag.rolloutPct;
+    }
+
+    return false;
   }
 }
 
