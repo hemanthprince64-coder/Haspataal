@@ -79,6 +79,18 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               <a href="/events" className="block px-3 py-2 rounded-md hover:bg-gray-200">
                 Event Bus Console
               </a>
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">
+                Intelligence
+              </div>
+              <a href="/executive/ceo" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                CEO Dashboard
+              </a>
+              <a href="/executive/coo" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                COO Dashboard
+              </a>
+              <a href="/executive/cto" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+                CTO Dashboard
+              </a>
             </nav>
           </aside>
 

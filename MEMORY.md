@@ -689,4 +689,6 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **AI Governance Layer (`packages/ai-policy`):** AI reasoning must be decoupled from AI governance. A dedicated Policy Engine must evaluate risk levels, allowed actions, and regional policies before any execution occurs.
 - **Treat AI as Infrastructure:** Models and Prompts must be versioned and registered (`AiModelRegistry`, `AiPromptRegistry`) with evaluation scores, context window limits, and fallback logic, allowing seamless provider switching without affecting business logic.
 - **Detailed AI Action Auditing (`AiActionLog`):** Every AI decision must log `inputHash`, `outputHash`, `latencyMs`, `tokenUsage`, `costUsd`, `policyId`, and `rollbackId` to ensure full traceability and cost accountability across distributed systems.
+- **Semantic Reporting Layer:** Raw SQL should not be exposed to reporting engines or AI assistants. A semantic layer (`SemanticEntity`) translating business entities (Hospital, Invoice, Incident) to table structures ensures stable queries even as schemas evolve.
+- **Role-Based Executive Views:** Analytics must be sliced by audience: CEO (Revenue, Market), COO (SLAs, Workflows, Incidents), CTO (Latency, Security, Queues).
 

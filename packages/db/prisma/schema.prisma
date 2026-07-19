@@ -6791,3 +6791,46 @@ model AiActionLog {
   @@index([riskLevel, executionMode])
   @@map("ai_action_logs")
 }
+
+// ===================== REPORTING & SEMANTIC INTELLIGENCE =====================
+
+model SemanticEntity {
+  id            String   @id @default(uuid())
+  entityName    String   @unique // e.g. "Hospital", "Invoice", "Incident"
+  tableName     String   @map("table_name") // e.g. "hospitals_master"
+  description   String?
+  attributes    Json // Array of field definitions (name, type, dbColumn)
+  relationships Json // Array of relations to other entities
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("semantic_entities")
+}
+
+model ReportDefinition {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  semanticQuery Json     @map("semantic_query") // Structured query logic using SemanticEntities
+  sqlQuery      String?  @map("sql_query") // Generated raw SQL, cached for execution
+  schedule      String? // Cron expression
+  createdBy     String   @map("created_by")
+  audienceRole  String   @default("PLATFORM_ADMIN") @map("audience_role") // CEO, COO, CTO
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("report_definitions")
+}
+
+model ReportExecutionLog {
+  id           String   @id @default(uuid())
+  reportId     String   @map("report_id")
+  executedAt   DateTime @default(now()) @map("executed_at")
+  latencyMs    Int      @map("latency_ms")
+  status       String // SUCCESS | FAILED
+  errorMessage String?  @map("error_message")
+  resultRowCnt Int      @default(0) @map("result_row_cnt")
+
+  @@index([reportId])
+  @@map("report_execution_logs")
+}
