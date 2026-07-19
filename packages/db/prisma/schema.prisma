@@ -6691,3 +6691,103 @@ model HospitalCapability {
   @@unique([hospitalId, capabilityKey])
   @@map("hospital_capabilities")
 }
+
+// ===================== AI GOVERNANCE & INTELLIGENCE =====================
+
+model AiModelRegistry {
+  id              String   @id @default(uuid())
+  key             String   @unique // e.g. "gpt-4-turbo"
+  provider        String
+  purpose         String // e.g. "CLASSIFICATION", "SUMMARIZATION", "ANALYSIS"
+  version         String
+  contextWindow   Int      @map("context_window")
+  maxTokens       Int      @map("max_tokens")
+  latencyMsAvg    Int      @default(0) @map("latency_ms_avg")
+  costPer1k       Float    @default(0) @map("cost_per_1k")
+  supportsVision  Boolean  @default(false) @map("supports_vision")
+  supportsJson    Boolean  @default(false) @map("supports_json")
+  supportsTools   Boolean  @default(false) @map("supports_tools")
+  status          String   @default("ACTIVE") // ACTIVE | DEPRECATED | FALLBACK
+  fallbackModelId String?  @map("fallback_model_id")
+  evaluationScore Float?   @map("evaluation_score")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("ai_model_registry")
+}
+
+model AiPromptRegistry {
+  id              String    @id @default(uuid())
+  key             String    @unique
+  version         String
+  description     String?
+  content         String // The actual prompt template
+  variables       String[]  @default([]) // e.g. ["incident_title", "logs"]
+  expectedSchema  Json?     @map("expected_schema")
+  evaluationScore Float?    @map("evaluation_score")
+  lastTestedAt    DateTime? @map("last_tested_at")
+  rollbackVersion String?   @map("rollback_version")
+  owner           String // e.g. "platform_engineering"
+  status          String    @default("ACTIVE")
+  tags            String[]  @default([])
+  approvedBy      String?   @map("approved_by")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("ai_prompt_registry")
+}
+
+model AiPolicy {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  name          String
+  description   String?
+  riskLevel     Int // 1 (Auto), 2 (Approval), 3 (Never)
+  actionType    String // e.g. "RESTART_WORKER", "SUSPEND_HOSPITAL"
+  conditions    Json? // Conditions under which this policy applies
+  requiresHuman Boolean  @default(false) @map("requires_human")
+  region        String? // e.g. "IN-MH" for regional policies
+  tenantId      String? // Specific hospital override
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("ai_policies")
+}
+
+model AiActionLog {
+  id            String  @id @default(uuid())
+  traceId       String  @unique @map("trace_id")
+  incidentId    String? @map("incident_id")
+  agent         String // e.g. "OperationsAnalyzer"
+  modelId       String  @map("model_id")
+  modelVersion  String  @map("model_version")
+  promptId      String  @map("prompt_id")
+  promptVersion String  @map("prompt_version")
+
+  inputHash  String @map("input_hash")
+  outputHash String @map("output_hash")
+
+  confidence Float
+  riskLevel  Int     @map("risk_level")
+  decision   String
+  policyId   String? @map("policy_id")
+
+  executionMode String  @default("RECOMMENDATION") // AUTONOMOUS | HUMAN_APPROVAL | RECOMMENDATION
+  approvedBy    String? @map("approved_by")
+  executed      Boolean @default(false)
+  rollbackId    String? @map("rollback_id")
+
+  latencyMs  Int   @map("latency_ms")
+  tokenUsage Int   @map("token_usage")
+  costUsd    Float @map("cost_usd")
+
+  feedback     String?
+  humanOutcome String? @map("human_outcome") // e.g. "ACCEPTED", "REJECTED", "MODIFIED"
+
+  createdAt DateTime @default(now())
+
+  @@index([traceId])
+  @@index([incidentId])
+  @@index([riskLevel, executionMode])
+  @@map("ai_action_logs")
+}

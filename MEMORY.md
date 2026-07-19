@@ -684,3 +684,9 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Dependency Chains:** Capabilities must define their dependencies (e.g., Telemedicine depends on Appointments and Billing). This prevents invalid state where a parent capability is active but its core requirements are disabled.
 - **Product Suites vs Isolated Integrations:** The Capability Marketplace groups features into cohesive suites (e.g., Communication Suite = SMS, WhatsApp, Email) rather than treating them as disconnected integrations, simplifying administration.
 
+## Knowledge Base Entry: Phase E Intelligence & Governance
+- **AI Decision Framework (Levels of Autonomy):** AI actions must be strictly classified into three levels of autonomy: Level 1 (Autonomous - safe, reversible infrastructure actions), Level 2 (Human Approval Required - sensitive operational changes), and Level 3 (Never Autonomous - clinical, financial, or legal modifications).
+- **AI Governance Layer (`packages/ai-policy`):** AI reasoning must be decoupled from AI governance. A dedicated Policy Engine must evaluate risk levels, allowed actions, and regional policies before any execution occurs.
+- **Treat AI as Infrastructure:** Models and Prompts must be versioned and registered (`AiModelRegistry`, `AiPromptRegistry`) with evaluation scores, context window limits, and fallback logic, allowing seamless provider switching without affecting business logic.
+- **Detailed AI Action Auditing (`AiActionLog`):** Every AI decision must log `inputHash`, `outputHash`, `latencyMs`, `tokenUsage`, `costUsd`, `policyId`, and `rollbackId` to ensure full traceability and cost accountability across distributed systems.
+
