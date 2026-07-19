@@ -1,3 +1,5 @@
+import { prisma } from '@haspataal/db';
+
 import { createClient } from '@/lib/supabase/client';
 
 export const PharmacyService = {
@@ -18,72 +20,88 @@ export const PharmacyService = {
     visitId?: string,
     admissionId?: string,
   ) {
-    const supabase = createClient();
+    // 1. Process stock reduction, fetch items, and create invoice within a single transaction
+    const { dispensedItems, totalChargeAmount } = await prisma.$transaction(async (tx) => {
+      const dispensedItems = [];
+      let totalChargeAmount = 0;
 
-    // 1. Process stock reduction and fetch items
-    const dispensedItems = [];
-    let totalChargeAmount = 0;
+      for (const item of items) {
+        // PESSIMISTIC LOCK: Lock the specific batch row against concurrent reads
+        const stocks: any[] = await tx.$queryRaw`
+          SELECT * FROM drug_stocks 
+          WHERE id = ${item.drugStockId}::uuid 
+          FOR UPDATE
+        `;
 
-    for (const item of items) {
-      const { data: stock, error: fetchError } = await supabase
-        .from('drug_stocks')
-        .select('*')
-        .eq('id', item.drugStockId)
-        .single();
-      if (fetchError || !stock) throw new Error(`Drug stock not found: ${item.drugStockId}`);
+        if (!stocks || stocks.length === 0) {
+          throw new Error(`Drug stock not found: ${item.drugStockId}`);
+        }
 
-      if (stock.stock < item.quantity) {
-        throw new Error(
-          `Insufficient stock for drug: ${stock.name}. Available: ${stock.stock}, Requested: ${item.quantity}`,
-        );
+        const stock = stocks[0];
+
+        if (stock.stock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for drug: ${stock.name}. Available: ${stock.stock}, Requested: ${item.quantity}`,
+          );
+        }
+
+        const newStock = stock.stock - item.quantity;
+        await tx.$executeRaw`
+          UPDATE drug_stocks 
+          SET stock = ${newStock} 
+          WHERE id = ${item.drugStockId}::uuid
+        `;
+
+        const mrp = Number(stock.mrp || 0);
+        const totalPrice = mrp * item.quantity;
+        totalChargeAmount += totalPrice;
+
+        dispensedItems.push({
+          drugStockId: item.drugStockId,
+          name: stock.name,
+          quantity: item.quantity,
+          unitPrice: mrp,
+          totalPrice,
+        });
+
+        // Log stock reduction audit inside transaction
+        await tx.$executeRaw`
+          INSERT INTO audit_logs (hospital_id, action, entity_name, entity_id, payload)
+          VALUES (
+            ${hospitalId}::uuid, 
+            'DRUG_STOCK_DISPENSE', 
+            'drug_stocks', 
+            ${item.drugStockId}::uuid, 
+            ${JSON.stringify({ changeQty: -item.quantity, reason: `Dispensed to patient ${patientId}` })}::jsonb
+          )
+        `;
       }
 
-      const newStock = stock.stock - item.quantity;
-      const { error: updateError } = await supabase
-        .from('drug_stocks')
-        .update({ stock: newStock })
-        .eq('id', item.drugStockId);
-      if (updateError) throw updateError;
+      // Connect to billing: If visit or admission is provided, create invoice/charges
+      if (visitId || admissionId) {
+        const invoiceNumber = 'INV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
-      const mrp = Number(stock.mrp || 0);
-      const totalPrice = mrp * item.quantity;
-      totalChargeAmount += totalPrice;
+        await tx.$executeRaw`
+          INSERT INTO invoices (
+            hospital_id, patient_id, admission_id, invoice_number, 
+            source, status, subtotal, total_amount, balance_amount, payload
+          ) VALUES (
+            ${hospitalId}::uuid, 
+            ${patientId}::uuid, 
+            ${admissionId ? admissionId : null}::uuid, 
+            ${invoiceNumber}, 
+            ${admissionId ? 'IPD' : 'OPD'}, 
+            'DRAFT', 
+            ${totalChargeAmount}, 
+            ${totalChargeAmount}, 
+            ${totalChargeAmount}, 
+            ${JSON.stringify({ dispensedItems })}::jsonb
+          )
+        `;
+      }
 
-      dispensedItems.push({
-        drugStockId: item.drugStockId,
-        name: stock.name,
-        quantity: item.quantity,
-        unitPrice: mrp,
-        totalPrice,
-      });
-
-      // Log stock reduction audit
-      await this.logInventoryAudit(
-        hospitalId,
-        item.drugStockId,
-        'DISPENSE',
-        -item.quantity,
-        `Dispensed to patient ${patientId}`,
-      );
-    }
-
-    // 2. Connect to billing: If visit or admission is provided, create invoice/charges
-    if (visitId || admissionId) {
-      const invoiceNumber = 'INV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      const { error: invoiceError } = await supabase.from('invoices').insert({
-        hospital_id: hospitalId,
-        patient_id: patientId,
-        admission_id: admissionId || null,
-        invoice_number: invoiceNumber,
-        source: admissionId ? 'IPD' : 'OPD',
-        status: 'DRAFT',
-        subtotal: totalChargeAmount,
-        total_amount: totalChargeAmount,
-        balance_amount: totalChargeAmount,
-        payload: { dispensedItems },
-      });
-      if (invoiceError) throw invoiceError;
-    }
+      return { dispensedItems, totalChargeAmount };
+    });
 
     // Emit event
     const { eventBus } = await import('@haspataal/events');

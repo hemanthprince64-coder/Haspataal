@@ -1,7 +1,8 @@
+import { prisma } from '@haspataal/db';
 import { eventBus, EVENT_TYPES } from '@haspataal/events';
 import { RuleRegistry, RuleCommandHandler } from '@haspataal/rules';
-import { prisma } from '@haspataal/db';
 import { v4 as uuidv4 } from 'uuid';
+
 import logger from '../apps/patient-portal/lib/logger';
 
 const registry = new RuleRegistry();
@@ -12,11 +13,14 @@ const depthTracker = new Map<string, number>();
 
 async function onDomainEvent(event: any) {
   const correlationId = event.correlationId || uuidv4();
-  
+
   // Depth tracking
   const currentDepth = depthTracker.get(correlationId) || 0;
   if (currentDepth > 10) {
-    logger.warn({ action: 'rule_depth_exceeded', correlationId }, 'Max causation depth exceeded. Dropping event to prevent infinite loop.');
+    logger.warn(
+      { action: 'rule_depth_exceeded', correlationId },
+      'Max causation depth exceeded. Dropping event to prevent infinite loop.',
+    );
     return;
   }
   depthTracker.set(correlationId, currentDepth + 1);
@@ -48,13 +52,22 @@ async function onDomainEvent(event: any) {
 
       try {
         await RuleCommandHandler.handleExecuteRule(command as any);
-        logger.info({ action: 'rule_executed', ruleId: rule.id, eventType: event.type }, 'Executed rule');
+        logger.info(
+          { action: 'rule_executed', ruleId: rule.id, eventType: event.type },
+          'Executed rule',
+        );
       } catch (err: any) {
-        logger.error({ action: 'rule_execution_failed', ruleId: rule.id, error: err.message }, 'Failed to execute rule');
+        logger.error(
+          { action: 'rule_execution_failed', ruleId: rule.id, error: err.message },
+          'Failed to execute rule',
+        );
       }
     }
   } catch (error: any) {
-    logger.error({ action: 'rules_worker_failed', eventId: event.id, error: error.message }, 'Failed to process rules for event');
+    logger.error(
+      { action: 'rules_worker_failed', eventId: event.id, error: error.message },
+      'Failed to process rules for event',
+    );
   }
 }
 
@@ -62,9 +75,54 @@ async function onDomainEvent(event: any) {
 logger.info('Rules Worker Started - Listening to EventBus');
 
 // Clean up depth tracker every hour
-setInterval(() => {
-  depthTracker.clear();
-}, 60 * 60 * 1000);
+setInterval(
+  () => {
+    depthTracker.clear();
+  },
+  60 * 60 * 1000,
+);
+
+// Emergency Reconciliation Escalation Job (Runs hourly)
+setInterval(
+  async () => {
+    try {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const unresolved = await prisma.patient.findMany({
+        where: {
+          name: 'Unknown Emergency',
+          createdAt: { lt: cutoff },
+        },
+      });
+
+      for (const p of unresolved) {
+        logger.warn(
+          { action: 'unresolved_emergency_escalation', patientId: p.id, hospitalId: p.hospitalId },
+          `SLA Breach: Emergency patient ${p.id} unresolved for >24 hours`,
+        );
+
+        await eventBus.publish({
+          type: 'NOTIFICATION_SEND' as any,
+          id: uuidv4(),
+          hospitalId: p.hospitalId,
+          actorId: 'system',
+          correlationId: uuidv4(),
+          timestamp: new Date().toISOString(),
+          payload: {
+            channel: 'WHATSAPP',
+            recipient: 'SUPERVISOR_GROUP',
+            message: `🚨 URGENT: Emergency patient ${p.uhid} admitted over 24 hours ago has not been reconciled. Please update demographics to unblock billing.`,
+          },
+        } as any);
+      }
+    } catch (err: any) {
+      logger.error(
+        { action: 'emergency_escalation_failed', error: err.message },
+        'Failed to run emergency escalation job',
+      );
+    }
+  },
+  60 * 60 * 1000,
+);
 
 // Subscribe to all standard platform events
 const ALL_EVENTS = Object.values(EVENT_TYPES);

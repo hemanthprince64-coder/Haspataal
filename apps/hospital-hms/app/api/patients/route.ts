@@ -29,16 +29,18 @@ export async function POST(req: Request) {
     if (body.action === 'register') {
       const { mobile, name, dob, gender, abhaId, consents } = body;
 
-      // Validate mobile
-      if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+      // Validate and sanitize mobile
+      if (!mobile || !/^[6-9]\d{9}$/.test(mobile.replace(/\D/g, '').slice(-10))) {
         return NextResponse.json({ error: 'Invalid mobile number' }, { status: 400 });
       }
+
+      const sanitizedMobile = mobile.replace(/\D/g, '').slice(-10);
 
       // Create patient
       const patient = await prisma.patient.create({
         data: {
           name,
-          phone: mobile,
+          phone: sanitizedMobile,
           dob: dob ? new Date(dob) : undefined,
           gender,
           abhaAddress: abhaId,

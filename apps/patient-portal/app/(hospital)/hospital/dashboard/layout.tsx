@@ -1,3 +1,5 @@
+import { requireHospitalStaff } from '@haspataal/auth';
+import { AuthorizationService } from '@haspataal/core';
 import {
   LayoutDashboard,
   CreditCard,
@@ -13,18 +15,21 @@ import {
   LogOut,
   Sparkles,
   Landmark,
+  UserPlus,
+  Stethoscope,
 } from 'lucide-react';
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { logoutHospital } from '@/app/actions';
+import CommandPalette from '@/components/hospital/CommandPalette';
+import SuperQuickActionBar from '@/components/hospital/SuperQuickActionBar';
 import BranchSwitcher from '@/components/hospital/branch-switcher';
-import { requireRole } from '@/lib/auth/requireRole';
 import { getActiveBranchId } from '@/lib/branch';
 import { prisma } from '@/lib/prisma';
 import { computeSetupCompletion } from '@/lib/setup/completion-engine';
-import { UserRole, SessionUser } from '@/types';
+import { SessionUser } from '@/types';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -33,10 +38,7 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   let user: SessionUser;
   try {
-    user = (await requireRole(
-      [UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR],
-      'session_user',
-    )) as SessionUser;
+    user = (await requireHospitalStaff('session_user')) as SessionUser;
   } catch (e) {
     redirect('/hospital/login');
   }
@@ -88,36 +90,126 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     console.error('Failed to compute setup progress:', err);
   }
 
-  const navItems = [
-    { href: '/hospital/dashboard', label: 'Overview', icon: LayoutDashboard, badge: null },
-    { href: '/hospital/dashboard/billing', label: 'OPD & Billing', icon: CreditCard, badge: null },
-    { href: '/hospital/dashboard/retention', label: 'Retention', icon: RefreshCw, badge: 'AI' },
-    { href: '/hospital/dashboard/wards', label: 'IPD / Wards', icon: BedDouble, badge: null },
-    { href: '/hospital/dashboard/pharmacy', label: 'Pharmacy', icon: Pill, badge: null },
-    { href: '/hospital/dashboard/diagnostics', label: 'Diagnostics', icon: TestTube, badge: null },
-    { href: '/hospital/dashboard/analytics', label: 'Analytics', icon: BarChart3, badge: null },
-    { href: '/hospital/dashboard/notifications', label: 'Notifications', icon: Bell, badge: '12' },
-    { href: '/hospital/dashboard/reports', label: 'Reports', icon: FileText, badge: null },
-    { href: '/hospital/dashboard/settlements', label: 'Settlements', icon: Landmark, badge: null },
+  const authService = new AuthorizationService(prisma);
+  const permissions = await authService.getStaffPermissions(user.id, user.role);
+
+  const allNavItems = [
+    {
+      href: '/hospital/dashboard',
+      label: 'Overview',
+      icon: LayoutDashboard,
+      badge: null,
+      module: 'OVERVIEW',
+    },
+    {
+      href: '/hospital/dashboard/reception',
+      label: 'Reception',
+      icon: UserPlus,
+      badge: null,
+      module: 'RECEPTION',
+    },
+    {
+      href: '/hospital/dashboard/consultation',
+      label: 'Consultation',
+      icon: Stethoscope,
+      badge: null,
+      module: 'CONSULTATION',
+    },
+    {
+      href: '/hospital/dashboard/billing',
+      label: 'OPD & Billing',
+      icon: CreditCard,
+      badge: null,
+      module: 'BILLING',
+    },
+    {
+      href: '/hospital/dashboard/retention',
+      label: 'Retention',
+      icon: RefreshCw,
+      badge: 'AI',
+      module: 'RETENTION',
+    },
+    {
+      href: '/hospital/dashboard/wards',
+      label: 'IPD / Wards',
+      icon: BedDouble,
+      badge: null,
+      module: 'WARDS',
+    },
+    {
+      href: '/hospital/dashboard/pharmacy',
+      label: 'Pharmacy',
+      icon: Pill,
+      badge: null,
+      module: 'PHARMACY',
+    },
+    {
+      href: '/hospital/dashboard/diagnostics',
+      label: 'Diagnostics',
+      icon: TestTube,
+      badge: null,
+      module: 'DIAGNOSTICS',
+    },
+    {
+      href: '/hospital/dashboard/analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      badge: null,
+      module: 'ANALYTICS',
+    },
+    {
+      href: '/hospital/dashboard/notifications',
+      label: 'Notifications',
+      icon: Bell,
+      badge: '12',
+      module: 'NOTIFICATIONS',
+    },
+    {
+      href: '/hospital/dashboard/reports',
+      label: 'Reports',
+      icon: FileText,
+      badge: null,
+      module: 'REPORTS',
+    },
+    {
+      href: '/hospital/dashboard/settlements',
+      label: 'Settlements',
+      icon: Landmark,
+      badge: null,
+      module: 'SETTLEMENTS',
+    },
     {
       href: '/hospital/dashboard/setup',
       label: 'Setup Wizard',
       icon: Settings2,
       badge: setupProgress < 100 ? '!' : null,
       isCritical: hasCriticalWarnings,
+      module: 'SETUP',
     },
     {
       href: '/hospital/dashboard/setup/branches',
       label: 'Branches',
       icon: MapPin,
       badge: branches.length > 1 ? branches.length : null,
+      module: 'SETUP',
     },
   ];
 
+  const navItems = allNavItems.filter(
+    (item) =>
+      authService.hasCapability(permissions, item.module) ||
+      item.module === 'SETUP' ||
+      item.module === 'NOTIFICATIONS' ||
+      item.module === 'RETENTION' ||
+      item.module === 'ANALYTICS' ||
+      item.module === 'RECEPTION' ||
+      item.module === 'CONSULTATION',
+  );
+
   return (
-    <div className="flex min-h-[calc(100vh-60px)] font-sans bg-slate-50/50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col p-4 flex-shrink-0 border-r border-slate-800 shadow-xl z-20">
+    <div className="flex min-h-[calc(100vh-60px)] font-sans bg-slate-50/50 flex-col md:flex-row">
+      {/* Sidebar - Desktop Only */}
+      <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col p-4 flex-shrink-0 border-r border-slate-800 shadow-xl z-20">
         {/* Branch Switcher Container */}
         <div className="mb-6 px-1">
           {branches.length > 0 && (
@@ -222,9 +314,32 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto scroll-smooth">
-        <div className="min-h-full">{children}</div>
+      <main className="flex-1 overflow-y-auto scroll-smooth pb-20 md:pb-0 flex flex-col">
+        <SuperQuickActionBar />
+        <div className="flex-1">{children}</div>
       </main>
+
+      <CommandPalette />
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around p-2 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        {navItems.slice(0, 5).map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex flex-col items-center gap-1 p-2 text-slate-500 hover:text-blue-600 transition-colors relative"
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] font-medium truncate max-w-[60px]">{item.label}</span>
+              {item.badge && (
+                <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

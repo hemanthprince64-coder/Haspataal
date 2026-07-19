@@ -10,6 +10,55 @@ import {
 export class AuthorizationService {
   constructor(private prisma: PrismaClient) {}
 
+  async getStaffPermissions(userId: string, role: string): Promise<string[]> {
+    if (role === 'SUPER_ADMIN' || role === 'HOSPITAL_ADMIN' || role === 'ADMIN') {
+      return ['*'];
+    }
+    if (role === 'DOCTOR') {
+      return [
+        'module:WARDS',
+        'module:OPD',
+        'module:REPORTS',
+        'module:DIAGNOSTICS',
+        'module:OVERVIEW',
+      ];
+    }
+    if (role === 'RECEPTIONIST') {
+      return ['module:OPD', 'module:BILLING', 'module:OVERVIEW'];
+    }
+    if (role === 'PHARMACIST') {
+      return ['module:PHARMACY', 'module:OVERVIEW'];
+    }
+    if (role === 'LAB_TECH') {
+      return ['module:DIAGNOSTICS', 'module:OVERVIEW'];
+    }
+    if (role === 'NURSE') {
+      return ['module:WARDS', 'module:OPD', 'module:OVERVIEW'];
+    }
+    if (role === 'BILLING') {
+      return ['module:BILLING', 'module:SETTLEMENTS', 'module:REPORTS', 'module:OVERVIEW'];
+    }
+
+    // Fetch granular from Staff table if needed
+    try {
+      const staff = await this.prisma.staff.findUnique({
+        where: { id: userId },
+        select: { permissions: true },
+      });
+      if (staff && Array.isArray(staff.permissions)) {
+        return staff.permissions as string[];
+      }
+    } catch (e) {
+      // Ignored
+    }
+    return ['module:OVERVIEW'];
+  }
+
+  hasCapability(permissions: string[], requiredModule: string): boolean {
+    if (permissions.includes('*')) return true;
+    return permissions.some((p) => p.startsWith(`module:${requiredModule}`) || p === '*');
+  }
+
   async authorize(req: AuthorizeRequest): Promise<AuthorizationResult> {
     const { actor, action, resource } = req;
     let result: AuthorizationResult;

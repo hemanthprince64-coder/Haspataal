@@ -1,24 +1,36 @@
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { logoutHospital } from '@/app/actions';
-import Image from 'next/image';
+import { requireHospitalStaff } from '@haspataal/auth';
+import { AuthorizationService } from '@haspataal/core';
 import { Button } from '@haspataal/ui';
 import { LayoutDashboard, CreditCard, BarChart3, Users, LogOut } from 'lucide-react';
 
-export default async function DashboardLayout({ children }) {
-  const session = await auth();
-  if (!session?.user) redirect('/login');
-  const user = session.user;
+import Image from 'next/image';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
-  const navItems = [
-    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/dashboard/billing', label: 'OPD & Billing', icon: CreditCard },
-    { href: '/dashboard/reports', label: 'Reports', icon: BarChart3 },
-    ...(user.role === 'ADMIN'
-      ? [{ href: '/dashboard/doctors', label: 'Manage Doctors', icon: Users }]
-      : []),
+import { logoutHospital } from '@/app/actions';
+import { prisma } from '@/lib/prisma';
+
+export default async function DashboardLayout({ children }) {
+  let user;
+  try {
+    user = await requireHospitalStaff('session_user');
+  } catch (e) {
+    redirect('/login');
+  }
+
+  const authService = new AuthorizationService(prisma);
+  const permissions = await authService.getStaffPermissions(user.id, user.role);
+
+  const allNavItems = [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, module: 'OVERVIEW' },
+    { href: '/dashboard/billing', label: 'OPD & Billing', icon: CreditCard, module: 'BILLING' },
+    { href: '/dashboard/reports', label: 'Reports', icon: BarChart3, module: 'REPORTS' },
+    { href: '/dashboard/doctors', label: 'Manage Doctors', icon: Users, module: 'DOCTORS' },
   ];
+
+  const navItems = allNavItems.filter((item) =>
+    authService.hasCapability(permissions, item.module),
+  );
 
   return (
     <div className="flex min-h-[calc(100vh-60px)]">
@@ -87,9 +99,7 @@ export default async function DashboardLayout({ children }) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 bg-slate-50 overflow-y-auto md:pb-6 pb-20">
-        {children}
-      </main>
+      <main className="flex-1 p-6 bg-slate-50 overflow-y-auto md:pb-6 pb-20">{children}</main>
     </div>
   );
 }

@@ -11,7 +11,7 @@ export function useMetrics(hospitalId: string | undefined) {
   const { data, error, isLoading, mutate } = useSWR(
     hospitalId ? `/api/hospitals/${hospitalId}/dashboard/metrics` : null,
     fetcher,
-    { refreshInterval: 30_000, revalidateOnFocus: true },
+    { refreshInterval: 60_000, revalidateOnFocus: false, dedupingInterval: 30000 },
   );
   return { metrics: data, isLoading, isError: !!error, mutate };
 }
@@ -61,7 +61,12 @@ export function useRevenue(hospitalId: string | undefined) {
   const { data, error, isLoading, mutate } = useSWR(
     hospitalId ? `/api/hospitals/${hospitalId}/analytics/revenue?period=month` : null,
     fetcher,
-    { refreshInterval: 600_000 },
+    {
+      refreshInterval: 600_000,
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 300000,
+    },
   );
   return { revenue: data, isLoading, isError: !!error, mutate };
 }

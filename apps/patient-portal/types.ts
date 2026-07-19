@@ -4,6 +4,12 @@ export enum UserRole {
   HOSPITAL_ADMIN = 'HOSPITAL_ADMIN',
   AGENT = 'AGENT',
   PLATFORM_ADMIN = 'SUPER_ADMIN',
+  RECEPTIONIST = 'RECEPTIONIST',
+  BILLING = 'BILLING',
+  PHARMACIST = 'PHARMACIST',
+  LAB_TECH = 'LAB_TECH',
+  NURSE = 'NURSE',
+  STAFF = 'STAFF',
 }
 
 export interface SessionUser {

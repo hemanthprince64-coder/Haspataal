@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 
 import { useEffect, useState } from 'react';
 
+import CashClosingWorkflow from '@/components/hospital/cash-closing-workflow';
+import QuickBillWorkflow from '@/components/hospital/quick-billing-workflow';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -100,7 +102,7 @@ export default function BillingDashboardPage() {
   const [insurers, setInsurers] = useState<Insurer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('catalog');
+  const [activeTab, setActiveTab] = useState('quick-bill');
 
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [packageDialogOpen, setPackageDialogOpen] = useState(false);
@@ -310,20 +312,34 @@ export default function BillingDashboardPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-white border border-gray-200 p-1 rounded-xl">
+        <TabsList className="bg-white border border-gray-200 p-1 rounded-xl flex overflow-x-auto w-full justify-start">
+          <TabsTrigger value="quick-bill" className="rounded-lg px-4 py-2 text-sm font-semibold">
+            <Plus className="h-4 w-4 mr-2" /> Quick Bill
+          </TabsTrigger>
           <TabsTrigger value="catalog" className="rounded-lg px-4 py-2 text-sm font-semibold">
-            <Search className="h-4 w-4 mr-2" />
-            Service Catalog
+            <Search className="h-4 w-4 mr-2" /> Service Catalog
           </TabsTrigger>
           <TabsTrigger value="packages" className="rounded-lg px-4 py-2 text-sm font-semibold">
-            <Package className="h-4 w-4 mr-2" />
-            Care Packages
+            <Package className="h-4 w-4 mr-2" /> Care Packages
           </TabsTrigger>
           <TabsTrigger value="copay" className="rounded-lg px-4 py-2 text-sm font-semibold">
-            <Percent className="h-4 w-4 mr-2" />
-            Co-pay Rules
+            <Percent className="h-4 w-4 mr-2" /> Co-pay Rules
+          </TabsTrigger>
+          <TabsTrigger
+            value="cash-closing"
+            className="rounded-lg px-4 py-2 text-sm font-semibold ml-auto"
+          >
+            <ShieldCheck className="h-4 w-4 mr-2" /> Cash Closing
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="quick-bill" className="space-y-4">
+          <QuickBillWorkflow services={services} />
+        </TabsContent>
+
+        <TabsContent value="cash-closing" className="space-y-4">
+          <CashClosingWorkflow />
+        </TabsContent>
 
         {/* Catalog Tab */}
         <TabsContent value="catalog" className="space-y-4">
@@ -470,26 +486,26 @@ export default function BillingDashboardPage() {
             </Dialog>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
+            <table className="w-full text-sm min-w-[600px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Service
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Type
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Tariff (₹)
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     GST
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     HSN
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Status
                   </th>
                 </tr>
@@ -505,44 +521,48 @@ export default function BillingDashboardPage() {
                   filteredServices.map((s) => {
                     const Icon = typeIcon[s.type] || Settings;
                     return (
-                      <tr key={s.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                              <Icon className="h-4 w-4" />
+                      <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 bg-blue-50 rounded flex items-center justify-center text-blue-600">
+                              <Icon className="h-3 w-3" />
                             </div>
-                            <div>
-                              <p className="font-semibold text-gray-900">{s.name}</p>
-                              <p className="text-xs text-gray-400 font-mono">{s.code}</p>
+                            <div className="whitespace-nowrap">
+                              <p className="font-semibold text-gray-900 text-sm leading-tight">
+                                {s.name}
+                              </p>
+                              <p className="text-[10px] text-gray-400 font-mono leading-tight">
+                                {s.code}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           <Badge
                             variant="outline"
-                            className="text-[10px] font-bold uppercase border-gray-200 text-gray-600"
+                            className="text-[9px] font-bold uppercase border-gray-200 text-gray-600 px-1.5 py-0"
                           >
                             {s.type.replace(/_/g, ' ')}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-center font-semibold text-gray-900">
+                        <td className="px-3 py-2 text-center font-semibold text-gray-900 whitespace-nowrap">
                           ₹{s.basePrice.toLocaleString('en-IN')}
                         </td>
-                        <td className="px-4 py-3 text-center text-xs text-gray-500">
+                        <td className="px-3 py-2 text-center text-xs text-gray-500 whitespace-nowrap">
                           {s.gstRate}%{' '}
                           {s.gstInclusive && (
                             <span className="text-blue-600 font-semibold">(incl.)</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs font-mono text-gray-500">
+                        <td className="px-3 py-2 text-xs font-mono text-gray-500 whitespace-nowrap">
                           {s.hsnCode || '—'}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-3 py-2 text-center whitespace-nowrap">
                           <Badge
                             className={
                               s.isActive
-                                ? 'bg-green-50 text-green-700 border-none'
-                                : 'bg-gray-100 text-gray-500 border-none'
+                                ? 'bg-green-50 text-green-700 border-none px-1.5 py-0 text-[10px]'
+                                : 'bg-gray-100 text-gray-500 border-none px-1.5 py-0 text-[10px]'
                             }
                           >
                             {s.isActive ? 'Active' : 'Inactive'}
@@ -802,23 +822,23 @@ export default function BillingDashboardPage() {
             </Dialog>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white border border-gray-200 rounded-xl overflow-x-auto">
+            <table className="w-full text-sm min-w-[600px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Insurer
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Service Scope
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Co-pay
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">
+                  <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">
                     Actions
                   </th>
                 </tr>
@@ -832,65 +852,67 @@ export default function BillingDashboardPage() {
                   </tr>
                 ) : (
                   rules.map((r) => (
-                    <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                    <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
                           <ShieldCheck className="h-4 w-4 text-blue-500" />
                           <div>
-                            <p className="font-semibold text-gray-900">{r.insurer.insurerName}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="font-semibold text-gray-900 text-sm leading-tight">
+                              {r.insurer.insurerName}
+                            </p>
+                            <p className="text-[10px] text-gray-400 leading-tight">
                               {INSURER_TYPES[r.insurer.insurerType] || r.insurer.insurerType}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col gap-1 whitespace-nowrap">
                           {r.service ? (
                             <Badge
                               variant="outline"
-                              className="text-[10px] w-fit font-bold border-gray-200"
+                              className="text-[9px] w-fit font-bold border-gray-200 px-1.5 py-0"
                             >
                               {r.service.name}
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
-                              className="text-[10px] w-fit font-bold border-gray-200"
+                              className="text-[9px] w-fit font-bold border-gray-200 px-1.5 py-0"
                             >
                               All Services
                             </Badge>
                           )}
                           {r.serviceType && (
-                            <span className="text-[10px] text-gray-400 uppercase font-bold">
+                            <span className="text-[9px] text-gray-400 uppercase font-bold">
                               {r.serviceType.replace(/_/g, ' ')}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-2 text-center whitespace-nowrap">
                         <span className="font-bold text-gray-900">
                           {r.copayType === 'PERCENTAGE'
                             ? `${r.copayValue}%`
                             : `₹${r.copayValue.toLocaleString('en-IN')}`}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-2 text-center whitespace-nowrap">
                         <Badge
                           className={
                             r.isActive
-                              ? 'bg-green-50 text-green-700 border-none'
-                              : 'bg-gray-100 text-gray-500 border-none'
+                              ? 'bg-green-50 text-green-700 border-none px-1.5 py-0 text-[10px]'
+                              : 'bg-gray-100 text-gray-500 border-none px-1.5 py-0 text-[10px]'
                           }
                         >
                           {r.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-500 hover:text-red-600"
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
                           onClick={() => handleDeleteRule(r.id)}
                         >
                           <Trash2 className="h-4 w-4" />

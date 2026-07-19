@@ -1,151 +1,58 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Activity,
-  HelpCircle,
-  ChevronRight,
-  Sparkles,
-  CheckCircle2,
-  Building2,
-  Stethoscope,
-} from 'lucide-react';
+import { Activity, HelpCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 import React, { useState, useEffect } from 'react';
 
-// New Stage Components (will exist after subagent completes)
-// Dynamic imports to avoid build errors if files are being created
 import dynamic from 'next/dynamic';
 
-import DataMigration from '@/components/hospital/data-migration';
-import DiscoveryWizard from '@/components/hospital/discovery-wizard';
-import GoLiveDashboard from '@/components/hospital/go-live-dashboard';
-import SetupWizardAuto from '@/components/hospital/setup-wizard-auto';
-import StaffSetup from '@/components/hospital/staff-setup';
-import TrainingSim from '@/components/hospital/training-sim';
-// Stage Components
-import WelcomeScreen from '@/components/hospital/welcome-screen';
-import WorkflowConfig from '@/components/hospital/workflow-config';
-
-const WizardTypeResult = dynamic(() => import('@/components/hospital/wizard-type-result'), {
-  loading: () => <StageLoader label="Loading..." />,
-  ssr: false,
-});
-const WizardDoctorProfile = dynamic(() => import('@/components/hospital/wizard-doctor-profile'), {
-  loading: () => <StageLoader label="Loading..." />,
-  ssr: false,
-});
+// Dynamic imports for the 12 stages
 const WizardHospitalIdentity = dynamic(
   () => import('@/components/hospital/wizard-hospital-identity'),
-  {
-    loading: () => <StageLoader label="Loading..." />,
-    ssr: false,
-  },
+  { ssr: false },
 );
 const WizardDepartmentSetup = dynamic(
   () => import('@/components/hospital/wizard-department-setup'),
-  {
-    loading: () => <StageLoader label="Loading..." />,
-    ssr: false,
-  },
+  { ssr: false },
 );
-const WizardWhatsappComms = dynamic(() => import('@/components/hospital/wizard-whatsapp-comms'), {
-  loading: () => <StageLoader label="Loading..." />,
+const StaffSetup = dynamic(() => import('@/components/hospital/staff-setup'), { ssr: false });
+const WorkflowConfig = dynamic(() => import('@/components/hospital/workflow-config'), {
   ssr: false,
 });
 const WizardBillingSetup = dynamic(() => import('@/components/hospital/wizard-billing-setup'), {
-  loading: () => <StageLoader label="Loading..." />,
+  ssr: false,
+});
+const WizardWhatsappComms = dynamic(() => import('@/components/hospital/wizard-whatsapp-comms'), {
+  ssr: false,
+});
+const GoLiveDashboard = dynamic(() => import('@/components/hospital/go-live-dashboard'), {
   ssr: false,
 });
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-type ClinicType = 'SINGLE_DOCTOR' | 'MULTISPECIALTY_CLINIC' | 'MULTISPECIALTY_HOSPITAL' | null;
-
-// ── Stage Definitions ──────────────────────────────────────────────────────────
-
-const SINGLE_DOCTOR_STAGES = [
-  { num: 1, label: 'Welcome' },
-  { num: 2, label: 'Discovery' },
-  { num: 3, label: 'Analysis' },
-  { num: 4, label: 'Auto-Config' },
-  { num: 5, label: 'Doctor Profile' },
-  { num: 6, label: 'Staff' },
-  { num: 7, label: 'WhatsApp & Comms' },
-  { num: 8, label: 'Billing' },
-  { num: 9, label: 'Go-Live' },
+const SETUP_STAGES = [
+  { num: 1, label: 'Hospital Profile' },
+  { num: 2, label: 'Departments & Units' },
+  { num: 3, label: 'Doctors' },
+  { num: 4, label: 'OPD Timings' },
+  { num: 5, label: 'Services' },
+  { num: 6, label: 'Laboratory Tests' },
+  { num: 7, label: 'Pharmacy Inventory' },
+  { num: 8, label: 'User Accounts & Roles' },
+  { num: 9, label: 'Printers & Templates' },
+  { num: 10, label: 'Billing Settings' },
+  { num: 11, label: 'SMS/WhatsApp' },
+  { num: 12, label: 'Go-Live Checklist' },
 ];
 
-const MULTISPECIALTY_CLINIC_STAGES = [
-  { num: 1, label: 'Welcome' },
-  { num: 2, label: 'Discovery' },
-  { num: 3, label: 'Analysis' },
-  { num: 4, label: 'Auto-Config' },
-  { num: 5, label: 'Identity' },
-  { num: 6, label: 'Departments' },
-  { num: 7, label: 'Staff' },
-  { num: 8, label: 'WhatsApp & Comms' },
-  { num: 9, label: 'Billing' },
-  { num: 10, label: 'Go-Live' },
-];
-
-const MULTISPECIALTY_HOSPITAL_STAGES = [
-  { num: 1, label: 'Welcome' },
-  { num: 2, label: 'Discovery' },
-  { num: 3, label: 'Analysis' },
-  { num: 4, label: 'Auto-Config' },
-  { num: 5, label: 'Identity' },
-  { num: 6, label: 'Departments' },
-  { num: 7, label: 'Doctors' },
-  { num: 8, label: 'Staff & Roles' },
-  { num: 9, label: 'WhatsApp & Comms' },
-  { num: 10, label: 'Pharmacy' },
-  { num: 11, label: 'Lab / Diagnostics' },
-  { num: 12, label: 'Billing & Finance' },
-  { num: 13, label: 'Data Migration' },
-  { num: 14, label: 'Go-Live' },
-];
-
-function getStages(clinicType: ClinicType) {
-  if (clinicType === 'SINGLE_DOCTOR') return SINGLE_DOCTOR_STAGES;
-  if (clinicType === 'MULTISPECIALTY_CLINIC') return MULTISPECIALTY_CLINIC_STAGES;
-  if (clinicType === 'MULTISPECIALTY_HOSPITAL') return MULTISPECIALTY_HOSPITAL_STAGES;
-  // Before detection: show first 4 stages
-  return SINGLE_DOCTOR_STAGES.slice(0, 4);
-}
-
-// ── Loader ─────────────────────────────────────────────────────────────────────
-
-function StageLoader({ label }: { label: string }) {
-  return (
-    <div className="flex items-center justify-center min-h-[300px]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-slate-500 font-medium">{label}</span>
-      </div>
-    </div>
-  );
-}
-
-// ── Progress Bar ───────────────────────────────────────────────────────────────
-
-function StageProgressBar({
-  stages,
-  currentStage,
-}: {
-  stages: typeof SINGLE_DOCTOR_STAGES;
-  currentStage: number;
-}) {
-  // Show max 8 visible stage dots; scroll if more
-  const visible = stages.slice(0, 8);
-  const hasMore = stages.length > 8;
-
+function StageProgressBar({ currentStage }: { currentStage: number }) {
+  const visibleStages = SETUP_STAGES;
   return (
     <div className="bg-white border-b border-slate-100 py-4 px-6 shadow-sm overflow-x-auto">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-1 min-w-max">
-          {stages.map((item, idx) => {
+          {visibleStages.map((item, idx) => {
             const isCompleted = currentStage > item.num;
             const isActive = currentStage === item.num;
             return (
@@ -170,7 +77,7 @@ function StageProgressBar({
                     {item.label}
                   </span>
                 </div>
-                {idx < stages.length - 1 && (
+                {idx < visibleStages.length - 1 && (
                   <div
                     className={`h-px w-4 flex-shrink-0 transition-colors ${isCompleted ? 'bg-teal-300' : 'bg-slate-200'}`}
                   />
@@ -184,70 +91,37 @@ function StageProgressBar({
   );
 }
 
-// ── Clinic Type Badge ──────────────────────────────────────────────────────────
-
-function ClinicTypeBadge({ clinicType }: { clinicType: ClinicType }) {
-  if (!clinicType) return null;
-  const map = {
-    SINGLE_DOCTOR: {
-      icon: <Stethoscope className="h-3 w-3" />,
-      label: 'Solo Clinic',
-      color: 'bg-teal-100 text-teal-800 border-teal-200',
-    },
-    MULTISPECIALTY_CLINIC: {
-      icon: <Building2 className="h-3 w-3" />,
-      label: 'Multispecialty Clinic',
-      color: 'bg-blue-100 text-blue-800 border-blue-200',
-    },
-    MULTISPECIALTY_HOSPITAL: {
-      icon: <Building2 className="h-3 w-3" />,
-      label: 'Hospital',
-      color: 'bg-purple-100 text-purple-800 border-purple-200',
-    },
-  };
-  const { icon, label, color } = map[clinicType];
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 text-xs font-bold border rounded-full px-3 py-1 ${color}`}
-    >
-      {icon} {label}
-    </span>
-  );
-}
-
-// ── Main Page ──────────────────────────────────────────────────────────────────
-
 export default function SetupWizardPage() {
   const [stage, setStage] = useState<number>(1);
-  const [clinicType, setClinicType] = useState<ClinicType>(null);
-  const [hospitalName, setHospitalName] = useState<string>('Your Clinic');
+  const [hospitalName, setHospitalName] = useState<string>('Your Hospital');
   const [hospitalId, setHospitalId] = useState<string>('');
-  const [contactNumber, setContactNumber] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
-  // Fetch initial stage from DB
   useEffect(() => {
     const init = async () => {
       try {
+        const savedStage = localStorage.getItem('haspataal_setup_stage');
+        let initialStage = savedStage ? parseInt(savedStage, 10) : 1;
+
         const [stageRes, workflowRes] = await Promise.all([
           fetch('/api/hospital/setup/stage'),
           fetch('/api/hospital/setup/workflow'),
         ]);
+
         if (stageRes.ok) {
           const data = await stageRes.json();
           if (data.hospitalId) setHospitalId(data.hospitalId);
-          if (data.contactNumber) setContactNumber(data.contactNumber);
-          if (data.clinicType) {
-            setClinicType(data.clinicType);
-            setStage(data.stage || 5);
-          } else {
-            setStage(Math.min(data.stage || 1, 2));
+          if (!savedStage && data.stage) {
+            initialStage = data.stage;
           }
         }
+
         if (workflowRes.ok) {
           const data = await workflowRes.json();
           if (data.printHeader) setHospitalName(data.printHeader);
         }
+
+        setStage(initialStage);
       } catch (e) {
         console.error('Setup init failed:', e);
       } finally {
@@ -259,6 +133,7 @@ export default function SetupWizardPage() {
 
   const persistStage = async (nextStage: number) => {
     try {
+      localStorage.setItem('haspataal_setup_stage', nextStage.toString());
       await fetch('/api/hospital/setup/stage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -278,24 +153,18 @@ export default function SetupWizardPage() {
   const next = () => goTo(stage + 1);
   const prev = () => goTo(stage - 1);
 
-  const handleDiscoveryComplete = (detectedType: ClinicType) => {
-    setClinicType(detectedType);
-    next();
-  };
-
   const handleFinalLaunch = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/hospital/setup/stage', {
+      const res = await fetch('/api/hospital/setup/activate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage: totalStages }),
       });
       if (res.ok) {
-        toast.success('Your workspace is activated! Launching dashboard...');
+        toast.success('Your hospital is activated! Launching dashboard...');
         window.location.href = '/hospital/dashboard';
       } else {
-        toast.error('Failed to activate workspace. Please check requirements.');
+        toast.error('Failed to activate hospital. Please check requirements.');
       }
     } catch (e) {
       toast.error('An error occurred during activation.');
@@ -304,8 +173,7 @@ export default function SetupWizardPage() {
     }
   };
 
-  const stages = getStages(clinicType);
-  const totalStages = stages.length;
+  const totalStages = SETUP_STAGES.length;
   const isLastStage = stage === totalStages;
 
   if (loading) {
@@ -321,33 +189,29 @@ export default function SetupWizardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-teal-50/20 flex flex-col">
-      {/* ── Header ── */}
       <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-100 z-20 py-3 px-6 shadow-sm">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {/* Logo */}
             <div className="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-teal-600/20">
               <Activity className="h-5 w-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm font-bold text-slate-800 leading-none">{hospitalName}</h1>
-                <ClinicTypeBadge clinicType={clinicType} />
               </div>
               <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
-                Haspataal — Clinic Setup
+                Haspataal — Guided Setup
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Stage counter or Launch button */}
             {isLastStage ? (
               <button
                 onClick={handleFinalLaunch}
                 className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-full px-5 py-2.5 shadow-md shadow-teal-600/20 transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
               >
-                Launch Main Dashboard <ChevronRight className="h-4 w-4" />
+                Activate Hospital <ChevronRight className="h-4 w-4" />
               </button>
             ) : (
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-100 rounded-full px-3.5 py-1.5 border border-slate-200">
@@ -359,97 +223,43 @@ export default function SetupWizardPage() {
         </div>
       </header>
 
-      {/* ── Progress Bar ── */}
-      {!isLastStage && <StageProgressBar stages={stages} currentStage={stage} />}
+      <StageProgressBar currentStage={stage} />
 
-      {/* ── Wizard Content ── */}
       <main className="flex-1 pb-20">
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${stage}-${clinicType}`}
+            key={stage}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
           >
-            {/* Stage 1 — Welcome */}
-            {stage === 1 && <WelcomeScreen hospitalName={hospitalName} onStart={() => goTo(2)} />}
-
-            {/* Stage 2 — Discovery Questionnaire (6 sections) */}
-            {stage === 2 && (
-              <DiscoveryWizard
-                hospitalId={hospitalId}
-                contactNumber={contactNumber}
-                onComplete={handleDiscoveryComplete}
-              />
+            {stage === 1 && <WizardHospitalIdentity onNext={next} onPrev={prev} />}
+            {stage === 2 && <WizardDepartmentSetup onNext={next} onPrev={prev} />}
+            {stage === 3 && <StaffSetup onNext={next} onPrev={prev} label="Doctors Setup" />}
+            {stage === 4 && (
+              <WorkflowConfig onNext={next} onPrev={prev} label="OPD Timings & Consultation Fees" />
             )}
-
-            {/* Stage 3 — Clinic Type Result / Analysis */}
-            {stage === 3 && (
-              <WizardTypeResult
-                clinicType={clinicType || 'SINGLE_DOCTOR'}
-                hospitalName={hospitalName}
-                onNext={next}
-              />
+            {stage === 5 && (
+              <WorkflowConfig onNext={next} onPrev={prev} label="Services Configuration" />
             )}
-
-            {/* Stage 4 — Auto-Config (runs provisioning) */}
-            {stage === 4 && <SetupWizardAuto clinicType={clinicType} onComplete={next} />}
-
-            {/* ── SINGLE DOCTOR TRACK ── */}
-            {clinicType === 'SINGLE_DOCTOR' && (
-              <>
-                {stage === 5 && <WizardDoctorProfile onNext={next} onPrev={prev} />}
-                {stage === 6 && <StaffSetup onNext={next} onPrev={prev} />}
-                {stage === 7 && <WizardWhatsappComms onNext={next} onPrev={prev} />}
-                {stage === 8 && <WizardBillingSetup onNext={next} onPrev={prev} />}
-                {stage === 9 && <GoLiveDashboard hospitalId={hospitalId} />}
-              </>
+            {stage === 6 && <WorkflowConfig onNext={next} onPrev={prev} label="Laboratory Tests" />}
+            {stage === 7 && (
+              <WorkflowConfig onNext={next} onPrev={prev} label="Pharmacy Inventory" />
             )}
-
-            {/* ── MULTISPECIALTY CLINIC TRACK ── */}
-            {clinicType === 'MULTISPECIALTY_CLINIC' && (
-              <>
-                {stage === 5 && <WizardHospitalIdentity onNext={next} onPrev={prev} />}
-                {stage === 6 && <WizardDepartmentSetup onNext={next} onPrev={prev} />}
-                {stage === 7 && <StaffSetup onNext={next} onPrev={prev} />}
-                {stage === 8 && <WizardWhatsappComms onNext={next} onPrev={prev} />}
-                {stage === 9 && <WizardBillingSetup onNext={next} onPrev={prev} />}
-                {stage === 10 && <GoLiveDashboard hospitalId={hospitalId} />}
-              </>
+            {stage === 8 && (
+              <StaffSetup onNext={next} onPrev={prev} label="User Accounts & Roles" />
             )}
-
-            {/* ── MULTISPECIALTY HOSPITAL TRACK ── */}
-            {clinicType === 'MULTISPECIALTY_HOSPITAL' && (
-              <>
-                {stage === 5 && <WizardHospitalIdentity onNext={next} onPrev={prev} />}
-                {stage === 6 && <WizardDepartmentSetup onNext={next} onPrev={prev} />}
-                {stage === 7 && <StaffSetup onNext={next} onPrev={prev} label="Doctors Setup" />}
-                {stage === 8 && <StaffSetup onNext={next} onPrev={prev} label="Staff & Roles" />}
-                {stage === 9 && <WizardWhatsappComms onNext={next} onPrev={prev} />}
-                {stage === 10 && (
-                  <WorkflowConfig onNext={next} onPrev={prev} label="Pharmacy Configuration" />
-                )}
-                {stage === 11 && (
-                  <WorkflowConfig onNext={next} onPrev={prev} label="Lab & Diagnostics" />
-                )}
-                {stage === 12 && <WizardBillingSetup onNext={next} onPrev={prev} />}
-                {stage === 13 && <DataMigration onNext={next} onPrev={prev} />}
-                {stage === 14 && <GoLiveDashboard hospitalId={hospitalId} />}
-              </>
+            {stage === 9 && (
+              <WorkflowConfig onNext={next} onPrev={prev} label="Printers & Templates" />
             )}
-
-            {/* Fallback: if clinicType not yet determined and stage > 4, wait */}
-            {!clinicType && stage > 4 && (
-              <div className="max-w-3xl mx-auto py-16 px-4 text-center">
-                <p className="text-slate-500">Please complete the discovery questionnaire first.</p>
-              </div>
-            )}
+            {stage === 10 && <WizardBillingSetup onNext={next} onPrev={prev} />}
+            {stage === 11 && <WizardWhatsappComms onNext={next} onPrev={prev} />}
+            {stage === 12 && <GoLiveDashboard hospitalId={hospitalId} />}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* ── Floating Help Button ── */}
       {!isLastStage && (
         <div className="fixed bottom-6 right-6 z-30">
           <button

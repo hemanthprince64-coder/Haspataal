@@ -9,6 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@haspataal/auth": "*",
     "@haspataal/queue": "*",
     "@haspataal/ui": "*",
     "@haspataal/events": "*",

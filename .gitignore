@@ -48,3 +48,9 @@ graphify-out/
 .agent/
 .metagpt/
 .turbo/
+
+# Test artifacts & simulation noise
+playwright-report/
+test-results/
+simulation_results.json
+temp_transcript.txt
