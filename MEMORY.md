@@ -691,4 +691,7 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Detailed AI Action Auditing (`AiActionLog`):** Every AI decision must log `inputHash`, `outputHash`, `latencyMs`, `tokenUsage`, `costUsd`, `policyId`, and `rollbackId` to ensure full traceability and cost accountability across distributed systems.
 - **Semantic Reporting Layer:** Raw SQL should not be exposed to reporting engines or AI assistants. A semantic layer (`SemanticEntity`) translating business entities (Hospital, Invoice, Incident) to table structures ensures stable queries even as schemas evolve.
 - **Role-Based Executive Views:** Analytics must be sliced by audience: CEO (Revenue, Market), COO (SLAs, Workflows, Incidents), CTO (Latency, Security, Queues).
+- **Predictive Architecture (Modular Domains):** Predictive Intelligence must not be a monolith. It is split into independent domains (Operational, Business, Clinical, Financial, Customer Success) that evaluate domain-specific ML models.
+- **Feature Store & Feature Registry:** All predictive models must reuse standardized features (`FeatureRegistry`) computed and accessed via a `FeatureStore`, preventing divergent definitions of metrics like "Revenue" or "Adoption".
+- **Semantic Overlay (Knowledge Graph):** The Knowledge Graph must NEVER duplicate transactional databases. It acts purely as a semantic overlay mapping relationships (`KnowledgeGraphNode` & `KnowledgeGraphEdge`) to enrich AI Copilot context and intent detection before hitting SQL.
 

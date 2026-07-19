@@ -6834,3 +6834,95 @@ model ReportExecutionLog {
   @@index([reportId])
   @@map("report_execution_logs")
 }
+
+// ===================== PREDICTIVE INTELLIGENCE =====================
+
+model FeatureRegistry {
+  id               String   @id @default(uuid())
+  key              String   @unique // e.g. "hospital_daily_revenue"
+  domain           String // OPERATIONAL | CLINICAL | FINANCIAL | BUSINESS
+  description      String?
+  calculation      String // e.g. "SUM(amount) from Invoices WHERE..."
+  refreshFrequency String // e.g. "HOURLY", "DAILY"
+  sourceTables     String[] @map("source_tables")
+  owner            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("feature_registry")
+}
+
+model PredictiveModel {
+  id            String    @id @default(uuid())
+  domain        String // OPERATIONAL | CLINICAL | FINANCIAL | BUSINESS
+  name          String
+  version       String
+  description   String?
+  owner         String?
+  featureSet    Json?     @map("feature_set") // Array of FeatureRegistry keys
+  evaluation    Json? // Metrics like precision, recall, MAE
+  accuracy      Float?
+  lastTrainedAt DateTime? @map("last_trained_at")
+  deployedAt    DateTime? @map("deployed_at")
+  status        String    @default("ACTIVE") // ACTIVE | SHADOW | DEPRECATED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([name, version])
+  @@map("predictive_models")
+}
+
+model PredictionInsight {
+  id                 String    @id @default(uuid())
+  modelId            String    @map("model_id")
+  modelVersion       String    @map("model_version")
+  entityType         String // e.g. "HOSPITAL", "QUEUE", "WORKFLOW"
+  entityId           String    @map("entity_id")
+  insight            String // e.g. "82% probability of SLA breach in 24h"
+  probability        Float
+  severity           String // LOW | MEDIUM | HIGH | CRITICAL
+  recommendationType String?   @map("recommendation_type") // e.g. "SCALE_WORKERS"
+  recommendation     String?
+  expiresAt          DateTime? @map("expires_at")
+  acknowledged       Boolean   @default(false)
+  resolved           Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+
+  @@index([entityType, entityId])
+  @@index([expiresAt])
+  @@map("prediction_insights")
+}
+
+// ===================== KNOWLEDGE LAYER (SEMANTIC GRAPH) =====================
+
+model KnowledgeGraphNode {
+  id            String   @id @default(uuid())
+  nodeType      String   @map("node_type") // HOSPITAL, DOCTOR, INCIDENT, WORKFLOW, POLICY
+  referenceId   String   @map("reference_id") // UUID of the actual operational record
+  summary       Json // Semantic snapshot
+  embeddingId   String?  @map("embedding_id") // Link to vector DB if needed
+  lastSyncedAt  DateTime @default(now()) @map("last_synced_at")
+  sourceVersion Int      @default(1) @map("source_version")
+  createdAt     DateTime @default(now())
+
+  @@unique([nodeType, referenceId])
+  @@map("kg_nodes")
+}
+
+model KnowledgeGraphEdge {
+  id            String   @id @default(uuid())
+  sourceNodeId  String   @map("source_node_id")
+  targetNodeId  String   @map("target_node_id")
+  relation      String // e.g. "EMPLOYS", "RESOLVED_BY", "DEPENDS_ON"
+  direction     String   @default("DIRECTED") // DIRECTED | BIDIRECTIONAL
+  strength      Float    @default(1.0)
+  confidence    Float    @default(1.0)
+  derivedFrom   String?  @map("derived_from") // e.g. "AI_ANALYSIS", "EXPLICIT_RELATION"
+  lastValidated DateTime @default(now()) @map("last_validated")
+  createdAt     DateTime @default(now())
+
+  @@unique([sourceNodeId, targetNodeId, relation])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
+  @@map("kg_edges")
+}
