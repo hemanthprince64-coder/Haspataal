@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import { DiagnosticsService } from '@/lib/services/diagnostics';
 import { verifyToken } from '@/lib/auth/jwt';

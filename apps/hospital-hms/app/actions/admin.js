@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
 import prisma from '@/lib/prisma';
@@ -38,7 +39,7 @@ export async function getHospitalCatalog() {
 
     return { success: true, data: catalog };
   } catch (e) {
-    console.error('getHospitalCatalog Error:', e);
+    // console.error('getHospitalCatalog Error:', e);
     return { success: false, message: 'Failed to fetch catalog.' };
   }
 }
@@ -72,7 +73,7 @@ export async function updateDiagnosticPrice(prevState, formData) {
     revalidatePath('/dashboard/admin/diagnostics');
     return { success: true, message: 'Price updated successfully.' };
   } catch (e) {
-    console.error('updateDiagnosticPrice Error:', e);
+    // console.error('updateDiagnosticPrice Error:', e);
     return { success: false, message: 'Failed to update price.' };
   }
 }
@@ -162,7 +163,7 @@ export async function updateHospitalFacilities(prevState, formData) {
     revalidatePath('/dashboard/admin/facilities');
     return { success: true, message: 'Facilities updated successfully.' };
   } catch (e) {
-    console.error(e);
+    // console.error(e);
     return { success: false, message: 'Failed to update facilities.' };
   }
 }

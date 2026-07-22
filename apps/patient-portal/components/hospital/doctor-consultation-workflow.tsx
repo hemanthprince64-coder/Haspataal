@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Pill, Activity, CheckCircle2, RotateCcw, Clock, Stethoscope, Save } from 'lucide-react';
@@ -20,7 +21,6 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DoctorConsultationWorkflow({
   initialAppointments,

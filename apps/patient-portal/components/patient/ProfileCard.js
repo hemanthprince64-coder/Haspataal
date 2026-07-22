@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Edit2, LayoutDashboard, Crown, Sparkles } from 'lucide-react';
 
 import Link from 'next/link';

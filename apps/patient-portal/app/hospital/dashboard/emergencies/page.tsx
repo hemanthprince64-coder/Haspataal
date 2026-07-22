@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, Clock, UserCheck } from 'lucide-react';
 

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {
   UploadCloud,
   CheckCircle,

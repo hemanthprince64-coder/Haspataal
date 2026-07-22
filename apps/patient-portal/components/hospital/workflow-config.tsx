@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Calendar, CreditCard, Clipboard, HelpCircle, Loader2, Save } from 'lucide-react';

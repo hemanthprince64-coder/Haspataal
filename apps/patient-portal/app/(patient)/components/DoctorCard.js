@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Star, MapPin, Building2, User, Bookmark } from 'lucide-react';

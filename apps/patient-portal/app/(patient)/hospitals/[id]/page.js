@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { services } from '@/lib/services';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';

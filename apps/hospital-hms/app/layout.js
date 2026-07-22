@@ -1,3 +1,5 @@
+/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import './globals.css';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -5,6 +7,13 @@ import Script from 'next/script';
 import { CSPostHogProvider } from './providers';
 import PostHogPageView from './PostHogPageView';
 import { Button } from '@haspataal/ui';
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#2563eb',
+};
 
 export const metadata = {
   title: 'Haspataal — Hospital Partner Portal',

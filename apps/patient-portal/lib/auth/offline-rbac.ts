@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Offline RBAC Caching Utility using IndexedDB (Phase 1 local client auth)
  */

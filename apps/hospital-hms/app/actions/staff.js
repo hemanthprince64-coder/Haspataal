@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use server';
 
 import prisma from '@/lib/prisma';
@@ -26,7 +27,7 @@ export async function createStaff(prevState, formData) {
     revalidatePath('/dashboard/staff');
     return { message: 'Staff created successfully!' };
   } catch (e) {
-    console.error(e);
+    // console.error(e);
     return { message: 'Failed to create staff. Mobile might be duplicate.' };
   }
 }

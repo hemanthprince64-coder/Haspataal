@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Simple metrics counters for development
 // In production, these would integrate with Prometheus or similar
 

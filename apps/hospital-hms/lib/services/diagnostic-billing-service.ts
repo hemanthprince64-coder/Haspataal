@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@haspataal/db';
 
 import logger from '../../../patient-portal/lib/logger';

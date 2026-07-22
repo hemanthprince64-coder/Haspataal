@@ -1,5 +1,5 @@
 import { prisma } from '@haspataal/db';
-import { redis } from '@haspataal/queue';
+
 
 import { NextResponse } from 'next/server';
 

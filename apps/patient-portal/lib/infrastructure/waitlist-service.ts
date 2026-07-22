@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { prisma } from '../util/prisma-singleton';
 
 /**

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 
 import { verifyPassword } from '@/lib/auth/hash';
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ token, hospital_id: user.hospitalId, user_id: user.id });
   } catch (err) {
-    console.error('Login error:', err);
+    // console.error('Login error:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

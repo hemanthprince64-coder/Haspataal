@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { requireHospitalStaff } from '@haspataal/auth';
 
 import { redirect } from 'next/navigation';

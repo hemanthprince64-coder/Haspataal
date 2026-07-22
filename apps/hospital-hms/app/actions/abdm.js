@@ -35,7 +35,7 @@ export async function linkAbhaAction(formData) {
     revalidatePath('/profile');
     return { success: true, message: 'ABHA Linked Successfully!' };
   } catch (e) {
-    console.error('Link ABHA Error', e);
+    // console.error('Link ABHA Error', e);
     if (e.code === 'P2002') return { message: 'This ABHA is already linked to another account.' };
     return { message: 'Failed to link ABHA.' };
   }

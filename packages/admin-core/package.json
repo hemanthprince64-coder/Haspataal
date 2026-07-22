@@ -19,9 +19,9 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
-    "@haspataal/auth": "workspace:*",
-    "@haspataal/ui": "workspace:*",
-    "@haspataal/types": "workspace:*",
+    "@haspataal/auth": "*",
+    "@haspataal/ui": "*",
+    "@haspataal/types": "*",
     "lucide-react": "^0.473.0",
     "swr": "^2.2.4"
   }

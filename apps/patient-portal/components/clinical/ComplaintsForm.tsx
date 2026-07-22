@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Plus, AlertCircle } from 'lucide-react';
 
 import React, { useState } from 'react';

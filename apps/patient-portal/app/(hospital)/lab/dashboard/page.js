@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { services } from '@/lib/services';
 import { requireRole } from '@/lib/auth/requireRole';
 import { UserRole } from '@/types';

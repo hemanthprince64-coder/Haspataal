@@ -1,4 +1,4 @@
-import { getSession } from '@haspataal/auth';
+import { verifySession } from '@haspataal/auth';
 
 import React from 'react';
 
@@ -11,7 +11,7 @@ export async function ScopeGate({
   scope: 'PLATFORM' | 'NETWORK' | 'HOSPITAL';
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await verifySession('session_admin');
 
   if (!session) {
     redirect('/login');

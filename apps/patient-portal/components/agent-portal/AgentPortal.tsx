@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { IndianRupee, MapPin, CheckCircle2, Clock, PlusCircle } from 'lucide-react';

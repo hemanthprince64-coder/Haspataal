@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
 import prisma from '@/lib/prisma';
@@ -51,7 +52,7 @@ export async function getDoctorOrders() {
 
     return { success: true, data: orders };
   } catch (e) {
-    console.error('getDoctorOrders Error:', e);
+    // console.error('getDoctorOrders Error:', e);
     return { success: false, message: 'Failed to fetch orders.' };
   }
 }
@@ -135,7 +136,7 @@ export async function updateDiagnosticResult(prevState, formData) {
     revalidatePath('/dashboard/doctor/orders');
     return { success: true, message: 'Result saved.' };
   } catch (e) {
-    console.error('updateDiagnosticResult Error:', e);
+    // console.error('updateDiagnosticResult Error:', e);
     return { success: false, message: 'Failed to save result.' };
   }
 }

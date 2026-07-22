@@ -4,10 +4,10 @@ import { HospitalWorkflow, HospitalAction, HospitalState } from '@haspataal/work
 
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requirePlatformRole(['PLATFORM_ADMIN', 'NETWORK_ADMIN']);
-    const hospitalId = params.id;
+    const { id: hospitalId } = await params;
     const body = await request.json();
     const { action, reason, metadata, expectedState } = body as {
       action: HospitalAction;

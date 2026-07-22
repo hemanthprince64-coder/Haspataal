@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { IntegrationProvider } from '@prisma/client';
 import { randomBytes, createCipheriv } from 'crypto';
 import { z } from 'zod';

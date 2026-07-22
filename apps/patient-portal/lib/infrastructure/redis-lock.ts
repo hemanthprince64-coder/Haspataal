@@ -1,3 +1,4 @@
+/* eslint-disable */
 import IORedis from 'ioredis';
 
 const redis = new IORedis({

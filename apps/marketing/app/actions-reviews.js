@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
 import prisma from '@/lib/prisma';
@@ -34,7 +35,7 @@ export async function submitReview(prevState, formData) {
 
     return { success: true, message: 'Review submitted successfully.' };
   } catch (e) {
-    console.error('Submit Review Error:', e);
+    // console.error('Submit Review Error:', e);
     return { success: false, message: 'Failed to submit review.' };
   }
 }

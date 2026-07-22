@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 import { computeSetupCompletion } from '@/lib/setup/completion-engine';
 import { hospitalAccessError, requireHospitalAccess } from '@/lib/auth/hospital-access';

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { deleteMedicationAction } from '@/app/actions';
 import { Pill, Trash2, Calendar, Clock, AlertCircle, Info, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';

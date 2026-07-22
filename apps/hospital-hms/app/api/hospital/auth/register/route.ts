@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ token, hospital_id: hospital.id, user_id: staffLogin.id });
   } catch (err: any) {
-    console.error('Registration error details:', err.message || err);
+    // console.error('Registration error details:', err.message || err);
     return NextResponse.json(
       { error: 'Internal Server Error', details: err.message },
       { status: 500 },

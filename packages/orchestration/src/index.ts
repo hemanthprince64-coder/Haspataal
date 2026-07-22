@@ -1,4 +1,4 @@
-import { EventBus } from '@haspataal/event-bus';
+import { EventBus } from '@haspataal/events';
 
 // import { WorkflowEngine } from "@haspataal/workflows";
 // import { DecisionEngine } from "@haspataal/decision-engine";

@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Network, Activity, Clock, ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';

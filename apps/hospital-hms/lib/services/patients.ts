@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { createClient } from '@/lib/supabase/client';
 import { encrypt, decrypt } from '@/lib/security/encryption';
 

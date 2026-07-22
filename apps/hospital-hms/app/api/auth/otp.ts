@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { randomInt } from 'crypto';
 
 import prisma from '@/lib/prisma';

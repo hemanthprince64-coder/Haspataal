@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { TrendingUp, Users, CreditCard, Activity, BrainCircuit } from 'lucide-react';

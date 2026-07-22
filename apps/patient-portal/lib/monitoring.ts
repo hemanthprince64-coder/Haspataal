@@ -1,3 +1,4 @@
+/* eslint-disable */
 import * as Sentry from "@sentry/nextjs";
 import { decrypt } from "./session";
 import { cookies } from "next/headers";

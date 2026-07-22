@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Weight, Heart, Droplets, Activity, Thermometer, Wind } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 

@@ -124,7 +124,7 @@ export class WorkflowEngine<State extends string, Action extends string> {
             durationMs: waitTimeMs + executionTimeMs,
             waitTimeMs,
             executionTimeMs,
-            manualIntervention: actor.role === 'PLATFORM_ADMIN',
+            manualIntervention: (actor.role as string) === 'PLATFORM_ADMIN',
             finalStatus: 'COMPLETED',
           },
         });

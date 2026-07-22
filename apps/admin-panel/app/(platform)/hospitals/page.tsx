@@ -1,4 +1,4 @@
-import { DataTable } from '@haspataal/admin-core';
+
 import { prisma } from '@haspataal/db';
 import { Button } from '@haspataal/ui/button';
 

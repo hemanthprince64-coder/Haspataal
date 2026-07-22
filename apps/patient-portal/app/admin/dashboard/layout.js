@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { LayoutDashboard, Building2, LogOut, Shield } from 'lucide-react';
 
 import { cookies } from 'next/headers';

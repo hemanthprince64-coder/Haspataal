@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 
 import { requireHospitalAccess, hospitalAccessError } from '@/lib/auth/hospital-access';

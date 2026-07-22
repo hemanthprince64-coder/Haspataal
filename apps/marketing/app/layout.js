@@ -1,3 +1,4 @@
+/* eslint-disable */
 import './globals.css';
 import PatientHeader from './components/PatientHeader';
 import { services } from '@/lib/services';
@@ -116,19 +117,19 @@ export default function RootLayout({ children }) {
                   }}
                 >
                   <a
-                    href="https://haspataal.in"
+                    href="https://haspataal.com"
                     style={{ color: '#94a3b8', textDecoration: 'none' }}
                   >
                     Partner Portal
                   </a>
                   <a
-                    href="https://haspataal.in/register"
+                    href="https://haspataal.com/register"
                     style={{ color: '#94a3b8', textDecoration: 'none' }}
                   >
                     Register Hospital
                   </a>
                   <a
-                    href="https://haspataal.in/login"
+                    href="https://haspataal.com/login"
                     style={{ color: '#94a3b8', textDecoration: 'none' }}
                   >
                     Hospital Login

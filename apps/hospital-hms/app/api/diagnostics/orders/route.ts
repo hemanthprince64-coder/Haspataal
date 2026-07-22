@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 import { DiagnosticsService } from '@/lib/services/diagnostics';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';

@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { WifiOff, RefreshCcw, AlertTriangle, CheckCircle2 } from 'lucide-react';

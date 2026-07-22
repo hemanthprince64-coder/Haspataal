@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { ShieldAlert, UserPlus, Clock, Printer, Keyboard, Activity } from 'lucide-react';

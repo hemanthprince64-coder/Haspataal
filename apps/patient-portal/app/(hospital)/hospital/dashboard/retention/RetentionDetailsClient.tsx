@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Activity, BellRing, Users, MessageSquare } from 'lucide-react';

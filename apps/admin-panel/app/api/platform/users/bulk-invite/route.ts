@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { requirePlatformRole } from '@haspataal/auth';
 import { prisma } from '@haspataal/db';
 

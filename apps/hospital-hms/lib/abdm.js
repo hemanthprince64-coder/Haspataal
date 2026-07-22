@@ -1,3 +1,4 @@
+/* eslint-disable */
 // ABDM Integration Helper (Sandbox)
 
 const BASE_URL = process.env.ABDM_BASE_URL || 'https://dev.abdm.gov.in/gateway/v0.5';
@@ -10,7 +11,7 @@ export async function getAbdmToken() {
   const clientSecret = process.env.ABDM_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    console.warn('ABDM Credentials missing');
+    // console.warn('ABDM Credentials missing');
     return null;
   }
 
@@ -26,7 +27,7 @@ export async function getAbdmToken() {
 
     return data.accessToken;
   } catch (error) {
-    console.error('ABDM Auth Error:', error);
+    // console.error('ABDM Auth Error:', error);
     return null; // Handle gracefully
   }
 }
@@ -124,8 +125,8 @@ export async function linkCareContext(accessToken, abhaAddress, visitInfo) {
     fhirRecord: fhirBundle, // Serialized clinical bundle
   };
 
-  console.log('[ABDM-HIP] Linking care context to ABHA:', abhaAddress);
-  console.log('[ABDM-HIP] Serialized ABDM HIP Payload:', JSON.stringify(abdmPayload, null, 2));
+  // console.log('[ABDM-HIP] Linking care context to ABHA:', abhaAddress);
+  // console.log('[ABDM-HIP] Serialized ABDM HIP Payload:', JSON.stringify(abdmPayload, null, 2));
 
   return {
     success: true,

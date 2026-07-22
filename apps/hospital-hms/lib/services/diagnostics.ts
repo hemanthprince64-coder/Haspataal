@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { eventBus, EVENT_TYPES } from '@haspataal/events';
 
 import { createClient } from '@/lib/supabase/client';
@@ -161,7 +162,7 @@ export const LabService = {
         },
       });
     } catch (e: any) {
-      console.error('[Timeline] Failed to publish SampleCollected event:', e.message);
+      // console.error('[Timeline] Failed to publish SampleCollected event:', e.message);
     }
 
     return sample;
@@ -256,7 +257,7 @@ export const LabService = {
           },
         });
       } catch (e: any) {
-        console.error('[Timeline] Failed to publish LabCompleted event:', e.message);
+        // console.error('[Timeline] Failed to publish LabCompleted event:', e.message);
       }
     }
 

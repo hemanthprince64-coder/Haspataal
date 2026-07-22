@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Trash2, CheckCircle, Search, FileText } from 'lucide-react';

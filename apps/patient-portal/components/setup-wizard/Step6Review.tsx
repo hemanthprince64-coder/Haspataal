@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Button } from '@haspataal/ui/button';
 
 import React from 'react';

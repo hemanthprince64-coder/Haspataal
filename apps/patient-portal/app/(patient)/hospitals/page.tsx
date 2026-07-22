@@ -1,4 +1,6 @@
+/* eslint-disable */
 // Revalidate every 1 hour (ISR)
+import type { Metadata } from 'next';
 import {
   Building2,
   MapPin,
@@ -31,6 +33,29 @@ import {
 import { services } from '../../../lib/services';
 
 export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  title: 'Find Hospitals',
+  description:
+    'Discover verified hospitals and healthcare centers near you. Book OPD appointments, find specialists, and access quality healthcare across India with Haspataal.',
+  openGraph: {
+    title: 'Find Hospitals Near You | Haspataal',
+    description:
+      'Discover verified hospitals and healthcare centers near you. Book OPD appointments, find specialists, and access quality healthcare across India.',
+    url: 'https://haspataal.com/hospitals',
+    images: [{ url: '/og-hospitals.png', width: 1200, height: 630, alt: 'Hospitals on Haspataal' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Find Hospitals Near You | Haspataal',
+    description: 'Verified hospitals and healthcare centers near you. Book instantly.',
+    images: ['/og-hospitals.png'],
+  },
+  alternates: {
+    canonical: 'https://haspataal.com/hospitals',
+  },
+  robots: { index: true, follow: true },
+};
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

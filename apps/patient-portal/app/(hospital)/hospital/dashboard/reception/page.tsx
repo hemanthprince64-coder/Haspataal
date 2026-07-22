@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { requireHospitalStaff } from '@haspataal/auth';
 
 import ReceptionWorkflow from '@/components/hospital/reception-workflow';

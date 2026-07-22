@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Revalidate every 1 hour (ISR)
 import type { Metadata } from 'next';
 

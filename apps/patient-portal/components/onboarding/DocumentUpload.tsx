@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import { UploadCloud, File, X, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';

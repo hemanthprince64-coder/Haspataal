@@ -1,4 +1,4 @@
-import { getSession } from '@haspataal/auth';
+import { verifySession } from '@haspataal/auth';
 
 import React from 'react';
 
@@ -13,7 +13,7 @@ export async function PermissionGate({
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await verifySession('session_admin');
 
   if (!session) {
     return <>{fallback}</>;
@@ -21,7 +21,7 @@ export async function PermissionGate({
 
   // TODO: Check against PlatformPermission table.
   // For MVP, if PLATFORM_ADMIN allow all
-  if (session.user.role === 'PLATFORM_ADMIN') {
+  if ((session.user.role as string) === 'PLATFORM_ADMIN') {
     return <>{children}</>;
   }
 

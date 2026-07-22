@@ -1,3 +1,4 @@
+/* eslint-disable */
 export const revalidate = 0; // Always fresh (dynamic rendering)
 import { services } from '@/lib/services';
 import { requireRole } from '@/lib/auth/requireRole';

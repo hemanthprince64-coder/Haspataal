@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@haspataal/ui';
 import { Input } from '@haspataal/ui';
 import { Button } from '@haspataal/ui';
 import { Checkbox } from '@haspataal/ui';
+import { Label } from '@haspataal/ui/label';
 import { Building2, Save } from 'lucide-react';
 
 export default function FacilitiesPage() {

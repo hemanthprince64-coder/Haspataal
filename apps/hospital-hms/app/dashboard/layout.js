@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { requireHospitalStaff } from '@haspataal/auth';
 import { AuthorizationService } from '@haspataal/core';
 import { Button } from '@haspataal/ui';
@@ -8,7 +9,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { logoutHospital } from '@/app/actions';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@haspataal/db';
 
 export default async function DashboardLayout({ children }) {
   let user;

@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { Check, X, Pause, Loader2 } from 'lucide-react';

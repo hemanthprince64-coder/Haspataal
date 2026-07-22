@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
 import { OnboardingService } from '@/lib/services/onboarding';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';

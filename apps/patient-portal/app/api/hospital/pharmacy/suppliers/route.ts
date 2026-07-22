@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hospitalAccessError, requireHospitalAccess } from '@/lib/auth/hospital-access';

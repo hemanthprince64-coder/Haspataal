@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Client-Side Offline Database & Outbox utilizing HTML5 IndexedDB
  */

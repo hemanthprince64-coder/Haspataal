@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // import { Redis } from '@upstash/redis';
 
 // For MVP/War Room, we will mock the Redis interface or use an in-memory map if no URL provided.

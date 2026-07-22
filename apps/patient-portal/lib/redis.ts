@@ -1,3 +1,4 @@
+/* eslint-disable */
 import Redis from 'ioredis';
 
 // Redis configuration

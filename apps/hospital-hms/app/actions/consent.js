@@ -18,10 +18,10 @@ export async function grantConsentAction(formData) {
     // 2. Generate Consent Artefact
     // 3. Push Health Data (HIP -> HIU)
 
-    console.log(
-      `[ABDM SIMULATION] Granting consent to ${hospitalName} for User ${session.user.id}`,
-    );
-    console.log(`[ABDM SIMULATION] Pushing 5 Health Records...`);
+    // console.log(
+    //   `[ABDM SIMULATION] Granting consent to ${hospitalName} for User ${session.user.id}`,
+    // );
+    // console.log(`[ABDM SIMULATION] Pushing 5 Health Records...`);
 
     await logAction(session.user.id, 'GRANT_CONSENT', 'Consent', requestId, {
       hospital: hospitalName,

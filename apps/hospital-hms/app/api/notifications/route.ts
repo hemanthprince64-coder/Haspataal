@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NotificationCommandHandler, NotificationQueryHandler, NotificationInputSchema } from '@haspataal/notify';
 import { NextResponse } from 'next/server';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';

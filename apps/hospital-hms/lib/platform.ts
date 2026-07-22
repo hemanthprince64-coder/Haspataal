@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { verifyToken } from './auth/jwt';

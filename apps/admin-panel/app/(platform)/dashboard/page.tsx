@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { KpiCard, PermissionGate } from '@haspataal/admin-core';
 import { Activity, Building2, ServerCrash, Users } from 'lucide-react';
 

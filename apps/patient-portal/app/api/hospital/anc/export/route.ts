@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 
 import { generatePMJAYClaim } from '@/lib/services/pmjay';

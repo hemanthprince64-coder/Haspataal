@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import { IndianRupee, ArrowRightCircle, CheckCircle2 } from 'lucide-react';

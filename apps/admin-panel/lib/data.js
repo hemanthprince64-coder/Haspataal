@@ -1,3 +1,4 @@
+import { logger } from '@haspataal/logger';
 import fs from 'fs';
 import path from 'path';
 
@@ -455,7 +456,7 @@ function loadDb() {
       return JSON.parse(data);
     }
   } catch (error) {
-    console.error('Error loading DB:', error);
+    logger.error('Error loading DB:', error);
   }
 
   // Default/Seed state if file doesn't exist
@@ -484,7 +485,7 @@ export const saveDb = () => {
     }
     fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
   } catch (error) {
-    console.error('Error saving DB:', error);
+    logger.error('Error saving DB:', error);
   }
 };
 

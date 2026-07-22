@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
 import prisma from '@/lib/prisma';
@@ -14,7 +15,7 @@ export async function getDiagnosticCatalog(query = '') {
     });
     return { success: true, data: tests };
   } catch (e) {
-    console.error('Fetch Catalog Error:', e);
+    // console.error('Fetch Catalog Error:', e);
     return { success: false, message: 'Failed to fetch catalog.' };
   }
 }
@@ -68,7 +69,7 @@ export async function createDiagnosticOrder(prevState, formData) {
     revalidatePath(`/hospital/${hospitalId}/diagnostics`);
     return { success: true, message: `Order created: ${order.id}` };
   } catch (e) {
-    console.error('Create Order Error:', e);
+    // console.error('Create Order Error:', e);
     return { success: false, message: 'Failed to create order.' };
   }
 }

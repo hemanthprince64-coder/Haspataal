@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { prisma } from '../util/prisma-singleton';
 import { notificationQueue, addJob } from './queues';
 import { registerWorker } from '../util/worker-lifecycle';

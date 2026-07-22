@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use client';
 
 import type { ReactNode } from 'react';

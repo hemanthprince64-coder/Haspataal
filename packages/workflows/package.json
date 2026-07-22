@@ -8,9 +8,9 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@haspataal/db": "workspace:*",
-    "@haspataal/events": "workspace:*",
-    "@haspataal/types": "workspace:*",
+    "@haspataal/db": "*",
+    "@haspataal/events": "*",
+    "@haspataal/types": "*",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

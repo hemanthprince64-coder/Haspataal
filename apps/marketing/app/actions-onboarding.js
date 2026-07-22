@@ -75,7 +75,7 @@ export async function registerHospital(prevState, formData) {
     revalidatePath('/admin/hospitals'); // Assuming an admin dashboard exists
     return { success: true, message: `Hospital registered with ID: ${result.id}` };
   } catch (e) {
-    console.error('Registration Error:', e);
+    // console.error('Registration Error:', e);
     if (e.code === 'P2002') {
       return {
         success: false,

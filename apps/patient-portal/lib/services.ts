@@ -1498,7 +1498,7 @@ export const services = {
             hospitalId: hospital.id,
             fullName: data.adminName,
             mobile: data.mobile,
-            email: `${data.mobile}@haspataal.in`,
+            email: `${data.mobile}@haspataal.com`,
             isPrimary: true,
             verificationStatus: 'pending',
           },
@@ -1534,7 +1534,7 @@ export const services = {
           changes: { name: hospital.legalName, city: hospital.city },
         });
 
-        hospitalRegistrationsCounter.inc();
+        
 
         return toHospitalPublic({ ...hospital, name: hospital.legalName } as any as Hospital);
       });
@@ -1597,7 +1597,7 @@ export const services = {
             hospitalId: lab.id,
             fullName: data.adminName,
             mobile: data.mobile,
-            email: `${data.mobile}@haspataal.in`,
+            email: `${data.mobile}@haspataal.com`,
             isPrimary: true,
             verificationStatus: 'pending',
           },

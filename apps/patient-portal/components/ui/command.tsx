@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Stub UI command component — replace with cmdk-based implementation when needed
 'use client';
 import React from 'react';

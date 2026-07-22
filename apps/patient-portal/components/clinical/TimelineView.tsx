@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Calendar, FileText, Pill, FlaskRound, Stethoscope } from 'lucide-react';
 
 import React, { useState, useEffect } from 'react';

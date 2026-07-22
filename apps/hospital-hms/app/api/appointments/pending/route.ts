@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';

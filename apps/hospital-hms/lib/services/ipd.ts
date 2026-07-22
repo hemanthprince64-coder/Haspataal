@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@haspataal/db';
 import { buildCanonicalOutbox, ScopeType } from '@haspataal/platform-contracts/dist/events/outbox';
 import { BedStatus } from '@prisma/client';
@@ -92,7 +93,7 @@ export const IPDService = {
         },
       });
     } catch (e: any) {
-      console.error('[Timeline] Failed to publish PatientAdmitted event:', e.message);
+      // console.error('[Timeline] Failed to publish PatientAdmitted event:', e.message);
     }
 
     return admission;
@@ -174,7 +175,7 @@ export const IPDService = {
         },
       });
     } catch (e: any) {
-      console.error('[Timeline] Failed to publish WardTransfer event:', e.message);
+      // console.error('[Timeline] Failed to publish WardTransfer event:', e.message);
     }
 
     return updatedAdmission;

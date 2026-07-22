@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { BillingService } from '@/lib/services/billing';
+import { logger } from '@haspataal/logger';
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -14,10 +15,8 @@ export async function POST(req: Request) {
 
   if (payload.event === 'payment.captured') {
     const payment = payload.payload.payment.entity;
-    // In real app, metadata should contain hospital_id and plan_id
-    // For MVP, assuming we can extract it or logic is handled elsewhere.
-    // We record the transaction here securely if needed.
-    console.log('Payment Captured:', payment.id);
+    // TODO: Extract hospital_id + plan_id from payment metadata and record transaction
+    logger.info({ action: 'razorpay_payment_captured', paymentId: payment.id });
   }
 
   return NextResponse.json({ status: 'ok' });

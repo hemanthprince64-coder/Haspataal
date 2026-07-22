@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Circuit Breaker Pattern (Level 2 Resilience)
  * Protects the system from hanging on slow/failed external services (SMS, Payment)

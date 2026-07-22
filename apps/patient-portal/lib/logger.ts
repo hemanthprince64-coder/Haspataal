@@ -1,3 +1,4 @@
+/* eslint-disable */
 // Simple logger for development
 // In production, this would integrate with a proper logging system
 

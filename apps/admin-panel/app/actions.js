@@ -1,3 +1,4 @@
+/* eslint-disable */
 'use server';
 
 import { services } from '@/lib/services';

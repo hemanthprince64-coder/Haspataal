@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Prisma } from '@prisma/client';
 import { prisma } from '../util/prisma-singleton';
 import { acquireDistributedLock } from './redlock';

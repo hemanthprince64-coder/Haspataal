@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';

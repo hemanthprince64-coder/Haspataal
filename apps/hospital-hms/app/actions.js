@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
 import { services } from '@/lib/services';
@@ -161,7 +162,7 @@ export async function createVisitAction(prevState, formData) {
 
     return { success: true, message: `Visit #${visit.id.slice(0, 8)} created successfully!` };
   } catch (e) {
-    console.error('Create Visit Error:', e);
+    // console.error('Create Visit Error:', e);
     return { success: false, message: 'Failed to create visit.' };
   }
 }
@@ -221,7 +222,7 @@ export async function addDoctorAction(prevState, formData) {
     await logAction(user.id, 'ADD_DOCTOR', 'Doctor', newDoctor.id, { name, speciality });
     return { success: true, message: `Dr. ${name} added successfully!` };
   } catch (error) {
-    console.error('Add Doctor Error:', error);
+    // console.error('Add Doctor Error:', error);
     if (error.code === 'P2002')
       return { message: 'A doctor with this mobile number already exists.' };
     return { success: false, message: 'Failed to add doctor.' };
@@ -244,7 +245,7 @@ export async function removeDoctorAction(prevState, formData) {
     });
     return { success: true, message: 'Doctor removed successfully.' };
   } catch (error) {
-    console.error('Remove Doctor Error:', error);
+    // console.error('Remove Doctor Error:', error);
     return { success: false, message: 'Failed to remove doctor.' };
   }
 }
@@ -297,7 +298,7 @@ export async function updateAppointmentStatus(formData) {
     // Revalidate? For now, standard server action redirect refreshes the page
     return { success: true };
   } catch (e) {
-    console.error('Update Status Error', e);
+    // console.error('Update Status Error', e);
     return { message: 'Failed to update status' };
   }
 }

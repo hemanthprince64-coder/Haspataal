@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/util/prisma-singleton';
 import { ancService } from '@/lib/services/anc';

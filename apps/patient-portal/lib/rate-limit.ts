@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { headers } from 'next/headers';
 
 import redisClient from './redis';

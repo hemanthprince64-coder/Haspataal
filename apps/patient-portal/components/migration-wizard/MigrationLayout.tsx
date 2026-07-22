@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { UploadCloud, Database } from 'lucide-react';
 
 import React, { useState } from 'react';

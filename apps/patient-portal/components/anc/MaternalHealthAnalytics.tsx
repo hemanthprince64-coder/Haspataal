@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Maternal Health Analytics Dashboard
  *

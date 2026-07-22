@@ -70,7 +70,7 @@ export class PrismaHospitalRepository implements IHospitalRepository {
           hospitalId: hospital.id,
           fullName: input.adminName,
           mobile: input.mobile,
-          email: `${input.mobile}@haspataal.in`,
+          email: `${input.mobile}@haspataal.com`,
           isPrimary: true,
           verificationStatus: 'pending',
         },

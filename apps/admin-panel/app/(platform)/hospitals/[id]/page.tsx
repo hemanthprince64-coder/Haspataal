@@ -5,8 +5,8 @@ import React from 'react';
 
 import { notFound } from 'next/navigation';
 
-export default async function Hospital360Page({ params }: { params: { id: string } }) {
-  const hospitalId = params.id;
+export default async function Hospital360Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id: hospitalId } = await params;
   const hospital = await prisma.hospitalsMaster.findUnique({
     where: { id: hospitalId },
   });

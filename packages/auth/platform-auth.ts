@@ -1,11 +1,11 @@
 import { cookies } from 'next/headers';
 
-import { decrypt, getSession } from './session';
+import { decrypt, verifySession } from './session';
 
 export type AdminRole = 'PLATFORM_ADMIN' | 'NETWORK_ADMIN' | 'HOSPITAL_ADMIN';
 
 export async function requirePlatformRole(role: AdminRole | AdminRole[]) {
-  const session = await getSession();
+  const session = await verifySession('session_admin');
   if (!session || !session.user) {
     throw new Error('Unauthorized: No session found');
   }
@@ -25,11 +25,11 @@ export async function withPlatformPermission(options: {
   resource: string;
   action: string;
 }) {
-  const user = await getSession().then((s) => s?.user);
+  const user = await verifySession('session_admin').then((s) => s?.user);
   if (!user) throw new Error('Unauthorized');
 
   // MVP: if PLATFORM_ADMIN, allow
-  if (user.role === 'PLATFORM_ADMIN') return user;
+  if ((user.role as string) === 'PLATFORM_ADMIN') return user;
 
   // In real implementation: check PlatformPermission table in DB using `user.id`, `scope`, `resource`, `action`
   throw new Error(
@@ -48,9 +48,9 @@ export async function scopeContextMiddleware(req: any) {
 
     const role = payload.user.role;
     let scope = 'PUBLIC';
-    if (role === 'PLATFORM_ADMIN') scope = 'PLATFORM';
-    else if (role === 'NETWORK_ADMIN') scope = 'NETWORK';
-    else if (role === 'HOSPITAL_ADMIN') scope = 'HOSPITAL';
+    if ((role as string) === 'PLATFORM_ADMIN') scope = 'PLATFORM';
+    else if ((role as string) === 'NETWORK_ADMIN') scope = 'NETWORK';
+    else if ((role as string) === 'HOSPITAL_ADMIN') scope = 'HOSPITAL';
 
     return {
       scope,

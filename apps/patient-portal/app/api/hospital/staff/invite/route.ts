@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getHospitalIdFromSession } from '@/lib/auth';
 import { randomBytes } from 'crypto';
 import { z } from 'zod';
+import logger from '@/lib/logger';
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -68,9 +69,9 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // In production: send email with invite link
-  // await sendInviteEmail({ email: parsed.data.email, token, role: parsed.data.role });
-  console.log(`[Staff Invite] Token for ${parsed.data.email}: ${token}`);
+  // TODO: Integrate email service — send invite link to parsed.data.email
+  // await sendInviteEmail({ email: parsed.data.email, role: parsed.data.role, inviteId: invite.id });
+  logger.info({ action: 'staff_invite_created', inviteId: invite.id, hospitalId, role: parsed.data.role });
 
   return NextResponse.json({ ok: true, inviteId: invite.id });
 }

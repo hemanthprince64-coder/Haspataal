@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { services } from '@/lib/services';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';

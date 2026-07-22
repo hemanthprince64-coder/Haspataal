@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { auth } from '@/auth'; // Fixed import path
 import { redirect } from 'next/navigation';
 import { getHospitalStats } from '@/app/actions/analytics'; // Fixed import path

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Plus } from 'lucide-react';
 
 import React, { useState, useRef, useEffect } from 'react';

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@haspataal/db": "*",
-    "@haspataal/event-bus": "*",
+    "@haspataal/events": "*",
     "@haspataal/decision-engine": "*",
     "@haspataal/approvals": "*",
     "@haspataal/workflows": "*"

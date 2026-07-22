@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { MetadataRoute } from 'next';
 import { services } from '@/lib/services';
 

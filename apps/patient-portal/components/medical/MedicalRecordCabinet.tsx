@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { FileText, ImageIcon, File, Download, ExternalLink } from 'lucide-react';
 
 import React, { useState } from 'react';

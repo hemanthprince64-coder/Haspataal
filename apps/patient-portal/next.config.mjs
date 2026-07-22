@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
+  
   output: 'standalone',
   images: {
     remotePatterns: [
@@ -17,12 +20,6 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
   async headers() {
     return [

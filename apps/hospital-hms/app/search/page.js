@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,7 +38,7 @@ export default function SearchPage() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        // console.error(err);
         setLoading(false);
       });
 
@@ -47,7 +48,7 @@ export default function SearchPage() {
         (pos) => {
           setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
-        (err) => console.log('Location access not granted or error'),
+        (err) => { /* location error */ },
       );
     }
   }, []);

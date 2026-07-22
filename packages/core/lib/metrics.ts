@@ -95,3 +95,17 @@ export const outboxProcessingDuration = new Histogram({
   buckets: [0.01, 0.05, 0.1, 0.5, 1, 5],
   registers: [registry],
 });
+
+export const appointmentsCreatedCounter = new Counter({
+  name: 'appointments_created_total',
+  help: 'Total appointments created',
+  labelNames: ['status', 'hospitalId'],
+  registers: [registry],
+});
+
+export const hospitalRegistrationsCounter = new Counter({
+  name: 'hospital_registrations_total',
+  help: 'Total hospitals registered',
+  labelNames: ['status'],
+  registers: [registry],
+});

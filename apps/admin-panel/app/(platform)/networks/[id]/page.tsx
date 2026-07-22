@@ -5,9 +5,9 @@ import React from 'react';
 
 import { notFound } from 'next/navigation';
 
-export default async function NetworkDetailsPage({ params }: { params: { id: string } }) {
+export default async function NetworkDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const network = await prisma.network.findUnique({
-    where: { id: params.id },
+    where: { id: (await params).id },
     include: {
       hospitals: {
         include: { hospital: true },
