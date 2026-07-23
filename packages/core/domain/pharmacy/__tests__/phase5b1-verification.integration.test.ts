@@ -40,8 +40,8 @@ describe('Phase 5B.1 Final Verification Gate', () => {
   }, 60000);
 
   afterAll(async () => {
-    await prisma.$disconnect();
-    await container.stop();
+    if (prisma) await prisma.$disconnect();
+    if (container) await container.stop();
   });
 
   const setupData = async () => {

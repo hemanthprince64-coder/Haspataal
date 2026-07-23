@@ -166,7 +166,7 @@ describe('Phase 3 - Discharge State Machine - Core state transitions', () => {
   it('3. LAMA departure', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.LAMA_DOCUMENTATION_COMPLETE,
+      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
     });
     await confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-1', 'NURSE');
     await expectPhysicalPresence(adm.id, PhysicalPresenceStatus.DEPARTED_LAMA);
@@ -265,7 +265,7 @@ describe('Phase 3 - Concurrency', () => {
   it('12. LAMA vs WITHOUT_NOTICE race', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.LAMA_DOCUMENTATION_COMPLETE,
+      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
     });
     const p1 = confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-1', 'NURSE');
     const p2 = confirmPhysicalDeparture(adm.id, 'WITHOUT_NOTICE', 'actor-2', 'NURSE');

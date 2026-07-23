@@ -1,7 +1,0 @@
-chore(infra): complete Sprint 1 deployment hardening
-
-- Remove JWT dummy-secret fallback from all auth libraries.
-- NEXTAUTH_SECRET is now strictly required at runtime to prevent vulnerabilities.
-- Remove ignoreDuringBuilds ESLint suppression from all next.config.mjs files.
-- Replace hardcoded POSTGRES_PASSWORD with a secure placeholder in .env.example.
-- Update MEMORY.md with new security and build hardening lessons.

@@ -5,6 +5,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    setupFiles: [path.resolve(__dirname, '../../vitest.setup.ts')],
+    env: {
+      NEXTAUTH_SECRET: 'test-secret-for-jwt-signing-which-is-at-least-32-chars-long',
+    },
     alias: {
       '@/hooks': path.resolve(__dirname, '../../hooks'),
       '@/services': path.resolve(__dirname, '../../services'),
