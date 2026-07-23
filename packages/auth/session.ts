@@ -8,9 +8,6 @@ import { UserRole } from '../types';
 function getSecretKey() {
   const secretKey = process.env.NEXTAUTH_SECRET;
   if (!secretKey) {
-    if (process.env.npm_lifecycle_event === 'build') {
-      return new TextEncoder().encode('dummy-secret-for-build-purposes-only');
-    }
     throw new Error('NEXTAUTH_SECRET is required for session signing');
   }
   return new TextEncoder().encode(secretKey);

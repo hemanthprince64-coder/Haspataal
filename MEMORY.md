@@ -713,6 +713,9 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Safety Circuit Breakers:** A dedicated `packages/safety` module protects the platform from runaway automation (e.g., executing a rule 300 times in 10 minutes) by enforcing hard operational guardrails.
 - **Execution Policy:** Strict categorization of workflows (`packages/workflows/src/auto-resolution`): Autonomous (safe, reversible), Human Approval (infrastructure scaling), and Never Autonomous (clinical data modification).
 
+## Knowledge Base Entry: Security & Build Hardening (2026-07-23)
+- **JWT dummy secrets:** Never use a known fallback string (like `dummy-secret-for-build-purposes-only`) for JWT signing, even conditional on `npm_lifecycle_event === 'build'`. If the environment variable is missing in production due to a misconfiguration, the app should hard-crash/throw immediately rather than risk signing real tokens with a known development secret.
+- **`ignoreDuringBuilds`:** Next.js `eslint: { ignoreDuringBuilds: true }` hides real problems in CI/CD pipelines. Lint errors must block the build, turning the pipeline into a strict quality gate.
 ## Knowledge Base Entry: Build & Lint Fixes (2026-07-22)
 - **`next lint` exits 1 on warnings:** `next lint` (unlike plain `eslint`) treats ALL warnings as exit-code-1 failures. Fix every warning or move to `eslint` CLI directly. Adding `--no-errors-on-warnings` flag is the escape hatch.
 - **`@ts-ignore` vs `@ts-expect-error`:** ESLint `@typescript-eslint/ban-ts-comment` rule rejects `@ts-ignore` — always use `@ts-expect-error` instead. If the comment is on a line that has no error, ESLint will also warn about the unused `@ts-expect-error`; remove it entirely in that case.

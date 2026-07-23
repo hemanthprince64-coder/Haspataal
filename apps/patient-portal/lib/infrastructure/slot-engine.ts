@@ -1,8 +1,8 @@
-/* eslint-disable */
 import { Prisma } from '@prisma/client';
+
 import { prisma } from '../util/prisma-singleton';
-import { acquireDistributedLock } from './redlock';
 import { withRetry } from '../util/safe-transaction';
+import { acquireDistributedLock } from './redlock';
 
 /**
  * Smart Slot Booking Engine
@@ -37,10 +37,7 @@ export async function bookSmartSlot(data: {
         async (tx: Prisma.TransactionClient) => {
           // A. Advisory Lock for Postgres transaction-level locking
           if (!isSqlite) {
-            await tx.$executeRawUnsafe(
-              `SELECT pg_advisory_xact_lock(hashtext($1))`,
-              lockResource
-            );
+            await tx.$executeRawUnsafe(`SELECT pg_advisory_xact_lock(hashtext($1))`, lockResource);
           }
 
           // B. Idempotency check — prevents duplicate bookings from client retries
@@ -80,7 +77,7 @@ export async function bookSmartSlot(data: {
             `;
             slot = rawSlots[0] || null;
           }
-          
+
           if (!slot) throw new Error('Slot not found.');
 
           const currentBookings = await tx.appointment.count({
@@ -96,7 +93,9 @@ export async function bookSmartSlot(data: {
           }
 
           // E. Offline slot numbers using an auto-incrementing local daily counter
-          const dateOnly = new Date(Date.UTC(slotTime.getUTCFullYear(), slotTime.getUTCMonth(), slotTime.getUTCDate()));
+          const dateOnly = new Date(
+            Date.UTC(slotTime.getUTCFullYear(), slotTime.getUTCMonth(), slotTime.getUTCDate()),
+          );
           const dailyCount = await tx.appointment.count({
             where: {
               doctorId: doctorId,
@@ -156,7 +155,7 @@ export async function bookSmartSlot(data: {
   } finally {
     // Always release the Redlock — even if booking fails
     try {
-      await lock.release();
+      await (lock as any).release();
     } catch {
       /* lock may have already expired; safe to ignore */
     }

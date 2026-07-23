@@ -29,15 +29,14 @@ if (!isSqlite && hasRedis) {
    * Replaces the simple SETNX approach in redis-lock.ts with
    * the Redlock algorithm for true multi-node safety.
    */
-  redlock = new Redlock([redisConnection], {
+  redlock = new Redlock([redisConnection as unknown as Redlock.CompatibleRedisClient], {
     driftFactor: 0.01,
     retryCount: 10,
     retryDelay: 200,
     retryJitter: 200,
-    automaticExtensionThreshold: 500,
   });
 
-  redlock.on('error', (err: any) => {
+  redlock.on('clientError', (err: any) => {
     // Suppress "Unable to fully release lock" warnings which are expected
     // when the lock expires before explicit release (e.g., process crash)
     if (!String(err).includes('Unable to fully release lock')) {
