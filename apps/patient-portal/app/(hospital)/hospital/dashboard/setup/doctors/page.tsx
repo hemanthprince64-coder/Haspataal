@@ -286,7 +286,7 @@ function DoctorWizard({
                   </label>
                   <Select
                     value={form.speciality}
-                    onValueChange={(v) => setForm({ ...form, speciality: v })}
+                    onValueChange={(v: string) => setForm({ ...form, speciality: v })}
                   >
                     <SelectTrigger className="rounded-xl h-12 border-slate-200 font-bold">
                       <SelectValue />
@@ -391,7 +391,7 @@ function DoctorWizard({
                   </label>
                   <Select
                     value={form.consultationDurationMins.toString()}
-                    onValueChange={(v) =>
+                    onValueChange={(v: string) =>
                       setForm({ ...form, consultationDurationMins: parseInt(v) })
                     }
                   >
@@ -423,7 +423,7 @@ function DoctorWizard({
                 </div>
                 <Switch
                   checked={form.allowsOnlineBooking}
-                  onCheckedChange={(v) => setForm({ ...form, allowsOnlineBooking: v })}
+                  onCheckedChange={(v: boolean) => setForm({ ...form, allowsOnlineBooking: v })}
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>

@@ -15,7 +15,7 @@ export default async function RetentionPage() {
         </p>
       </div>
 
-      <RetentionDetailsClient hospitalId={user.hospitalId} />
+      <RetentionDetailsClient hospitalId={user.hospitalId as string} />
     </div>
   );
 }

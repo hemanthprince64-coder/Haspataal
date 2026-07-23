@@ -1,8 +1,9 @@
-/* eslint-disable */
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { getHospitalIdFromSession } from '@/lib/auth';
 import { z } from 'zod';
+
+import { NextRequest, NextResponse } from 'next/server';
+
+import { getHospitalIdFromSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 const serviceSchema = z.object({
   code: z.string().min(1),

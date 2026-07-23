@@ -391,7 +391,7 @@ export async function removeDoctorAction(
   }
 
   try {
-    await services.hospital.removeDoctor(user.hospitalId, doctorId);
+    await services.hospital.removeDoctor(user.hospitalId as string, doctorId);
     return { success: true, message: 'Doctor removed successfully.' };
   } catch (e: any) {
     logger.error({ action: 'remove_doctor_failed', error: e.message }, 'Failed to remove doctor');
@@ -411,7 +411,7 @@ export async function approveDoctorAffiliationAction(
   }
 
   const doctorId = formData.get('doctorId') as string;
-  await services.hospital.approveDoctorAffiliation(user.hospitalId, doctorId);
+  await services.hospital.approveDoctorAffiliation(user.hospitalId as string, doctorId);
   return { success: true, message: 'Doctor approved successfully.' };
 }
 
@@ -466,7 +466,7 @@ export async function rejectDoctorAffiliationAction(
   }
 
   const doctorId = formData.get('doctorId') as string;
-  await services.hospital.rejectDoctorAffiliation(user.hospitalId, doctorId);
+  await services.hospital.rejectDoctorAffiliation(user.hospitalId as string, doctorId);
   return { success: true, message: 'Doctor rejected successfully.' };
 }
 
@@ -1316,8 +1316,8 @@ export const bookAppointment = withErrorMonitoring(
 
       const visitData = {
         doctorId,
-        patientName: patient.name || patient.mobile,
-        patientMobile: patient.mobile,
+        patientName: String(patient.name || patient.mobile || ''),
+        patientMobile: String(patient.mobile || ''),
         age: 0,
         gender: 'O',
         date: date,

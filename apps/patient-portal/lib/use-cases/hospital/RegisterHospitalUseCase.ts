@@ -1,14 +1,15 @@
 // ============================================================
 // RegisterHospitalUseCase — Hospital onboarding business logic
 // ============================================================
+import bcrypt from 'bcryptjs';
 
+import { emitEvent } from '@/services/event-emitter';
+
+import logger from '../../logger';
 import type {
   IHospitalRepository,
   HospitalRecord,
 } from '../../repositories/interfaces/IHospitalRepository';
-import { emitEvent } from '@/services/event-emitter';
-import logger from '../../logger';
-import bcrypt from 'bcryptjs';
 
 export interface RegisterHospitalInput {
   hospitalName: string;
@@ -61,7 +62,7 @@ export class RegisterHospitalUseCase {
     });
 
     // 4. Emit event (fire-and-forget, outside tx)
-    emitEvent({
+    void emitEvent({
       eventType: 'hospital_registered',
       hospitalId: hospital.id,
       payload: {

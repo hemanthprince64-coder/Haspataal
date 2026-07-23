@@ -1,9 +1,10 @@
-/* eslint-disable */
-import { requireRole } from '@/lib/auth/requireRole';
-import { UserRole } from '@/types';
-import { prisma } from '@/lib/prisma';
-import SettlementManager from './SettlementManager';
 import { Landmark } from 'lucide-react';
+
+import { requireRole } from '@/lib/auth/requireRole';
+import { prisma } from '@/lib/prisma';
+import { UserRole } from '@/types';
+
+import SettlementManager from './SettlementManager';
 
 export default async function SettlementsPage() {
   const user = await requireRole([UserRole.HOSPITAL_ADMIN], 'session_user');
@@ -11,7 +12,7 @@ export default async function SettlementsPage() {
   // Load affiliated doctors
   const affiliations = await prisma.doctorHospitalAffiliation.findMany({
     where: { hospitalId: user.hospitalId, isCurrent: true },
-    include: { doctor: true }
+    include: { doctor: true },
   });
 
   const doctors = affiliations.map((aff) => {
@@ -21,7 +22,9 @@ export default async function SettlementsPage() {
       fullName: aff.doctor.fullName,
       mobile: aff.doctor.mobile,
       speciality: aff.department || 'General',
-      revenueSharePercent: payloadObj?.revenueSharePercent ? Number(payloadObj.revenueSharePercent) : 70
+      revenueSharePercent: payloadObj?.revenueSharePercent
+        ? Number(payloadObj.revenueSharePercent)
+        : 70,
     };
   });
 
@@ -29,7 +32,7 @@ export default async function SettlementsPage() {
   const settlements = await prisma.consultantSettlement.findMany({
     where: { hospitalId: user.hospitalId },
     include: { doctor: { select: { fullName: true } } },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   });
 
   return (
@@ -39,7 +42,9 @@ export default async function SettlementsPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Landmark className="h-6 w-6 text-slate-400" />
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Consultant Settlements</h1>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Consultant Settlements
+            </h1>
           </div>
           <p className="text-slate-500 font-medium">
             Calculate payouts, print slips, and export bank payment CSV files offline.
@@ -48,7 +53,7 @@ export default async function SettlementsPage() {
       </div>
 
       <SettlementManager
-        hospitalId={user.hospitalId}
+        hospitalId={user.hospitalId as string}
         initialDoctors={doctors}
         initialSettlements={settlements}
       />

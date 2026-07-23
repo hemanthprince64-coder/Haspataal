@@ -15,12 +15,14 @@ export const metadata = {
 };
 
 export default async function UnresolvedEmergenciesPage() {
-  const access = await requireHospitalAccess('reception', 'read');
+  const access = await requireHospitalAccess('opd', 'read');
 
   const emergencies = await prisma.patient.findMany({
     where: {
-      hospitalId: access.hospitalId,
       name: 'Unknown Emergency',
+      appointments: {
+        some: { hospitalId: access.hospitalId },
+      },
     },
     orderBy: { createdAt: 'asc' }, // Oldest first
     include: {
@@ -69,7 +71,7 @@ export default async function UnresolvedEmergenciesPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                        {patient.uhid}
+                        {patient.id}
                         {isCritical && <Badge variant="destructive">SLA Breach (&gt;24h)</Badge>}
                       </h3>
                       <div className="flex items-center gap-4 mt-1 text-sm text-slate-600">

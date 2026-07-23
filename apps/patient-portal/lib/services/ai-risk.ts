@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { logger } from '@haspataal/logger';
 
 import { prisma } from '@/lib/util/prisma-singleton';
 
@@ -101,7 +102,7 @@ Risk Context:
         const response = await model.generateContent(systemPrompt);
         narrativeSummary = response.response.text().trim();
       } catch (err) {
-        console.warn('Gemini API call failed for pregnancy risk narrative, using fallback');
+        logger.warn({ err }, 'Gemini API call failed for pregnancy risk narrative, using fallback');
       }
     }
 

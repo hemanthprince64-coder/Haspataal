@@ -253,7 +253,7 @@ export const IPDService = {
 
         if (
           admission.physicalPresenceStatus !== 'PRESENT' &&
-          admission.physicalPresenceStatus !== 'SUSPECTED_ABSENT'
+          admission.physicalPresenceStatus !== 'ABSENCE_SUSPECTED'
         ) {
           const existing = await tx.physicalDepartureRecord.findUnique({ where: { admissionId } });
           if (existing && existing.pathway === pathway) {

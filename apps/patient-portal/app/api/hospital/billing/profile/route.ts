@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getHospitalIdFromSession } from '@/lib/auth';

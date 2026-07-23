@@ -1,16 +1,30 @@
 'use client';
 
+import {
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  Settings,
+  Calendar,
+  Pill,
+  FlaskConical,
+  AlertCircle,
+  Users,
+  Shield,
+  Bell,
+  Printer,
+  Rocket,
+  Baby,
+} from 'lucide-react';
+
 import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  ChevronRight, ChevronLeft, Check, Settings, Calendar, Pill, FlaskConical,
-  AlertCircle, Users, Shield, Bell, Printer, Rocket, Baby,
-} from 'lucide-react';
 
 const STEPS = [
   { id: 'protocol', label: 'ANC Protocol', icon: Settings, desc: 'Select visit frequency' },
@@ -32,14 +46,21 @@ export default function FollowUpWizard() {
     customVisits: 4,
     supplements: { ifa: true, calcium: true, folicAcid: true, tt: true },
     labs: { hbEveryVisit: true, vdrlOnce: true, hivOnce: true, dipsiGdm: true },
-    highRiskRules: { age: true, height: true, bmi: true, gravida: true, previousComplications: true, rhNegative: true },
+    highRiskRules: {
+      age: true,
+      height: true,
+      bmi: true,
+      gravida: true,
+      previousComplications: true,
+      rhNegative: true,
+    },
     ashaAssignment: 'pincode',
     schemes: { jsy: true, pmmvy: true },
     notificationLanguage: 'hi',
     printFormat: 'thermal_80mm',
   });
 
-  const updateField = (key, value) => {
+  const updateField = (key: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -51,8 +72,12 @@ export default function FollowUpWizard() {
   return (
     <div className="w-full max-w-3xl mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2">ANC Follow-Up Setup</h1>
-        <p className="text-slate-500 font-medium">Configure your hospital's Antenatal Care protocol</p>
+        <h1 className="text-3xl font-black tracking-tight text-slate-900 mb-2">
+          ANC Follow-Up Setup
+        </h1>
+        <p className="text-slate-500 font-medium">
+          Configure your hospital's Antenatal Care protocol
+        </p>
       </div>
 
       {/* Progress */}
@@ -68,14 +93,18 @@ export default function FollowUpWizard() {
                 {idx < currentStep ? <Check className="w-4 h-4" /> : idx + 1}
               </div>
               {idx < STEPS.length - 1 && (
-                <div className={`w-4 h-0.5 ${idx < currentStep ? 'bg-pink-600' : 'bg-slate-200'}`} />
+                <div
+                  className={`w-4 h-0.5 ${idx < currentStep ? 'bg-pink-600' : 'bg-slate-200'}`}
+                />
               )}
             </div>
           ))}
         </div>
         <div className="w-full bg-slate-100 rounded-full h-2">
-          <div className="bg-pink-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }} />
+          <div
+            className="bg-pink-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+          />
         </div>
       </div>
 
@@ -87,8 +116,12 @@ export default function FollowUpWizard() {
               <StepIcon className="w-5 h-5" />
             </div>
             <div>
-              <CardTitle className="text-xl font-black tracking-tight">{STEPS[currentStep].label}</CardTitle>
-              <CardDescription className="text-slate-500 font-medium">{STEPS[currentStep].desc}</CardDescription>
+              <CardTitle className="text-xl font-black tracking-tight">
+                {STEPS[currentStep].label}
+              </CardTitle>
+              <CardDescription className="text-slate-500 font-medium">
+                {STEPS[currentStep].desc}
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -102,9 +135,11 @@ export default function FollowUpWizard() {
                   { id: 'WHO_8', label: 'WHO Extended', desc: '8 visits (high-risk)' },
                   { id: 'CUSTOM', label: 'Custom', desc: 'Define your own' },
                 ].map((p) => (
-                  <div key={p.id}
+                  <div
+                    key={p.id}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${formData.protocol === p.id ? 'border-pink-500 bg-pink-50' : 'border-slate-200 hover:border-pink-300'}`}
-                    onClick={() => updateField('protocol', p.id)}>
+                    onClick={() => updateField('protocol', p.id)}
+                  >
                     <p className="font-bold text-slate-800">{p.label}</p>
                     <p className="text-sm text-slate-500">{p.desc}</p>
                   </div>
@@ -113,8 +148,12 @@ export default function FollowUpWizard() {
               {formData.protocol === 'CUSTOM' && (
                 <div className="mt-4">
                   <Label className="font-bold text-slate-700">Number of Visits</Label>
-                  <Input type="number" value={formData.customVisits}
-                    onChange={(e) => updateField('customVisits', parseInt(e.target.value))} className="mt-2 w-32" />
+                  <Input
+                    type="number"
+                    value={formData.customVisits}
+                    onChange={(e) => updateField('customVisits', parseInt(e.target.value))}
+                    className="mt-2 w-32"
+                  />
                 </div>
               )}
             </div>
@@ -123,12 +162,19 @@ export default function FollowUpWizard() {
           {currentStep === 1 && (
             <div className="space-y-6">
               <h3 className="font-bold text-lg text-slate-800">Visit Schedule</h3>
-              <p className="text-sm text-slate-500">Dates auto-populate based on LMP/EDD when a patient is registered.</p>
+              <p className="text-sm text-slate-500">
+                Dates auto-populate based on LMP/EDD when a patient is registered.
+              </p>
               <div className="grid grid-cols-4 gap-3">
                 {[1, 2, 3, 4].map((v) => (
-                  <div key={v} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                  <div
+                    key={v}
+                    className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center"
+                  >
                     <p className="font-bold text-slate-800">Visit {v}</p>
-                    <p className="text-xs text-slate-500">Week {v === 1 ? '12' : v === 2 ? '20' : v === 3 ? '28' : '36'}</p>
+                    <p className="text-xs text-slate-500">
+                      Week {v === 1 ? '12' : v === 2 ? '20' : v === 3 ? '28' : '36'}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -145,16 +191,28 @@ export default function FollowUpWizard() {
                   { key: 'folicAcid', label: 'Folic Acid', target: 90, unit: 'tablets' },
                   { key: 'tt', label: 'TT Vaccination', target: 2, unit: 'doses' },
                 ].map((supp) => (
-                  <div key={supp.key} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div
+                    key={supp.key}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200"
+                  >
                     <div className="flex items-center gap-3">
                       <Pill className="w-5 h-5 text-pink-600" />
                       <div>
                         <p className="font-bold text-slate-800">{supp.label}</p>
-                        <p className="text-xs text-slate-500">{supp.target} {supp.unit} total</p>
+                        <p className="text-xs text-slate-500">
+                          {supp.target} {supp.unit} total
+                        </p>
                       </div>
                     </div>
-                    <Checkbox checked={formData.supplements[supp.key]}
-                      onCheckedChange={(checked) => updateField('supplements', { ...formData.supplements, [supp.key]: !!checked })} />
+                    <Checkbox
+                      checked={(formData.supplements as Record<string, boolean>)[supp.key]}
+                      onCheckedChange={(checked) =>
+                        updateField('supplements', {
+                          ...formData.supplements,
+                          [supp.key]: !!checked,
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -171,9 +229,16 @@ export default function FollowUpWizard() {
                   { key: 'hivOnce', label: 'HIV (1st visit)' },
                   { key: 'dipsiGdm', label: 'DIPSI GDM (24-28w)' },
                 ].map((lab) => (
-                  <div key={lab.key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <Checkbox checked={formData.labs[lab.key]}
-                      onCheckedChange={(checked) => updateField('labs', { ...formData.labs, [lab.key]: !!checked })} />
+                  <div
+                    key={lab.key}
+                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200"
+                  >
+                    <Checkbox
+                      checked={(formData.labs as Record<string, boolean>)[lab.key]}
+                      onCheckedChange={(checked) =>
+                        updateField('labs', { ...formData.labs, [lab.key]: !!checked })
+                      }
+                    />
                     <span className="text-sm font-medium text-slate-700">{lab.label}</span>
                   </div>
                 ))}
@@ -193,9 +258,19 @@ export default function FollowUpWizard() {
                   { key: 'previousComplications', label: 'Previous C-section / PPH / Eclampsia' },
                   { key: 'rhNegative', label: 'Rh-negative without anti-D' },
                 ].map((rule) => (
-                  <div key={rule.key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <Checkbox checked={formData.highRiskRules[rule.key]}
-                      onCheckedChange={(checked) => updateField('highRiskRules', { ...formData.highRiskRules, [rule.key]: !!checked })} />
+                  <div
+                    key={rule.key}
+                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200"
+                  >
+                    <Checkbox
+                      checked={(formData.highRiskRules as Record<string, boolean>)[rule.key]}
+                      onCheckedChange={(checked) =>
+                        updateField('highRiskRules', {
+                          ...formData.highRiskRules,
+                          [rule.key]: !!checked,
+                        })
+                      }
+                    />
                     <span className="text-sm font-medium text-slate-700">{rule.label}</span>
                   </div>
                 ))}
@@ -211,7 +286,9 @@ export default function FollowUpWizard() {
                   <Users className="w-6 h-6 text-pink-600" />
                   <div>
                     <p className="font-bold text-slate-800">Auto-assign by Pincode / Village</p>
-                    <p className="text-sm text-slate-500">Link ASHA workers to patients based on address</p>
+                    <p className="text-sm text-slate-500">
+                      Link ASHA workers to patients based on address
+                    </p>
                   </div>
                 </div>
               </div>
@@ -223,10 +300,17 @@ export default function FollowUpWizard() {
               <h3 className="font-bold text-lg text-slate-800">Government Scheme Enrollment</h3>
               <div className="space-y-4">
                 {[
-                  { key: 'jsy', label: 'Janani Suraksha Yojana (JSY)', desc: 'Cash incentive for institutional delivery' },
+                  {
+                    key: 'jsy',
+                    label: 'Janani Suraksha Yojana (JSY)',
+                    desc: 'Cash incentive for institutional delivery',
+                  },
                   { key: 'pmmvy', label: 'PMMVY', desc: 'Maternity benefit of Rs. 5,000' },
                 ].map((scheme) => (
-                  <div key={scheme.key} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div
+                    key={scheme.key}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200"
+                  >
                     <div className="flex items-center gap-3">
                       <Shield className="w-5 h-5 text-pink-600" />
                       <div>
@@ -234,8 +318,12 @@ export default function FollowUpWizard() {
                         <p className="text-xs text-slate-500">{scheme.desc}</p>
                       </div>
                     </div>
-                    <Checkbox checked={formData.schemes[scheme.key]}
-                      onCheckedChange={(checked) => updateField('schemes', { ...formData.schemes, [scheme.key]: !!checked })} />
+                    <Checkbox
+                      checked={(formData.schemes as Record<string, boolean>)[scheme.key]}
+                      onCheckedChange={(checked) =>
+                        updateField('schemes', { ...formData.schemes, [scheme.key]: !!checked })
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -248,8 +336,11 @@ export default function FollowUpWizard() {
               <div className="space-y-4">
                 <div>
                   <Label className="font-bold text-slate-700">Default Language</Label>
-                  <select className="mt-2 w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm font-medium"
-                    value={formData.notificationLanguage} onChange={(e) => updateField('notificationLanguage', e.target.value)}>
+                  <select
+                    className="mt-2 w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm font-medium"
+                    value={formData.notificationLanguage}
+                    onChange={(e) => updateField('notificationLanguage', e.target.value)}
+                  >
                     <option value="hi">Hindi</option>
                     <option value="bho">Bhojpuri</option>
                     <option value="en">English</option>
@@ -257,7 +348,9 @@ export default function FollowUpWizard() {
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                   <p className="font-bold text-slate-800 mb-2">Sample Reminder (Hindi)</p>
-                  <p className="text-sm text-slate-500 italic">Namaste name, aapki agli chek-up date ko hai. Kripya time par aayen.</p>
+                  <p className="text-sm text-slate-500 italic">
+                    Namaste name, aapki agli chek-up date ko hai. Kripya time par aayen.
+                  </p>
                 </div>
               </div>
             </div>
@@ -271,7 +364,10 @@ export default function FollowUpWizard() {
                   { label: 'MCP Card Summary', desc: '80mm thermal receipt printer' },
                   { label: 'Referral Slip', desc: 'A4 + 80mm thermal' },
                 ].map((p) => (
-                  <div key={p.label} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                  <div
+                    key={p.label}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200"
+                  >
                     <div className="flex items-center gap-3">
                       <Printer className="w-5 h-5 text-pink-600" />
                       <div>
@@ -292,14 +388,21 @@ export default function FollowUpWizard() {
                 <Baby className="w-10 h-10 text-pink-600" />
               </div>
               <h3 className="font-bold text-2xl text-slate-800">Ready to Activate</h3>
-              <p className="text-slate-500">Your ANC protocol is configured. Click activate to generate care plans for all registered patients.</p>
+              <p className="text-slate-500">
+                Your ANC protocol is configured. Click activate to generate care plans for all
+                registered patients.
+              </p>
               <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mt-6">
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
-                  <p className="font-bold text-slate-800">{formData.protocol === 'WHO_4' ? '4' : formData.customVisits} Visits</p>
+                  <p className="font-bold text-slate-800">
+                    {formData.protocol === 'WHO_4' ? '4' : formData.customVisits} Visits
+                  </p>
                   <p className="text-xs text-slate-500">Scheduled</p>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
-                  <p className="font-bold text-slate-800">{Object.values(formData.supplements).filter(Boolean).length} Supplements</p>
+                  <p className="font-bold text-slate-800">
+                    {Object.values(formData.supplements).filter(Boolean).length} Supplements
+                  </p>
                   <p className="text-xs text-slate-500">Tracked</p>
                 </div>
               </div>
@@ -310,16 +413,27 @@ export default function FollowUpWizard() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={prevStep} disabled={currentStep === 0} className="rounded-xl font-bold">
+        <Button
+          variant="outline"
+          onClick={prevStep}
+          disabled={currentStep === 0}
+          className="rounded-xl font-bold"
+        >
           <ChevronLeft className="w-4 h-4 mr-2" /> Previous
         </Button>
         <div className="flex gap-2">
           {currentStep < STEPS.length - 1 ? (
-            <Button onClick={nextStep} className="bg-pink-600 hover:bg-pink-700 rounded-xl font-bold">
+            <Button
+              onClick={nextStep}
+              className="bg-pink-600 hover:bg-pink-700 rounded-xl font-bold"
+            >
               Next <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button onClick={() => alert('ANC Protocol Activated!')} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold">
+            <Button
+              onClick={() => alert('ANC Protocol Activated!')}
+              className="bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold"
+            >
               <Rocket className="w-4 h-4 mr-2" /> Activate Protocol
             </Button>
           )}

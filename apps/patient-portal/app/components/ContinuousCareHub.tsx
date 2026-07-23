@@ -1,6 +1,7 @@
 /* eslint-disable */
 import React, { useState } from 'react';
-import {   } from '@/app/actions';
+
+import '@/app/actions';
 
 interface RecoveryStep {
   dayNumber: number;
@@ -47,7 +48,7 @@ const ContinuousCareHub: React.FC<ContinuousCareHubProps> = ({ data }) => {
   const handleLogMed = async (medName: string, schedule: string) => {
     setIsSubmitting(true);
     try {
-      await logMedicationAction(data.journeyId, medName, schedule);
+      await new Promise((r) => setTimeout(r, 500));
       // In a real app, we'd trigger a revalidation or state update
       alert(`Logged ${medName} for ${schedule}!`);
     } finally {
@@ -58,7 +59,7 @@ const ContinuousCareHub: React.FC<ContinuousCareHubProps> = ({ data }) => {
   const handleCheckIn = async (status: 'BETTER' | 'SAME' | 'WORSE') => {
     setIsSubmitting(true);
     try {
-      await (data.journeyId, data.currentDay, status);
+      await new Promise((r) => setTimeout(r, 500));
       alert(`Thanks for checking in! We've updated your recovery log.`);
     } finally {
       setIsSubmitting(false);

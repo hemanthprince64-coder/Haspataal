@@ -5,11 +5,16 @@ import { cookies } from 'next/headers';
 
 import { UserRole } from '../types';
 
-const secretKey = process.env.NEXTAUTH_SECRET;
-if (!secretKey && process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
-  throw new Error('NEXTAUTH_SECRET is required for session signing');
+function getSecretKey() {
+  const secretKey = process.env.NEXTAUTH_SECRET;
+  if (!secretKey) {
+    if (process.env.npm_lifecycle_event === 'build') {
+      return new TextEncoder().encode('dummy-secret-for-build-purposes-only');
+    }
+    throw new Error('NEXTAUTH_SECRET is required for session signing');
+  }
+  return new TextEncoder().encode(secretKey);
 }
-const key = new TextEncoder().encode(secretKey || 'dummy-secret-for-build-purposes-only');
 const isProduction = process.env.NODE_ENV === 'production';
 const isBuild = !!process.env.NEXT_PHASE || !!process.env.VERCEL;
 
@@ -29,12 +34,12 @@ export async function encrypt(payload: any): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(key);
+    .sign(getSecretKey());
 }
 
 export async function decrypt(session: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(session, key, {
+    const { payload } = await jwtVerify(session, getSecretKey(), {
       algorithms: ['HS256'],
     });
     return payload as SessionPayload;

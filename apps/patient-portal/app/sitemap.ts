@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { MetadataRoute } from 'next';
+
 import { services } from '@/lib/services';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -43,7 +44,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticRoutes, ...dynamicRoutes];
   } catch (error) {
-    console.warn('[sitemap] DB unavailable, returning static routes only:', error.message);
+    console.warn(
+      '[sitemap] DB unavailable, returning static routes only:',
+      (error as Error).message,
+    );
     return staticRoutes;
   }
 }

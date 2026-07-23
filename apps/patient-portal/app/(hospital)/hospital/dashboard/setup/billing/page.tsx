@@ -1,7 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   CreditCard,
   Banknote,
@@ -34,11 +33,12 @@ import {
   FileDigit,
   Package,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+import { useState, useEffect } from 'react';
+
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +48,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -55,7 +56,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -363,7 +365,7 @@ export default function BillingSetupPage() {
                       </label>
                       <Select
                         value={profile.payoutCycle}
-                        onValueChange={(v) => handleUpdateProfile({ payoutCycle: v })}
+                        onValueChange={(v: string) => handleUpdateProfile({ payoutCycle: v })}
                       >
                         <SelectTrigger className="h-14 rounded-2xl border-slate-200 font-bold">
                           <SelectValue />

@@ -1,6 +1,7 @@
 /* eslint-disable */
-import Redlock from 'redlock';
+// @ts-ignore
 import IORedis from 'ioredis';
+import Redlock from 'redlock';
 
 const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
 const hasRedis = !!process.env.REDIS_HOST;
@@ -36,7 +37,7 @@ if (!isSqlite && hasRedis) {
     automaticExtensionThreshold: 500,
   });
 
-  redlock.on('error', (err) => {
+  redlock.on('error', (err: any) => {
     // Suppress "Unable to fully release lock" warnings which are expected
     // when the lock expires before explicit release (e.g., process crash)
     if (!String(err).includes('Unable to fully release lock')) {
@@ -55,7 +56,7 @@ export async function acquireDistributedLock(resource: string, ttlMs: number = 3
   if (isSqlite || !redlock) {
     // Return a dummy lock for local/offline modes
     return {
-      release: async () => {}
+      release: async () => {},
     };
   }
 
@@ -68,4 +69,3 @@ export async function acquireDistributedLock(resource: string, ttlMs: number = 3
 }
 
 export { redisConnection, redlock };
-

@@ -32,6 +32,7 @@ export class HL7ListenerService {
       // Find the pending execution item
       const execItem = await tx.laboratoryExecutionItem.findFirst({
         where: { id: accessionId, status: 'IN_ANALYZER_QUEUE' },
+        include: { execution: true },
       });
 
       if (!execItem) {
@@ -41,7 +42,10 @@ export class HL7ListenerService {
       // Create the result record
       const resultRecord = await tx.laboratoryResult.create({
         data: {
-          // Mock data mapping
+          executionItemId: execItem.id,
+          hospitalId,
+          patientId: execItem.execution.patientId,
+          status: 'DRAFT',
         },
       });
 
@@ -49,7 +53,7 @@ export class HL7ListenerService {
       await tx.laboratoryExecutionItem.update({
         where: { id: execItem.id },
         data: {
-          status: 'VERIFIED',
+          status: 'RESULT_VERIFIED',
           resultId: resultRecord.id,
         },
       });
@@ -60,13 +64,12 @@ export class HL7ListenerService {
         data: {
           id: eventId,
           hospitalId,
-          type: 'LAB_RESULT_VERIFIED',
+          eventType: 'LAB_RESULT_VERIFIED',
           payload: {
             accessionId,
             resultId: resultRecord.id,
             isCritical,
           } as any,
-          status: 'PENDING', // To be picked up by Redis Streams / bullmq
         },
       });
 

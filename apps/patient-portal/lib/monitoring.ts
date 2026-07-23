@@ -1,7 +1,8 @@
-/* eslint-disable */
-import * as Sentry from "@sentry/nextjs";
-import { decrypt } from "./session";
-import { cookies } from "next/headers";
+import * as Sentry from '@sentry/nextjs';
+
+import { cookies } from 'next/headers';
+
+import { decrypt } from './session';
 
 type ActionFunc<TArgs extends any[], TResult> = (...args: TArgs) => Promise<TResult>;
 
@@ -11,21 +12,21 @@ type ActionFunc<TArgs extends any[], TResult> = (...args: TArgs) => Promise<TRes
  */
 export function withErrorMonitoring<TArgs extends any[], TResult>(
   actionName: string,
-  action: ActionFunc<TArgs, TResult>
+  action: ActionFunc<TArgs, TResult>,
 ): ActionFunc<TArgs, TResult> {
   return async (...args: TArgs): Promise<TResult> => {
     try {
       return await action(...args);
     } catch (e: any) {
-      let userId = "anonymous";
-      let userRole = "guest";
-      
+      let userId = 'anonymous';
+      let userRole = 'guest';
+
       try {
-        const sessionToken = (await cookies()).get("session_user")?.value;
+        const sessionToken = (await cookies()).get('session_user')?.value;
         if (sessionToken) {
           const session = await decrypt(sessionToken);
-          userId = session?.userId || "anonymous";
-          userRole = session?.role || "guest";
+          userId = (session?.user?.id as string) || 'anonymous';
+          userRole = (session?.user?.role as string) || 'guest';
         }
       } catch {
         // Session decryption failed or cookies unavailable in this context
@@ -49,9 +50,9 @@ export function withErrorMonitoring<TArgs extends any[], TResult>(
       // Return sanitized error response for the client
       return {
         success: false,
-        error: "INTERNAL_ERROR",
-        message: "An unexpected error occurred. Reference ID: " + errorId,
-        errorId, 
+        error: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred. Reference ID: ' + errorId,
+        errorId,
       } as any;
     }
   };

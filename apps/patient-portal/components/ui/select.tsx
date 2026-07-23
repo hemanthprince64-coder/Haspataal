@@ -1,8 +1,9 @@
-/* eslint-disable */
 'use client';
 
-import * as React from 'react';
 import { ChevronDown, Check } from 'lucide-react';
+
+import * as React from 'react';
+
 import { cn } from '@/lib/utils';
 
 const SelectContext = React.createContext<{
@@ -98,8 +99,8 @@ const SelectContent = ({ children, className }: any) => {
 
 const SelectItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { value: string }
->(({ className, children, value, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & { value: string; disabled?: boolean }
+>(({ className, children, value, disabled, ...props }, ref) => {
   const context = React.useContext(SelectContext);
   if (!context) throw new Error('SelectItem must be used within Select');
 
@@ -117,6 +118,7 @@ const SelectItem = React.forwardRef<
         'relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
+      data-disabled={disabled ? '' : undefined}
       {...props}
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">

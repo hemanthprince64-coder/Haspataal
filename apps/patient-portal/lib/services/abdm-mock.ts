@@ -12,7 +12,7 @@ export const abdmMockService = {
   /**
    * Simulates generating a new ABHA ID for a patient.
    */
-  async createABHA(patientId: string, adharNumber: string): Promise<AbhaVerificationResult> {
+  async createABHA(patientId: string, _adharNumber: string): Promise<AbhaVerificationResult> {
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient) {
       throw new Error('Patient not found');

@@ -49,7 +49,7 @@ export default function PatientHome() {
   const [recentAnalysis, setRecentAnalysis] = useState<any>(null);
 
   useEffect(() => {
-    getPatientFullProfile().then((p) => {
+    getPatientFullProfile().then((p: any) => {
       setPatient(p);
       const lastVisit = p?.visits?.[0] || p?.appointments?.[0]?.visit;
       if (lastVisit?.id) {

@@ -1,4 +1,3 @@
-/* eslint-disable */
 import 'server-only';
 
 import { NextResponse } from 'next/server';
@@ -20,7 +19,9 @@ type HospitalModule =
   | 'retention'
   | 'marketplace'
   | 'integrations'
-  | 'staff';
+  | 'staff'
+  | 'radiology'
+  | 'procedure';
 
 type HospitalAction =
   | 'read'

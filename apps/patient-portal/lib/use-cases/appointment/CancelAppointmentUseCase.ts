@@ -1,10 +1,9 @@
 // ============================================================
 // CancelAppointmentUseCase — Cancellation with refund logic
 // ============================================================
-
 import { BookingStatus, VALID_STATUS_TRANSITIONS } from '../../../types';
-import type { IAppointmentRepository } from '../../repositories/interfaces/IAppointmentRepository';
 import logger from '../../logger';
+import type { IAppointmentRepository } from '../../repositories/interfaces/IAppointmentRepository';
 
 export interface CancelAppointmentInput {
   patientId: string;
@@ -31,14 +30,14 @@ export class CancelAppointmentUseCase {
   constructor(private appointmentRepo: IAppointmentRepository) {}
 
   async execute(input: CancelAppointmentInput): Promise<{
-    appointment: any;
+    appointment: unknown;
     requiresRefund: boolean;
     refundAmount: number;
   }> {
     const { patientId, appointmentId } = input;
 
     logger.info(
-      { action: 'cancel_booking_attempt', patientId, appointmentId },
+      { action: 'cancel_booking_attempt', appointmentId },
       'Attempting to cancel appointment',
     );
 

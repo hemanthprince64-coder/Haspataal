@@ -1,8 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import {
   Globe,
   Plus,
@@ -36,12 +34,14 @@ import {
   Building2,
   Umbrella,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+import { useState, useEffect } from 'react';
+
+import Image from 'next/image';
+
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -58,7 +59,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -237,7 +240,7 @@ export default function MarketplaceSetupPage() {
                 </div>
                 <Switch
                   checked={config.isListedOnMarketplace}
-                  onCheckedChange={(v) => handleUpdate({ isListedOnMarketplace: v })}
+                  onCheckedChange={(v: boolean) => handleUpdate({ isListedOnMarketplace: v })}
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>
@@ -405,7 +408,7 @@ export default function MarketplaceSetupPage() {
                   </div>
                   <Switch
                     checked={config.allowsInstantBooking}
-                    onCheckedChange={(v) => handleUpdate({ allowsInstantBooking: v })}
+                    onCheckedChange={(v: boolean) => handleUpdate({ allowsInstantBooking: v })}
                   />
                 </div>
                 <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
@@ -450,7 +453,7 @@ export default function MarketplaceSetupPage() {
                   </label>
                   <Select
                     value={config.cancellationPolicy}
-                    onValueChange={(v) => handleUpdate({ cancellationPolicy: v })}
+                    onValueChange={(v: string) => handleUpdate({ cancellationPolicy: v })}
                   >
                     <SelectTrigger className="h-14 rounded-2xl border-slate-200 font-bold">
                       <SelectValue />
@@ -476,7 +479,7 @@ export default function MarketplaceSetupPage() {
                   </div>
                   <Switch
                     checked={config.depositRequired}
-                    onCheckedChange={(v) => handleUpdate({ depositRequired: v })}
+                    onCheckedChange={(v: boolean) => handleUpdate({ depositRequired: v })}
                   />
                 </div>
               </div>

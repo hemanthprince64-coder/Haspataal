@@ -10,10 +10,13 @@ export type AuthTokenPayload = {
 
 function getSecretKey() {
   const jwtSecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!jwtSecret && process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET or NEXTAUTH_SECRET must be set in production');
+  if (!jwtSecret) {
+    if (process.env.npm_lifecycle_event === 'build') {
+      return new TextEncoder().encode('dummy-dev-secret-for-build-purposes-only');
+    }
+    throw new Error('JWT_SECRET or NEXTAUTH_SECRET must be set');
   }
-  return new TextEncoder().encode(jwtSecret || 'dummy-dev-secret');
+  return new TextEncoder().encode(jwtSecret);
 }
 
 export async function generateToken(user: any) {

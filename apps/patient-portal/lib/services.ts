@@ -32,10 +32,10 @@ const OTP_RATE_WINDOW_SECONDS = Number(process.env.OTP_RATE_WINDOW_SECONDS || 15
 // Strip sensitive fields from any object (password, etc.)
 function stripSensitive<T extends Record<string, any>>(obj: T | null): T | null {
   if (!obj) return null;
-  const { password, ...safe } = obj as any;
+  const { password: _password, ...safe } = obj as any;
   return safe as T;
 }
-function stripSensitiveArray<T extends Record<string, any>>(arr: T[]): T[] {
+function _stripSensitiveArray<T extends Record<string, any>>(arr: T[]): T[] {
   return arr.map((item) => stripSensitive(item)!);
 }
 
@@ -337,7 +337,7 @@ export const services = {
       }));
     },
 
-    getHospitalReviews: async (hospitalId: string): Promise<Review[]> => {
+    getHospitalReviews: async (_hospitalId: string): Promise<Review[]> => {
       return [];
     },
 
@@ -433,10 +433,7 @@ export const services = {
           },
         });
       }
-      logger.info(
-        { action: 'patient_login', patientId: patient.id },
-        'Patient logged in successfully',
-      );
+      logger.info({ action: 'patient_login' }, 'Patient logged in successfully');
       return {
         user: {
           id: patient.id,
@@ -467,7 +464,7 @@ export const services = {
         email: z.string().email().optional().or(z.literal('')),
       });
 
-      const validated = RegisterSchema.parse(data);
+      RegisterSchema.parse(data); // validate input
 
       if (!data.password) throw new Error('PASSWORD_REQUIRED');
       const hashedPassword = await bcrypt.hash(data.password, 12);
@@ -689,7 +686,10 @@ export const services = {
           },
         });
 
-        appointmentsCreatedCounter.inc({ status: 'BOOKED', hospitalId: appointment.hospitalId });
+        appointmentsCreatedCounter.inc({
+          status: 'BOOKED',
+          hospitalId: appointment.hospitalId || 'unknown',
+        });
 
         return appointment;
       } catch (error: any) {
@@ -749,7 +749,7 @@ export const services = {
 
     cancelVisit: async (patientId: string, visitId: string) => {
       logger.info(
-        { action: 'cancel_booking_attempt', patientId, visitId },
+        { action: 'cancel_booking_attempt', visitId },
         'Attempting to cancel appointment',
       );
 
@@ -1517,7 +1517,7 @@ export const services = {
         });
 
         // 4. Emit event (fire-and-forget, outside tx)
-        emitEvent({
+        void void emitEvent({
           eventType: 'hospital_registered',
           hospitalId: hospital.id,
           payload: { hospitalName: data.hospitalName, city: data.city, adminName: data.adminName },
@@ -1534,9 +1534,10 @@ export const services = {
           changes: { name: hospital.legalName, city: hospital.city },
         });
 
-        
-
-        return toHospitalPublic({ ...hospital, name: hospital.legalName } as any as Hospital);
+        return toHospitalPublic({ ...hospital, name: hospital.legalName } as Record<
+          string,
+          unknown
+        >);
       });
     },
 
@@ -1603,13 +1604,13 @@ export const services = {
           },
         });
 
-        emitEvent({
+        void void emitEvent({
           eventType: 'lab_registered',
           hospitalId: lab.id,
           payload: { labName: data.labName, city: data.city, adminName: data.adminName },
         });
 
-        return toHospitalPublic({ ...lab, name: lab.legalName } as any as Hospital);
+        return toHospitalPublic({ ...lab, name: lab.legalName } as Record<string, unknown>);
       });
     },
 
@@ -1669,7 +1670,7 @@ export const services = {
         },
       });
 
-      emitEvent({
+      void void emitEvent({
         eventType: 'patient_visited',
         hospitalId,
         patientId: patient.id,
@@ -1723,7 +1724,7 @@ export const services = {
           },
         },
       });
-      emitEvent({
+      void void emitEvent({
         eventType: 'doctor_added',
         hospitalId,
         payload: { doctorName: data.name, doctorId: doctor.id },
@@ -1750,7 +1751,6 @@ export const services = {
           hospitalId,
           fromDoctorId: data.fromDoctorId,
           toDoctorId: data.toDoctorId,
-          patientId: data.patientId,
         },
         'Creating internal referral',
       );
@@ -1872,7 +1872,7 @@ export const services = {
       const result = await prisma.doctorHospitalAffiliation.deleteMany({
         where: { hospitalId, doctorId },
       });
-      emitEvent({ eventType: 'doctor_removed', hospitalId, payload: { doctorId } });
+      void void emitEvent({ eventType: 'doctor_removed', hospitalId, payload: { doctorId } });
       return result;
     },
   },
@@ -1912,7 +1912,7 @@ export const services = {
             },
           },
         });
-        emitEvent({
+        void void emitEvent({
           eventType: 'doctor_registered',
           payload: { doctorName: data.fullName, mobile: data.mobile },
         });
@@ -1935,16 +1935,13 @@ export const services = {
     },
 
     login: async (username: string, password?: string) => {
-      let adminPassHash = process.env.ADMIN_PASSWORD_HASH;
-      let adminUser = process.env.ADMIN_USERNAME;
+      const adminPassHash = process.env.ADMIN_PASSWORD_HASH;
+      const adminUser = process.env.ADMIN_USERNAME;
 
       if (!adminPassHash || !adminUser) {
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('ADMIN_PASSWORD_HASH and ADMIN_USERNAME must be set in production');
-        }
-        // Default fallback in development: admin / admin123
-        adminUser = 'admin';
-        adminPassHash = '$2b$12$mPYZIHevf.Ha2YYFrGHLS.L.G98hfISc.mR9L965fdbVBgb6Wlkpq';
+        throw new Error(
+          'ADMIN_PASSWORD_HASH and ADMIN_USERNAME must be set in environment variables',
+        );
       }
 
       if (password && username === adminUser && (await bcrypt.compare(password, adminPassHash))) {
@@ -1981,7 +1978,7 @@ export const services = {
         where: { id },
         data: { verificationStatus: 'verified', accountStatus: 'inactive' },
       });
-      emitEvent({
+      void void emitEvent({
         eventType: 'hospital_approved',
         hospitalId: id,
         payload: { hospitalName: result.legalName },
@@ -1995,7 +1992,7 @@ export const services = {
         where: { id },
         data: { verificationStatus: 'rejected', accountStatus: 'inactive' },
       });
-      emitEvent({
+      void void emitEvent({
         eventType: 'hospital_rejected',
         hospitalId: id,
         payload: { hospitalName: result.legalName },
@@ -2009,7 +2006,7 @@ export const services = {
         where: { id },
         data: { accountStatus: 'suspended' },
       });
-      emitEvent({
+      void void emitEvent({
         eventType: 'hospital_suspended',
         hospitalId: id,
         payload: { hospitalName: result.legalName },
@@ -2047,7 +2044,7 @@ export const services = {
           commissionRate: 5.0,
         },
       });
-      emitEvent({
+      void void emitEvent({
         eventType: 'agent_registered',
         payload: { agentName: data.fullName, mobile: data.mobile },
       });
@@ -2296,7 +2293,7 @@ export const services = {
     deletePatientData: async (patientId: string) => {
       return await prisma.$transaction(async (tx) => {
         // 1. Anonymize Patient Record
-        const patient = await tx.patient.update({
+        const _patient = await tx.patient.update({
           where: { id: patientId },
           data: {
             name: '[DELETED]',

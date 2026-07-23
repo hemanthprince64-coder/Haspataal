@@ -1,8 +1,12 @@
-/* eslint-disable */
-import './globals.css';
-import PatientHeader from './components/PatientHeader';
-import { services } from '@/lib/services';
+import { Inter } from 'next/font/google';
 import Link from 'next/link';
+
+import { services } from '@/lib/services';
+
+import PatientHeader from './components/PatientHeader';
+import './globals.css';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata = {
   title: 'Haspataal — Healthcare Assistance Platform',
@@ -14,17 +18,17 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }) {
   const cities = services.platform.getCities();
 
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${inter.variable} font-sans`}>
+      <head></head>
       <body>
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           <PatientHeader cities={cities} />

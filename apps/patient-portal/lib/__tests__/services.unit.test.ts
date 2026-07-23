@@ -185,8 +185,7 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
 
       const result = await services.patient.createVisit('hosp-1', bookingData);
 
-      expect(result.ok).toBe(true);
-      expect(result.ok === true && result.value.id).toBe('app-1');
+      expect(result.id).toBe('app-1');
 
       // Verify the check was performed
       expect(prisma.appointment.findFirst).toHaveBeenCalledWith(
@@ -232,10 +231,9 @@ describe('Service Layer Unit Tests (Mocked Prisma)', () => {
       // Mock existing appointment check (finds a collision)
       vi.mocked(prisma.appointment.findFirst).mockResolvedValue({ id: 'existing-app' } as any);
 
-      const result = await services.patient.createVisit('hosp-1', bookingData);
-
-      expect(result.ok).toBe(false);
-      expect(result.ok === false && result.code).toBe('SLOT_TAKEN');
+      await expect(services.patient.createVisit('hosp-1', bookingData)).rejects.toThrow(
+        /SLOT_UNAVAILABLE/,
+      );
 
       // Verify creation was NOT called
       expect(prisma.appointment.create).not.toHaveBeenCalled();

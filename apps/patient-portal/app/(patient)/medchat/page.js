@@ -417,10 +417,11 @@ export default function MedChatPage() {
               v2.4 Live
             </Badge>
           </div>
-          <h1
-            className="text-3xl font-black tracking-tight mb-1 uppercase"
-            dangerouslySetInnerHTML={{ __html: t.heroTitle }}
-          />
+          <h1 className="text-3xl font-black tracking-tight mb-1 uppercase">
+            {t.heroTitlePrefix}
+            <span>{t.heroTitleHighlight}</span>
+            {t.heroTitleSuffix}
+          </h1>
           <p className="text-slate-500 text-base font-medium tracking-tight leading-relaxed">
             {t.heroSubtitle}
           </p>

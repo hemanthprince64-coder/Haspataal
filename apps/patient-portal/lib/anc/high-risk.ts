@@ -10,7 +10,7 @@ interface PregnancyProfileInput {
   heightCm: number | null;
   bloodGroup: string | null;
   rhFactor: string | null;
-  age?: number;           // from patient.dob
+  age?: number; // from patient.dob
   previousComplications: string[];
   highRisk: boolean;
 }
@@ -24,12 +24,12 @@ interface HighRiskResult {
 
 const HIGH_RISK_FACTORS = {
   AGE: { min: 18, max: 35 },
-  HEIGHT: 145,        // cm
+  HEIGHT: 145, // cm
   BMI: { min: 18.5, max: 30 },
   GRAVIDA: 4,
   BP: { systolic: 140, diastolic: 90 },
-  HB: 11,             // g/dL
-  SUGAR: 140,          // mg/dL
+  HB: 11, // g/dL
+  SUGAR: 140, // mg/dL
 };
 
 export function evaluateHighRisk(profile: Partial<PregnancyProfileInput>): HighRiskResult {
@@ -49,7 +49,11 @@ export function evaluateHighRisk(profile: Partial<PregnancyProfileInput>): HighR
   }
 
   // Height (CPD risk)
-  if (profile.heightCm !== null && profile.heightCm !== undefined && profile.heightCm < HIGH_RISK_FACTORS.HEIGHT) {
+  if (
+    profile.heightCm !== null &&
+    profile.heightCm !== undefined &&
+    profile.heightCm < HIGH_RISK_FACTORS.HEIGHT
+  ) {
     reasons.push(`Short stature (${profile.heightCm} cm) – CPD risk`);
     severityScore += 2;
   }
@@ -67,15 +71,23 @@ export function evaluateHighRisk(profile: Partial<PregnancyProfileInput>): HighR
   }
 
   // Gravida
-  if (profile.gravida >= HIGH_RISK_FACTORS.GRAVIDA) {
+  if (profile.gravida !== undefined && profile.gravida >= HIGH_RISK_FACTORS.GRAVIDA) {
     reasons.push(`Grand multipara (G${profile.gravida}P${profile.para})`);
     severityScore += 2;
   }
 
   // Previous complications
-  const criticalComplications = ['PPH', 'Eclampsia', 'Severe Pre-eclampsia', 'Stillbirth', 'Neonatal Death'];
+  const criticalComplications = [
+    'PPH',
+    'Eclampsia',
+    'Severe Pre-eclampsia',
+    'Stillbirth',
+    'Neonatal Death',
+  ];
   profile.previousComplications?.forEach((comp) => {
-    const isCritical = criticalComplications.some((c) => comp.toLowerCase().includes(c.toLowerCase()));
+    const isCritical = criticalComplications.some((c) =>
+      comp.toLowerCase().includes(c.toLowerCase()),
+    );
     if (isCritical) {
       reasons.push(`Previous ${comp}`);
       severityScore += isCritical ? 4 : 1;

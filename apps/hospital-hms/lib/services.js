@@ -300,7 +300,11 @@ export const services = {
   // --- Admin Services ---
   admin: {
     login: (username, password) => {
-      if (username === 'admin' && password === 'admin123') {
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminPassword) {
+        throw new Error('ADMIN_PASSWORD must be set in environment variables');
+      }
+      if (username === 'admin' && password === adminPassword) {
         return { id: 'admin', role: 'PLATFORM_ADMIN', name: 'Platform Admin' };
       }
       return null;

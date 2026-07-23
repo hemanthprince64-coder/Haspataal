@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DoctorConsultationWorkflow({
   initialAppointments,
@@ -451,7 +452,7 @@ export default function DoctorConsultationWorkflow({
                             />
                             <Select
                               value={med.frequency}
-                              onValueChange={(v) => {
+                              onValueChange={(v: string) => {
                                 const newMeds = [...medications];
                                 newMeds[index].frequency = v;
                                 setMedications(newMeds);

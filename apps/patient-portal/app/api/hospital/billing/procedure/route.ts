@@ -22,7 +22,7 @@ const billProcedureSchema = z.object({
 export async function POST(req: NextRequest) {
   let access;
   try {
-    access = await requireHospitalAccess('procedure', 'create');
+    access = await requireHospitalAccess('procedure' as any, 'create');
   } catch (error) {
     return hospitalAccessError(error);
   }
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   const procedureName =
-    execution.order.items[0]?.catalogVersion?.metadata?.procedureName || 'Procedure';
+    (execution.order.items[0]?.catalogVersion?.metadata as any)?.procedureName || 'Procedure';
 
   const lines = [
     {

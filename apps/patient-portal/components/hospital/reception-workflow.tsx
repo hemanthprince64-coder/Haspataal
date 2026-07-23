@@ -315,7 +315,7 @@ export default function ReceptionWorkflow() {
                 </Label>
                 <Select
                   value={formData.gender}
-                  onValueChange={(v) => setFormData({ ...formData, gender: v })}
+                  onValueChange={(v: string) => setFormData({ ...formData, gender: v })}
                 >
                   <SelectTrigger className={isEmergency ? 'border-red-200 bg-red-50' : ''}>
                     <SelectValue placeholder="Select" />
@@ -356,7 +356,7 @@ export default function ReceptionWorkflow() {
                 </Label>
                 <Select
                   value={formData.doctorId}
-                  onValueChange={(v) => setFormData({ ...formData, doctorId: v })}
+                  onValueChange={(v: string) => setFormData({ ...formData, doctorId: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a doctor" />

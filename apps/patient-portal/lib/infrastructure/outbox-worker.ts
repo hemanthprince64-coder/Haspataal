@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { prisma } from '../util/prisma-singleton';
-import { notificationQueue, addJob } from './queues';
 import { registerWorker } from '../util/worker-lifecycle';
+import { notificationQueue, addJob } from './queues';
 
 /**
  * The Relay: Polls outbox_events and pushes them to BullMQ
@@ -26,7 +26,7 @@ async function processOutbox() {
         prisma.eventLog.create({
           data: {
             eventType: event.eventType,
-            payload: event.payload,
+            payload: event.payload as any,
           },
         }),
         prisma.outboxEvent.update({

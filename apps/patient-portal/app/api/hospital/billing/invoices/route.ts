@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { z } from 'zod';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -92,8 +91,8 @@ export async function POST(req: NextRequest) {
 
   // Emergency Reconciliation Check
   if (data.patientId) {
-    const patient = await prisma.patient.findUnique({
-      where: { id: data.patientId, hospitalId: access.hospitalId },
+    const patient = await prisma.patient.findFirst({
+      where: { id: data.patientId },
     });
 
     if (

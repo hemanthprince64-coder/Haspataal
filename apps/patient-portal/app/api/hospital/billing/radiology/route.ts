@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
-  const execution = await prisma.radiologyExecution.findFirst({
+
+  const execution: any = await (prisma.radiologyExecution.findFirst as any)({
     where: { id: data.executionId, hospitalId: access.hospitalId },
     include: { patient: true, items: { include: { orderItem: { include: { test: true } } } } },
   });

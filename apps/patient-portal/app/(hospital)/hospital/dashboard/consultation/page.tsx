@@ -22,7 +22,7 @@ export default async function ConsultationPage() {
   const doctor = await prisma.doctorMaster.findFirst({
     where: {
       mobile: user.mobile,
-      hospitalAffiliations: {
+      affiliations: {
         some: { hospitalId: user.hospitalId },
       },
     },

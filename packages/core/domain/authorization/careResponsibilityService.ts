@@ -58,7 +58,7 @@ export class CareResponsibilityService {
       | 'PATIENT_PHYSICALLY_LEFT_LAMA'
       | 'PATIENT_PHYSICALLY_LEFT_WITHOUT_NOTICE';
   }) {
-    let newStatus = ResponsibilityStatus.ACTIVE;
+    let newStatus: any = ResponsibilityStatus.ACTIVE;
 
     // Only authoritative confirmed physical departure ends ACTIVE care authorization.
     if (
@@ -74,7 +74,7 @@ export class CareResponsibilityService {
       data: {
         status: newStatus,
         // Store departure signal in terminationReason for traceability
-        terminationReason: params.signal,
+        terminationReason: params.signal as any,
         ...(newStatus === ResponsibilityStatus.ENDED ? { endedAt: new Date() } : {}),
       },
     });

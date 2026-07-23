@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 import { useEffect, useState } from 'react';
 
-export function useDoctorSearch(initialParams = {}) {
+export function useDoctorSearch(initialParams: Record<string, any> = {}) {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ limit: 20, offset: 0 });
 
-  const search = async (params) => {
+  const search = async (params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
 
@@ -27,7 +27,7 @@ export function useDoctorSearch(initialParams = {}) {
       setDoctors(data.data || []);
       setPagination(data.pagination || { limit: 20, offset: 0 });
       return data;
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       throw err;
     } finally {
@@ -38,7 +38,7 @@ export function useDoctorSearch(initialParams = {}) {
   return { doctors, loading, error, search, pagination };
 }
 
-export function useDoctorAvailability(doctorId, hospitalId, date) {
+export function useDoctorAvailability(doctorId: string, hospitalId: string, date?: string) {
   const [availability, setAvailability] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -55,7 +55,7 @@ export function useDoctorAvailability(doctorId, hospitalId, date) {
     fetch(`/api/doctors/availability?${params}`)
       .then((res) => res.json())
       .then((data) => setAvailability(data.data))
-      .catch((err) => console.error('Availability fetch error:', err))
+      .catch((err: any) => console.error('Availability fetch error:', err))
       .finally(() => setLoading(false));
   }, [doctorId, hospitalId, date]);
 

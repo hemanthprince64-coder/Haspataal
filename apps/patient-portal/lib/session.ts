@@ -3,46 +3,53 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.NEXTAUTH_SECRET;
-// In production, we require the secret. During build (NEXT_PHASE) or CI, we can skip or use a dummy.
-if (!secretKey && process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
-  throw new Error('NEXTAUTH_SECRET is required for session signing');
+function getSecretKey(): Uint8Array {
+  const secretKey = process.env.NEXTAUTH_SECRET;
+  if (!secretKey) {
+    if (process.env.npm_lifecycle_event === 'build') {
+      return new TextEncoder().encode('dummy-secret-for-build-purposes-only');
+    }
+    throw new Error('NEXTAUTH_SECRET is required for session signing');
+  }
+  return new TextEncoder().encode(secretKey);
 }
-const key = new TextEncoder().encode(secretKey || 'dummy-secret-for-build-purposes-only');
 
 interface SessionPayload {
   user: {
     id: string;
     name: string;
     role: string;
-    [key: string]: any; // Allow extended claims like hospitalId
+    hospitalId?: string;
+    doctorId?: string;
+    mobile?: string;
+    [key: string]: unknown; // Allow extended claims
   };
   expiresAt: Date;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
-export async function encrypt(payload: any): Promise<string> {
+export async function encrypt(payload: Record<string, unknown>): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(key);
+    .sign(getSecretKey());
 }
 
 export async function decrypt(session: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(session, key, {
+    const { payload } = await jwtVerify(session, getSecretKey(), {
       algorithms: ['HS256'],
     });
     return payload as SessionPayload;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
 export async function createSession(
   name: string,
-  data: { user: { id: string; name: string; role: string; [key: string]: any } },
+  data: { user: { id: string; name: string; role: string; [key: string]: unknown } },
 ): Promise<void> {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const session = await encrypt({ ...data, expiresAt });

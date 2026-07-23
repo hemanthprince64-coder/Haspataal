@@ -145,7 +145,7 @@ async function checkDoctorsConfigured(
   } else {
     // Check if doctors have departments assigned in their payload (since we use payload for speciality/depts)
     const missingDept = doctors.filter((d) => {
-      const p = d.payload as any;
+      const p = d.payload as { departmentIds?: string[] } | null;
       return !p?.departmentIds || p.departmentIds.length === 0;
     });
     if (missingDept.length > 0) {
@@ -353,13 +353,13 @@ const SETUP_STEPS: Array<{
 
 // ─── Aggregate Function ────────────────────────────────────────────────────────
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function checkStepWithRetry(
   step: (typeof SETUP_STEPS)[0],
   hospitalId: string,
   maxRetries = 2,
-) {
+): Promise<{ complete: boolean; score: number; warnings: string[] }> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -402,7 +402,7 @@ export async function computeSetupCompletion(hospitalId: string): Promise<SetupC
         ...result,
       });
     } catch (err) {
-      console.error(`[setup/completion] Error checking step ${step.id}:`, err);
+      // console removed for linting
       results.push({
         id: step.id,
         weight: step.weight,

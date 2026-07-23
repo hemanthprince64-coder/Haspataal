@@ -1,7 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Zap,
   Clock,
@@ -28,10 +27,13 @@ import {
   Banknote,
   Tv,
 } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { useState, useEffect } from 'react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -39,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
 
 export default function OpdSetupPage() {
   const [loading, setLoading] = useState(true);
@@ -153,7 +155,7 @@ export default function OpdSetupPage() {
                   </label>
                   <Select
                     value={config.tokenMode}
-                    onValueChange={(v) => setConfig({ ...config, tokenMode: v })}
+                    onValueChange={(v: string) => setConfig({ ...config, tokenMode: v })}
                   >
                     <SelectTrigger className="h-14 rounded-2xl border-slate-200 font-bold bg-slate-50/50">
                       <SelectValue />
@@ -196,7 +198,7 @@ export default function OpdSetupPage() {
                 </div>
                 <Switch
                   checked={config.resetDaily}
-                  onCheckedChange={(v) => setConfig({ ...config, resetDaily: v })}
+                  onCheckedChange={(v: boolean) => setConfig({ ...config, resetDaily: v })}
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>
@@ -295,7 +297,7 @@ export default function OpdSetupPage() {
                 </div>
                 <Switch
                   checked={config.enableSmartSlots}
-                  onCheckedChange={(v) => setConfig({ ...config, enableSmartSlots: v })}
+                  onCheckedChange={(v: boolean) => setConfig({ ...config, enableSmartSlots: v })}
                   className="data-[state=checked]:bg-blue-600"
                 />
               </div>
@@ -356,7 +358,7 @@ export default function OpdSetupPage() {
                   </div>
                   <Switch
                     checked={config[item.id]}
-                    onCheckedChange={(v) => setConfig({ ...config, [item.id]: v })}
+                    onCheckedChange={(v: boolean) => setConfig({ ...config, [item.id]: v })}
                     className="data-[state=checked]:bg-blue-600"
                   />
                 </div>
@@ -377,7 +379,7 @@ export default function OpdSetupPage() {
                 </label>
                 <Select
                   value={config.noShowPolicy}
-                  onValueChange={(v) => setConfig({ ...config, noShowPolicy: v })}
+                  onValueChange={(v: string) => setConfig({ ...config, noShowPolicy: v })}
                 >
                   <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
                     <SelectValue />
@@ -433,7 +435,7 @@ export default function OpdSetupPage() {
                 </div>
                 <Switch
                   checked={config.displayQueueOnTV}
-                  onCheckedChange={(v) => setConfig({ ...config, displayQueueOnTV: v })}
+                  onCheckedChange={(v: boolean) => setConfig({ ...config, displayQueueOnTV: v })}
                 />
               </div>
 
@@ -446,7 +448,7 @@ export default function OpdSetupPage() {
                 </div>
                 <Switch
                   checked={config.showEstimatedWait}
-                  onCheckedChange={(v) => setConfig({ ...config, showEstimatedWait: v })}
+                  onCheckedChange={(v: boolean) => setConfig({ ...config, showEstimatedWait: v })}
                 />
               </div>
 

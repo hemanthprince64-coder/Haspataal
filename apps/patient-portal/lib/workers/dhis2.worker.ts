@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import logger from '../logger';
 import { prisma } from '../util/prisma-singleton';
 
 export interface DHIS2AggregateData {
@@ -32,7 +33,7 @@ export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
   // Default Org Unit matching local operational profile or default district hospital
   const orgUnitId = process.env.DHIS2_ORG_UNIT || 'OU-BIHAR-PHC-123';
 
-  console.log(
+  logger.info(
     `[DHIS2-Worker] Running aggregate queries for period: ${periodString} (${startOfYesterday.toISOString()} to ${endOfYesterday.toISOString()})`,
   );
 
@@ -108,7 +109,7 @@ export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
       ],
     };
 
-    console.log('[DHIS2-Worker] Compiled DHIS2 JSON Payload:', JSON.stringify(reportData, null, 2));
+    logger.info({ reportData }, '[DHIS2-Worker] Compiled DHIS2 JSON Payload');
 
     // Generate ADX (Aggregate Data Exchange) XML format
     const adxXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -135,11 +136,11 @@ export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
 
     const reportPath = path.join(reportsDir, `dhis2-adx-${periodString}.xml`);
     fs.writeFileSync(reportPath, adxXml, 'utf8');
-    console.log(`[DHIS2-Worker] Offline ADX XML report successfully saved to: ${reportPath}`);
+    logger.info(`[DHIS2-Worker] Offline ADX XML report successfully saved to: ${reportPath}`);
 
     // If online, optionally push to DHIS2 Web API
     if (process.env.DHIS2_API_URL && process.env.DHIS2_USERNAME && process.env.DHIS2_PASSWORD) {
-      console.log('[DHIS2-Worker] Online mode: Pushing aggregate data to central DHIS2 API...');
+      logger.info('[DHIS2-Worker] Online mode: Pushing aggregate data to central DHIS2 API...');
       const authHeader =
         'Basic ' +
         Buffer.from(`${process.env.DHIS2_USERNAME}:${process.env.DHIS2_PASSWORD}`).toString(
@@ -155,13 +156,13 @@ export async function runDHIS2Reporting(targetDate?: Date): Promise<void> {
       });
 
       if (response.ok) {
-        console.log('[DHIS2-Worker] Successfully pushed report to DHIS2 Server.');
+        logger.info('[DHIS2-Worker] Successfully pushed report to DHIS2 Server.');
       } else {
-        console.error('[DHIS2-Worker] DHIS2 server rejected request:', response.statusText);
+        logger.error('[DHIS2-Worker] DHIS2 server rejected request:', response.statusText);
       }
     }
   } catch (err) {
-    console.error('[DHIS2-Worker] Error running reporting job:', err);
+    logger.error('[DHIS2-Worker] Error running reporting job:', err);
   }
 }
 
@@ -170,7 +171,7 @@ if (require.main === module) {
   runDHIS2Reporting()
     .then(() => process.exit(0))
     .catch((e) => {
-      console.error('[DHIS2-Worker] Worker failed:', e);
+      logger.error('[DHIS2-Worker] Worker failed:', e);
       process.exit(1);
     });
 }

@@ -1,7 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import {
   Globe,
   Plus,
@@ -40,11 +39,12 @@ import {
   Settings2,
   Cpu,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+import { useState, useEffect, useCallback } from 'react';
+
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +54,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -61,8 +62,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -688,7 +690,7 @@ export default function CommunicationsIntegrationsPage() {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                 Clinical Event
               </label>
-              <Select onValueChange={(v) => {}}>
+              <Select onValueChange={(v: string) => {}}>
                 <SelectTrigger className="h-12 rounded-xl font-bold">
                   <SelectValue placeholder="Select Event Trigger" />
                 </SelectTrigger>
@@ -710,7 +712,7 @@ export default function CommunicationsIntegrationsPage() {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                 Target Template
               </label>
-              <Select onValueChange={(v) => {}}>
+              <Select onValueChange={(v: string) => {}}>
                 <SelectTrigger className="h-12 rounded-xl font-bold">
                   <SelectValue placeholder="Select Template" />
                 </SelectTrigger>

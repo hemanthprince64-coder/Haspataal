@@ -1,8 +1,10 @@
 /* eslint-disable */
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+
+import { NextRequest, NextResponse } from 'next/server';
+
 import { getHospitalIdFromSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 const doctorSchema = z.object({
   name: z.string().min(1),
@@ -93,13 +95,13 @@ export async function POST(req: NextRequest) {
         where: { mobile: data.mobile },
         update: {
           fullName: data.name,
-          email: data.email || null,
+          email: data.email || `${data.mobile}@haspataal.com`,
           experienceYears: data.experienceYears,
         },
         create: {
           fullName: data.name,
           mobile: data.mobile,
-          email: data.email || null,
+          email: data.email || `${data.mobile}@haspataal.com`,
           experienceYears: data.experienceYears,
         },
       });

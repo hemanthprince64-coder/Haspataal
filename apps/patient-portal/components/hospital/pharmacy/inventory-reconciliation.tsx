@@ -165,7 +165,7 @@ export default function InventoryReconciliation() {
                     {hasVariance && (
                       <Select
                         value={stock.reason}
-                        onValueChange={(val) => handleReasonChange(stock.id, val)}
+                        onValueChange={(val: string) => handleReasonChange(stock.id, val)}
                       >
                         <SelectTrigger className="h-8">
                           <SelectValue placeholder="Select reason" />

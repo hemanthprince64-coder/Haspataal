@@ -1,3 +1,5 @@
+import { logger } from '@haspataal/logger';
+
 import { prisma } from '../util/prisma-singleton';
 
 export interface PMJAYClaim {
@@ -40,7 +42,7 @@ export async function generatePMJAYClaim(visitId: string): Promise<PMJAYClaim | 
     });
 
     if (!visit) {
-      console.error(`[PMJAY] Visit not found: ${visitId}`);
+      logger.error(`[PMJAY] Visit not found: ${visitId}`);
       return null;
     }
 
@@ -70,10 +72,10 @@ export async function generatePMJAYClaim(visitId: string): Promise<PMJAYClaim | 
       ],
     };
 
-    console.log(`[PMJAY] Generated e-claim for visit: ${visitId}`, JSON.stringify(claim, null, 2));
+    logger.info({ claim }, `[PMJAY] Generated e-claim for visit: ${visitId}`);
     return claim;
   } catch (err) {
-    console.error('[PMJAY] Error generating claim:', err);
+    logger.error({ err }, '[PMJAY] Error generating claim:');
     return null;
   }
 }

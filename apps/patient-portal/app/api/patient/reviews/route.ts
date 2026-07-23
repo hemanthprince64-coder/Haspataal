@@ -21,11 +21,10 @@ export async function GET(req: NextRequest) {
   const doctorId = req.nextUrl.searchParams.get('doctorId');
 
   if (appointmentId) {
-    const review = await prisma.review.findFirst({
-      where: { patientId: patient.id, appointmentId },
-      include: { doctor: { select: { id: true, fullName: true } } },
-    });
-    return NextResponse.json({ review });
+    return NextResponse.json(
+      { error: 'Review by appointmentId is not supported' },
+      { status: 400 },
+    );
   }
 
   if (doctorId) {
@@ -63,17 +62,6 @@ export async function POST(req: NextRequest) {
       { status: 422 },
     );
 
-  const existing = await prisma.review.findFirst({
-    where: { patientId: patient.id, appointmentId: parsed.data.appointmentId },
-  });
-
-  if (existing) {
-    return NextResponse.json(
-      { error: 'Review already submitted for this appointment' },
-      { status: 409 },
-    );
-  }
-
   const appointment = await prisma.appointment.findUnique({
     where: { id: parsed.data.appointmentId },
     select: { doctorId: true, hospitalId: true, patientId: true },
@@ -81,6 +69,14 @@ export async function POST(req: NextRequest) {
 
   if (!appointment || appointment.patientId !== patient.id) {
     return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+  }
+
+  const existing = await prisma.review.findFirst({
+    where: { patientId: patient.id, doctorId: appointment.doctorId },
+  });
+
+  if (existing) {
+    return NextResponse.json({ error: 'You have already reviewed this doctor' }, { status: 409 });
   }
 
   const review = await prisma.review.create({

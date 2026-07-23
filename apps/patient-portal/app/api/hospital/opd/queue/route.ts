@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+
+import { NextRequest, NextResponse } from 'next/server';
+
 import {
   hospitalAccessError,
   requireHospitalAccess,
   writeAuditLog,
 } from '@/lib/auth/hospital-access';
+import { prisma } from '@/lib/prisma';
 
 const queueSchema = z.object({
   appointmentId: z.string().min(1),
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
             appointmentId,
             hospitalId: access.hospitalId,
             patientName: appointment.patient.name,
-            patientPhone: appointment.patient.phone,
+            patientPhone: appointment.patient.phone || '',
             diagnosis: 'OPD Visit',
             amount: 0,
           },

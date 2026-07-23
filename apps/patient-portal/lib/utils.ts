@@ -1,19 +1,19 @@
-import { Hospital, HospitalPublic } from '../types';
+import { HospitalPublic } from '../types';
 
-export function toHospitalPublic(hospital: any): HospitalPublic {
+export function toHospitalPublic(hospital: Record<string, unknown>): HospitalPublic {
   return {
-    id: hospital.id,
-    name: hospital.name || hospital.displayName || hospital.legalName,
-    legalName: hospital.legalName,
-    displayName: hospital.displayName,
-    city: hospital.city,
-    state: hospital.state,
-    verificationStatus: hospital.verificationStatus,
-    accountStatus: hospital.accountStatus,
-    registrationNumber: hospital.registrationNumber,
-    medicalCouncilNumber: hospital.medicalCouncilNumber,
-    googleLocationUrl: hospital.googleLocationUrl,
-    approvalDocumentUrl: hospital.approvalDocumentUrl,
+    id: hospital.id as string,
+    name: (hospital.name || hospital.displayName || hospital.legalName) as string,
+    legalName: hospital.legalName as string,
+    displayName: hospital.displayName as string,
+    city: hospital.city as string,
+    state: hospital.state as string,
+    verificationStatus: hospital.verificationStatus as 'verified' | 'unverified' | 'pending',
+    accountStatus: hospital.accountStatus as 'active' | 'suspended' | 'pending',
+    registrationNumber: hospital.registrationNumber as string | undefined,
+    medicalCouncilNumber: hospital.medicalCouncilNumber as string | undefined,
+    googleLocationUrl: hospital.googleLocationUrl as string | undefined,
+    approvalDocumentUrl: hospital.approvalDocumentUrl as string | undefined,
   };
 }
 

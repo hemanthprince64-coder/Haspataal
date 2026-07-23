@@ -1,13 +1,14 @@
-/* eslint-disable */
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
-import { roundMoney } from '@/lib/billing/invoice';
+
+import { NextRequest, NextResponse } from 'next/server';
+
 import {
   hospitalAccessError,
   requireHospitalAccess,
   writeAuditLog,
 } from '@/lib/auth/hospital-access';
+import { roundMoney } from '@/lib/billing/invoice';
+import { prisma } from '@/lib/prisma';
 
 type Params = { params: Promise<{ id: string }> };
 

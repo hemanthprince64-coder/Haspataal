@@ -1,5 +1,6 @@
 import { requireRole } from '@/lib/auth/requireRole';
 import { UserRole } from '@/types';
+
 import AnalyticsClient from './AnalyticsClient';
 
 export default async function AnalyticsPage() {
@@ -12,7 +13,7 @@ export default async function AnalyticsPage() {
         <p className="text-gray-500 mt-1">Real-time performance metrics and growth intelligence</p>
       </div>
 
-      <AnalyticsClient hospitalId={user.hospitalId} />
+      <AnalyticsClient hospitalId={user.hospitalId as string} />
     </div>
   );
 }

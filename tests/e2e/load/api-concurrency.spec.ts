@@ -9,7 +9,7 @@ dotenv.config({ path: path.join(process.cwd(), '.env') });
 const prisma = new PrismaClient();
 
 // Setup constants
-const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'dummy-secret-for-build-purposes-only';
+const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'test-secret-key-for-e2e-only-do-not-use-in-prod';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 // Helper to generate a valid JWT mirroring production claims

@@ -1,24 +1,20 @@
 /* eslint-disable */
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { toast } from 'sonner';
+
+import { Button } from './ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
-import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 
 export interface FieldValidation {
   min?: number;
@@ -74,13 +70,13 @@ export function buildZodSchema(fields: FormFieldSchema[]) {
           if (typeof field.validation.min === 'number') {
             fieldSchema = fieldSchema.min(
               field.validation.min,
-              `${field.label} must be at least ${field.validation.min}`
+              `${field.label} must be at least ${field.validation.min}`,
             );
           }
           if (typeof field.validation.max === 'number') {
             fieldSchema = fieldSchema.max(
               field.validation.max,
-              `${field.label} must be at most ${field.validation.max}`
+              `${field.label} must be at most ${field.validation.max}`,
             );
           }
         }
@@ -111,13 +107,13 @@ export function buildZodSchema(fields: FormFieldSchema[]) {
           if (typeof field.validation.minLength === 'number') {
             fieldSchema = fieldSchema.min(
               field.validation.minLength,
-              `${field.label} must be at least ${field.validation.minLength} characters`
+              `${field.label} must be at least ${field.validation.minLength} characters`,
             );
           }
           if (typeof field.validation.maxLength === 'number') {
             fieldSchema = fieldSchema.max(
               field.validation.maxLength,
-              `${field.label} must be at most ${field.validation.maxLength} characters`
+              `${field.label} must be at most ${field.validation.maxLength} characters`,
             );
           }
         }
@@ -145,7 +141,8 @@ export function VoiceInputButton({ fieldId, onTranscript }: VoiceInputButtonProp
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         setSupported(true);
       }
@@ -153,7 +150,8 @@ export function VoiceInputButton({ fieldId, onTranscript }: VoiceInputButtonProp
   }, []);
 
   const startListening = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
@@ -274,12 +272,12 @@ export default function DynamicForm({
           </CardDescription>
         )}
       </CardHeader>
-      
+
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <CardContent className="space-y-6">
           {schema.fields.map((field) => {
             const error = errors[field.id];
-            
+
             return (
               <div key={field.id} className="space-y-2 group">
                 {field.type !== 'checkbox' && (
@@ -289,11 +287,9 @@ export default function DynamicForm({
                       className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors"
                     >
                       {field.label}
-                      {field.required && (
-                        <span className="text-rose-500 ml-1 font-bold">*</span>
-                      )}
+                      {field.required && <span className="text-rose-500 ml-1 font-bold">*</span>}
                     </Label>
-                    
+
                     {(field.conceptCode || field.conceptSource) && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                         {field.conceptSource || 'CIEL'}: {field.conceptCode}
@@ -310,7 +306,10 @@ export default function DynamicForm({
                       {...register(field.id)}
                       className="w-full rounded-lg border-slate-200/80 focus:ring-2 focus:ring-blue-500/20 pr-10 transition-all duration-200"
                     />
-                    <VoiceInputButton fieldId={field.id} onTranscript={(text) => setValue(field.id, text)} />
+                    <VoiceInputButton
+                      fieldId={field.id}
+                      onTranscript={(text) => setValue(field.id, text)}
+                    />
                   </div>
                 )}
 
@@ -335,18 +334,21 @@ export default function DynamicForm({
                       className="w-full rounded-lg border-slate-200/80 focus:ring-2 focus:ring-blue-500/20 pr-10 transition-all duration-200"
                     />
                     <div className="absolute right-3 bottom-3">
-                      <VoiceInputButton fieldId={field.id} onTranscript={(text) => setValue(field.id, text)} />
+                      <VoiceInputButton
+                        fieldId={field.id}
+                        onTranscript={(text) => setValue(field.id, text)}
+                      />
                     </div>
                   </div>
                 )}
 
                 {field.type === 'select' && (
                   <Select
-                    onValueChange={(val) => setValue(field.id, val)}
+                    onValueChange={(val: string) => setValue(field.id, val)}
                     defaultValue={defaultValues[field.id]}
                   >
                     <SelectTrigger className="w-full rounded-lg border-slate-200/80 focus:ring-2 focus:ring-blue-500/20">
-                      <SelectValue placeholder={field.placeholder || "Select an option"} />
+                      <SelectValue placeholder={field.placeholder || 'Select an option'} />
                     </SelectTrigger>
                     <SelectContent>
                       {field.options?.map((opt) => (
@@ -371,12 +373,12 @@ export default function DynamicForm({
                         className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
                       >
                         {field.label}
-                        {field.required && (
-                          <span className="text-rose-500 ml-1 font-bold">*</span>
-                        )}
+                        {field.required && <span className="text-rose-500 ml-1 font-bold">*</span>}
                       </Label>
                       {field.placeholder && (
-                        <p className="text-xs text-slate-400 dark:text-slate-500">{field.placeholder}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                          {field.placeholder}
+                        </p>
                       )}
                     </div>
                     {(field.conceptCode || field.conceptSource) && (
@@ -392,7 +394,7 @@ export default function DynamicForm({
                     {field.options?.map((opt) => {
                       const currentSelected: string[] = watch(field.id) || [];
                       const isChecked = currentSelected.includes(opt.value);
-                      
+
                       return (
                         <div key={opt.value} className="flex items-center space-x-3">
                           <Checkbox
@@ -404,7 +406,7 @@ export default function DynamicForm({
                               } else {
                                 setValue(
                                   field.id,
-                                  currentSelected.filter((v) => v !== opt.value)
+                                  currentSelected.filter((v) => v !== opt.value),
                                 );
                               }
                             }}

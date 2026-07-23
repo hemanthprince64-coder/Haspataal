@@ -5,7 +5,9 @@
 
 export const TRANSLATIONS = {
   en: {
-    heroTitle: 'Med<span>Chat</span> AI',
+    heroTitlePrefix: 'Med',
+    heroTitleHighlight: 'Chat',
+    heroTitleSuffix: ' AI',
     heroSubtitle:
       "Tell us your symptoms — we'll guide you to the right specialist, safely and instantly.",
     trustNoData: 'No data stored',
@@ -46,7 +48,9 @@ export const TRANSLATIONS = {
     aiReasoning: 'AI Clinical Reasoning',
   },
   hi: {
-    heroTitle: 'मेड<span>चैट</span> AI',
+    heroTitlePrefix: 'मेड',
+    heroTitleHighlight: 'चैट',
+    heroTitleSuffix: ' AI',
     heroSubtitle:
       'हमें अपने लक्षण बताएं - हम आपको सुरक्षित और तुरंत सही विशेषज्ञ के पास ले जाएंगे।',
     trustNoData: 'कोई डेटा संग्रहीत नहीं',

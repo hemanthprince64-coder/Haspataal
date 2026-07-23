@@ -89,7 +89,8 @@ export default function GrowthChart({ visits, type }: GrowthChartProps) {
           <div className="space-y-4">
             {data.map((reading, idx) => {
               const range = getReferenceRange(reading.week);
-              const isOutsideRange = reading.value < range.min || reading.value > range.max;
+              const isOutsideRange =
+                (reading.value ?? 0) < range.min || (reading.value ?? 0) > range.max;
               return (
                 <div
                   key={idx}

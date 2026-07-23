@@ -24,7 +24,11 @@ const INTERVENTIONS: RetentionRule[] = [
   { maxDropoutScore: 30, intervention: 'Standard SMS reminders', channel: 'SMS' },
   { maxDropoutScore: 60, intervention: 'ASHA home visit + ANM call', channel: 'ASHA_VISIT' },
   { maxDropoutScore: 80, intervention: 'Escort arrangement to hospital', channel: 'ESCORT' },
-  { maxDropoutScore: 100, intervention: 'Block-level NHM transport voucher', channel: 'NHM_TRANSPORT' },
+  {
+    maxDropoutScore: 100,
+    intervention: 'Block-level NHM transport voucher',
+    channel: 'NHM_TRANSPORT',
+  },
 ];
 
 export function predictDropoutRisk(profile: Partial<RetentionProfile>): number {
@@ -46,7 +50,7 @@ export function predictDropoutRisk(profile: Partial<RetentionProfile>): number {
   }
 
   // Grand multipara
-  if (profile.gravida > 4) {
+  if (profile.gravida !== undefined && profile.gravida > 4) {
     score += 10;
   }
 
@@ -73,8 +77,11 @@ export function predictDropoutRisk(profile: Partial<RetentionProfile>): number {
   if (profile.visits && profile.visits.length > 1) {
     const now = new Date();
     const lastVisit = profile.visits[profile.visits.length - 1];
-    const daysSinceVisit = Math.floor((now.getTime() - new Date(lastVisit.visitDate).getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSinceVisit > 35) { // more than a month since last visit
+    const daysSinceVisit = Math.floor(
+      (now.getTime() - new Date(lastVisit.visitDate).getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (daysSinceVisit > 35) {
+      // more than a month since last visit
       score += 15;
     }
   }
@@ -109,7 +116,9 @@ function estimateExpectedVisits(profile: Partial<RetentionProfile>): number {
   if (!profile.visits || profile.visits.length === 0) return 0;
   const firstVisit = new Date(profile.visits[0].visitDate);
   const now = new Date();
-  const monthsDiff = Math.floor((now.getTime() - firstVisit.getTime()) / (1000 * 60 * 60 * 24 * 30));
+  const monthsDiff = Math.floor(
+    (now.getTime() - firstVisit.getTime()) / (1000 * 60 * 60 * 24 * 30),
+  );
   return Math.min(monthsDiff, 9); // max ~9 months of ANC
 }
 

@@ -1,3 +1,5 @@
+import logger from '../logger';
+
 /**
  * Worker Lifecycle Manager (M5 Fix)
  * Adds SIGTERM/SIGINT graceful shutdown to all setInterval workers.
@@ -31,15 +33,15 @@ export function registerWorker(
  * Stop all registered workers cleanly.
  * Called automatically on SIGTERM/SIGINT.
  */
-function shutdownWorkers(signal: string) {
-  console.info(
+function shutdownWorkers(signal: string): void {
+  logger.info(
     `[WorkerManager] Received ${signal}. Stopping ${registeredWorkers.length} workers...`,
   );
   for (const worker of registeredWorkers) {
     clearInterval(worker.intervalId);
-    console.info(`[WorkerManager] Stopped worker: ${worker.name}`);
+    logger.info(`[WorkerManager] Stopped worker: ${worker.name}`);
   }
-  console.info('[WorkerManager] All workers stopped. Exiting.');
+  logger.info('[WorkerManager] All workers stopped. Exiting.');
   process.exit(0);
 }
 

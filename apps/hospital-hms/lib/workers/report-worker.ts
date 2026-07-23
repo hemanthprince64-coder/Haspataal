@@ -96,11 +96,9 @@ export class ReportWorker {
     await prisma.timelineAudit.create({
       data: {
         id: uuidv4(),
-        hospitalId: 'mock',
         action: 'REPORT_EXPORTED',
-        entityId: reportType,
         performedBy: userId,
-        details: { objectKey },
+        payload: { objectKey, entityId: reportType, hospitalId: 'mock' },
       },
     });
   }

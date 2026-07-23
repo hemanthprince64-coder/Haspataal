@@ -39,7 +39,7 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   let user: SessionUser;
   try {
-    user = (await requireHospitalStaff('session_user')) as SessionUser;
+    user = (await requireHospitalStaff('session_user')) as unknown as SessionUser;
   } catch (e) {
     redirect('/hospital/login');
   }
@@ -84,7 +84,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
       ]);
       setupProgress = completion.totalWeightedScore;
       branches = branchList;
-      activeBranchId = currentBranchId || branchList.find((b) => b.isHeadquarters)?.id;
+      activeBranchId = currentBranchId || branchList.find((b) => b.isHeadquarters)?.id || null;
       hasCriticalWarnings = completion.criticalWarnings.length > 0;
     }
   } catch (err) {

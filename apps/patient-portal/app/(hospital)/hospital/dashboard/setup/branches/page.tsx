@@ -1,7 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import {
   MapPin,
   Plus,
@@ -22,10 +21,13 @@ import {
   Activity,
   AlertCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+import { useState, useEffect, useCallback } from 'react';
+
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -34,8 +36,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 
 interface Branch {
   id: string;
@@ -376,7 +378,7 @@ function BranchDialog({ open, onClose, onSave, hospitalData, editingBranch, bran
       const hospCode = hospitalData.registrationNumber?.split('-').pop()?.substring(0, 4) || 'HOSP';
       const branchIdx = (branchCount + 1).toString().padStart(2, '0');
 
-      setForm((prev) => ({
+      setForm((prev: any) => ({
         ...prev,
         city: hospitalData.city || '',
         state: hospitalData.state || '',
@@ -388,10 +390,10 @@ function BranchDialog({ open, onClose, onSave, hospitalData, editingBranch, bran
   }, [editingBranch, hospitalData, branchCount, open]);
 
   const toggleFacility = (id: string) => {
-    setForm((prev) => ({
+    setForm((prev: any) => ({
       ...prev,
       facilities: prev.facilities.includes(id)
-        ? prev.facilities.filter((f) => f !== id)
+        ? prev.facilities.filter((f: string) => f !== id)
         : [...prev.facilities, id],
     }));
   };

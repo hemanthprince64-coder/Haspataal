@@ -6,14 +6,13 @@
 // delegated to repository interfaces, making it fully testable
 // with mock implementations.
 // ============================================================
-
 import { BookingStatus } from '../../../types';
+import logger from '../../logger';
 import type {
   IAppointmentRepository,
   AppointmentRecord,
 } from '../../repositories/interfaces/IAppointmentRepository';
 import type { IPatientRepository } from '../../repositories/interfaces/IPatientRepository';
-import logger from '../../logger';
 
 export interface BookAppointmentInput {
   hospitalId: string;
@@ -108,9 +107,10 @@ export class BookAppointmentUseCase {
       );
 
       return { appointment };
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
       // Handle Prisma unique constraint violation (P2002) — race condition protection
-      if (error.code === 'P2002') {
+      if (err.code === 'P2002') {
         logger.warn(
           { action: 'booking_conflict', doctorId, slot },
           'Race condition double-booking prevented by Unique Constraint',
@@ -119,7 +119,7 @@ export class BookAppointmentUseCase {
       }
 
       logger.error(
-        { action: 'booking_transaction_failed', error: error.message },
+        { action: 'booking_transaction_failed', error: err.message },
         'Booking transaction failed',
       );
       throw error;

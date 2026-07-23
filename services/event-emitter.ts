@@ -66,7 +66,6 @@ export async function emitEvent(input: EmitEventInput): Promise<void> {
           patientId: input.patientId || null,
           executedBy: input.executedBy || null,
           payload: input.payload as any,
-          idempotencyKey: `legacy-emit-${eventId}`, // Add basic idempotency key for repair
         },
       }),
       prisma.outboxEvent.create({

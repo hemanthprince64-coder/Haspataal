@@ -18,7 +18,7 @@ function getSupabaseClient(): SupabaseClient {
  * Uploads a profile photo to the Supabase storage bucket and returns the public URL.
  * Requires an existing public bucket named "avatars".
  */
-export async function uploadProfilePhoto(file, patientId) {
+export async function uploadProfilePhoto(file: File, patientId: string): Promise<string | null> {
   if (!file || !file.name) return null;
 
   const supabase = getSupabaseClient();

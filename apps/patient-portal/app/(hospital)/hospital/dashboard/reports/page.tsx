@@ -1,16 +1,18 @@
 /* eslint-disable */
-import { services } from '@/lib/services';
-import { requireRole } from '@/lib/auth/requireRole';
-import { UserRole } from '@/types';
-import ReportActions from './ReportActions';
 import { FileText, Calendar, User, UserCheck, Phone, Search, Filter } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { requireRole } from '@/lib/auth/requireRole';
+import { services } from '@/lib/services';
+import { UserRole } from '@/types';
+
+import ReportActions from './ReportActions';
 
 export default async function ReportsPage() {
   const user = await requireRole([UserRole.HOSPITAL_ADMIN, UserRole.DOCTOR], 'session_user');
 
-  const rawVisits = await services.hospital.getVisits(user.hospitalId);
+  const rawVisits = await services.hospital.getVisits(user.hospitalId as string);
   const visits = rawVisits.map((v: any) => {
     const doctor = v.appointment?.doctor || null;
     const patient = v.appointment?.patient || null;

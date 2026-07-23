@@ -1,9 +1,5 @@
-/* eslint-disable */
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Hospital,
@@ -24,12 +20,18 @@ import {
   ArrowRight,
   ArrowLeft,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { toast } from 'sonner';
 
 // ─── Schema ────────────────────────────────────────────────────────────────────
 
@@ -328,11 +330,13 @@ export default function HospitalIdentityPage() {
   // Auto-save draft every 30s
   const formValues = watch();
   useEffect(() => {
-    clearTimeout(autosaveRef.current);
+    if (autosaveRef.current) clearTimeout(autosaveRef.current);
     autosaveRef.current = setTimeout(() => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(formValues));
     }, 30000);
-    return () => clearTimeout(autosaveRef.current);
+    return () => {
+      if (autosaveRef.current) clearTimeout(autosaveRef.current);
+    };
   }, [formValues]);
 
   const onSubmit = async (data: IdentityForm) => {

@@ -1,12 +1,11 @@
-/* eslint-disable */
 import { NextResponse } from 'next/server';
-import { VisitService } from '@/lib/services/visits';
+
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
+import { VisitService } from '@/lib/services/visits';
 
 export async function GET(req: Request) {
   try {
     const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.RECEPTIONIST]);
-    // @ts-expect-error
     const data = await VisitService.getRecent(user.hospital_id);
     // Note: For strict doctor visibility (own visits only), filtering should happen here or in service.
     // Current implementation returns all hospital visits.
@@ -25,9 +24,7 @@ export async function POST(req: Request) {
 
     const visitData = {
       ...body,
-      // @ts-expect-error
       hospital_id: user.hospital_id,
-      // @ts-expect-error
       doctor_id: body.doctor_id || user.user_id,
     };
 

@@ -40,17 +40,17 @@ export class NetworkOperationsService {
         // In a real implementation, we'd use raw SQL for pessimistic row locking:
         // await tx.$executeRaw`SELECT quantity FROM drug_stocks WHERE hospital_id = ${sourceHospitalId} AND drug_id = ${drugId} AND batch_number = ${batchNumber} FOR UPDATE`;
 
-        const stock = await tx.drugStock.findFirst({
-          where: { hospitalId: sourceHospitalId, drugId, batchNumber },
+        const stockItem = await tx.drugStock.findFirst({
+          where: { hospitalId: sourceHospitalId, name: drugId, batchNumber },
         });
 
-        if (!stock || stock.quantity < quantity) {
+        if (!stockItem || stockItem.stock < quantity) {
           throw new Error('Insufficient stock for cross-tenant transfer dispatch');
         }
 
         await tx.drugStock.update({
-          where: { id: stock.id },
-          data: { quantity: stock.quantity - quantity },
+          where: { id: stockItem.id },
+          data: { stock: stockItem.stock - quantity },
         });
 
         // Write Audit Log
@@ -61,7 +61,7 @@ export class NetworkOperationsService {
             userId: actorId,
             action: 'DISPATCH_CROSS_TENANT_TRANSFER',
             entity: 'drug_stock',
-            entityId: stock.id,
+            entityId: stockItem.id,
             details: { transferId, quantity, batchNumber } as any,
           },
         });
@@ -93,21 +93,21 @@ export class NetworkOperationsService {
       // 1. Transactionally add to Destination
       await systemPrisma.$transaction(async (tx) => {
         const existingStock = await tx.drugStock.findFirst({
-          where: { hospitalId: destHospitalId, drugId, batchNumber },
+          where: { hospitalId: destHospitalId, name: drugId, batchNumber },
         });
 
         if (existingStock) {
           await tx.drugStock.update({
             where: { id: existingStock.id },
-            data: { quantity: existingStock.quantity + quantity },
+            data: { stock: existingStock.stock + quantity },
           });
         } else {
           await tx.drugStock.create({
             data: {
               hospitalId: destHospitalId,
-              drugId,
+              name: drugId,
               batchNumber,
-              quantity,
+              stock: quantity,
               expiryDate,
             },
           });

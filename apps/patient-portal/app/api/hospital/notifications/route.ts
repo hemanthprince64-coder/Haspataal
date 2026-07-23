@@ -1,12 +1,13 @@
-/* eslint-disable */
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/prisma';
+
+import { NextRequest, NextResponse } from 'next/server';
+
 import {
   hospitalAccessError,
   requireHospitalAccess,
   writeAuditLog,
 } from '@/lib/auth/hospital-access';
+import { prisma } from '@/lib/prisma';
 
 const notificationSchema = z.object({
   patientId: z.string().optional().nullable(),
@@ -60,12 +61,12 @@ export async function POST(req: NextRequest) {
       hospitalId: access.hospitalId,
       patientId: data.patientId ?? null,
       channel: data.channel,
-      templateKey: data.templateKey,
+      templateId: data.templateKey,
       recipient: data.recipient,
       subject: data.subject,
       body: data.body,
       scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
-      payload: (data.payload ?? {}) as any,
+      variables: (data.payload ?? {}) as any,
     },
   });
 

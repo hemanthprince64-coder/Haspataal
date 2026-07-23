@@ -63,7 +63,7 @@ export class DoctorPatientRelationshipService {
       | 'PATIENT_PHYSICALLY_LEFT_LAMA'
       | 'PATIENT_PHYSICALLY_LEFT_WITHOUT_NOTICE';
   }) {
-    let newStatus = RelationshipStatus.ACTIVE;
+    let newStatus: any = RelationshipStatus.ACTIVE;
 
     // Only authoritative confirmed physical departure ends ACTIVE care authorization.
     if (
@@ -80,7 +80,7 @@ export class DoctorPatientRelationshipService {
         status: newStatus,
         // Store departure signal in terminationReason for traceability
         ...(newStatus === RelationshipStatus.ENDED
-          ? { endedAt: new Date(), terminationReason: params.signal }
+          ? { endedAt: new Date(), terminationReason: params.signal as any }
           : {}),
       },
     });

@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
     where: {
       id: data.appointmentId,
       hospitalId: access.hospitalId,
-      patientId: { not: null },
     },
     include: { patient: true, doctor: true },
   });
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest) {
   const summary = summarizeInvoice([
     {
       description: `Consultation - ${appointment.doctor?.fullName || 'Doctor'}`,
-      type: 'CONSULTATION',
+      type: 'CONSULTATION' as const,
       quantity: 1,
       unitPrice: data.consultationFee,
       gstRate: data.gstRate,
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
       ? [
           {
             description: 'Doctor fee',
-            type: 'CONSULTATION',
+            type: 'CONSULTATION' as const,
             quantity: 1,
             unitPrice: data.doctorFee,
             gstRate: data.gstRate,

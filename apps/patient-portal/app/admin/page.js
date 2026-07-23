@@ -100,7 +100,7 @@ export default function AdminLoginPage() {
               <div className="bg-blue-950/30 border border-blue-900/50 rounded-xl p-3 text-center">
                 <p className="text-xs text-blue-400 font-medium">
                   💡 Demo: <strong className="text-white">admin</strong> /{' '}
-                  <strong className="text-white">admin123</strong>
+                  <strong className="text-white">{'<ADMIN_PASSWORD>'}</strong>
                 </p>
               </div>
             )}

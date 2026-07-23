@@ -7,7 +7,7 @@ import path from 'path';
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const prisma = new PrismaClient();
-const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'dummy-secret-for-build-purposes-only';
+const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'test-secret-key-for-e2e-only-do-not-use-in-prod';
 const key = new TextEncoder().encode(SECRET_KEY);
 
 async function generateAuthToken(userId: string, role: string, hospitalId: string) {

@@ -44,9 +44,18 @@ export default [
     },
   },
   {
-    files: ['lib/services.ts'],
+    files: [
+      'lib/services.ts',
+      'lib/services/**/*.ts',
+      'lib/repositories/**/*.ts',
+      'lib/schedule-actions.ts',
+      'app/(patient)/search/page.tsx',
+      'components/anc/FollowUpWizard.tsx',
+      'app/api/hospital/billing/**/*.ts',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
   {

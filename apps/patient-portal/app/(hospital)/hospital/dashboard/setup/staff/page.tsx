@@ -1,7 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Users,
   Shield,
@@ -31,10 +30,12 @@ import {
   MoreVertical,
   LayoutGrid,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -50,8 +52,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -210,7 +212,7 @@ function InviteDialog({
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
               Assigned Role Profile
             </label>
-            <Select value={role} onValueChange={(v) => setRole(v as StaffRole)}>
+            <Select value={role} onValueChange={(v: string) => setRole(v as StaffRole)}>
               <SelectTrigger className="rounded-xl h-12 border-slate-200 font-bold">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
@@ -338,7 +340,7 @@ function EditStaffDialog({
               </label>
               <Select
                 value={form.role}
-                onValueChange={(v) => setForm({ ...form, role: v as StaffRole })}
+                onValueChange={(v: string) => setForm({ ...form, role: v as StaffRole })}
               >
                 <SelectTrigger className="rounded-xl h-11 border-slate-200 font-bold">
                   <SelectValue />
@@ -358,7 +360,7 @@ function EditStaffDialog({
               </label>
               <Select
                 value={form.shift}
-                onValueChange={(v) => setForm({ ...form, shift: v as any })}
+                onValueChange={(v: string) => setForm({ ...form, shift: v as any })}
               >
                 <SelectTrigger className="rounded-xl h-11 border-slate-200 font-bold">
                   <SelectValue />
@@ -710,7 +712,9 @@ export default function StaffPage() {
                             <div className="flex items-center justify-center gap-3">
                               <Switch
                                 checked={s.isActive}
-                                onCheckedChange={(v) => handleUpdateStaff(s.id, { isActive: v })}
+                                onCheckedChange={(v: boolean) =>
+                                  handleUpdateStaff(s.id, { isActive: v })
+                                }
                                 className="data-[state=checked]:bg-blue-600"
                               />
                               <Button

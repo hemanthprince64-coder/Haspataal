@@ -26,15 +26,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Doctor ID is required' }, { status: 400 });
     }
 
-    const doctor = await prisma.doctorMaster.findFirst({
-      where: { id: doctorId }, // TODO: filter by hospital affiliation if needed
+    const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
+      where: { doctorId, hospitalId },
     });
 
-    if (!doctor) {
+    if (!affiliation) {
       return NextResponse.json({ error: 'Invalid doctor selection' }, { status: 400 });
     }
 
-    const consultationFee = doctor.fee || 500;
+    const consultationFee = affiliation.consultationFee || 500;
 
     // Fast Upsert Patient
     const patientData = {
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
           appointmentId: appointment.id,
           patientName: patientName,
           patientPhone: patientMobile || '',
-          amount: consultationFee,
+          amount: Number(consultationFee),
         },
       });
     } catch (visitError: any) {

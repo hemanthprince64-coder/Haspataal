@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   description: 'Platform management and hospital onboarding hub.',
 };
 
+export const viewport: import('next').Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">

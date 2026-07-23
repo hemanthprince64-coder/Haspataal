@@ -96,7 +96,7 @@ export class AuthorizationService {
       case DomainAction.ORDER_COMPLETE:
       case DomainAction.ORDER_OVERRIDE_CDS:
       case DomainAction.ORDER_EXECUTION_UPDATE:
-        result = this.authorizePhase5Order(actor, action);
+        result = await this.authorizePhase5Order(actor, action);
         break;
 
       case DomainAction.LAB_RESULT_ENTRY:
@@ -129,7 +129,7 @@ export class AuthorizationService {
       case DomainAction.TRANSFUSION_START:
       case DomainAction.TRANSFUSION_COMPLETE:
       case DomainAction.TRANSFUSION_REACTION:
-        result = this.authorizePhase5B5BloodBank(actor, action);
+        result = { decision: AuthorizationDecision.DENY, reason: 'Not implemented' }; // TODO: implement authorizePhase5B5BloodBank
         break;
 
       case DomainAction.REFERRAL_CREATE:

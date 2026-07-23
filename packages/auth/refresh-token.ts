@@ -2,9 +2,17 @@ import { SignJWT, jwtVerify } from 'jose';
 
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.NEXTAUTH_SECRET;
-// NEXTAUTH_SECRET throw removed to allow Next.js static build to succeed
-const key = new TextEncoder().encode(secretKey || 'dummy-secret-for-build-purposes-only');
+function getSecretKey() {
+  const secretKey = process.env.NEXTAUTH_SECRET;
+  if (!secretKey) {
+    // Only allow dummy secret during Next.js static build phase if absolutely necessary, but fail in runtime
+    if (process.env.npm_lifecycle_event === 'build') {
+      return new TextEncoder().encode('dummy-secret-for-build-purposes-only');
+    }
+    throw new Error('NEXTAUTH_SECRET is not defined');
+  }
+  return new TextEncoder().encode(secretKey);
+}
 
 interface RefreshTokenPayload {
   sub: string;
@@ -32,14 +40,14 @@ export async function createRefreshToken(user: {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
-    .sign(key);
+    .sign(getSecretKey());
 
   return { token, familyId };
 }
 
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, key, {
+    const { payload } = await jwtVerify(token, getSecretKey(), {
       algorithms: ['HS256'],
     });
     return payload as RefreshTokenPayload;
