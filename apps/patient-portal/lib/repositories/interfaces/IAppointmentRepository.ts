@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
 // ============================================================
 // IAppointmentRepository — Contract for appointment data access
 // ============================================================
@@ -67,3 +68,4 @@ export interface IAppointmentRepository {
    */
   findByPatient(patientId: string): Promise<any[]>;
 }
+

@@ -1,4 +1,5 @@
 import { prisma } from '@haspataal/db';
+import redis from '@/lib/redis';
 
 import { NextResponse } from 'next/server';
 
@@ -18,9 +19,13 @@ export async function GET() {
     checks.dependencies.database = 'disconnected';
     checks.status = 'degraded';
   }
-
-  // checks.dependencies.redis = redis ? 'connected' : 'disconnected';
-
+  try {
+    await redis.ping();
+    checks.dependencies.redis = 'connected';
+  } catch {
+    checks.dependencies.redis = 'disconnected';
+    checks.status = 'degraded';
+  }
   const isHealthy = checks.status === 'healthy';
   return NextResponse.json(
     { success: true, data: checks },

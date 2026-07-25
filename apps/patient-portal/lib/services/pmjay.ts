@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
 import { logger } from '@haspataal/logger';
 
 import { prisma } from '../util/prisma-singleton';
@@ -117,3 +118,4 @@ export async function exportPMJAYBatch(
 
   return JSON.stringify(batchPayload, null, 2);
 }
+

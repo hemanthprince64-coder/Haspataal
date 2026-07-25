@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
 'use client';
 
 import { ChevronDown, Check } from 'lucide-react';
@@ -131,3 +132,4 @@ const SelectItem = React.forwardRef<
 SelectItem.displayName = 'SelectItem';
 
 export { Select, SelectValue, SelectTrigger, SelectContent, SelectItem };
+

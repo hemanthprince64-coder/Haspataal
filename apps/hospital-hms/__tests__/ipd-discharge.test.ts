@@ -1,5 +1,5 @@
 import { PrismaClient, ClinicalStatus, PhysicalPresenceStatus, BedStatus } from '@prisma/client';
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import crypto from 'crypto';
 import { vi } from 'vitest';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
@@ -8,11 +8,11 @@ import { IPDService } from '../lib/services/ipd';
 
 vi.mock('@haspataal/db', () => ({
   get prisma() {
-    return (globalThis as any).testPrisma;
+    return (globalThis as unknown as { testPrisma: PrismaClient }).testPrisma;
   },
 }));
 
-let container: any;
+let container: StartedPostgreSqlContainer;
 let prisma: PrismaClient;
 
 beforeAll(async () => {
@@ -20,14 +20,14 @@ beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:16').start();
     const databaseUrl = container.getConnectionUri();
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
-    (globalThis as any).testPrisma = prisma;
+    (globalThis as unknown as { testPrisma: PrismaClient }).testPrisma = prisma;
 
     const execSync = require('child_process').execSync;
     execSync(`npx prisma db push --schema=packages/db/prisma/schema.prisma --accept-data-loss`, {
       env: { ...process.env, DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl },
     });
-  } catch (e: any) {
-    console.error('[db push FAILED]', e.stdout?.toString(), e.stderr?.toString());
+  } catch (e: unknown) {
+    console.error('[db push FAILED]', e instanceof Error ? e.message : String(e));
     throw e;
   }
 }, 120000);
@@ -116,7 +116,7 @@ async function confirmPhysicalDeparture(
 ) {
   return IPDService.confirmPhysicalDeparture(
     admissionId,
-    pathway as any,
+    pathway as 'STANDARD' | 'LAMA' | 'WITHOUT_NOTICE',
     actorId,
     actorRole,
     'MANUAL_ENTRY',

@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    setupFiles: [path.resolve(__dirname, '../vitest.setup.ts')],
     alias: {
       '@': path.resolve(__dirname, '../apps/hospital-hms'),
     },

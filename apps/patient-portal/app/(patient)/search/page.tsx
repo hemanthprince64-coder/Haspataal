@@ -31,9 +31,9 @@ import DoctorCard from '../components/DoctorCard';
 
 function SearchPageContent() {
   const searchParams = useSearchParams();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const [doctors, setDoctors] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const [cities, setCities] = useState<any[]>([]);
   const [specialities, setSpecialities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +127,7 @@ function SearchPageContent() {
     fetchData();
   }, [city, speciality, query, viewBookmarks]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const doctorsWithHospitals = doctors.map((doc: any) => {
     const aff = doc.affiliations?.[0];
     const hospital = doc.hospital || aff?.hospital || null;

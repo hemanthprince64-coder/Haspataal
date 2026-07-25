@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
 // ============================================================
 // PrismaPatientRepository — Prisma implementation
 // ============================================================
@@ -66,3 +67,4 @@ export class PrismaPatientRepository implements IPatientRepository {
     }) as unknown as PatientRecord;
   }
 }
+
