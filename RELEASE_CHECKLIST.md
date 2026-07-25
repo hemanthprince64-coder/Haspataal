@@ -24,3 +24,19 @@
 - [ ] **Patient Portal**: Test user authentication, doctor search, and appointment booking flows.
 - [ ] **Hospital HMS**: Verify hospital registration and admission (IPD) workflows.
 - [ ] **Admin Panel**: Ensure RBAC access and basic administrative capabilities function properly.
+
+## 6. Final Production UX Checklist
+- [ ] Dead Menu removed
+- [ ] Medication layout responsive
+- [ ] Tablet History accessible
+- [ ] `100dvh` verified
+- [ ] Touch targets ≥44 px
+- [ ] OfflineBanner layering verified
+- [ ] Motion-safe animations verified
+- [ ] Labels associated correctly
+- [ ] Diagnostic badges include icons
+- [ ] PACS hint displayed appropriately
+- [ ] Full clinician workflow tested
+- [ ] Axe accessibility scan passes
+- [ ] Cross-browser smoke test passes
+- [ ] Responsive testing on 320 px, 375 px, 768 px, 1024 px completed

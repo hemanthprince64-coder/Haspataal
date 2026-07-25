@@ -9,6 +9,7 @@ import {
   FlaskConical,
   Beaker,
   Zap,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -102,25 +103,25 @@ export default function LabExecutionWorkflow() {
       case 'ORDERED':
         return (
           <Badge variant="outline" className="bg-slate-50 text-slate-700">
-            Ordered
+            <Clock className="w-3 h-3 mr-1" /> Ordered
           </Badge>
         );
       case 'PENDING_COLLECTION':
         return (
           <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            <Beaker className="w-3 h-3 mr-1" /> Pending Collection
+            <Clock className="w-3 h-3 mr-1" /> Pending Collection
           </Badge>
         );
       case 'COLLECTED':
         return (
           <Badge variant="outline" className="bg-indigo-50 text-indigo-700">
-            Collected
+            <CheckCircle2 className="w-3 h-3 mr-1" /> Collected
           </Badge>
         );
       case 'RECEIVED_IN_LAB':
         return (
           <Badge variant="outline" className="bg-purple-50 text-purple-700">
-            Received in Lab
+            <CheckCircle2 className="w-3 h-3 mr-1" /> Received in Lab
           </Badge>
         );
       case 'IN_ANALYZER_QUEUE':

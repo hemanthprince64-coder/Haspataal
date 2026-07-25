@@ -10,7 +10,7 @@ export default function BranchSwitcher({
   branches,
   activeBranchId,
 }: {
-  branches: any[];
+  branches: Array<{ id: string; name: string; type?: string }>;
   activeBranchId: string | null;
 }) {
   const [open, setOpen] = useState(false);

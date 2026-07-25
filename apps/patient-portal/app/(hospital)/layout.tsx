@@ -1,4 +1,4 @@
-import { Home, ArrowLeft, Menu } from 'lucide-react';
+import { Home, ArrowLeft } from 'lucide-react';
 
 import React from 'react';
 
@@ -51,9 +51,6 @@ export default function HospitalLayout({ children }: { children: React.ReactNode
           <Link href="/hospital" className="text-blue-600 font-bold text-sm">
             Dashboard
           </Link>
-          <button className="p-2 -mr-2 text-slate-600 hover:text-slate-900">
-            <Menu className="w-5 h-5" />
-          </button>
         </div>
       </header>
 

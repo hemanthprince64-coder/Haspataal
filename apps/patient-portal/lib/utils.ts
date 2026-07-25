@@ -21,11 +21,11 @@ export function cn(...inputs: (string | undefined | null | boolean)[]): string {
   return inputs.filter(Boolean).join(' ');
 }
 
-export function triggerHapticFeedback(pattern: number | number[] = 50) {
+export function triggerHapticFeedback(pattern: number | number[] = 50): void {
   if (typeof window !== 'undefined' && navigator.vibrate) {
     try {
       navigator.vibrate(pattern);
-    } catch (e) {
+    } catch {
       // Ignore vibration errors
     }
   }

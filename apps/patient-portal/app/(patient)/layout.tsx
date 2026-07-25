@@ -100,9 +100,9 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
           <div className="flex items-center gap-4">
             <Link
               href="/emergency"
-              className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all duration-300 border border-red-100 hover:border-red-600 group no-underline"
+              className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white px-5 py-3 sm:px-6 sm:py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all duration-300 border border-red-100 hover:border-red-600 group no-underline touch-target"
             >
-              <Siren className="w-4 h-4 group-hover:animate-pulse" />
+              <Siren className="w-4 h-4 motion-safe:group-hover:animate-pulse" />
               <span className="hidden sm:inline uppercase tracking-widest text-xs">Emergency</span>
             </Link>
             {!isAuthPage && (

@@ -295,14 +295,17 @@ export default function DoctorConsultationWorkflow({
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+    <div
+      className="grid grid-cols-1 lg:grid-cols-12 overflow-hidden bg-slate-50 relative"
+      style={{ minHeight: 'calc(100vh - 140px)', height: 'calc(100dvh - 140px)' }}
+    >
       {/* LEFT: Queue */}
-      <div className="lg:col-span-3 border-r pr-4 overflow-y-auto">
-        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+      <div className="lg:col-span-3 border-r pr-4 overflow-y-auto bg-white">
+        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 px-4 pt-4">
           <Clock className="w-4 h-4 text-slate-500" />
           Today's Queue ({appointments.filter((a) => a.status !== 'COMPLETED').length})
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-3 px-4 pb-4">
           {appointments.map((app) => (
             <div
               key={app.id}
@@ -354,7 +357,7 @@ export default function DoctorConsultationWorkflow({
       </div>
 
       {/* MIDDLE: Consultation Area */}
-      <div className="lg:col-span-6 flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="lg:col-span-6 flex flex-col h-full bg-white border-r border-slate-200 overflow-hidden">
         {!activeAppointment ? (
           <div className="flex-1 flex items-center justify-center text-slate-400 flex-col gap-4">
             <Stethoscope className="w-16 h-16 opacity-20" />
@@ -533,11 +536,14 @@ export default function DoctorConsultationWorkflow({
                         return (
                           <div
                             key={index}
-                            className={`flex items-center gap-3 p-2 rounded-lg border ${hasWarning ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100'}`}
+                            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3 rounded-lg border items-center ${hasWarning ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100'}`}
                           >
-                            <div className="relative flex-2">
+                            <div className="relative w-full">
+                              <Label htmlFor={`med-name-${index}`} className="sr-only">
+                                Medicine Name
+                              </Label>
                               <Input
-                                aria-label={`Medicine Name ${index + 1}`}
+                                id={`med-name-${index}`}
                                 placeholder="Medicine Name (e.g. Paracetamol 500mg)"
                                 value={med.name}
                                 onChange={(e) => {
@@ -545,7 +551,7 @@ export default function DoctorConsultationWorkflow({
                                   newMeds[index].name = e.target.value;
                                   setMedications(newMeds);
                                 }}
-                                className={`bg-white min-h-[44px] ${hasWarning ? 'border-amber-400 focus-visible:ring-amber-500' : ''}`}
+                                className={`w-full bg-white touch-target ${hasWarning ? 'border-amber-400 focus-visible:ring-amber-500' : ''}`}
                               />
                               {hasWarning && (
                                 <TooltipProvider>
@@ -575,49 +581,75 @@ export default function DoctorConsultationWorkflow({
                                 </TooltipProvider>
                               )}
                             </div>
-                            <Input
-                              aria-label={`Dosage for ${med.name || `Medicine ${index + 1}`}`}
-                              placeholder="Dosage (1 tab)"
-                              value={med.dosage}
-                              onChange={(e) => {
-                                const newMeds = [...medications];
-                                newMeds[index].dosage = e.target.value;
-                                setMedications(newMeds);
-                              }}
-                              className="w-28 bg-white min-h-[44px]"
-                            />
-                            <Select
-                              value={med.frequency}
-                              onValueChange={(v: string) => {
-                                const newMeds = [...medications];
-                                newMeds[index].frequency = v;
-                                setMedications(newMeds);
-                              }}
-                            >
-                              <SelectTrigger
-                                aria-label={`Frequency for ${med.name || `Medicine ${index + 1}`}`}
-                                className="w-32 bg-white min-h-[44px]"
+                            <div className="w-full">
+                              <Label htmlFor={`med-dosage-${index}`} className="sr-only">
+                                Dosage
+                              </Label>
+                              <Input
+                                id={`med-dosage-${index}`}
+                                placeholder="Dosage (1 tab)"
+                                value={med.dosage}
+                                onChange={(e) => {
+                                  const newMeds = [...medications];
+                                  newMeds[index].dosage = e.target.value;
+                                  setMedications(newMeds);
+                                }}
+                                className="w-full bg-white touch-target"
+                              />
+                            </div>
+                            <div className="w-full">
+                              <Label htmlFor={`med-frequency-${index}`} className="sr-only">
+                                Frequency
+                              </Label>
+                              <Select
+                                value={med.frequency}
+                                onValueChange={(v: string) => {
+                                  const newMeds = [...medications];
+                                  newMeds[index].frequency = v;
+                                  setMedications(newMeds);
+                                }}
                               >
-                                <SelectValue placeholder="Freq" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="OD">OD (1/day)</SelectItem>
-                                <SelectItem value="BD">BD (2/day)</SelectItem>
-                                <SelectItem value="TDS">TDS (3/day)</SelectItem>
-                                <SelectItem value="SOS">SOS (As needed)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              aria-label={`Duration for ${med.name || `Medicine ${index + 1}`}`}
-                              placeholder="Duration (5 days)"
-                              value={med.duration}
-                              onChange={(e) => {
-                                const newMeds = [...medications];
-                                newMeds[index].duration = e.target.value;
-                                setMedications(newMeds);
-                              }}
-                              className="w-32 bg-white min-h-[44px]"
-                            />
+                                <SelectTrigger
+                                  id={`med-frequency-${index}`}
+                                  className="w-full bg-white touch-target"
+                                >
+                                  <SelectValue placeholder="Freq" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="OD">OD (1/day)</SelectItem>
+                                  <SelectItem value="BD">BD (2/day)</SelectItem>
+                                  <SelectItem value="TDS">TDS (3/day)</SelectItem>
+                                  <SelectItem value="SOS">SOS (As needed)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="w-full flex items-center gap-2">
+                              <Label htmlFor={`med-duration-${index}`} className="sr-only">
+                                Duration
+                              </Label>
+                              <Input
+                                id={`med-duration-${index}`}
+                                placeholder="Duration (5 days)"
+                                value={med.duration}
+                                onChange={(e) => {
+                                  const newMeds = [...medications];
+                                  newMeds[index].duration = e.target.value;
+                                  setMedications(newMeds);
+                                }}
+                                className="w-full bg-white touch-target"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setMedications(medications.filter((_, i) => i !== index));
+                                }}
+                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 touch-target flex-shrink-0"
+                                aria-label="Remove Medicine"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         );
                       })}

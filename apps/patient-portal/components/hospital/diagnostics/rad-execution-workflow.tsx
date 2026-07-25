@@ -1,6 +1,15 @@
 'use client';
 
-import { Eye, ExternalLink, Activity, ScanLine, FileText, CheckCircle2 } from 'lucide-react';
+import {
+  Eye,
+  ExternalLink,
+  Activity,
+  ScanLine,
+  FileText,
+  CheckCircle2,
+  Clock,
+  Calendar,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 import React, { useState } from 'react';
@@ -23,6 +32,7 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type RadState =
   | 'ORDERED'
@@ -91,19 +101,19 @@ export default function RadExecutionWorkflow() {
       case 'ORDERED':
         return (
           <Badge variant="outline" className="bg-slate-50 text-slate-700">
-            Ordered
+            <Clock className="w-3 h-3 mr-1" /> Ordered
           </Badge>
         );
       case 'SCHEDULED':
         return (
           <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            Scheduled
+            <Calendar className="w-3 h-3 mr-1" /> Scheduled
           </Badge>
         );
       case 'PATIENT_ARRIVED':
         return (
           <Badge variant="outline" className="bg-indigo-50 text-indigo-700">
-            Patient Arrived
+            <Clock className="w-3 h-3 mr-1" /> Patient Arrived
           </Badge>
         );
       case 'IN_PROGRESS':
@@ -201,14 +211,23 @@ export default function RadExecutionWorkflow() {
                   <TableCell>{getStateBadge(order.state)}</TableCell>
                   <TableCell>
                     {order.pacsViewerUrl ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-blue-600"
-                        onClick={() => window.open(order.pacsViewerUrl, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" /> View DICOM
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="touch-target text-blue-600"
+                              onClick={() => window.open(order.pacsViewerUrl, '_blank')}
+                            >
+                              <ExternalLink className="w-4 h-4 mr-1 shrink-0" /> View DICOM
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-800 text-white">
+                            <p>Requires PACS Intranet Access</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     ) : (
                       <span className="text-xs text-slate-400">Not Available</span>
                     )}
@@ -319,14 +338,23 @@ export default function RadExecutionWorkflow() {
               </div>
               <div className="pt-4 mt-2 border-t border-slate-100 flex justify-between items-center">
                 {order.pacsViewerUrl ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-blue-600 px-0"
-                    onClick={() => window.open(order.pacsViewerUrl, '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" /> View DICOM
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="touch-target text-blue-600 px-0"
+                          onClick={() => window.open(order.pacsViewerUrl, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1 shrink-0" /> View DICOM
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-800 text-white">
+                        <p>Requires PACS Intranet Access</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 ) : (
                   <span className="text-xs text-slate-400">No images</span>
                 )}
