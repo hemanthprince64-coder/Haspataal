@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { prisma } from '@/lib/util/prisma-singleton';
-
+import { prisma } from '../../util/prisma-singleton';
 import { abdmMockService } from '../abdm-mock';
 import { aiRiskService } from '../ai-risk';
 

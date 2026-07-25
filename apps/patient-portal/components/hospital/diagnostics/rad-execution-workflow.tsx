@@ -174,130 +174,262 @@ export default function RadExecutionWorkflow() {
         </div>
       </CardHeader>
       <CardContent className="pt-4 p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Accession ID</TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Modality</TableHead>
-              <TableHead>Study</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Images</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium text-slate-700">{order.id}</TableCell>
-                <TableCell>{order.patientName}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-mono">
-                    {order.modality}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm">{order.studyDescription}</TableCell>
-                <TableCell>{getStateBadge(order.state)}</TableCell>
-                <TableCell>
-                  {order.pacsViewerUrl ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-blue-600"
-                      onClick={() => window.open(order.pacsViewerUrl, '_blank')}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-1" /> View DICOM
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-slate-400">Not Available</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Dialog
-                    open={selectedOrder?.id === order.id}
-                    onOpenChange={(open) => !open && setSelectedOrder(null)}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>
-                        Update Status
-                      </Button>
-                    </DialogTrigger>
-                    {selectedOrder?.id === order.id && (
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Update Radiology Order: {order.id}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="p-3 bg-slate-50 rounded border text-sm">
-                            <p>
-                              <strong>Modality:</strong> {order.modality}
-                            </p>
-                            <p>
-                              <strong>Study:</strong> {order.studyDescription}
-                            </p>
-                            {order.pacsViewerUrl && (
-                              <p
-                                className="mt-2 text-blue-600 flex items-center gap-1 cursor-pointer"
-                                onClick={() => window.open(order.pacsViewerUrl, '_blank')}
-                              >
-                                <ExternalLink className="w-3 h-3" /> PACS Link Available
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            {order.state === 'ORDERED' && (
-                              <Button onClick={() => advanceState(order.id, 'SCHEDULED')}>
-                                Mark Scheduled
-                              </Button>
-                            )}
-                            {order.state === 'SCHEDULED' && (
-                              <Button onClick={() => advanceState(order.id, 'PATIENT_ARRIVED')}>
-                                Patient Arrived
-                              </Button>
-                            )}
-                            {order.state === 'PATIENT_ARRIVED' && (
-                              <Button onClick={() => advanceState(order.id, 'IN_PROGRESS')}>
-                                Begin Acquisition (Modality)
-                              </Button>
-                            )}
-                            {order.state === 'IN_PROGRESS' && (
-                              <Button
-                                onClick={() => advanceState(order.id, 'IMAGE_ACQUIRED', true)}
-                              >
-                                Complete Acquisition (Sync PACS)
-                              </Button>
-                            )}
-                            {order.state === 'IMAGE_ACQUIRED' && (
-                              <Button onClick={() => advanceState(order.id, 'PENDING_REPORT')}>
-                                Send to Radiologist
-                              </Button>
-                            )}
-                            {order.state === 'PENDING_REPORT' && (
-                              <Button onClick={() => advanceState(order.id, 'VERIFIED')}>
-                                Sign Report
-                              </Button>
-                            )}
-                            {order.state === 'VERIFIED' && (
-                              <Button onClick={() => advanceState(order.id, 'RELEASED')}>
-                                Release (Publish Event)
-                              </Button>
-                            )}
-                            {order.state === 'RELEASED' && (
-                              <p className="text-sm text-slate-500 italic">
-                                This study is fully reported and released.
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </DialogContent>
-                    )}
-                  </Dialog>
-                </TableCell>
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Accession ID</TableHead>
+                <TableHead>Patient</TableHead>
+                <TableHead>Modality</TableHead>
+                <TableHead>Study</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Images</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell className="font-medium text-slate-700">{order.id}</TableCell>
+                  <TableCell>{order.patientName}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono">
+                      {order.modality}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{order.studyDescription}</TableCell>
+                  <TableCell>{getStateBadge(order.state)}</TableCell>
+                  <TableCell>
+                    {order.pacsViewerUrl ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 text-blue-600"
+                        onClick={() => window.open(order.pacsViewerUrl, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-1" /> View DICOM
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-slate-400">Not Available</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Dialog
+                      open={selectedOrder?.id === order.id}
+                      onOpenChange={(open) => !open && setSelectedOrder(null)}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>
+                          Update Status
+                        </Button>
+                      </DialogTrigger>
+                      {selectedOrder?.id === order.id && (
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Update Radiology Order: {order.id}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="p-3 bg-slate-50 rounded border text-sm">
+                              <p>
+                                <strong>Modality:</strong> {order.modality}
+                              </p>
+                              <p>
+                                <strong>Study:</strong> {order.studyDescription}
+                              </p>
+                              {order.pacsViewerUrl && (
+                                <p
+                                  className="mt-2 text-blue-600 flex items-center gap-1 cursor-pointer"
+                                  onClick={() => window.open(order.pacsViewerUrl, '_blank')}
+                                >
+                                  <ExternalLink className="w-3 h-3" /> PACS Link Available
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              {order.state === 'ORDERED' && (
+                                <Button onClick={() => advanceState(order.id, 'SCHEDULED')}>
+                                  Mark Scheduled
+                                </Button>
+                              )}
+                              {order.state === 'SCHEDULED' && (
+                                <Button onClick={() => advanceState(order.id, 'PATIENT_ARRIVED')}>
+                                  Patient Arrived
+                                </Button>
+                              )}
+                              {order.state === 'PATIENT_ARRIVED' && (
+                                <Button onClick={() => advanceState(order.id, 'IN_PROGRESS')}>
+                                  Begin Acquisition (Modality)
+                                </Button>
+                              )}
+                              {order.state === 'IN_PROGRESS' && (
+                                <Button
+                                  onClick={() => advanceState(order.id, 'IMAGE_ACQUIRED', true)}
+                                >
+                                  Complete Acquisition (Sync PACS)
+                                </Button>
+                              )}
+                              {order.state === 'IMAGE_ACQUIRED' && (
+                                <Button onClick={() => advanceState(order.id, 'PENDING_REPORT')}>
+                                  Send to Radiologist
+                                </Button>
+                              )}
+                              {order.state === 'PENDING_REPORT' && (
+                                <Button onClick={() => advanceState(order.id, 'VERIFIED')}>
+                                  Sign Report
+                                </Button>
+                              )}
+                              {order.state === 'VERIFIED' && (
+                                <Button onClick={() => advanceState(order.id, 'RELEASED')}>
+                                  Release (Publish Event)
+                                </Button>
+                              )}
+                              {order.state === 'RELEASED' && (
+                                <p className="text-sm text-slate-500 italic">
+                                  This study is fully reported and released.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      )}
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="md:hidden space-y-4 p-4">
+          {orders.map((order) => (
+            <div key={order.id} className="p-4 rounded-lg border bg-white border-slate-200">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <div className="font-bold text-slate-900">{order.patientName}</div>
+                  <div className="text-sm text-slate-500 font-medium">{order.id}</div>
+                </div>
+                {getStateBadge(order.state)}
+              </div>
+              <div className="text-sm text-slate-700 mb-1">
+                <Badge variant="outline" className="font-mono mr-2">
+                  {order.modality}
+                </Badge>
+                {order.studyDescription}
+              </div>
+              <div className="pt-4 mt-2 border-t border-slate-100 flex justify-between items-center">
+                {order.pacsViewerUrl ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-blue-600 px-0"
+                    onClick={() => window.open(order.pacsViewerUrl, '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" /> View DICOM
+                  </Button>
+                ) : (
+                  <span className="text-xs text-slate-400">No images</span>
+                )}
+
+                <Dialog
+                  open={selectedOrder?.id === order.id}
+                  onOpenChange={(open) => !open && setSelectedOrder(null)}
+                >
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedOrder(order)}
+                      className="min-h-[44px]"
+                    >
+                      Update Status
+                    </Button>
+                  </DialogTrigger>
+                  {selectedOrder?.id === order.id && (
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Update Radiology Order: {order.id}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="p-3 bg-slate-50 rounded border text-sm">
+                          <p>
+                            <strong>Modality:</strong> {order.modality}
+                          </p>
+                          <p>
+                            <strong>Study:</strong> {order.studyDescription}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {order.state === 'ORDERED' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'SCHEDULED')}
+                            >
+                              Mark Scheduled
+                            </Button>
+                          )}
+                          {order.state === 'SCHEDULED' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'PATIENT_ARRIVED')}
+                            >
+                              Patient Arrived
+                            </Button>
+                          )}
+                          {order.state === 'PATIENT_ARRIVED' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'IN_PROGRESS')}
+                            >
+                              Begin Acquisition (Modality)
+                            </Button>
+                          )}
+                          {order.state === 'IN_PROGRESS' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'IMAGE_ACQUIRED', true)}
+                            >
+                              Complete Acquisition (Sync PACS)
+                            </Button>
+                          )}
+                          {order.state === 'IMAGE_ACQUIRED' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'PENDING_REPORT')}
+                            >
+                              Send to Radiologist
+                            </Button>
+                          )}
+                          {order.state === 'PENDING_REPORT' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'VERIFIED')}
+                            >
+                              Sign Report
+                            </Button>
+                          )}
+                          {order.state === 'VERIFIED' && (
+                            <Button
+                              className="min-h-[44px]"
+                              onClick={() => advanceState(order.id, 'RELEASED')}
+                            >
+                              Release (Publish Event)
+                            </Button>
+                          )}
+                          {order.state === 'RELEASED' && (
+                            <p className="text-sm text-slate-500 italic text-center w-full">
+                              This study is fully reported and released.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  )}
+                </Dialog>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

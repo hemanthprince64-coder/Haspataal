@@ -1,15 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import React, { useState, useEffect, ReactNode } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import BottomNav from './components/BottomNav';
-import Sidebar from './components/Sidebar';
-import Footer from './components/Footer';
-import Avatar from '@/app/components/Avatar';
-import { getPatientFullProfile } from '@/app/actions';
 import {
   Menu,
   Siren,
@@ -22,7 +13,20 @@ import {
   FileText,
   Activity,
 } from 'lucide-react';
+
+import React, { useState, useEffect, ReactNode } from 'react';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import { getPatientFullProfile } from '@/app/actions';
+import Avatar from '@/app/components/Avatar';
 import '@/bones/registry';
+
+import BottomNav from './components/BottomNav';
+import Footer from './components/Footer';
+import Sidebar from './components/Sidebar';
 
 interface PatientLayoutProps {
   children: ReactNode;
@@ -55,6 +59,12 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-blue-100">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
       {/* ── TOP HEADER ── */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
@@ -115,7 +125,10 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
       <div className="flex-1 flex flex-col relative w-full">
         {!isAuthPage && <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />}
 
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-8 pb-32 md:pb-16 animate-fade-in text-senior-base">
+        <main
+          id="main-content"
+          className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-8 pb-32 md:pb-16 animate-fade-in text-senior-base"
+        >
           {children}
         </main>
 
@@ -123,8 +136,8 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
         <Footer />
       </div>
 
-      {/* ── BOTTOM NAV (FORCE VISIBLE FOR DEBUG) ── */}
-      <BottomNav />
+      {/* ── BOTTOM NAV ── */}
+      {!isAuthPage && <BottomNav className="md:hidden" />}
     </div>
   );
 }

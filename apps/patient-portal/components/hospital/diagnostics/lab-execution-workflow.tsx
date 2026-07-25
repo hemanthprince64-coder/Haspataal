@@ -178,12 +178,139 @@ export default function LabExecutionWorkflow() {
     setClinicalAction('');
   };
 
+  const renderActionDialog = (order: LabOrder) => (
+    <Dialog
+      open={selectedOrder?.id === order.id}
+      onOpenChange={(open) => !open && setSelectedOrder(null)}
+    >
+      <DialogTrigger asChild>
+        <Button
+          variant={
+            order.hasCriticalValue && !order.criticalAcknowledged ? 'destructive' : 'outline'
+          }
+          size="sm"
+          className="min-h-[44px] w-full sm:w-auto"
+          onClick={() => setSelectedOrder(order)}
+        >
+          {order.hasCriticalValue && !order.criticalAcknowledged
+            ? 'Acknowledge Alert'
+            : 'Update Status'}
+        </Button>
+      </DialogTrigger>
+      {selectedOrder?.id === order.id && (
+        <DialogContent className="sm:max-w-lg w-[95vw] p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Update Accession: {order.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {order.hasCriticalValue && !order.criticalAcknowledged && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-center gap-2 text-red-800 font-bold mb-2">
+                  <AlertTriangle className="w-5 h-5 shrink-0" />
+                  CRITICAL VALUE ALERT
+                </div>
+                <p className="text-sm text-red-700 mb-4">
+                  Result: <strong>{order.resultValue}</strong>
+                </p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Clinical Action Taken (Required for Audit):
+                  </label>
+                  <textarea
+                    className="w-full text-sm p-3 border rounded-md min-h-[44px]"
+                    rows={3}
+                    placeholder="e.g., Called attending physician, administered medication..."
+                    value={clinicalAction}
+                    onChange={(e) => setClinicalAction(e.target.value)}
+                  />
+                  <Button
+                    variant="destructive"
+                    className="w-full mt-2 min-h-[44px]"
+                    onClick={() => handleAcknowledgeCritical(order.id)}
+                  >
+                    Acknowledge & Record Action
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {(!order.hasCriticalValue || order.criticalAcknowledged) && (
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+                {order.state === 'ORDERED' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'PENDING_COLLECTION')}
+                  >
+                    Mark Pending Collection
+                  </Button>
+                )}
+                {order.state === 'PENDING_COLLECTION' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'COLLECTED')}
+                  >
+                    Collect Specimen
+                  </Button>
+                )}
+                {order.state === 'COLLECTED' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'RECEIVED_IN_LAB')}
+                  >
+                    Receive in Lab
+                  </Button>
+                )}
+                {order.state === 'RECEIVED_IN_LAB' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'IN_ANALYZER_QUEUE')}
+                  >
+                    Send to Analyzer (HL7)
+                  </Button>
+                )}
+                {order.state === 'IN_ANALYZER_QUEUE' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'RESULTED')}
+                  >
+                    Simulate Results Received
+                  </Button>
+                )}
+                {order.state === 'RESULTED' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'VERIFIED')}
+                  >
+                    QA Verify Results
+                  </Button>
+                )}
+                {order.state === 'VERIFIED' && (
+                  <Button
+                    className="min-h-[44px] w-full sm:w-auto"
+                    onClick={() => advanceState(order.id, 'RELEASED_TO_CLINICIAN')}
+                  >
+                    Release to EMR (Event Bus)
+                  </Button>
+                )}
+                {order.state === 'RELEASED_TO_CLINICIAN' && (
+                  <p className="text-sm text-slate-500 italic w-full text-center">
+                    This order is fully released.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      )}
+    </Dialog>
+  );
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Microscope className="h-5 w-5 text-purple-600" />
+            <Microscope className="h-5 w-5 text-purple-600 shrink-0" />
             Laboratory Execution System (LIS)
           </CardTitle>
           <p className="text-sm text-slate-500 mt-1">
@@ -192,29 +319,90 @@ export default function LabExecutionWorkflow() {
         </div>
       </CardHeader>
       <CardContent className="pt-4 p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Accession ID</TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Test Name</TableHead>
-              <TableHead>Urgency</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow
-                key={order.id}
-                className={
-                  order.hasCriticalValue && !order.criticalAcknowledged ? 'bg-red-50/50' : ''
-                }
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Accession ID</TableHead>
+                <TableHead>Patient</TableHead>
+                <TableHead>Test Name</TableHead>
+                <TableHead>Urgency</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <p className="text-sm text-slate-500">No lab orders found.</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.reload()}
+                        className="min-h-[44px]"
+                      >
+                        Refresh Data
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                orders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className={
+                      order.hasCriticalValue && !order.criticalAcknowledged ? 'bg-red-50/50' : ''
+                    }
+                  >
+                    <TableCell className="font-medium text-slate-700">{order.id}</TableCell>
+                    <TableCell>{order.patientName}</TableCell>
+                    <TableCell>{order.testName}</TableCell>
+                    <TableCell>
+                      {order.urgency === 'STAT' || order.urgency === 'CRITICAL' ? (
+                        <Badge
+                          variant="destructive"
+                          className="bg-red-100 text-red-800 border-red-200"
+                        >
+                          {order.urgency}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">{order.urgency}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>{getStateBadge(order.state)}</TableCell>
+                    <TableCell className="text-right">{renderActionDialog(order)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="md:hidden space-y-4 p-4">
+          {orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-3 border rounded-lg border-dashed">
+              <p className="text-sm text-slate-500 text-center">No lab orders found.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="min-h-[44px]"
               >
-                <TableCell className="font-medium text-slate-700">{order.id}</TableCell>
-                <TableCell>{order.patientName}</TableCell>
-                <TableCell>{order.testName}</TableCell>
-                <TableCell>
+                Refresh Data
+              </Button>
+            </div>
+          ) : (
+            orders.map((order) => (
+              <div
+                key={order.id}
+                className={`p-4 rounded-lg border ${order.hasCriticalValue && !order.criticalAcknowledged ? 'bg-red-50/50 border-red-200' : 'bg-white border-slate-200'}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-bold text-slate-900">{order.patientName}</div>
+                    <div className="text-sm text-slate-500 font-medium">{order.id}</div>
+                  </div>
                   {order.urgency === 'STAT' || order.urgency === 'CRITICAL' ? (
                     <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
                       {order.urgency}
@@ -222,122 +410,16 @@ export default function LabExecutionWorkflow() {
                   ) : (
                     <Badge variant="outline">{order.urgency}</Badge>
                   )}
-                </TableCell>
-                <TableCell>{getStateBadge(order.state)}</TableCell>
-                <TableCell className="text-right">
-                  <Dialog
-                    open={selectedOrder?.id === order.id}
-                    onOpenChange={(open) => !open && setSelectedOrder(null)}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant={
-                          order.hasCriticalValue && !order.criticalAcknowledged
-                            ? 'destructive'
-                            : 'outline'
-                        }
-                        size="sm"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        {order.hasCriticalValue && !order.criticalAcknowledged
-                          ? 'Acknowledge Alert'
-                          : 'Update Status'}
-                      </Button>
-                    </DialogTrigger>
-                    {selectedOrder?.id === order.id && (
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Update Accession: {order.id}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          {order.hasCriticalValue && !order.criticalAcknowledged && (
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                              <div className="flex items-center gap-2 text-red-800 font-bold mb-2">
-                                <AlertTriangle className="w-5 h-5" />
-                                CRITICAL VALUE ALERT
-                              </div>
-                              <p className="text-sm text-red-700 mb-4">
-                                Result: <strong>{order.resultValue}</strong>
-                              </p>
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">
-                                  Clinical Action Taken (Required for Audit):
-                                </label>
-                                <textarea
-                                  className="w-full text-sm p-2 border rounded-md"
-                                  rows={3}
-                                  placeholder="e.g., Called attending physician, administered medication..."
-                                  value={clinicalAction}
-                                  onChange={(e) => setClinicalAction(e.target.value)}
-                                />
-                                <Button
-                                  variant="destructive"
-                                  className="w-full mt-2"
-                                  onClick={() => handleAcknowledgeCritical(order.id)}
-                                >
-                                  Acknowledge & Record Action
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          {(!order.hasCriticalValue || order.criticalAcknowledged) && (
-                            <div className="flex flex-wrap gap-2">
-                              {order.state === 'ORDERED' && (
-                                <Button
-                                  onClick={() => advanceState(order.id, 'PENDING_COLLECTION')}
-                                >
-                                  Mark Pending Collection
-                                </Button>
-                              )}
-                              {order.state === 'PENDING_COLLECTION' && (
-                                <Button onClick={() => advanceState(order.id, 'COLLECTED')}>
-                                  Collect Specimen
-                                </Button>
-                              )}
-                              {order.state === 'COLLECTED' && (
-                                <Button onClick={() => advanceState(order.id, 'RECEIVED_IN_LAB')}>
-                                  Receive in Lab
-                                </Button>
-                              )}
-                              {order.state === 'RECEIVED_IN_LAB' && (
-                                <Button onClick={() => advanceState(order.id, 'IN_ANALYZER_QUEUE')}>
-                                  Send to Analyzer (HL7)
-                                </Button>
-                              )}
-                              {order.state === 'IN_ANALYZER_QUEUE' && (
-                                <Button onClick={() => advanceState(order.id, 'RESULTED')}>
-                                  Simulate Results Received
-                                </Button>
-                              )}
-                              {order.state === 'RESULTED' && (
-                                <Button onClick={() => advanceState(order.id, 'VERIFIED')}>
-                                  QA Verify Results
-                                </Button>
-                              )}
-                              {order.state === 'VERIFIED' && (
-                                <Button
-                                  onClick={() => advanceState(order.id, 'RELEASED_TO_CLINICIAN')}
-                                >
-                                  Release to EMR (Event Bus)
-                                </Button>
-                              )}
-                              {order.state === 'RELEASED_TO_CLINICIAN' && (
-                                <p className="text-sm text-slate-500 italic">
-                                  This order is fully released.
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </DialogContent>
-                    )}
-                  </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+                <div className="text-sm text-slate-700 mb-3">{order.testName}</div>
+                <div className="mb-4">{getStateBadge(order.state)}</div>
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  {renderActionDialog(order)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </CardContent>
     </Card>
   );

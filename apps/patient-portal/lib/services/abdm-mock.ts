@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
-import { prisma } from '@/lib/util/prisma-singleton';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { prisma } from '../util/prisma-singleton';
 
 export interface AbhaVerificationResult {
   verified: boolean;
@@ -75,4 +75,3 @@ export const abdmMockService = {
     });
   },
 };
-

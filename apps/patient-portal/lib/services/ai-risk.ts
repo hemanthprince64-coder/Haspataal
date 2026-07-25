@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '@haspataal/logger';
 
-import { prisma } from '@/lib/util/prisma-singleton';
+import { prisma } from '../util/prisma-singleton';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 

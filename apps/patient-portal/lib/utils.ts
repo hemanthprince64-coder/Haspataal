@@ -20,3 +20,13 @@ export function toHospitalPublic(hospital: Record<string, unknown>): HospitalPub
 export function cn(...inputs: (string | undefined | null | boolean)[]): string {
   return inputs.filter(Boolean).join(' ');
 }
+
+export function triggerHapticFeedback(pattern: number | number[] = 50) {
+  if (typeof window !== 'undefined' && navigator.vibrate) {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {
+      // Ignore vibration errors
+    }
+  }
+}

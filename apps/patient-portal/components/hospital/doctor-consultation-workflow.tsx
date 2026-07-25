@@ -10,6 +10,14 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -19,9 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { triggerHapticFeedback } from '@/lib/utils';
 
 export default function DoctorConsultationWorkflow({
   initialAppointments,
@@ -37,6 +47,7 @@ export default function DoctorConsultationWorkflow({
   const [loading, setLoading] = useState(false);
   const [showRepeatPrescription, setShowRepeatPrescription] = useState(false);
   const [patientHistory, setPatientHistory] = useState<any[]>([]);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Form states
   const [vitals, setVitals] = useState({ bp: '', pulse: '', temp: '', weight: '' });
@@ -117,6 +128,7 @@ export default function DoctorConsultationWorkflow({
   const handleComplete = async () => {
     if (!activeAppointment) return;
     setLoading(true);
+    setShowConfirm(false);
 
     try {
       const res = await fetch('/api/hospital/consultation/complete', {
@@ -136,7 +148,8 @@ export default function DoctorConsultationWorkflow({
 
       if (!res.ok) throw new Error('Failed to complete consultation');
 
-      toast.success('Consultation completed successfully!');
+      toast.success(`Consultation completed for ${activeAppointment.patient?.name}`);
+      triggerHapticFeedback([100, 50, 100]);
 
       // Update UI queue
       setAppointments(
@@ -190,12 +203,96 @@ export default function DoctorConsultationWorkflow({
       }
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && activeAppointment) {
         e.preventDefault();
-        handleComplete();
+        setShowConfirm(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeAppointment, vitals, diagnosis, medications, notes]);
+
+  const renderHistory = () => (
+    <>
+      {!activeAppointment && patientHistory.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-slate-400 text-sm text-center min-h-[200px]">
+          Select a patient to view their history
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+            <Clock className="w-4 h-4 text-slate-500" />
+            Patient History
+          </h3>
+
+          {/* Allergies - Pinned */}
+          {patientHistory[0]?.allergies?.length > 0 && (
+            <div className="bg-red-50 border border-red-100 p-3 rounded-lg">
+              <h4 className="text-xs font-bold text-red-700 uppercase mb-1">Allergies</h4>
+              <div className="flex gap-2 flex-wrap">
+                {patientHistory[0].allergies.map((allergy: string) => (
+                  <Badge key={allergy} variant="destructive" className="bg-red-600">
+                    {allergy}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {patientHistory.map((visit, idx) => (
+              <Card key={visit.id} className="shadow-sm border-slate-200">
+                <CardHeader className="p-3 pb-2 bg-slate-50 border-b">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-sm text-slate-800">{visit.date}</span>
+                    <span className="text-xs text-slate-500">{visit.prescriber}</span>
+                  </div>
+                  <CardTitle className="text-sm font-semibold text-blue-700 mt-1">
+                    {visit.diagnosis}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-2 text-sm space-y-3">
+                  {visit.medications?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-bold text-slate-500 mb-1">Medications</div>
+                      <ul className="list-disc pl-4 text-xs space-y-1 text-slate-700">
+                        {visit.medications.map((m: any, i: number) => (
+                          <li key={i}>
+                            {m.name} {m.dosage} ({m.frequency} x {m.duration})
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {visit.labs?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-bold text-slate-500 mb-1">Lab Orders</div>
+                      <div className="flex gap-1 flex-wrap">
+                        {visit.labs.map((l: string, i: number) => (
+                          <Badge key={i} variant="secondary" className="text-[10px]">
+                            {l}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="p-2 border-t bg-slate-50">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRepeatPrescription(visit)}
+                    className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs flex justify-center min-h-[44px]"
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1 shrink-0" />
+                    Repeat This Prescription
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
@@ -241,7 +338,17 @@ export default function DoctorConsultationWorkflow({
             </div>
           ))}
           {appointments.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-8">No appointments today.</p>
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <p className="text-sm text-slate-500 text-center">No appointments today.</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="min-h-[44px]"
+              >
+                Refresh Queue
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -256,7 +363,7 @@ export default function DoctorConsultationWorkflow({
         ) : (
           <>
             {/* Header */}
-            <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
+            <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center gap-2 flex-wrap">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
                   {activeAppointment.patient?.name}
@@ -266,16 +373,32 @@ export default function DoctorConsultationWorkflow({
                   <span>⚧ {activeAppointment.patient?.gender || 'Unknown'}</span>
                 </div>
               </div>
-              {showRepeatPrescription && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRepeatPrescription}
-                  className="bg-white hover:bg-slate-100 border-slate-300 text-slate-700"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" /> Repeat Last Rx
-                </Button>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="lg:hidden min-h-[44px]">
+                      <Clock className="w-4 h-4 mr-2 shrink-0" /> History
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[90vw] sm:w-[400px] overflow-y-auto p-6">
+                    <SheetHeader className="mb-4 text-left">
+                      <SheetTitle>Patient History</SheetTitle>
+                    </SheetHeader>
+                    {renderHistory()}
+                  </SheetContent>
+                </Sheet>
+
+                {showRepeatPrescription && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRepeatPrescription()}
+                    className="bg-white hover:bg-slate-100 border-slate-300 text-slate-700 min-h-[44px]"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2 shrink-0" /> Repeat Last Rx
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Content Tabs */}
@@ -302,36 +425,44 @@ export default function DoctorConsultationWorkflow({
                       <Label htmlFor="vital-bp">BP (mmHg)</Label>
                       <Input
                         id="vital-bp"
+                        inputMode="tel"
                         placeholder="120/80"
                         value={vitals.bp}
                         onChange={(e) => setVitals({ ...vitals, bp: e.target.value })}
+                        className="min-h-[44px]"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="vital-pulse">Pulse (bpm)</Label>
                       <Input
                         id="vital-pulse"
+                        inputMode="numeric"
                         placeholder="72"
                         value={vitals.pulse}
                         onChange={(e) => setVitals({ ...vitals, pulse: e.target.value })}
+                        className="min-h-[44px]"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="vital-temp">Temp (°F)</Label>
                       <Input
                         id="vital-temp"
+                        inputMode="decimal"
                         placeholder="98.6"
                         value={vitals.temp}
                         onChange={(e) => setVitals({ ...vitals, temp: e.target.value })}
+                        className="min-h-[44px]"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="vital-weight">Weight (kg)</Label>
                       <Input
                         id="vital-weight"
+                        inputMode="decimal"
                         placeholder="65"
                         value={vitals.weight}
                         onChange={(e) => setVitals({ ...vitals, weight: e.target.value })}
+                        className="min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -340,7 +471,7 @@ export default function DoctorConsultationWorkflow({
                     <Textarea
                       id="clinical-notes"
                       placeholder="Chief complaints, history, findings..."
-                      className="h-32"
+                      className="h-32 min-h-[44px]"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                     />
@@ -350,22 +481,27 @@ export default function DoctorConsultationWorkflow({
                 <TabsContent value="prescription" className="space-y-6">
                   <div className="space-y-2">
                     <Label className="text-base font-bold flex items-center gap-2">
-                      <Activity className="w-4 h-4" /> Provisional Diagnosis
+                      <Activity className="w-4 h-4 shrink-0" /> Provisional Diagnosis
                     </Label>
                     <Input
                       placeholder="e.g. Acute Viral Pharyngitis"
                       value={diagnosis}
                       onChange={(e) => setDiagnosis(e.target.value)}
-                      className="font-medium text-lg border-b-2 border-t-0 border-l-0 border-r-0 rounded-none px-0 focus-visible:ring-0 focus-visible:border-blue-500"
+                      className="font-medium text-lg border-b-2 border-t-0 border-l-0 border-r-0 rounded-none px-0 focus-visible:ring-0 focus-visible:border-blue-500 min-h-[44px]"
                     />
                   </div>
 
                   <div className="mt-8 space-y-4">
                     <div className="flex justify-between items-end">
                       <Label className="text-base font-bold flex items-center gap-2">
-                        <Pill className="w-4 h-4" /> Medications
+                        <Pill className="w-4 h-4 shrink-0" /> Medications
                       </Label>
-                      <Button variant="outline" size="sm" onClick={handleAddMedication}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddMedication}
+                        className="min-h-[44px]"
+                      >
                         + Add Drug
                       </Button>
                     </div>
@@ -409,7 +545,7 @@ export default function DoctorConsultationWorkflow({
                                   newMeds[index].name = e.target.value;
                                   setMedications(newMeds);
                                 }}
-                                className={`bg-white ${hasWarning ? 'border-amber-400 focus-visible:ring-amber-500' : ''}`}
+                                className={`bg-white min-h-[44px] ${hasWarning ? 'border-amber-400 focus-visible:ring-amber-500' : ''}`}
                               />
                               {hasWarning && (
                                 <TooltipProvider>
@@ -448,7 +584,7 @@ export default function DoctorConsultationWorkflow({
                                 newMeds[index].dosage = e.target.value;
                                 setMedications(newMeds);
                               }}
-                              className="w-28 bg-white"
+                              className="w-28 bg-white min-h-[44px]"
                             />
                             <Select
                               value={med.frequency}
@@ -460,7 +596,7 @@ export default function DoctorConsultationWorkflow({
                             >
                               <SelectTrigger
                                 aria-label={`Frequency for ${med.name || `Medicine ${index + 1}`}`}
-                                className="w-32 bg-white"
+                                className="w-32 bg-white min-h-[44px]"
                               >
                                 <SelectValue placeholder="Freq" />
                               </SelectTrigger>
@@ -480,7 +616,7 @@ export default function DoctorConsultationWorkflow({
                                 newMeds[index].duration = e.target.value;
                                 setMedications(newMeds);
                               }}
-                              className="w-32 bg-white"
+                              className="w-32 bg-white min-h-[44px]"
                             />
                           </div>
                         );
@@ -492,104 +628,60 @@ export default function DoctorConsultationWorkflow({
             </div>
 
             {/* Footer */}
-            <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
-              <Button variant="outline" disabled={loading}>
+            <div className="sticky bottom-0 z-10 bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-3 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.1)]">
+              <Button
+                variant="outline"
+                disabled={loading}
+                className="min-h-[44px] w-full sm:w-auto"
+              >
                 Save Draft
               </Button>
               <Button
-                onClick={handleComplete}
+                onClick={() => setShowConfirm(true)}
                 disabled={loading || activeAppointment.status === 'COMPLETED'}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-blue-600 hover:bg-blue-700 min-h-[44px] w-full sm:w-auto"
               >
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-4 h-4 mr-2 shrink-0" />
                 {loading ? 'Saving...' : 'Complete Consultation'}
               </Button>
             </div>
+
+            {/* Confirmation Dialog */}
+            <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Complete Consultation?</DialogTitle>
+                  <DialogDescription>
+                    This will finalize the consultation for {activeAppointment.patient?.name}. The
+                    prescription will be sent to the pharmacy, and lab orders will be sent to
+                    diagnostics. This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowConfirm(false)}
+                    className="min-h-[44px]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleComplete}
+                    disabled={loading}
+                    className="bg-blue-600 hover:bg-blue-700 min-h-[44px]"
+                  >
+                    {loading ? 'Confirming...' : 'Yes, Complete Consultation'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>
 
       {/* RIGHT: Patient History Sidebar */}
-      <div className="lg:col-span-3 h-full overflow-y-auto border-l pl-4 hidden lg:block">
-        {!activeAppointment && patientHistory.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm text-center">
-            Select a patient to view their history
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-              <Clock className="w-4 h-4 text-slate-500" />
-              Patient History
-            </h3>
-
-            {/* Allergies - Pinned */}
-            {patientHistory[0]?.allergies?.length > 0 && (
-              <div className="bg-red-50 border border-red-100 p-3 rounded-lg">
-                <h4 className="text-xs font-bold text-red-700 uppercase mb-1">Allergies</h4>
-                <div className="flex gap-2 flex-wrap">
-                  {patientHistory[0].allergies.map((allergy: string) => (
-                    <Badge key={allergy} variant="destructive" className="bg-red-600">
-                      {allergy}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {patientHistory.map((visit, idx) => (
-                <Card key={visit.id} className="shadow-sm border-slate-200">
-                  <CardHeader className="p-3 pb-2 bg-slate-50 border-b">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-slate-800">{visit.date}</span>
-                      <span className="text-xs text-slate-500">{visit.prescriber}</span>
-                    </div>
-                    <CardTitle className="text-sm font-semibold text-blue-700 mt-1">
-                      {visit.diagnosis}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 pt-2 text-sm space-y-3">
-                    {visit.medications?.length > 0 && (
-                      <div>
-                        <div className="text-xs font-bold text-slate-500 mb-1">Medications</div>
-                        <ul className="list-disc pl-4 text-xs space-y-1 text-slate-700">
-                          {visit.medications.map((m: any, i: number) => (
-                            <li key={i}>
-                              {m.name} {m.dosage} ({m.frequency} x {m.duration})
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {visit.labs?.length > 0 && (
-                      <div>
-                        <div className="text-xs font-bold text-slate-500 mb-1">Lab Orders</div>
-                        <div className="flex gap-1 flex-wrap">
-                          {visit.labs.map((l: string, i: number) => (
-                            <Badge key={i} variant="secondary" className="text-[10px]">
-                              {l}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="p-2 border-t bg-slate-50">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRepeatPrescription(visit)}
-                      className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs flex justify-center"
-                    >
-                      <RotateCcw className="w-3 h-3 mr-1" />
-                      Repeat This Prescription
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="lg:col-span-3 h-full overflow-y-auto border-l pl-4 hidden lg:block pb-10">
+        {renderHistory()}
       </div>
     </div>
   );

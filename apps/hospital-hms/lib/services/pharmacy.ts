@@ -30,7 +30,7 @@ export const PharmacyService = {
         // PESSIMISTIC LOCK: Lock the specific batch row against concurrent reads
         const stocks: any[] = await tx.$queryRaw`
           SELECT * FROM drug_stocks 
-          WHERE id = ${item.drugStockId}::uuid 
+          WHERE id = ${item.drugStockId} 
           FOR UPDATE
         `;
 
@@ -50,7 +50,7 @@ export const PharmacyService = {
         await tx.$executeRaw`
           UPDATE drug_stocks 
           SET stock = ${newStock} 
-          WHERE id = ${item.drugStockId}::uuid
+          WHERE id = ${item.drugStockId}
         `;
 
         const mrp = Number(stock.mrp || 0);
@@ -69,10 +69,10 @@ export const PharmacyService = {
         await tx.$executeRaw`
           INSERT INTO audit_logs (hospital_id, action, entity_name, entity_id, payload)
           VALUES (
-            ${hospitalId}::uuid, 
+            ${hospitalId}, 
             'DRUG_STOCK_DISPENSE', 
             'drug_stocks', 
-            ${item.drugStockId}::uuid, 
+            ${item.drugStockId}, 
             ${JSON.stringify({ changeQty: -item.quantity, reason: `Dispensed to patient ${patientId}` })}::jsonb
           )
         `;
@@ -87,9 +87,9 @@ export const PharmacyService = {
             hospital_id, patient_id, admission_id, invoice_number, 
             source, status, subtotal, total_amount, balance_amount, payload
           ) VALUES (
-            ${hospitalId}::uuid, 
-            ${patientId}::uuid, 
-            ${admissionId ? admissionId : null}::uuid, 
+            ${hospitalId}, 
+            ${patientId}, 
+            ${admissionId ? admissionId : null}, 
             ${invoiceNumber}, 
             ${admissionId ? 'IPD' : 'OPD'}, 
             'DRAFT', 

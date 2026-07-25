@@ -1,8 +1,9 @@
-/* eslint-disable */
 'use client';
 
-import { useState } from 'react';
 import { Building2, ChevronDown, Check } from 'lucide-react';
+
+import { useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 
 export default function BranchSwitcher({
@@ -28,7 +29,7 @@ export default function BranchSwitcher({
     <div className="relative mb-6">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between p-2.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors"
+        className="w-full flex items-center justify-between p-2.5 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition-colors min-h-[44px]"
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <Building2 className="h-4 w-4 text-indigo-400 flex-shrink-0" />
@@ -36,19 +37,21 @@ export default function BranchSwitcher({
             {activeBranch?.name || 'Main Campus'}
           </span>
         </div>
-        <ChevronDown className="h-3 w-3 text-slate-500" />
+        <ChevronDown className="h-3 w-3 text-slate-500 shrink-0" />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-64">
           {branches.map((branch) => (
             <button
               key={branch.id}
               onClick={() => handleSwitch(branch.id)}
-              className="w-full flex items-center justify-between p-2.5 text-xs text-left hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border-b border-slate-700 last:border-0"
+              className="w-full flex items-center justify-between p-2.5 text-xs text-left hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border-b border-slate-700 last:border-0 min-h-[44px]"
             >
-              <span>{branch.name}</span>
-              {branch.id === activeBranchId && <Check className="h-3 w-3 text-indigo-400" />}
+              <span className="truncate mr-2">{branch.name}</span>
+              {branch.id === activeBranchId && (
+                <Check className="h-3 w-3 text-indigo-400 shrink-0" />
+              )}
             </button>
           ))}
         </div>

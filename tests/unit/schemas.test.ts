@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
+
 import {
   RegisterDoctorSchema,
   RegisterAgentSchema,
   RegisterHospitalSchema,
   RegisterLabSchema,
   BookAppointmentSchema,
-} from '../../lib/validations';
+} from '../../apps/patient-portal/lib/validations';
 
 describe('Zod Validation Schemas', () => {
   describe('RegisterDoctorSchema', () => {
@@ -83,6 +84,8 @@ describe('Zod Validation Schemas', () => {
         adminName: 'Admin',
         mobile: '1122334455',
         password: 'securepassword',
+        registrationNumber: 'REG-HOSP-01',
+        approvalDocumentUrl: 'https://example.com/doc.pdf',
       });
       expect(result.success).toBe(true);
     });
@@ -94,6 +97,8 @@ describe('Zod Validation Schemas', () => {
         adminName: 'Admin',
         mobile: '1122334455',
         password: 'securepassword',
+        registrationNumber: 'REG-HOSP-01',
+        approvalDocumentUrl: 'https://example.com/doc.pdf',
       });
       expect(result.success).toBe(false);
     });

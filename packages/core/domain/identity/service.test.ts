@@ -22,7 +22,13 @@ vi.mock('@prisma/client', () => {
       update: vi.fn(),
     },
   };
-  return { PrismaClient: vi.fn(() => mPrismaClient) };
+  return {
+    PrismaClient: class {
+      constructor() {
+        return mPrismaClient;
+      }
+    },
+  };
 });
 
 vi.mock('./cryptography', () => ({
@@ -58,7 +64,7 @@ describe('IdentityService', () => {
         canonicalPatientId: 'loop-next',
       });
       await expect(IdentityService.resolvePatientId('loop')).rejects.toThrow(
-        /Alias resolution depth exceeded/,
+        /Chained alias detected/,
       );
     });
   });

@@ -33,6 +33,20 @@ vi.mock('@/lib/supabase/client', () => ({
   createClient: () => mockSupabase,
 }));
 
+vi.mock('@haspataal/db', () => ({
+  prisma: {
+    $transaction: vi.fn(async (cb) => {
+      const mockTx = {
+        $queryRaw: vi
+          .fn()
+          .mockResolvedValue([{ id: 'd1', name: 'Paracetamol', stock: 100, mrp: 10 }]),
+        $executeRaw: vi.fn().mockResolvedValue(1),
+      };
+      return cb(mockTx);
+    }),
+  },
+}));
+
 describe('Phase 3 Hospital Operations Services', () => {
   beforeEach(() => {
     vi.clearAllMocks();

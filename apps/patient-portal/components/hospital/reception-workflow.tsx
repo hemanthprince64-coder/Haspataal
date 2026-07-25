@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { syncQueue } from '@/lib/offline/sync-queue';
+import { triggerHapticFeedback } from '@/lib/utils';
 
 interface Doctor {
   id: string;
@@ -117,6 +118,7 @@ export default function ReceptionWorkflow() {
       toast.success(
         isEmergency ? 'Emergency Registration Successful!' : 'Patient Registered Successfully!',
       );
+      triggerHapticFeedback([100, 50, 100]);
       setReceipt({
         visitId: data.visit.id,
         uhid: generatedUhid,
@@ -200,11 +202,11 @@ export default function ReceptionWorkflow() {
       <SyncStatusIndicator />
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-teal-600" />
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+            <UserPlus className="h-5 w-5 text-teal-600 shrink-0" />
             Fast Patient Registration
           </h1>
-          <p className="text-xs text-slate-500 mt-1 flex items-center gap-4">
+          <p className="text-xs text-slate-500 mt-2 flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-1">
               <Keyboard className="w-3 h-3" /> Alt+N : New
             </span>
@@ -218,15 +220,15 @@ export default function ReceptionWorkflow() {
       {!isEmergency && (
         <Button
           variant="destructive"
-          className="w-full h-14 text-lg font-bold shadow-md bg-red-600 hover:bg-red-700 animate-in fade-in slide-in-from-top-4"
+          className="w-full h-14 min-h-[56px] text-lg font-bold shadow-md bg-red-600 hover:bg-red-700 animate-in fade-in slide-in-from-top-4"
           onClick={() => {
             setIsEmergency(true);
             setFormData({ ...formData, patientName: 'Unknown Emergency', patientMobile: '' });
             setTimeout(() => document.getElementById('age')?.focus(), 50);
           }}
         >
-          <ShieldAlert className="w-6 h-6 mr-3" />
-          ACTIVATE EMERGENCY MODE
+          <ShieldAlert className="w-6 h-6 mr-3 shrink-0" />
+          <span className="whitespace-normal text-left">ACTIVATE EMERGENCY MODE</span>
         </Button>
       )}
 
@@ -234,9 +236,9 @@ export default function ReceptionWorkflow() {
         className={`overflow-hidden transition-all duration-300 ${isEmergency ? 'border-red-400 ring-4 ring-red-100 bg-red-50/30' : 'border-slate-200'}`}
       >
         {isEmergency && (
-          <div className="bg-red-600 text-white p-4 flex justify-between items-center shadow-inner">
-            <div className="flex items-center gap-3">
-              <ShieldAlert className="w-6 h-6" />
+          <div className="bg-red-600 text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-inner">
+            <div className="flex items-start sm:items-center gap-3">
+              <ShieldAlert className="w-6 h-6 shrink-0 mt-1 sm:mt-0" />
               <div>
                 <h2 className="font-bold text-lg leading-none uppercase tracking-wider">
                   Emergency Mode Active
@@ -248,7 +250,7 @@ export default function ReceptionWorkflow() {
             </div>
             <Button
               variant="outline"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 min-h-[44px] w-full sm:w-auto"
               onClick={() => {
                 setIsEmergency(false);
                 setFormData({
@@ -290,6 +292,7 @@ export default function ReceptionWorkflow() {
                       onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
                       required={!isEmergency}
                       autoFocus
+                      className="min-h-[44px]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -299,11 +302,13 @@ export default function ReceptionWorkflow() {
                     <Input
                       id="patientMobile"
                       type="tel"
+                      inputMode="tel"
                       placeholder="10 digit number"
                       maxLength={10}
                       value={formData.patientMobile}
                       onChange={(e) => setFormData({ ...formData, patientMobile: e.target.value })}
                       required={!isEmergency}
+                      className="min-h-[44px]"
                     />
                   </div>
                 </>
@@ -317,7 +322,9 @@ export default function ReceptionWorkflow() {
                   value={formData.gender}
                   onValueChange={(v: string) => setFormData({ ...formData, gender: v })}
                 >
-                  <SelectTrigger className={isEmergency ? 'border-red-200 bg-red-50' : ''}>
+                  <SelectTrigger
+                    className={`min-h-[44px] ${isEmergency ? 'border-red-200 bg-red-50' : ''}`}
+                  >
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
@@ -336,11 +343,12 @@ export default function ReceptionWorkflow() {
                 <Input
                   id="age"
                   type="number"
+                  inputMode="numeric"
                   placeholder="Years"
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                   required
-                  className={isEmergency ? 'border-red-200 bg-red-50' : ''}
+                  className={`min-h-[44px] ${isEmergency ? 'border-red-200 bg-red-50' : ''}`}
                 />
               </div>
             </div>
@@ -358,7 +366,7 @@ export default function ReceptionWorkflow() {
                   value={formData.doctorId}
                   onValueChange={(v: string) => setFormData({ ...formData, doctorId: v })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="min-h-[44px]">
                     <SelectValue placeholder="Select a doctor" />
                   </SelectTrigger>
                   <SelectContent>
@@ -377,10 +385,11 @@ export default function ReceptionWorkflow() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="bg-slate-50 p-6 border-t border-slate-100 flex justify-end gap-3">
+          <CardFooter className="bg-slate-50 p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
             <Button
               variant="outline"
               type="button"
+              className="min-h-[44px] w-full sm:w-auto"
               onClick={() => {
                 setFormData({
                   patientName: '',
@@ -396,17 +405,19 @@ export default function ReceptionWorkflow() {
             </Button>
             <Button
               type="submit"
-              className={
+              className={`min-h-[44px] w-full sm:w-auto ${
                 isEmergency ? 'bg-red-600 hover:bg-red-700' : 'bg-teal-600 hover:bg-teal-700'
-              }
+              }`}
               disabled={loading || !formData.doctorId}
             >
-              <Clock className="w-4 h-4 mr-2" />
-              {loading
-                ? 'Processing...'
-                : isEmergency
-                  ? 'Quick Register (Emergency)'
-                  : 'Register & Generate Bill'}
+              <Clock className="w-4 h-4 mr-2 shrink-0" />
+              <span className="truncate">
+                {loading
+                  ? 'Processing...'
+                  : isEmergency
+                    ? 'Quick Register (Emergency)'
+                    : 'Register & Generate Bill'}
+              </span>
             </Button>
           </CardFooter>
         </form>

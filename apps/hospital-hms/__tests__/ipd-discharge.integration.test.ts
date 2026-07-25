@@ -27,6 +27,7 @@ beforeAll(async () => {
       env: { ...process.env, DATABASE_URL: databaseUrl, DIRECT_URL: databaseUrl },
     });
   } catch (e: unknown) {
+    // eslint-disable-next-line no-console
     console.error('[db push FAILED]', e instanceof Error ? e.message : String(e));
     throw e;
   }
@@ -88,17 +89,6 @@ async function createAdmission(overrides = {}) {
     },
   });
   return admission;
-}
-
-async function assignDoctor(role = 'PRIMARY_PHYSICIAN') {
-  const doctor = await prisma.doctorMaster.create({
-    data: {
-      fullName: 'Dr. Test',
-      mobile: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-      email: `doc-${crypto.randomUUID()}@test.com`,
-    },
-  });
-  return doctor;
 }
 
 async function performClinicalDischarge(admissionId: string) {
@@ -190,7 +180,9 @@ describe('Phase 3 - Atomicity & Idempotency', () => {
     });
     try {
       await confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-1', 'NURSE');
-    } catch (e) {}
+    } catch {
+      // expected to fail
+    }
 
     const count = await prisma.physicalDepartureRecord.count({ where: { admissionId: adm.id } });
     expect(count).toBe(0);

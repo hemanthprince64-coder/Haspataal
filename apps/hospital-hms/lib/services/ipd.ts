@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@haspataal/db';
-import { buildCanonicalOutbox, ScopeType } from '@haspataal/platform-contracts/dist/events/outbox';
+import { buildCanonicalOutbox, ScopeType } from '@haspataal/platform-contracts';
 import { BedStatus } from '@prisma/client';
 
 import { createClient } from '@/lib/supabase/client';
