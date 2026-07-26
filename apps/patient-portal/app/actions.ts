@@ -596,6 +596,64 @@ export async function logoutDoctor() {
   redirect('/doctor/login');
 }
 
+async function _requestDoctorOtp(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mobile = formData.get('mobile') as string;
+
+  try {
+    await services.doctor.requestOtp(mobile);
+    return { success: true, message: 'OTP sent successfully!' };
+  } catch (e: any) {
+    logger.warn(
+      { action: 'request_doctor_otp_failed', mobile, error: e.message },
+      'Doctor OTP request failed',
+    );
+    return { message: e.message || 'Failed to send OTP' };
+  }
+}
+
+export const requestDoctorOtp = withRateLimit(_requestDoctorOtp, {
+  actionName: 'requestDoctorOtp',
+  limit: 3,
+  windowSeconds: 15 * 60, // 15 mins
+});
+
+async function _loginDoctorWithOtp(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mobile = formData.get('mobile') as string;
+  const otp = formData.get('otp') as string;
+
+  if (!mobile || !otp) {
+    return { message: 'Please enter both mobile number and OTP.' };
+  }
+
+  try {
+    const result = await services.doctor.verifyOtp(mobile, otp);
+    await createSession('session_doctor', result);
+    logger.info(
+      { action: 'login_doctor_otp_success', mobile, doctorId: result.user.id },
+      'Doctor OTP login successful',
+    );
+    redirect('/doctor/dashboard');
+  } catch (e: any) {
+    logger.warn(
+      { action: 'login_doctor_otp_failed', mobile, error: e.message },
+      'Doctor OTP login failed',
+    );
+    return { message: e.message || 'Invalid OTP.' };
+  }
+}
+
+export const loginDoctorWithOtp = withRateLimit(_loginDoctorWithOtp, {
+  actionName: 'loginDoctorWithOtp',
+  limit: 10,
+  windowSeconds: 15 * 60, // 15 mins
+});
+
 async function _registerAgent(
   prevState: ActionResult | null,
   formData: FormData,

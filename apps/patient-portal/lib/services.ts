@@ -23,6 +23,8 @@ import prisma from './prisma';
 import { rateLimiter } from './rate-limit';
 import { toHospitalPublic } from './utils';
 
+type OtpChannel = 'SMS' | 'WHATSAPP' | 'EMAIL';
+
 // Zod schemas for runtime validation
 const HospitalArraySchema = z.array(z.any());
 const DoctorArraySchema = z.array(z.any());
@@ -1908,6 +1910,123 @@ export const services = {
       if (doctor.accountStatus === 'SUSPENDED') {
         throw new Error('Account is suspended');
       }
+
+      return {
+        user: {
+          id: doctor.id,
+          name: doctor.fullName,
+          role: UserRole.DOCTOR,
+          mobile: doctor.mobile,
+          email: doctor.email,
+        },
+      };
+    },
+    requestOtp: async (mobile: string) => {
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
+      const otpLimit = await rateLimiter(
+        `rl:requestOtp:${normalizedMobile}`,
+        OTP_RATE_LIMIT,
+        OTP_RATE_WINDOW_SECONDS,
+      );
+      if (!otpLimit.allowed) {
+        throw new Error('Too many OTP requests. Please try again later.');
+      }
+
+      const code = randomInt(1000, 10000).toString();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+      await prisma.otpCode.upsert({
+        where: { phone: normalizedMobile },
+        update: { code, expiresAt },
+        create: { phone: normalizedMobile, code, expiresAt },
+      });
+
+      logger.info(
+        { action: 'doctor_otp_generated', mobile: normalizedMobile },
+        'Doctor OTP generated',
+      );
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          '%c[DEMO DOCTOR OTP]',
+          'background: #14b8a6; color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px;',
+          `Mobile: ${mobile} | Code: ${code} | Expires: ${expiresAt.toISOString()}`,
+        );
+      }
+
+      // Integration point for SMS/WhatsApp/Email notification adapters
+      try {
+        const channel = (process.env.DOCTOR_OTP_CHANNEL as OtpChannel) || 'SMS';
+        const { dispatchOtpNotification } = await import('./otp-notification-dispatcher');
+        const result = await dispatchOtpNotification({
+          mobile: normalizedMobile,
+          code,
+          channel,
+          recipientName: 'Doctor',
+        });
+
+        if (!result.success) {
+          logger.warn(
+            {
+              action: 'doctor_otp_dispatch_failed',
+              mobile: normalizedMobile,
+              channel,
+              error: result.error,
+            },
+            'Doctor OTP dispatch failed',
+          );
+        }
+      } catch (dispatchError) {
+        logger.warn(
+          { action: 'doctor_otp_dispatch_failed', mobile: normalizedMobile, error: dispatchError },
+          'Doctor OTP dispatch failed',
+        );
+      }
+
+      return true;
+    },
+    verifyOtp: async (mobile: string, otp: string) => {
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
+      const otpRecord = await prisma.otpCode.findUnique({ where: { phone: normalizedMobile } });
+
+      if (!otpRecord) {
+        throw new Error('OTP not requested for this number. Please request a new OTP.');
+      }
+      if (otpRecord.code !== otp) {
+        throw new Error('Invalid OTP. Please try again.');
+      }
+      if (new Date() > otpRecord.expiresAt) {
+        throw new Error('OTP has expired. Please request a new OTP.');
+      }
+
+      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
+
+      const doctor = await prisma.doctorMaster.findUnique({
+        where: { mobile: normalizedMobile },
+        select: {
+          id: true,
+          fullName: true,
+          mobile: true,
+          email: true,
+          accountStatus: true,
+          kycStatus: true,
+        },
+      });
+
+      if (!doctor) {
+        throw new Error('Doctor account not found. Please register first.');
+      }
+
+      if (doctor.accountStatus === 'SUSPENDED') {
+        throw new Error('Account is suspended');
+      }
+
+      logger.info(
+        { action: 'doctor_otp_verified', mobile: normalizedMobile, doctorId: doctor.id },
+        'Doctor OTP verified successfully',
+      );
 
       return {
         user: {
