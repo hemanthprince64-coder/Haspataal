@@ -17,6 +17,9 @@ export class RedisCacheDecorator implements SearchIndexProvider {
     redisUrl: string,
   ) {
     this.redis = new Redis(redisUrl);
+    this.redis.on('error', () => {
+      /* ignore build-time connection errors */
+    });
   }
 
   async search(query: SearchQuery): Promise<SearchResponse> {

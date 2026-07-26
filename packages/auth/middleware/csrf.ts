@@ -3,11 +3,16 @@ import { Request, Response, NextFunction } from 'express';
 
 const CSRF_HEADER = 'x-csrf-token';
 const CSRF_COOKIE = 'csrf-token';
-const CSRF_SECRET =
-  process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET || 'csrf-secret-change-in-production';
+function getCsrfSecret(): string {
+  const secret = process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('CSRF_SECRET or NEXTAUTH_SECRET must be set and >= 32 chars');
+  }
+  return secret;
+}
 
 function signToken(payload: Record<string, unknown>): string {
-  return crypto.createHmac('sha256', CSRF_SECRET).update(JSON.stringify(payload)).digest('hex');
+  return crypto.createHmac('sha256', getCsrfSecret()).update(JSON.stringify(payload)).digest('hex');
 }
 
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {

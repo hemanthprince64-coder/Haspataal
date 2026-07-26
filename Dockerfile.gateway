@@ -11,7 +11,7 @@ RUN npm install turbo --global
 FROM base AS builder
 # Use turbo prune to only install dependencies for the target app
 COPY . .
-RUN turbo prune patient-portal --docker
+RUN turbo prune @haspataal/api-gateway --docker
 
 FROM base AS installer
 # Install dependencies
@@ -21,43 +21,41 @@ RUN npm install --ignore-scripts
 # Copy source code
 COPY --from=builder /app/out/full/ .
 
-# Generate Prisma Client
+# Generate Prisma Client (since Gateway uses @haspataal/db)
 RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
 
 # Provide dummy DB URL for Next.js static generation
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
 # Build the project
-RUN turbo build --filter=patient-portal...
+RUN turbo build --filter=@haspataal/api-gateway...
 
 FROM base AS runner
 WORKDIR /app
 
 # Set environment variables for production
 ENV NODE_ENV production
-# Disable Next.js telemetry
-ENV NEXT_TELEMETRY_DISABLED 1
 
 # Create a non-root user for security
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 nodejs
 
 # Copy built assets from installer
-COPY --from=installer /app/apps/patient-portal/next.config.mjs .
-COPY --from=installer /app/apps/patient-portal/package.json .
+# We only need the services/gateway dist, the node_modules, and the package.json
+COPY --from=installer --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=installer --chown=nodejs:nodejs /app/packages ./packages
+COPY --from=installer --chown=nodejs:nodejs /app/services/gateway/src ./services/gateway/src
+COPY --from=installer --chown=nodejs:nodejs /app/services/gateway/tsconfig.json ./services/gateway/tsconfig.json
+COPY --from=installer --chown=nodejs:nodejs /app/services/gateway/package.json ./services/gateway/package.json
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=installer --chown=nextjs:nodejs /app/apps/patient-portal/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/patient-portal/.next/static ./apps/patient-portal/.next/static
-COPY --from=installer --chown=nextjs:nodejs /app/apps/patient-portal/public ./apps/patient-portal/public
+# Switch to non-root user
+USER nodejs
 
-USER nextjs
+# Expose the port the gateway runs on
+EXPOSE 4002
+ENV PORT 4002
 
-EXPOSE 3000
+WORKDIR /app/services/gateway
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Note: standalone output creates server.js
-CMD ["node", "apps/patient-portal/server.js"]
+# Start the application
+CMD ["npx", "ts-node", "src/index.ts"]

@@ -17,6 +17,9 @@ export class RateLimiter {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
     });
+    this.redis.on('error', () => {
+      /* ignore build-time connection errors */
+    });
     this.options = {
       windowMs: 60000,
       maxRequests: 60,

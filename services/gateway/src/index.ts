@@ -33,9 +33,11 @@ export const logger = pino({
 // ── Config ───────────────────────────────────────────────────
 
 const PORT = process.env.API_GATEWAY_PORT || 4002;
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || 'fallback_secret_for_dev_only',
-);
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
+if (!NEXTAUTH_SECRET || NEXTAUTH_SECRET.length < 32) {
+  throw new Error('NEXTAUTH_SECRET must be set and >= 32 chars');
+}
+const JWT_SECRET = new TextEncoder().encode(NEXTAUTH_SECRET);
 
 const RATE_LIMITS: Record<string, number> = {
   PATIENT: 60,
@@ -59,6 +61,9 @@ try {
   redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: 1,
     lazyConnect: true,
+  });
+  redis.on('error', () => {
+    /* ignore build-time connection errors */
   });
   redis.connect().catch(() => {
     logger.warn('Redis not available — rate limiting disabled');

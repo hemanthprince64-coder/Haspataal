@@ -14,7 +14,6 @@
     "paths": {
       "@/*": ["./*"],
       "@/hooks": ["../../hooks"],
-      "@/services/*": ["../../services/*"],
       "@haspataal/types": ["../../packages/types"],
       "@haspataal/db": ["../../packages/db"]
     },

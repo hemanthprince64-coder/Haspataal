@@ -1,7 +1,16 @@
 /* eslint-disable */
 'use client';
 
-import { Pill, Activity, CheckCircle2, RotateCcw, Clock, Stethoscope, Save } from 'lucide-react';
+import {
+  Pill,
+  Activity,
+  CheckCircle2,
+  RotateCcw,
+  Clock,
+  Stethoscope,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 

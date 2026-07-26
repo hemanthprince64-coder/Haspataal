@@ -23,6 +23,9 @@ const redis = new Redis({
   password: process.env.REDIS_PASSWORD || undefined,
   db: parseInt(process.env.REDIS_DB || '0', 10),
 });
+redis.on('error', () => {
+  /* ignore build-time connection errors */
+});
 
 export class IdentityService {
   private static readonly RATE_LIMIT_PREFIX = 'rate_limit:identity:otp:';

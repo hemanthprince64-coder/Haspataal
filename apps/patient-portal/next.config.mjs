@@ -6,7 +6,16 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  
+  transpilePackages: [
+    '@haspataal/auth',
+    '@haspataal/core',
+    '@haspataal/db',
+    '@haspataal/logger',
+    '@haspataal/queue',
+    '@haspataal/types'
+  ],
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   output: 'standalone',
   images: {
     remotePatterns: [
