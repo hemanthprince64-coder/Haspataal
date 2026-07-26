@@ -1,8 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import {
   User,
   Phone,
@@ -18,11 +16,16 @@ import {
   Edit2,
   PhoneCall,
 } from 'lucide-react';
+
+import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
 import { getPatientFullProfile } from '@/app/actions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PatientDetailsPage() {
@@ -240,7 +243,7 @@ export default function PatientDetailsPage() {
               <DetailItem
                 icon={<Phone className="w-4 h-4" />}
                 label="Contact Number"
-                value={emergencyContactPhone || displayPhone}
+                value={emergencyContactPhone || phone}
               />
             </div>
 

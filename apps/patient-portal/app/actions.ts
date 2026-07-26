@@ -552,6 +552,50 @@ export const registerDoctor = withRateLimit(_registerDoctor, {
   windowSeconds: 60 * 60, // 1 hour
 });
 
+async function _loginDoctor(
+  prevState: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mobile = formData.get('mobile') as string;
+  const password = formData.get('password') as string;
+
+  const mobileParse = MobileSchema.safeParse(mobile);
+  if (!mobileParse.success) {
+    return {
+      success: false,
+      message: 'Mobile number must be at least 10 digits',
+    };
+  }
+
+  if (!mobile || !password) {
+    return { message: 'Please enter both mobile and password.' };
+  }
+
+  try {
+    const result = await services.doctor.login(mobile, password);
+    logger.info(
+      { action: 'login_doctor_success', mobile, doctorId: result.user.id },
+      'Doctor login successful',
+    );
+    await createSession('session_doctor', result);
+    redirect('/doctor/dashboard');
+  } catch (e: any) {
+    logger.warn({ action: 'login_doctor_failed', mobile, error: e.message }, 'Doctor login failed');
+    return { message: e.message || 'Invalid credentials.' };
+  }
+}
+
+export const loginDoctor = withRateLimit(_loginDoctor, {
+  actionName: 'loginDoctor',
+  limit: 10,
+  windowSeconds: 15 * 60, // 15 mins
+});
+
+export async function logoutDoctor() {
+  await deleteSession('session_doctor');
+  redirect('/doctor/login');
+}
+
 async function _registerAgent(
   prevState: ActionResult | null,
   formData: FormData,

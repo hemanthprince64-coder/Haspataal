@@ -12,6 +12,11 @@ export const RegisterDoctorSchema = z.object({
   councilName: z.string().min(1, 'Council name is required.'),
 });
 
+export const LoginDoctorSchema = z.object({
+  mobile: MobileSchema,
+  password: PasswordSchema,
+});
+
 export const RegisterAgentSchema = z.object({
   fullName: z.string().min(1, 'Full name is required.'),
   mobile: MobileSchema,

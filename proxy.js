@@ -1,7 +1,8 @@
+/* eslint-disable no-console, @typescript-eslint/no-unused-vars */
 import { NextResponse } from 'next/server';
-import { decrypt } from '@/lib/session';
 
 import redis from '@/lib/redis';
+import { decrypt } from '@/lib/session';
 
 // Redis-backed rate limiting constants
 const WINDOW_MS = 60 * 1000; // 1 minute
@@ -81,6 +82,21 @@ export async function proxy(request) {
     }
   }
 
+  // Doctor Portal Protection
+  if (pathname.startsWith('/doctor/dashboard')) {
+    const session = request.cookies.get('session_doctor')?.value;
+    if (!session) return NextResponse.redirect(new URL('/doctor/login', request.url));
+    try {
+      const payload = await decrypt(session);
+      const role = payload?.user?.role;
+      if (role !== 'DOCTOR') {
+        return NextResponse.redirect(new URL('/doctor/login', request.url));
+      }
+    } catch (e) {
+      return NextResponse.redirect(new URL('/doctor/login', request.url));
+    }
+  }
+
   // Agent Protection
   if (pathname.startsWith('/agent/dashboard')) {
     const session = request.cookies.get('session_agent')?.value;
@@ -117,6 +133,7 @@ export const config = {
   matcher: [
     '/admin/dashboard/:path*',
     '/hospital/dashboard/:path*',
+    '/doctor/dashboard/:path*',
     '/agent/dashboard/:path*',
     '/profile/:path*',
     '/book',

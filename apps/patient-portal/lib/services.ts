@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   hospitalRegistrationsCounter,
   appointmentsCreatedCounter,
@@ -1880,6 +1880,45 @@ export const services = {
 
   // --- Doctor Specific ---
   doctor: {
+    login: async (mobile: string, password: string) => {
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+
+      const doctor = await prisma.doctorMaster.findUnique({
+        where: { mobile: normalizedMobile },
+        select: {
+          id: true,
+          fullName: true,
+          mobile: true,
+          email: true,
+          accountStatus: true,
+          kycStatus: true,
+          password: true,
+        },
+      });
+
+      if (!doctor || !doctor.password) {
+        throw new Error('Invalid credentials');
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, doctor.password);
+      if (!isPasswordValid) {
+        throw new Error('Invalid credentials');
+      }
+
+      if (doctor.accountStatus === 'SUSPENDED') {
+        throw new Error('Account is suspended');
+      }
+
+      return {
+        user: {
+          id: doctor.id,
+          name: doctor.fullName,
+          role: UserRole.DOCTOR,
+          mobile: doctor.mobile,
+          email: doctor.email,
+        },
+      };
+    },
     register: async (data: {
       fullName: string;
       mobile: string;
@@ -2506,4 +2545,3 @@ export const services = {
     },
   },
 };
-
