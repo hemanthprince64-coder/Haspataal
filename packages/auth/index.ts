@@ -2,6 +2,8 @@ export * from './auth';
 export * from './session';
 export * from './authorization';
 export * from './rate-limit';
+export * from './otp-service';
+export * from './otp-schemas';
 // export * from './security'; // disabled due to duplicate generateCsrfToken with middleware
 export * from './middleware';
 export * from './refresh-token';

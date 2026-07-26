@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
 import { z } from 'zod';
 
+import { UnifiedOtpService } from '@/packages/auth';
 import { emitEvent } from '@/services/event-emitter';
 
 import {
@@ -368,33 +369,21 @@ export const services = {
   // --- Patient Services ---
   patient: {
     requestOtp: async (mobile: string) => {
-      // Normalize mobile: remove any non-digit characters and take last 10 digits
-      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
-
-      const otpLimit = await rateLimiter(
-        `rl:requestOtp:${normalizedMobile}`,
-        OTP_RATE_LIMIT,
-        OTP_RATE_WINDOW_SECONDS,
-      );
-      if (!otpLimit.allowed) {
-        throw new Error('Too many OTP requests. Please try again later.');
+      const result = await UnifiedOtpService.requestOtp(mobile, {
+        entityType: 'PATIENT',
+        channel: (process.env.PATIENT_OTP_CHANNEL as any) || 'SMS',
+      });
+      if (!result.success) {
+        throw new Error(result.message || 'OTP request failed');
       }
 
-      const code = randomInt(1000, 10000).toString();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+      const code = result.code || '';
+      const expiresAt = result.expiresAt ? new Date(result.expiresAt) : new Date();
 
-      await prisma.otpCode.upsert({
-        where: { phone: normalizedMobile },
-        update: { code, expiresAt },
-        create: { phone: normalizedMobile, code, expiresAt },
-      });
-
-      // Structured log for production monitoring
       logger.info({ action: 'otp_generated', mobile: normalizedMobile }, 'OTP generated');
 
-      // DEMO: Print OTP to server console in development
       if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
         console.log(
           '%c[DEMO OTP]',
           'background: #22c55e; color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px;',
@@ -402,49 +391,77 @@ export const services = {
         );
       }
 
+      try {
+        const channel = (process.env.PATIENT_OTP_CHANNEL as any) || 'SMS';
+        const { dispatchOtpNotification } = await import('./otp-notification-dispatcher');
+        const notifyResult = await dispatchOtpNotification({
+          mobile: normalizedMobile,
+          code,
+          channel,
+          recipientName: 'Patient',
+        });
+
+        if (!notifyResult.success) {
+          logger.warn(
+            {
+              action: 'patient_otp_dispatch_failed',
+              mobile: normalizedMobile,
+              channel,
+              error: notifyResult.error,
+            },
+            'Patient OTP dispatch failed',
+          );
+        }
+      } catch (dispatchError) {
+        logger.warn(
+          { action: 'patient_otp_dispatch_failed', mobile: normalizedMobile, error: dispatchError },
+          'Patient OTP dispatch failed',
+        );
+      }
+
       return true;
     },
 
     login: async (mobile: string, otp: string) => {
-      // Normalize mobile: remove any non-digit characters and take last 10 digits
       const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
 
-      const otpRecord = await prisma.otpCode.findUnique({ where: { phone: normalizedMobile } });
+      const result = await UnifiedOtpService.verifyOtp(mobile, otp, {
+        entityType: 'PATIENT',
+      });
 
-      if (!otpRecord)
-        throw new Error('OTP not requested for this number. Please request a new OTP.');
-      if (otpRecord.code !== otp) throw new Error('Invalid OTP. Please try again.');
-      if (new Date() > otpRecord.expiresAt)
-        throw new Error('OTP has expired. Please request a new OTP.');
-
-      // Prevent replay attacks
-      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
-
-      let patient = await prisma.patient.findUnique({ where: { phone: normalizedMobile } });
-
-      if (!patient) {
-        logger.info(
-          { action: 'patient_registration', mobile: normalizedMobile },
-          'Auto-registering new patient during login',
-        );
-        const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
-        patient = await prisma.patient.create({
-          data: {
-            phone: normalizedMobile,
-            name: 'New User',
-            password: hashedPassword,
-          },
-        });
+      if (!result.success) {
+        if (result.message?.includes('Account not found')) {
+          let patient = await prisma.patient.findUnique({ where: { phone: normalizedMobile } });
+          if (!patient) {
+            const hashedPassword = await bcrypt.hash(generatePasswordSeed(), 12);
+            patient = await prisma.patient.create({
+              data: {
+                phone: normalizedMobile,
+                name: 'New User',
+                password: hashedPassword,
+              },
+            });
+          }
+          logger.info(
+            { action: 'patient_registration', mobile: normalizedMobile },
+            'Auto-registering new patient during login',
+          );
+          return {
+            user: {
+              id: patient.id,
+              name: patient.name || 'Patient',
+              role: UserRole.PATIENT,
+              mobile: patient.phone,
+            },
+          };
+        }
+        throw new Error(result.message || 'OTP verification failed');
       }
-      logger.info({ action: 'patient_login' }, 'Patient logged in successfully');
-      return {
-        user: {
-          id: patient.id,
-          name: patient.name || 'Patient',
-          role: UserRole.PATIENT,
-          mobile: patient.phone,
-        },
-      };
+
+      if (result.user) {
+        return { user: result.user };
+      }
+      throw new Error('OTP verification failed');
     },
 
     register: async (data: {
@@ -1922,25 +1939,17 @@ export const services = {
       };
     },
     requestOtp: async (mobile: string) => {
-      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
-
-      const otpLimit = await rateLimiter(
-        `rl:requestOtp:${normalizedMobile}`,
-        OTP_RATE_LIMIT,
-        OTP_RATE_WINDOW_SECONDS,
-      );
-      if (!otpLimit.allowed) {
-        throw new Error('Too many OTP requests. Please try again later.');
+      const result = await UnifiedOtpService.requestOtp(mobile, {
+        entityType: 'DOCTOR',
+        channel: (process.env.DOCTOR_OTP_CHANNEL as any) || 'SMS',
+      });
+      if (!result.success) {
+        throw new Error(result.message || 'OTP request failed');
       }
 
-      const code = randomInt(1000, 10000).toString();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
-      await prisma.otpCode.upsert({
-        where: { phone: normalizedMobile },
-        update: { code, expiresAt },
-        create: { phone: normalizedMobile, code, expiresAt },
-      });
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
+      const code = result.code || '';
+      const expiresAt = result.expiresAt ? new Date(result.expiresAt) : new Date();
 
       logger.info(
         { action: 'doctor_otp_generated', mobile: normalizedMobile },
@@ -1955,24 +1964,23 @@ export const services = {
         );
       }
 
-      // Integration point for SMS/WhatsApp/Email notification adapters
       try {
         const channel = (process.env.DOCTOR_OTP_CHANNEL as OtpChannel) || 'SMS';
         const { dispatchOtpNotification } = await import('./otp-notification-dispatcher');
-        const result = await dispatchOtpNotification({
+        const notifyResult = await dispatchOtpNotification({
           mobile: normalizedMobile,
           code,
           channel,
           recipientName: 'Doctor',
         });
 
-        if (!result.success) {
+        if (!notifyResult.success) {
           logger.warn(
             {
               action: 'doctor_otp_dispatch_failed',
               mobile: normalizedMobile,
               channel,
-              error: result.error,
+              error: notifyResult.error,
             },
             'Doctor OTP dispatch failed',
           );
@@ -1987,56 +1995,19 @@ export const services = {
       return true;
     },
     verifyOtp: async (mobile: string, otp: string) => {
-      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
-
-      const otpRecord = await prisma.otpCode.findUnique({ where: { phone: normalizedMobile } });
-
-      if (!otpRecord) {
-        throw new Error('OTP not requested for this number. Please request a new OTP.');
-      }
-      if (otpRecord.code !== otp) {
-        throw new Error('Invalid OTP. Please try again.');
-      }
-      if (new Date() > otpRecord.expiresAt) {
-        throw new Error('OTP has expired. Please request a new OTP.');
-      }
-
-      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
-
-      const doctor = await prisma.doctorMaster.findUnique({
-        where: { mobile: normalizedMobile },
-        select: {
-          id: true,
-          fullName: true,
-          mobile: true,
-          email: true,
-          accountStatus: true,
-          kycStatus: true,
-        },
+      const result = await UnifiedOtpService.verifyOtp(mobile, otp, {
+        entityType: 'DOCTOR',
       });
 
-      if (!doctor) {
-        throw new Error('Doctor account not found. Please register first.');
+      if (!result.success) {
+        throw new Error(result.message || 'OTP verification failed');
       }
 
-      if (doctor.accountStatus === 'SUSPENDED') {
-        throw new Error('Account is suspended');
+      if (result.user) {
+        return { user: result.user };
       }
 
-      logger.info(
-        { action: 'doctor_otp_verified', mobile: normalizedMobile, doctorId: doctor.id },
-        'Doctor OTP verified successfully',
-      );
-
-      return {
-        user: {
-          id: doctor.id,
-          name: doctor.fullName,
-          role: UserRole.DOCTOR,
-          mobile: doctor.mobile,
-          email: doctor.email,
-        },
-      };
+      throw new Error('OTP verification failed');
     },
     register: async (data: {
       fullName: string;

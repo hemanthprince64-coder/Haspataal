@@ -455,6 +455,7 @@ model Patient {
   city                     String?
   createdAt                DateTime                @default(now()) @map("created_at")
   abhaAddress              String?                 @unique @map("abha_address")
+  accountStatus            AccountStatus            @default(ACTIVE) @map("account_status")
   role                     Role                    @default(PATIENT)
   address                  String?
   bloodGroup               String?                 @map("blood_group")

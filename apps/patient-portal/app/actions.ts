@@ -14,6 +14,7 @@ import logger from '@/lib/logger';
 import { MedChatInputSchema } from '@/lib/medchat/schemas';
 import { triagePatient } from '@/lib/medchat/triage-engine';
 import { withErrorMonitoring } from '@/lib/monitoring';
+import prisma from '@/lib/prisma';
 import { withRateLimit } from '@/lib/rate-limit';
 import { services } from '@/lib/services';
 import { createSession, deleteSession, decrypt } from '@/lib/session';
@@ -30,6 +31,7 @@ import {
   InternalReferralSchema,
   ConsultantSettlementSchema,
 } from '@/lib/validations';
+import { UnifiedOtpService } from '@/packages/auth';
 
 import { requireRole } from '../lib/auth/requireRole';
 import { UserRole, SessionUser } from '../types';
@@ -1703,55 +1705,52 @@ export async function deletePatientDataAction(patientId: string) {
 
 // ==================== ONBOARDING & SETUP ACTIONS ====================
 
-export async function sendRegistrationOtp(
-  prevState: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const mobile = formData.get('mobile') as string;
-  if (!mobile || mobile.length < 10) {
-    return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
-  }
-
-  try {
-    // Reuses requestOtp logic which generates and saves the OTP in prisma.otpCode
-    await services.patient.requestOtp(mobile);
-    return { success: true, message: 'OTP sent successfully!' };
-  } catch (e: any) {
-    return { success: false, message: `Failed to send OTP: ${e.message}` };
-  }
-}
-
-export async function verifyRegistrationOtp(
-  prevState: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const mobile = formData.get('mobile') as string;
-  const code = formData.get('code') as string;
-
-  if (!mobile || !code) {
-    return { success: false, message: 'Mobile and OTP code are required.' };
-  }
-
-  try {
-    const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
-    const otpRecord = await services.platform.getCities(); // dummy call or direct prisma access since shared
-    const prisma = require('@/lib/prisma').default;
-    const otp = await prisma.otpCode.findUnique({
-      where: { phone: normalizedMobile },
-    });
-
-    if (!otp) {
-      return { success: false, message: 'OTP has expired or was not requested.' };
-    }
-    if (otp.code !== code) {
-      return { success: false, message: 'Invalid OTP code. Please try again.' };
+export const sendRegistrationOtp = withRateLimit(
+  async (prevState: ActionResult | null, formData: FormData): Promise<ActionResult> => {
+    const mobile = formData.get('mobile') as string;
+    if (!mobile || mobile.length < 10) {
+      return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
     }
 
-    return { success: true, message: 'OTP verified successfully!' };
-  } catch (e: any) {
-    return { success: false, message: `OTP validation failed: ${e.message}` };
-  }
-}
+    try {
+      const result = await UnifiedOtpService.requestOtp(mobile, {
+        entityType: 'HOSPITAL',
+        channel: 'SMS',
+      });
+      if (!result.success) {
+        return { success: false, message: result.message || 'Failed to send OTP.' };
+      }
+      return { success: true, message: 'OTP sent successfully!' };
+    } catch (e: any) {
+      return { success: false, message: `Failed to send OTP: ${e.message}` };
+    }
+  },
+  { actionName: 'sendRegistrationOtp', limit: 3, windowSeconds: 15 * 60 },
+);
+
+export const verifyRegistrationOtp = withRateLimit(
+  async (prevState: ActionResult | null, formData: FormData): Promise<ActionResult> => {
+    const mobile = formData.get('mobile') as string;
+    const code = formData.get('code') as string;
+
+    if (!mobile || !code) {
+      return { success: false, message: 'Mobile and OTP code are required.' };
+    }
+
+    try {
+      const result = await UnifiedOtpService.verifyOtp(mobile, code, {
+        entityType: 'HOSPITAL',
+      });
+      if (!result.success) {
+        return { success: false, message: result.message || 'OTP validation failed.' };
+      }
+      return { success: true, message: 'OTP verified successfully!' };
+    } catch (e: any) {
+      return { success: false, message: `OTP validation failed: ${e.message}` };
+    }
+  },
+  { actionName: 'verifyRegistrationOtp', limit: 10, windowSeconds: 15 * 60 },
+);
 
 export async function submitDiscoveryQuestionnaireAction(
   prevState: ActionResult | null,
@@ -2002,72 +2001,86 @@ export async function advancePatientStageAction(formData: FormData): Promise<Act
   }
 }
 
-export async function loginHospitalWithOtp(
-  prevState: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const mobile = formData.get('mobile') as string;
-  const code = formData.get('otp') as string;
+export const loginHospitalWithOtp = withRateLimit(
+  async (prevState: ActionResult | null, formData: FormData): Promise<ActionResult> => {
+    const mobile = formData.get('mobile') as string;
+    const code = formData.get('otp') as string;
 
-  if (!mobile || !code) {
-    return { success: false, message: 'Mobile number and OTP are required.' };
-  }
-
-  try {
-    const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
-    const prisma = require('@/lib/prisma').default;
-
-    // 1. Verify OTP
-    const otpRecord = await prisma.otpCode.findUnique({
-      where: { phone: normalizedMobile },
-    });
-
-    if (!otpRecord) {
-      return { success: false, message: 'OTP has expired or was not requested.' };
-    }
-    if (otpRecord.code !== code) {
-      return { success: false, message: 'Invalid OTP code. Please request a new one.' };
+    if (!mobile || !code) {
+      return { success: false, message: 'Mobile number and OTP are required.' };
     }
 
-    // Prevent replay
-    await prisma.otpCode.delete({ where: { id: otpRecord.id } });
+    try {
+      const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
 
-    // 2. Find Hospital by Mobile
-    // Raw SQL to fetch name and ignored password fields safely
-    const hospitals = await prisma.$queryRaw<any[]>`
-      SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
-    `;
-    const hospital = hospitals?.[0];
+      // 1. Verify OTP
+      const otpRecord = await prisma.otpCode.findUnique({
+        where: { phone: normalizedMobile },
+      });
 
-    if (!hospital) {
-      return {
-        success: false,
-        message: 'No clinic found with this mobile number. Please register.',
+      if (!otpRecord) {
+        return { success: false, message: 'OTP has expired or was not requested.' };
+      }
+      if (otpRecord.code !== code) {
+        return { success: false, message: 'Invalid OTP code. Please request a new one.' };
+      }
+      if (otpRecord.expiresAt < new Date()) {
+        return { success: false, message: 'OTP has expired. Please request a new one.' };
+      }
+
+      // Prevent replay
+      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
+
+      // 2. Find Hospital by Mobile
+      // Raw SQL to fetch name and ignored password fields safely
+      const hospitals = await prisma.$queryRaw<any[]>`
+        SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
+      `;
+      const hospital = hospitals?.[0];
+
+      if (!hospital) {
+        return {
+          success: false,
+          message: 'No clinic found with this mobile number. Please register.',
+        };
+      }
+
+      const hospitalStatus = (
+        hospital.account_status ||
+        hospital.accountStatus ||
+        ''
+      ).toLowerCase();
+      if (hospitalStatus === 'suspended' || hospitalStatus === 'inactive') {
+        return {
+          success: false,
+          message: 'Account is suspended. Please contact support.',
+        };
+      }
+
+      // 3. Create Session
+      const result = {
+        user: {
+          id: hospital.id,
+          name: hospital.display_name || hospital.legal_name || 'Hospital Admin',
+          role: UserRole.HOSPITAL_ADMIN,
+          hospitalId: hospital.id,
+        },
       };
+
+      logger.info(
+        { action: 'magic_login_hospital_success', hospitalId: hospital.id },
+        'Hospital Magic Login Successful',
+      );
+      await createSession('session_user', result as any);
+    } catch (e: any) {
+      if (e.message && e.message.includes('NEXT_REDIRECT')) throw e;
+      return { success: false, message: e.message || 'Login failed.' };
     }
 
-    // 3. Create Session
-    const result = {
-      user: {
-        id: hospital.id,
-        name: hospital.display_name || hospital.legal_name || 'Hospital Admin',
-        role: UserRole.HOSPITAL_ADMIN,
-        hospitalId: hospital.id,
-      },
-    };
-
-    logger.info(
-      { action: 'magic_login_hospital_success', hospitalId: hospital.id },
-      'Hospital Magic Login Successful',
-    );
-    await createSession('session_user', result as any);
-  } catch (e: any) {
-    if (e.message && e.message.includes('NEXT_REDIRECT')) throw e;
-    return { success: false, message: e.message || 'Login failed.' };
-  }
-
-  redirect('/hospital/dashboard');
-}
+    redirect('/hospital/dashboard');
+  },
+  { actionName: 'loginHospitalWithOtp', limit: 10, windowSeconds: 15 * 60 },
+);
 
 export async function detectClinicTypeAction(): Promise<ActionResult> {
   let user: SessionUser;
