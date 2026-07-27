@@ -1,6 +1,7 @@
 /* eslint-disable */
 'use server';
 
+import { UnifiedOtpService } from '@haspataal/auth';
 import { z } from 'zod';
 
 import { cookies } from 'next/headers';
@@ -31,7 +32,6 @@ import {
   InternalReferralSchema,
   ConsultantSettlementSchema,
 } from '@/lib/validations';
-import { UnifiedOtpService } from '@/packages/auth';
 
 import { requireRole } from '../lib/auth/requireRole';
 import { UserRole, SessionUser } from '../types';

@@ -1,4 +1,4 @@
-import { Home, Search, Calendar, Siren, User } from 'lucide-react';
+import { Home, Search, MessageSquare, RotateCcw, FileText, User } from 'lucide-react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -9,8 +9,9 @@ export default function BottomNav({ className = '' }) {
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Search', href: '/search', icon: Search },
-    { name: 'Appointments', href: '/appointments', icon: Calendar },
-    { name: 'Emergency', href: '/emergency', icon: Siren },
+    { name: 'Medchat', href: '/medchat', icon: MessageSquare },
+    { name: 'Recovery', href: '/recovery', icon: RotateCcw },
+    { name: 'Records', href: '/records', icon: FileText },
     { name: 'Profile', href: '/profile', icon: User },
   ];
 

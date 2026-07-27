@@ -1,10 +1,9 @@
+import { UnifiedOtpService } from '@haspataal/auth';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-import { UnifiedOtpService } from '@/packages/auth';
 
 import { services } from '../services';
 
-vi.mock('@/packages/auth', () => ({
+vi.mock('@haspataal/auth', () => ({
   UnifiedOtpService: {
     requestOtp: vi.fn(),
     verifyOtp: vi.fn(),

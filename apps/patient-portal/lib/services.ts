@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { UnifiedOtpService } from '@haspataal/auth';
 import {
   hospitalRegistrationsCounter,
   appointmentsCreatedCounter,
@@ -8,7 +9,6 @@ import bcrypt from 'bcryptjs';
 import { randomBytes, randomInt } from 'crypto';
 import { z } from 'zod';
 
-import { UnifiedOtpService } from '@/packages/auth';
 import { emitEvent } from '@/services/event-emitter';
 
 import {
