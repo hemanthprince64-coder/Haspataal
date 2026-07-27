@@ -932,50 +932,73 @@ export async function updatePatientProfile(
 
   const updates: any = {
     name: formData.get('name') as string,
-    nickname: (formData.get('nickname') as string) || undefined,
+    nickname: formData.has('nickname') ? (formData.get('nickname') as string) : undefined,
     gender: formData.get('gender') as string,
     bloodGroup: formData.get('bloodGroup') as string,
     city: formData.get('city') as string,
     email: formData.get('email') as string,
     dob: formData.get('dob') ? new Date(formData.get('dob') as string) : undefined,
-    address: (formData.get('address') as string) || undefined,
-    state: (formData.get('state') as string) || undefined,
-    country: (formData.get('country') as string) || undefined,
-    pincode: (formData.get('pincode') as string) || undefined,
-    occupation: (formData.get('occupation') as string) || undefined,
-    maritalStatus: (formData.get('maritalStatus') as string) || undefined,
-    emergencyContactName: (formData.get('emergencyContactName') as string) || undefined,
-    emergencyContactRelation: (formData.get('emergencyContactRelation') as string) || undefined,
-    emergencyContactPhone: (formData.get('emergencyContactPhone') as string) || undefined,
-    emergencyContactAltPhone: (formData.get('emergencyContactAltPhone') as string) || undefined,
-    preferredHospital: (formData.get('preferredHospital') as string) || undefined,
-    preferredSpeciality: (formData.get('preferredSpeciality') as string) || undefined,
-    preferredDoctor: (formData.get('preferredDoctor') as string) || undefined,
+    address: formData.has('address') ? (formData.get('address') as string) : undefined,
+    state: formData.has('state') ? (formData.get('state') as string) : undefined,
+    country: formData.has('country') ? (formData.get('country') as string) : undefined,
+    pincode: formData.has('pincode') ? (formData.get('pincode') as string) : undefined,
+    occupation: formData.has('occupation') ? (formData.get('occupation') as string) : undefined,
+    maritalStatus: formData.has('maritalStatus')
+      ? (formData.get('maritalStatus') as string)
+      : undefined,
+    emergencyContactName: formData.has('emergencyContactName')
+      ? (formData.get('emergencyContactName') as string)
+      : undefined,
+    emergencyContactRelation: formData.has('emergencyContactRelation')
+      ? (formData.get('emergencyContactRelation') as string)
+      : undefined,
+    emergencyContactPhone: formData.has('emergencyContactPhone')
+      ? (formData.get('emergencyContactPhone') as string)
+      : undefined,
+    emergencyContactAltPhone: formData.has('emergencyContactAltPhone')
+      ? (formData.get('emergencyContactAltPhone') as string)
+      : undefined,
+    preferredHospital: formData.has('preferredHospital')
+      ? (formData.get('preferredHospital') as string)
+      : undefined,
+    preferredSpeciality: formData.has('preferredSpeciality')
+      ? (formData.get('preferredSpeciality') as string)
+      : undefined,
+    preferredDoctor: formData.has('preferredDoctor')
+      ? (formData.get('preferredDoctor') as string)
+      : undefined,
   };
 
   // Handle Profile Photo File Upload
-  const photoFile = formData.get('profilePhotoFile') as File | null;
-  if (photoFile && photoFile.size > 0 && photoFile.name) {
+  const photoFile = formData.get('profilePhotoFile');
+  if (
+    photoFile instanceof File &&
+    photoFile.size > 0 &&
+    photoFile.name &&
+    photoFile.name !== 'undefined'
+  ) {
     if (
-      photoFile.size > MAX_PROFILE_PHOTO_SIZE ||
-      !ALLOWED_PROFILE_PHOTO_TYPES.has(photoFile.type)
+      photoFile.size > 2 * 1024 * 1024 || // 2MB
+      !['image/jpeg', 'image/png', 'image/webp'].includes(photoFile.type)
     ) {
       return { message: 'Profile photo must be a JPG, PNG, or WebP image under 2MB.' };
     }
 
     try {
       const uploadedUrl = await uploadProfilePhoto(photoFile, patient.id);
-      if (uploadedUrl) updates.profilePhotoUrl = uploadedUrl;
+      if (uploadedUrl) {
+        updates.profilePhotoUrl = uploadedUrl;
+      }
     } catch (e: any) {
       console.error('DEBUG_PHOTO_UPLOAD_ERROR:', e);
       return { message: `Failed to upload profile photo: ${e.message || 'Unknown error'}` };
     }
-  } else {
-    // Fallback for direct URL input
-    updates.profilePhotoUrl = (formData.get('profilePhotoUrl') as string) || undefined;
+  } else if (formData.has('profilePhotoUrl')) {
+    // Fallback for direct URL input or clearing the photo
+    updates.profilePhotoUrl = formData.get('profilePhotoUrl') as string;
   }
 
-  // Remove undefined values
+  // Remove strictly undefined values (so we don't delete empty strings intended to clear fields)
   Object.keys(updates).forEach((key) => updates[key] === undefined && delete updates[key]);
 
   try {
