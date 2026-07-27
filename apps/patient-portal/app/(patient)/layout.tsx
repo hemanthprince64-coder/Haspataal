@@ -25,7 +25,9 @@ import Avatar from '@/app/components/Avatar';
 import '@/bones/registry';
 
 import BottomNav from './components/BottomNav';
+import DesktopNav from './components/DesktopNav';
 import Footer from './components/Footer';
+import ProfileDropdown from './components/ProfileDropdown';
 import Sidebar from './components/Sidebar';
 
 interface PatientLayoutProps {
@@ -94,6 +96,8 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
                 <span className="text-3xl font-extrabold text-blue-600 leading-none">.</span>
               </div>
             </Link>
+
+            {!isAuthPage && <DesktopNav />}
           </div>
 
           {/* Actions */}
@@ -105,18 +109,7 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
               <Siren className="w-4 h-4 motion-safe:group-hover:animate-pulse" />
               <span className="hidden sm:inline uppercase tracking-widest text-xs">Emergency</span>
             </Link>
-            {!isAuthPage && (
-              <Link
-                href="/profile"
-                className="ml-2 hover:scale-105 transition-transform duration-200 ring-4 ring-transparent hover:ring-blue-50 rounded-full"
-              >
-                <Avatar
-                  size="md"
-                  imageUrl={patient?.profilePhotoUrl}
-                  name={patient?.name || patient?.nickname}
-                />
-              </Link>
-            )}
+            {!isAuthPage && <ProfileDropdown patient={patient} />}
           </div>
         </div>
       </header>
