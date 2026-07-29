@@ -1,4 +1,4 @@
-# 🩺 CLAUDE.md - Project Haspataal
+# 🩺 MEMORY.md - Project Haspataal
 
 ## 🎯 High-Level Mission
 
@@ -159,6 +159,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 
 ## 📚 Knowledge Base (Lessons Learned)
 
+- **2026-07-29 (Documentation Reorganization):** Root repository documentation has been reorganized by information lifecycle and audience into `docs/` (`adr`, `architecture`, `compliance`, `engineering`, `manuals`, `operational`). Legacy documents and superseded specs are archived in `openspec/archive/`. `CLAUDE.md` has been archived and fully superseded by `MEMORY.md`. Always use `docs/README.md` as the main documentation index and strictly maintain `MEMORY.md` as the single source of truth for session protocols.
 - **2026-07-25 (Deployment):** Established a strict 9-step production deployment runbook prioritizing rollback safety, pre-flight checks (deployment freeze, immutable git tags), explicit DB backups before migrations (`npx prisma migrate deploy`), and post-cutover observability metrics.
 - **2026-07-02**: Zod Infer Default Values. When using `.default()` in Zod, the resulting TypeScript type from `z.infer` resolves those fields as required (they are typed as `Type`, not `Type | undefined`). To allow callers to provide optional fields that fallback to defaults during parse, export the Zod type as `export type Schema = z.input<typeof Schema>` instead of `z.infer`.
 - **2026-07-02**: FOR UPDATE SKIP LOCKED Transaction Boundaries. When building crash-proof workers in Postgres using `$queryRaw` and `FOR UPDATE SKIP LOCKED`, you must process the events *inside* the `$transaction` callback. If the query returns and the transaction ends before processing, the row locks are released immediately, breaking the lease model and risking event loss on process crashes.

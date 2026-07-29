@@ -63,9 +63,9 @@ Get your local development environment running in 2 minutes:
 
 ## 📚 Resources
 
-- **[CONTRIBUTING.md](./CONTRIBUTING.md)**: Onboarding, commit conventions, and development guidelines.
-- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)**: Detailed architectural decisions and ADRs.
-- **[SECURITY.md](./docs/SECURITY.md)**: PHI handling and security protocols.
+- **[CONTRIBUTING.md](./docs/engineering/CONTRIBUTING.md)**: Onboarding, commit conventions, and development guidelines.
+- **[ARCHITECTURE.md](./docs/architecture/architecture.md)**: Detailed architectural decisions and ADRs.
+- **[SECURITY.md](./docs/compliance/SECURITY.md)**: PHI handling and security protocols.
 
 ---
 Built with ❤️ for the Indian Healthcare Ecosystem.

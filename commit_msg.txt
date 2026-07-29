@@ -1,0 +1,13 @@
+docs: reorganize documentation hierarchy and deduplicate files
+
+- Moved ~60+ markdown files from project root into structured
+  `docs/` taxonomy (`adr/`, `architecture/`, `compliance/`, 
+  `engineering/`, `manuals/`, `operational/`).
+- Created `docs/README.md` as the central documentation index.
+- Merged `ARCHITECTURE_REPORT.md` into `docs/architecture/architecture.md`.
+- Merged `API.md` schemas into `docs/api-reference.md`.
+- Deduplicated `PHASE_0A_CHANGELOG.md` into `CHANGELOG.md`.
+- Archived `CLAUDE.md` (superseded by `MEMORY.md`) and original 
+  specs to `openspec/archive/`.
+- Updated core links in `README.md`.
+- Removed placeholder secrets from dummy markdown files.
