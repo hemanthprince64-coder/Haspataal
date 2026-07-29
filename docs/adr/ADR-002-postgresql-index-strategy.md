@@ -67,5 +67,5 @@ Add **B-tree indexes** on all foreign key columns of tables that are:
 
 ## References
 
-- [optimize_indexes.sql](../../optimize_indexes.sql) — Index migration script
+- [optimize_indexes.sql](../../infra/sql/optimize_indexes.sql) — Index migration script
 - ADR-001 — RLS policies that benefit from these indexes

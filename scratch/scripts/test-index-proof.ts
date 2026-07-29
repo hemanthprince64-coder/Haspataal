@@ -13,7 +13,7 @@ async function main() {
   await client.connect();
 
   console.log('Applying baseline schema...');
-  const baseline = fs.readFileSync(path.join(__dirname, 'baseline.sql'), 'utf8');
+  const baseline = fs.readFileSync(path.join(__dirname, '../../infra/sql/baseline.sql'), 'utf8');
   await client.query(baseline);
 
   const migrations = [

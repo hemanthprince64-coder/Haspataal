@@ -12,7 +12,7 @@ async function main() {
   await client.connect();
 
   console.log('--- APPLYING BASELINE SCHEMA ---');
-  const baselineSql = fs.readFileSync(path.join(__dirname, '..', 'baseline.sql'), 'utf8');
+  const baselineSql = fs.readFileSync(path.join(__dirname, '../../infra/sql/baseline.sql'), 'utf8');
   await client.query(baselineSql);
   console.log('SUCCESS: baseline.sql applied (Exit code: 0)');
 

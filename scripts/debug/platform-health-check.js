@@ -177,7 +177,10 @@ try {
 }
 
 // Check prior RLS migration files
-const rlsMigrations = ['./supabase_rls_audit_day11.sql', './enable_rls_health_modules.sql'];
+const rlsMigrations = [
+  '../../infra/sql/supabase_rls_audit_day11.sql',
+  '../../infra/sql/enable_rls_health_modules.sql',
+];
 for (const m of rlsMigrations) {
   if (existsSync(m)) pass(`RLS Migration: ${m}`);
   else warn(`RLS Migration: ${m} — not found`);

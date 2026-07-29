@@ -26,7 +26,7 @@ async function main() {
   `);
 
   console.log('Applying base schema baseline.sql...');
-  const baseSql = fs.readFileSync(path.join(__dirname, '../baseline.sql'), 'utf-8');
+  const baseSql = fs.readFileSync(path.join(__dirname, '../../infra/sql/baseline.sql'), 'utf-8');
   await client.query(baseSql);
 
   const migrationsDir = path.join(__dirname, 'migrations');

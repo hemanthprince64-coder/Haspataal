@@ -63,6 +63,6 @@ current_setting('request.jwt.claims', true)::json->>'hospitalId' -- Tenant UUID 
 
 ## References
 
-- [enable_rls_health_modules.sql](../../enable_rls_health_modules.sql) — Patient health table policies
-- [supabase_rls_audit_day11.sql](../../supabase_rls_audit_day11.sql) — Core table policies (Week 2 Sprint)
+- [enable_rls_health_modules.sql](../../infra/sql/enable_rls_health_modules.sql) — Patient health table policies
+- [supabase_rls_audit_day11.sql](../../infra/sql/supabase_rls_audit_day11.sql) — Core table policies (Week 2 Sprint)
 - [CLAUDE.md](../../CLAUDE.md) — "Prisma/RLS Conflict" knowledge base entry

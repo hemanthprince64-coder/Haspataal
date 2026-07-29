@@ -1,13 +1,14 @@
-docs: reorganize documentation hierarchy and deduplicate files
+chore: execute phase 3 post-mvp deferrals and cleanup
 
-- Moved ~60+ markdown files from project root into structured
-  `docs/` taxonomy (`adr/`, `architecture/`, `compliance/`, 
-  `engineering/`, `manuals/`, `operational/`).
-- Created `docs/README.md` as the central documentation index.
-- Merged `ARCHITECTURE_REPORT.md` into `docs/architecture/architecture.md`.
-- Merged `API.md` schemas into `docs/api-reference.md`.
-- Deduplicated `PHASE_0A_CHANGELOG.md` into `CHANGELOG.md`.
-- Archived `CLAUDE.md` (superseded by `MEMORY.md`) and original 
-  specs to `openspec/archive/`.
-- Updated core links in `README.md`.
-- Removed placeholder secrets from dummy markdown files.
+- Extracted the `shannon/` sub-monorepo out of the repository 
+  and documented the migration in `docs/engineering/shannon-migration.md`.
+- Ignored all AI agent directories (`.claude/`, `.cursor/`, etc.) 
+  in `.gitignore` to prevent version control pollution.
+- Moved all root SQL migration scripts to `infra/sql/` and 
+  updated all internal script and markdown references to match.
+- Moved root helper scripts and proofs (e.g. `test_ipd.ts`, 
+  `proxy.js`) to `scratch/scripts/`.
+- Deleted temporary artifacts (`temp.prisma`, `diff_prisma.txt`, 
+  `temp_transcript.txt`) and `haspataal-source.zip`.
+- Created `infra/README.md` to document the purpose of the folder 
+  for post-MVP migrations.

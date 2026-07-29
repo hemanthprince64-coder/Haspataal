@@ -2,7 +2,7 @@
 
 This document explains every Row-Level Security policy in the Haspataal database in plain language, grouped by the business rule each policy enforces.
 
-> **Source files**: [`enable_rls_health_modules.sql`](../../enable_rls_health_modules.sql), [`supabase_rls_audit_day11.sql`](../../supabase_rls_audit_day11.sql)
+> **Source files**: [`enable_rls_health_modules.sql`](../../infra/sql/enable_rls_health_modules.sql), [`supabase_rls_audit_day11.sql`](../../infra/sql/supabase_rls_audit_day11.sql)
 
 ---
 
