@@ -72,3 +72,6 @@ dev.db
 # Coverage
 coverage/
 lcov.info
+tmp/  
+downloads/  
+*.log 

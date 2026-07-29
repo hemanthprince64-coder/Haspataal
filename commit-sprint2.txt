@@ -1,7 +1,0 @@
-test: complete Sprint 2 testing infrastructure
-
-- Installed ioredis-mock and created vitest.setup.ts.
-- Mocked ioredis globally so Redis tests pass locally.
-- Injected NEXTAUTH_SECRET into vitest environment variables.
-- Fixed TS errors in apps/hospital-hms/__tests__/ipd-discharge.test.ts.
-- Replaced LAMA_DOCUMENTATION_COMPLETE with DISCHARGE_CLINICALLY_DECIDED.
