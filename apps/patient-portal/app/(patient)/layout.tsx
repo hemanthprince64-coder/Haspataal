@@ -52,9 +52,18 @@ export default function PatientLayout({ children }: PatientLayoutProps) {
   }, [isSidebarOpen]);
 
   useEffect(() => {
-    if (!isAuthPage) {
-      getPatientFullProfile().then(setPatient);
-    }
+    const fetchPatient = () => {
+      if (!isAuthPage) {
+        getPatientFullProfile().then(setPatient);
+      }
+    };
+
+    fetchPatient();
+
+    window.addEventListener('patient-profile-updated', fetchPatient);
+    return () => {
+      window.removeEventListener('patient-profile-updated', fetchPatient);
+    };
   }, [isAuthPage]);
 
   return (

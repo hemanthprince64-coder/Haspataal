@@ -16,8 +16,10 @@ async function run() {
         hospitalId: hospital.id,
         patientId: 'p1',
         bedId: bed.id,
-        attendingDoctorId: 'doc1',
-        clinicalStatus: 'DISCHARGE_CLINICALLY_DECIDED',
+        status: 'DISCHARGED',
+        acuity: 'RECOVERING',
+        acuityUpdatedAt: new Date(),
+
         physicalPresenceStatus: 'PRESENT',
         admissionNumber: 'adm-123',
       },

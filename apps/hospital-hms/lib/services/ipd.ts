@@ -209,7 +209,8 @@ export const IPDService = {
           dischargedAt,
           dischargeSummary,
           reason: notes || admission.reason,
-          clinicalStatus: 'DISCHARGE_CLINICALLY_DECIDED',
+          acuity: 'RECOVERING',
+          acuityUpdatedAt: new Date(),
         },
       });
 

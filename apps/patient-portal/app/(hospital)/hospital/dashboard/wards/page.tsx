@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { BedDouble, User, Calendar } from 'lucide-react';
+
+import { useEffect, useState } from 'react';
+
+import ActiveClinicalAlerts from '@/components/hospital/ActiveClinicalAlerts';
 
 interface BedRecord {
   id: string;
@@ -48,6 +51,8 @@ export default function WardsPage() {
           </p>
         </div>
       </div>
+
+      <ActiveClinicalAlerts />
 
       {/* Filter tabs */}
       <div className="flex gap-2 mb-6">

@@ -1,4 +1,10 @@
-import { PrismaClient, ClinicalStatus, PhysicalPresenceStatus, BedStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  PhysicalPresenceStatus,
+  BedStatus,
+  PatientAcuity,
+  AdmissionStatus,
+} from '@prisma/client';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import crypto from 'crypto';
 import { vi } from 'vitest';
@@ -82,8 +88,9 @@ async function createAdmission(overrides = {}) {
       patientId: currentPatientId,
       bedId: currentBedId,
       admissionNumber: `ADM-${crypto.randomUUID()}`,
-      status: 'ADMITTED',
-      clinicalStatus: ClinicalStatus.ADMITTED,
+      status: AdmissionStatus.ADMITTED,
+      acuity: PatientAcuity.STABLE,
+
       physicalPresenceStatus: PhysicalPresenceStatus.PRESENT,
       ...overrides,
     },
@@ -94,7 +101,10 @@ async function createAdmission(overrides = {}) {
 async function performClinicalDischarge(admissionId: string) {
   return await prisma.admission.update({
     where: { id: admissionId },
-    data: { clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED },
+    data: {
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
+    },
   });
 }
 
@@ -145,7 +155,8 @@ describe('Phase 3 - Discharge State Machine - Core state transitions', () => {
   it('2. Standard departure', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     await confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
     await expectPhysicalPresence(adm.id, PhysicalPresenceStatus.DEPARTED_STANDARD);
@@ -156,7 +167,8 @@ describe('Phase 3 - Discharge State Machine - Core state transitions', () => {
   it('3. LAMA departure', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     await confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-1', 'NURSE');
     await expectPhysicalPresence(adm.id, PhysicalPresenceStatus.DEPARTED_LAMA);
@@ -195,7 +207,8 @@ describe('Phase 3 - Atomicity & Idempotency', () => {
   it('7. Bed transition', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     await expectBedStatus(currentBedId, BedStatus.OCCUPIED);
     await confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
@@ -205,7 +218,8 @@ describe('Phase 3 - Atomicity & Idempotency', () => {
   it('8. Same-path replay', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     const res1 = await confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
     const res2 = await confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
@@ -218,7 +232,8 @@ describe('Phase 3 - Atomicity & Idempotency', () => {
   it('9. Duplicate confirmation', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     await confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
     await expect(confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-1', 'NURSE')).rejects.toThrow();
@@ -229,7 +244,8 @@ describe('Phase 3 - Concurrency', () => {
   it('10. STANDARD vs LAMA race', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     const p1 = confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
     const p2 = confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-2', 'NURSE');
@@ -244,7 +260,8 @@ describe('Phase 3 - Concurrency', () => {
   it('11. STANDARD vs WITHOUT_NOTICE race', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     const p1 = confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
     const p2 = confirmPhysicalDeparture(adm.id, 'WITHOUT_NOTICE', 'actor-2', 'NURSE');
@@ -257,7 +274,8 @@ describe('Phase 3 - Concurrency', () => {
   it('12. LAMA vs WITHOUT_NOTICE race', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     const p1 = confirmPhysicalDeparture(adm.id, 'LAMA', 'actor-1', 'NURSE');
     const p2 = confirmPhysicalDeparture(adm.id, 'WITHOUT_NOTICE', 'actor-2', 'NURSE');
@@ -330,7 +348,8 @@ describe('Phase 3 - Remaining Mandatory Core Scenarios', () => {
   it('23. Terminal events satisfy Phase 0A contract', async () => {
     if (!prisma) return;
     const adm = await createAdmission({
-      clinicalStatus: ClinicalStatus.DISCHARGE_CLINICALLY_DECIDED,
+      status: AdmissionStatus.DISCHARGED,
+      acuity: PatientAcuity.RECOVERING,
     });
     await confirmPhysicalDeparture(adm.id, 'STANDARD', 'actor-1', 'NURSE');
     const event = await prisma.outboxEvent.findFirst({ where: { aggregateId: adm.id } });

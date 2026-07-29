@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+
 import Link from 'next/link';
+
+import { MetricSkeleton, SkeletonCard, ErrorInline } from '@/components/dashboard/SkeletonCard';
 import {
   useMetrics,
   useRetentionKPI,
@@ -11,7 +14,8 @@ import {
   useRevenue,
 } from '@/hooks/useDashboard';
 import { formatINR } from '@/lib/format';
-import { MetricSkeleton, SkeletonCard, ErrorInline } from '@/components/dashboard/SkeletonCard';
+
+import ActiveClinicalAlerts from './ActiveClinicalAlerts';
 
 const PATHWAY_COLORS = {
   pregnancy: '#a855f7',
@@ -812,6 +816,9 @@ export default function HospitalDashboardClient({ user, initialHospital }) {
           </div>
         </div>
       </div>
+
+      {/* Active Clinical Alerts Widget */}
+      <ActiveClinicalAlerts hospitalId={hId} />
 
       {/* Section 1: Metric Cards */}
       {mErr && <ErrorInline message="Metrics failed to load" onRetry={mRetry} />}

@@ -1,9 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
 import {
   User,
   Home,
@@ -23,19 +20,25 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
+
+import { useActionState, useEffect, useState } from 'react';
+
+import Image from 'next/image';
+import Link from 'next/link';
+
 import {
   updatePatientProfile,
   addFamilyMemberAction,
   deleteFamilyMemberAction,
   getPatientFullProfile,
 } from '@/app/actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { SimpleAccordion as Accordion } from '@/components/ui/accordion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const initialState = { message: '', success: false };
 
@@ -115,6 +118,12 @@ export default function EditProfile() {
   }
 
   const p = patient || {};
+
+  useEffect(() => {
+    if (state?.success) {
+      window.dispatchEvent(new Event('patient-profile-updated'));
+    }
+  }, [state?.success]);
 
   if (state?.success) {
     return (
