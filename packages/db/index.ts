@@ -1,4 +1,7 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, Patient, UserAccount, AuthMethod, PatientContactPoint, MobileVerificationChallenge, IdentityMergeRequest } from '@prisma/client';
+
+export { Prisma, PrismaClient };
+export type { Patient, UserAccount, AuthMethod, PatientContactPoint, MobileVerificationChallenge, IdentityMergeRequest };
 
 /**
  * PRISMA PERFORMANCE & BUILD STABILITY NOTE:

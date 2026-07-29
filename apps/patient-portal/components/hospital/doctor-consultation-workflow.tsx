@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 import { useState, useEffect } from 'react';
 
+import AlertTimeline from '@/components/hospital/alerts/AlertTimeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -227,7 +228,12 @@ export default function DoctorConsultationWorkflow({
         </div>
       ) : (
         <div className="space-y-6">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+          {activeAppointment?.patientId && (
+            <div className="mb-6">
+              <AlertTimeline patientId={activeAppointment.patientId} />
+            </div>
+          )}
+          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4 mt-6">
             <Clock className="w-4 h-4 text-slate-500" />
             Patient History
           </h3>
