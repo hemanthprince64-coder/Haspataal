@@ -70,3 +70,15 @@ export function useRevenue(hospitalId: string | undefined) {
   );
   return { revenue: data, isLoading, isError: !!error, mutate };
 }
+
+// ─── DOCTOR DASHBOARD ─────────────────────────────────────────────────────
+
+// ─── 7. Doctor Metrics — refresh 15s ──────────────────────────────────────
+export function useDoctorMetrics(doctorId: string | undefined) {
+  const { data, error, isLoading, mutate } = useSWR(
+    doctorId ? `/api/doctors/${doctorId}/dashboard/metrics` : null,
+    fetcher,
+    { refreshInterval: 15_000 },
+  );
+  return { metrics: data, isLoading, isError: !!error, mutate };
+}

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { UnifiedOtpService } from '@haspataal/auth';
+import { OtpService, OtpPurpose } from '@haspataal/auth';
 import {
   hospitalRegistrationsCounter,
   appointmentsCreatedCounter,
@@ -369,10 +369,7 @@ export const services = {
   // --- Patient Services ---
   patient: {
     requestOtp: async (mobile: string) => {
-      const result = await UnifiedOtpService.requestOtp(mobile, {
-        entityType: 'PATIENT',
-        channel: (process.env.PATIENT_OTP_CHANNEL as any) || 'SMS',
-      });
+      const result = await OtpService.sendOtp({ phone: mobile, purpose: OtpPurpose.PATIENT_LOGIN });
       if (!result.success) {
         throw new Error(result.message || 'OTP request failed');
       }
@@ -425,8 +422,10 @@ export const services = {
     login: async (mobile: string, otp: string) => {
       const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
 
-      const result = await UnifiedOtpService.verifyOtp(mobile, otp, {
-        entityType: 'PATIENT',
+      const result = await OtpService.verifyOtp({
+        phone: mobile,
+        otp,
+        purpose: OtpPurpose.PATIENT_LOGIN,
       });
 
       if (!result.success) {
@@ -1939,10 +1938,13 @@ export const services = {
       };
     },
     requestOtp: async (mobile: string) => {
-      const result = await UnifiedOtpService.requestOtp(mobile, {
-        entityType: 'DOCTOR',
-        channel: (process.env.DOCTOR_OTP_CHANNEL as any) || 'SMS',
-      });
+      const result = await OtpService.sendOtp(
+        { phone: mobile, purpose: OtpPurpose.HOSPITAL_LOGIN },
+        {
+          entityType: 'DOCTOR',
+          channel: (process.env.DOCTOR_OTP_CHANNEL as any) || 'SMS',
+        },
+      );
       if (!result.success) {
         throw new Error(result.message || 'OTP request failed');
       }
@@ -1995,9 +1997,12 @@ export const services = {
       return true;
     },
     verifyOtp: async (mobile: string, otp: string) => {
-      const result = await UnifiedOtpService.verifyOtp(mobile, otp, {
-        entityType: 'DOCTOR',
-      });
+      const result = await OtpService.verifyOtp(
+        { phone: mobile, otp, purpose: OtpPurpose.HOSPITAL_LOGIN },
+        {
+          entityType: 'DOCTOR',
+        },
+      );
 
       if (!result.success) {
         throw new Error(result.message || 'OTP verification failed');
@@ -2048,6 +2053,78 @@ export const services = {
         });
         return doctor;
       });
+    },
+
+    getDashboardStats: async (doctorId: string) => {
+      const now = new Date();
+
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+      const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const [todayAppointments, patientsSeenThisWeek, pendingRecords, doctor] = await Promise.all([
+        // Today's appointments
+        prisma.appointment.count({
+          where: {
+            doctorId,
+            date: { gte: startOfDay, lt: endOfDay },
+            status: { in: ['BOOKED', 'CONFIRMED'] },
+          },
+        }),
+
+        // Patients seen this week (distinct patients)
+        prisma.appointment
+          .groupBy({
+            by: ['patientId'],
+            where: {
+              doctorId,
+              date: { gte: startOfWeek, lt: endOfWeek },
+              status: 'COMPLETED',
+            },
+          })
+          .then((res) => res.length),
+
+        // Pending records (draft or awaiting review)
+        prisma.patientRecord.count({
+          where: {
+            doctorId,
+            status: 'DRAFT',
+          },
+        }),
+
+        // Upcoming appointments total (for today or future)
+        prisma.doctorMaster.findUnique({
+          where: { id: doctorId },
+          select: {
+            accountStatus: true,
+            _count: {
+              select: {
+                appointments: {
+                  where: {
+                    date: { gte: startOfDay },
+                    status: { in: ['BOOKED', 'CONFIRMED'] },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ]);
+
+      return {
+        todayAppointments,
+        patientsSeenThisWeek,
+        pendingRecords,
+        upcomingAppointments: doctor?._count.appointments || 0,
+        clinicStatus:
+          doctor?.accountStatus === 'ACTIVE'
+            ? 'ACTIVE'
+            : doctor?.accountStatus === 'SUSPENDED'
+              ? 'OFFLINE'
+              : 'ON_LEAVE',
+      };
     },
   },
 

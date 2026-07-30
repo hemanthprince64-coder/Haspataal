@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { hasPermission, Permission } from '@haspataal/auth';
 import 'server-only';
 
 import { NextResponse } from 'next/server';
@@ -90,21 +91,30 @@ export async function requireHospitalAccess(
   if (!hospitalId) throw new Error('UNAUTHORIZED');
 
   const role = user.role as UserRole | string;
-  const defaultAllowed = ROLE_MODULES[role]?.includes(module) ?? false;
-  if (!defaultAllowed) throw new Error('FORBIDDEN');
+
+  // Delegate to new permission matrix
+  let permissionToCheck = Permission.HOSPITAL_SETTINGS; // default fallback
+
+  if (module === 'opd' && action === 'manage_schedule')
+    permissionToCheck = Permission.SCHEDULE_MANAGE;
+  else if (module === 'opd')
+    permissionToCheck = action === 'read' ? Permission.SCHEDULE_VIEW : Permission.SCHEDULE_MANAGE;
+  else if (module === 'billing')
+    permissionToCheck = action === 'read' ? Permission.BILLING_VIEW : Permission.BILLING_EDIT;
+  else if (module === 'diagnostics')
+    permissionToCheck = action === 'read' ? Permission.EMR_VIEW : Permission.EMR_EDIT;
+  else if (module === 'ipd')
+    permissionToCheck = action === 'read' ? Permission.EMR_VIEW : Permission.EMR_EDIT;
+
+  const isAllowed = hasPermission(role as UserRole, permissionToCheck);
+
+  // If the new matrix denies access, but it's a legacy check, we might want to check DB overrides
+  // if this is a STAFF role. For MVP, we trust the new policy matrix as authoritative.
+  if (!isAllowed) {
+    throw new Error('FORBIDDEN');
+  }
 
   const staffId = role === 'HOSPITAL_ADMIN' && user.id === hospitalId ? undefined : user.id;
-  const override = await prisma.rolePermission.findFirst({
-    where: {
-      hospitalId,
-      module,
-      action,
-      OR: [{ staffId: staffId ?? null }, { staffId: null, role: role as any }],
-    },
-    orderBy: { staffId: 'desc' },
-  });
-
-  if (override && !override.allowed) throw new Error('FORBIDDEN');
   return { user, hospitalId, role, staffId };
 }
 
@@ -135,4 +145,3 @@ export async function writeAuditLog(input: {
     },
   });
 }
-

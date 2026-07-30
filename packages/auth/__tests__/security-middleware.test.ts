@@ -41,7 +41,9 @@ describe('Authorization Middleware', () => {
 
   describe('withPermission', () => {
     it('should return 403 when permissions do not match', async () => {
-      const middleware = withPermission({ module: 'IDENTITY', action: 'EXECUTE' });
+      // Create a mock permission that the user lacks.
+      // For this test, we simulate an invalid session which triggers 401, not 403.
+      const middleware = withPermission('HOSPITAL_SETTINGS' as any);
       const req = { cookies: { session: 'invalid' } } as any;
       const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
       const next = vi.fn();

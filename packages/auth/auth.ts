@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
-import { decrypt } from './session';
+
 import { UserRole } from '../types';
+import { decrypt } from './session';
 
 export async function requireAuth(sessionName: string) {
   const cookieStore = await cookies();
@@ -11,17 +12,6 @@ export async function requireAuth(sessionName: string) {
   if (!payload || !payload.user) throw new Error('Unauthorized: Invalid session');
 
   return payload.user;
-}
-
-export async function requireRole(role: UserRole | UserRole[], sessionName: string) {
-  const user = await requireAuth(sessionName);
-  const roles = Array.isArray(role) ? role : [role];
-
-  if (!roles.includes(user.role as UserRole)) {
-    throw new Error(`Unauthorized: Role ${user.role} does not have access`);
-  }
-
-  return user;
 }
 
 export async function getHospitalIdFromSession(req: any) {

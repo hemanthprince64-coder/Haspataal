@@ -1,10 +1,10 @@
 /* eslint-disable */
 'use server';
 
-import { UnifiedOtpService } from '@haspataal/auth';
+import { OtpService, OtpPurpose } from '@haspataal/auth';
 import { z } from 'zod';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 // ── Imports ──────────────────────────────────────────────────
 
 import { redirect } from 'next/navigation';
@@ -99,19 +99,65 @@ async function _loginHospital(
     return { message: 'Please enter both mobile and password.' };
   }
 
-  const result = await services.hospital.login(mobile, password);
+  try {
+    const hospital = await prisma.$transaction(async (tx) => {
+      // 1. Lookup existing hospital
+      const hospitals = await tx.$queryRaw<any[]>`
+        SELECT * FROM hospitals_master WHERE contact_number = ${mobile} LIMIT 1
+      `;
+      const found = hospitals?.[0];
 
-  if (!result) {
-    logger.warn({ action: 'login_hospital_failed', mobile }, 'Invalid hospital login credentials');
-    return { message: 'Invalid credentials.' };
+      if (!found) {
+        logger.warn(
+          { action: 'login_hospital_unregistered', mobile },
+          'Unregistered hospital attempted password login',
+        );
+        throw new Error('Invalid credentials.');
+      }
+
+      // 2. Verify Password
+      const bcrypt = require('bcryptjs');
+      const isMatch = await bcrypt.compare(password, found.password);
+      if (!isMatch) {
+        throw new Error('Invalid credentials.');
+      }
+
+      const hospitalStatus = (found.account_status || found.accountStatus || '').toLowerCase();
+      if (hospitalStatus === 'suspended' || hospitalStatus === 'inactive') {
+        throw new Error('Account is suspended. Please contact support.');
+      }
+
+      // 3. Log success atomically
+      logger.info(
+        { action: 'login_hospital_password_success', mobile, hospitalId: found.id },
+        'Hospital password login successful',
+      );
+
+      return found;
+    });
+
+    // 4. Issue session only after commit
+    const sessionResult = {
+      user: {
+        id: hospital.id,
+        name: hospital.display_name || hospital.legal_name || 'Hospital Admin',
+        role: UserRole.HOSPITAL_ADMIN,
+        hospitalId: hospital.id,
+      },
+    };
+
+    await createSession('session_user', sessionResult as any);
+    redirect('/hospital/dashboard');
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
+    const errorMessage = e instanceof Error ? e.message : 'Invalid credentials.';
+
+    logger.warn(
+      { action: 'login_hospital_failed', mobile, error: errorMessage },
+      'Hospital login failed',
+    );
+    return { message: errorMessage };
   }
-
-  logger.info(
-    { action: 'login_hospital_success', mobile, hospitalId: result.user.id },
-    'Hospital login successful',
-  );
-  await createSession('session_user', result);
-  redirect('/hospital/dashboard');
 }
 
 export const loginHospital = withRateLimit(_loginHospital, {
@@ -574,16 +620,48 @@ async function _loginDoctor(
   }
 
   try {
-    const result = await services.doctor.login(mobile, password);
-    logger.info(
-      { action: 'login_doctor_success', mobile, doctorId: result.user.id },
-      'Doctor login successful',
-    );
-    await createSession('session_doctor', result);
+    const doctor = await prisma.$transaction(async (tx) => {
+      // 1. Lookup Doctor
+      const found = await tx.doctor.findUnique({ where: { mobile } });
+      if (!found) {
+        logger.warn(
+          { action: 'login_doctor_unregistered', mobile },
+          'Unregistered doctor attempted password login',
+        );
+        throw new Error('Invalid credentials.');
+      }
+
+      // 2. Verify Password
+      const bcrypt = require('bcryptjs');
+      const isMatch = await bcrypt.compare(password, found.password);
+      if (!isMatch) {
+        throw new Error('Invalid credentials.');
+      }
+
+      // 3. Log success atomically
+      logger.info(
+        { action: 'login_doctor_password_success', mobile, doctorId: found.id },
+        'Doctor password login successful',
+      );
+
+      return found;
+    });
+
+    // 4. Issue session only after commit
+    await createSession('session_doctor', {
+      user: { id: doctor.id, role: 'DOCTOR', name: doctor.fullName },
+    });
+
     redirect('/doctor/dashboard');
-  } catch (e: any) {
-    logger.warn({ action: 'login_doctor_failed', mobile, error: e.message }, 'Doctor login failed');
-    return { message: e.message || 'Invalid credentials.' };
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
+    const errorMessage = e instanceof Error ? e.message : 'Invalid credentials.';
+
+    logger.warn(
+      { action: 'login_doctor_failed', mobile, error: errorMessage },
+      'Doctor login failed',
+    );
+    return { message: errorMessage };
   }
 }
 
@@ -605,14 +683,18 @@ async function _requestDoctorOtp(
   const mobile = formData.get('mobile') as string;
 
   try {
-    await services.doctor.requestOtp(mobile);
+    const result = await OtpService.sendOtp({ phone: mobile, purpose: OtpPurpose.DOCTOR_LOGIN });
+    if (!result.success) throw new Error(result.message);
+
+    logger.info({ action: 'login_doctor_started', mobile }, 'Doctor login started');
     return { success: true, message: 'OTP sent successfully!' };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'Failed to send OTP';
     logger.warn(
-      { action: 'request_doctor_otp_failed', mobile, error: e.message },
+      { action: 'request_doctor_otp_failed', mobile, error: errorMessage },
       'Doctor OTP request failed',
     );
-    return { message: e.message || 'Failed to send OTP' };
+    return { message: errorMessage };
   }
 }
 
@@ -634,19 +716,50 @@ async function _loginDoctorWithOtp(
   }
 
   try {
-    const result = await services.doctor.verifyOtp(mobile, otp);
-    await createSession('session_doctor', result);
-    logger.info(
-      { action: 'login_doctor_otp_success', mobile, doctorId: result.user.id },
-      'Doctor OTP login successful',
-    );
+    const doctor = await prisma.$transaction(async (tx) => {
+      // 1. Verify OTP via platform service
+      const verifyResult = await OtpService.verifyOtp({
+        phone: mobile,
+        otp,
+        purpose: OtpPurpose.DOCTOR_LOGIN,
+      });
+      if (!verifyResult.success) {
+        throw new Error(verifyResult.message || 'Invalid OTP');
+      }
+
+      // 2. Lookup existing doctor (never auto-create)
+      const found = await tx.doctor.findUnique({ where: { mobile } });
+      if (!found) {
+        logger.warn(
+          { action: 'login_doctor_unregistered', mobile },
+          'Unregistered doctor attempted OTP login',
+        );
+        throw new Error('Doctor not found. Please contact your hospital administrator.');
+      }
+
+      // 3. Log success atomically
+      logger.info(
+        { action: 'login_doctor_otp_success', mobile, doctorId: found.id },
+        'Doctor OTP login successful',
+      );
+      return found;
+    });
+
+    // 4. Issue session only after commit
+    await createSession('session_doctor', {
+      user: { id: doctor.id, role: 'DOCTOR', name: doctor.fullName },
+    });
+
     redirect('/doctor/dashboard');
-  } catch (e: any) {
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
+    const errorMessage = e instanceof Error ? e.message : 'Invalid OTP.';
+
     logger.warn(
-      { action: 'login_doctor_otp_failed', mobile, error: e.message },
+      { action: 'login_doctor_otp_failed', mobile, error: errorMessage },
       'Doctor OTP login failed',
     );
-    return { message: e.message || 'Invalid OTP.' };
+    return { message: errorMessage };
   }
 }
 
@@ -781,12 +894,70 @@ async function _patientLogin(
   }
 
   try {
-    const result = await services.patient.login(mobile, otp);
-    if (!result) {
-      return { message: 'Login failed due to an unknown error.' };
+    const reqHeaders = await headers();
+    const ipAddress = reqHeaders.get('x-forwarded-for') || '127.0.0.1';
+    const userAgent = reqHeaders.get('user-agent') || 'Unknown';
+
+    // 1. Transactional Authentication
+    const result = await prisma.$transaction(async (tx) => {
+      // Verify OTP strictly (this throws or returns failure inside, but OtpService handles its own errors so we check the result)
+      const verification = await OtpService.verifyOtp({
+        phone: mobile,
+        otp,
+        purpose: OtpPurpose.PATIENT_LOGIN,
+        ipAddress,
+        userAgent,
+      });
+
+      if (!verification.success) {
+        throw new Error(verification.message || 'Invalid OTP');
+      }
+
+      // Mark OTP as verified (OtpService already cleared locks, but if we need a custom flag we can do it here)
+      // Note: OtpService.verifyOtp natively deletes or marks the OTP internally via its own transaction,
+      // but wrapping this outer flow guarantees atomic user creation.
+
+      // Find or Create Patient
+      let patient = await tx.patient.findUnique({
+        where: { phone: mobile },
+      });
+
+      let isNew = false;
+      if (!patient) {
+        patient = await tx.patient.create({
+          data: {
+            phone: mobile,
+            name: `Patient_${mobile.slice(-4)}`, // Default name, updateable later
+            isActive: true,
+          },
+        });
+        isNew = true;
+      }
+
+      return { patient, isNew };
+    });
+
+    if (result.isNew) {
+      logger.info(
+        { action: 'PATIENT_CREATED', mobile, patientId: result.patient.id },
+        'New patient registered via OTP',
+      );
     }
-    await createSession('session_patient', result);
+    logger.info(
+      { action: 'PATIENT_LOGIN_SUCCESS', mobile, patientId: result.patient.id },
+      'Patient logged in successfully',
+    );
+
+    // 2. Issue Cookie after successful commit
+    await createSession('session_patient', {
+      user: {
+        id: result.patient.id,
+        phone: result.patient.phone,
+        role: 'PATIENT',
+      },
+    } as any);
   } catch (e: any) {
+    logger.warn({ action: 'PATIENT_LOGIN_FAILED', mobile, error: e.message }, 'Login failed');
     return { message: e.message || 'Login failed.' };
   }
 
@@ -809,7 +980,23 @@ export async function requestOtpAction(
   }
 
   try {
-    await services.patient.requestOtp(mobile);
+    const reqHeaders = await headers();
+    const ipAddress = reqHeaders.get('x-forwarded-for') || '127.0.0.1';
+    const userAgent = reqHeaders.get('user-agent') || 'Unknown';
+
+    logger.info({ action: 'PATIENT_LOGIN_STARTED', mobile }, 'Patient initiated login flow');
+
+    const result = await OtpService.sendOtp({
+      phone: mobile,
+      purpose: OtpPurpose.PATIENT_LOGIN,
+      ipAddress,
+      userAgent,
+    });
+
+    if (!result.success) {
+      return { success: false, message: result.message };
+    }
+
     return { success: true, message: 'OTP sent successfully!' };
   } catch (e: any) {
     logger.error(
@@ -1736,9 +1923,9 @@ export const sendRegistrationOtp = withRateLimit(
     }
 
     try {
-      const result = await UnifiedOtpService.requestOtp(mobile, {
-        entityType: 'HOSPITAL',
-        channel: 'SMS',
+      const result = await OtpService.sendOtp({
+        phone: mobile,
+        purpose: OtpPurpose.REGISTER,
       });
       if (!result.success) {
         return { success: false, message: result.message || 'Failed to send OTP.' };
@@ -1761,8 +1948,10 @@ export const verifyRegistrationOtp = withRateLimit(
     }
 
     try {
-      const result = await UnifiedOtpService.verifyOtp(mobile, code, {
-        entityType: 'HOSPITAL',
+      const result = await OtpService.verifyOtp({
+        phone: mobile,
+        otp: code,
+        purpose: OtpPurpose.REGISTER,
       });
       if (!result.success) {
         return { success: false, message: result.message || 'OTP validation failed.' };
@@ -2024,6 +2213,35 @@ export async function advancePatientStageAction(formData: FormData): Promise<Act
   }
 }
 
+export const requestHospitalOtp = withRateLimit(
+  async (prevState: ActionResult | null, formData: FormData): Promise<ActionResult> => {
+    const mobile = formData.get('mobile') as string;
+
+    if (!mobile || mobile.length < 10) {
+      return { success: false, message: 'Please enter a valid 10-digit mobile number.' };
+    }
+
+    try {
+      const result = await OtpService.sendOtp({
+        phone: mobile,
+        purpose: OtpPurpose.HOSPITAL_LOGIN,
+      });
+      if (!result.success) throw new Error(result.message);
+
+      logger.info({ action: 'login_hospital_started', mobile }, 'Hospital login started');
+      return { success: true, message: 'OTP sent successfully!' };
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Failed to send OTP';
+      logger.warn(
+        { action: 'request_hospital_otp_failed', mobile, error: errorMessage },
+        'Hospital OTP request failed',
+      );
+      return { message: errorMessage };
+    }
+  },
+  { actionName: 'requestHospitalOtp', limit: 3, windowSeconds: 15 * 60 },
+);
+
 export const loginHospitalWithOtp = withRateLimit(
   async (prevState: ActionResult | null, formData: FormData): Promise<ActionResult> => {
     const mobile = formData.get('mobile') as string;
@@ -2036,52 +2254,47 @@ export const loginHospitalWithOtp = withRateLimit(
     try {
       const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
 
-      // 1. Verify OTP
-      const otpRecord = await prisma.otpCode.findUnique({
-        where: { phone: normalizedMobile },
+      const hospital = await prisma.$transaction(async (tx) => {
+        // 1. Verify OTP via platform service
+        const verifyResult = await OtpService.verifyOtp({
+          phone: normalizedMobile,
+          otp: code,
+          purpose: OtpPurpose.HOSPITAL_LOGIN,
+        });
+        if (!verifyResult.success) {
+          throw new Error(verifyResult.message || 'Invalid OTP');
+        }
+
+        // 2. Lookup existing hospital
+        const hospitals = await tx.$queryRaw<any[]>`
+          SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
+        `;
+        const found = hospitals?.[0];
+
+        if (!found) {
+          logger.warn(
+            { action: 'login_hospital_unregistered', mobile: normalizedMobile },
+            'Unregistered hospital attempted OTP login',
+          );
+          throw new Error('No clinic found with this mobile number. Please register.');
+        }
+
+        const hospitalStatus = (found.account_status || found.accountStatus || '').toLowerCase();
+        if (hospitalStatus === 'suspended' || hospitalStatus === 'inactive') {
+          throw new Error('Account is suspended. Please contact support.');
+        }
+
+        // 3. Log success atomically
+        logger.info(
+          { action: 'login_hospital_otp_success', mobile: normalizedMobile, hospitalId: found.id },
+          'Hospital OTP login successful',
+        );
+
+        return found;
       });
 
-      if (!otpRecord) {
-        return { success: false, message: 'OTP has expired or was not requested.' };
-      }
-      if (otpRecord.code !== code) {
-        return { success: false, message: 'Invalid OTP code. Please request a new one.' };
-      }
-      if (otpRecord.expiresAt < new Date()) {
-        return { success: false, message: 'OTP has expired. Please request a new one.' };
-      }
-
-      // Prevent replay
-      await prisma.otpCode.delete({ where: { id: otpRecord.id } });
-
-      // 2. Find Hospital by Mobile
-      // Raw SQL to fetch name and ignored password fields safely
-      const hospitals = await prisma.$queryRaw<any[]>`
-        SELECT * FROM hospitals_master WHERE contact_number = ${normalizedMobile} LIMIT 1
-      `;
-      const hospital = hospitals?.[0];
-
-      if (!hospital) {
-        return {
-          success: false,
-          message: 'No clinic found with this mobile number. Please register.',
-        };
-      }
-
-      const hospitalStatus = (
-        hospital.account_status ||
-        hospital.accountStatus ||
-        ''
-      ).toLowerCase();
-      if (hospitalStatus === 'suspended' || hospitalStatus === 'inactive') {
-        return {
-          success: false,
-          message: 'Account is suspended. Please contact support.',
-        };
-      }
-
-      // 3. Create Session
-      const result = {
+      // 4. Issue session only after commit
+      const sessionResult = {
         user: {
           id: hospital.id,
           name: hospital.display_name || hospital.legal_name || 'Hospital Admin',
@@ -2090,17 +2303,18 @@ export const loginHospitalWithOtp = withRateLimit(
         },
       };
 
-      logger.info(
-        { action: 'magic_login_hospital_success', hospitalId: hospital.id },
-        'Hospital Magic Login Successful',
-      );
-      await createSession('session_user', result as any);
-    } catch (e: any) {
-      if (e.message && e.message.includes('NEXT_REDIRECT')) throw e;
-      return { success: false, message: e.message || 'Login failed.' };
-    }
+      await createSession('session_user', sessionResult as any);
+      redirect('/hospital/dashboard');
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
+      const errorMessage = e instanceof Error ? e.message : 'Login failed.';
 
-    redirect('/hospital/dashboard');
+      logger.warn(
+        { action: 'login_hospital_otp_failed', mobile, error: errorMessage },
+        'Hospital OTP login failed',
+      );
+      return { success: false, message: errorMessage };
+    }
   },
   { actionName: 'loginHospitalWithOtp', limit: 10, windowSeconds: 15 * 60 },
 );

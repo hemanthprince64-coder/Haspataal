@@ -100,3 +100,11 @@ export interface Review {
   comment?: string;
   createdAt: Date;
 }
+
+export interface DoctorDashboardStats {
+  todayAppointments: number;
+  patientsSeenThisWeek: number;
+  pendingRecords: number;
+  clinicStatus: 'ACTIVE' | 'OFFLINE' | 'ON_LEAVE';
+  upcomingAppointments: number;
+}

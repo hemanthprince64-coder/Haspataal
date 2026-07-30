@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
-import prisma from '@/lib/prisma';
+import { requirePermission, Permission } from '@haspataal/auth';
+
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/auth';
+
+import prisma from '@/lib/prisma';
 
 // --- Doctor Order Management ---
 
 export async function getDoctorOrders() {
   try {
-    const session = await auth();
-    if (!session || session.user.role !== 'doctor')
-      return { success: false, message: 'Unauthorized' };
+    const user = await requirePermission(Permission.EMR_VIEW);
 
     // In prototype, doctor is loosely coupled.
     // We might want to find orders where doctorId matches session.user.id
@@ -25,7 +25,7 @@ export async function getDoctorOrders() {
     // Then fetch orders for those hospitals.
 
     const affiliations = await prisma.doctorHospitalAffiliation.findMany({
-      where: { doctorId: session.user.id, isCurrent: true },
+      where: { doctorId: user.id, isCurrent: true },
     });
 
     const hospitalIds = affiliations.map((a) => a.hospitalId);
@@ -58,8 +58,12 @@ export async function getDoctorOrders() {
 }
 
 export async function getOrderDetails(orderId) {
-  const session = await auth();
-  if (!session) return { success: false, message: 'Unauthorized' };
+  let user;
+  try {
+    user = await requirePermission(Permission.EMR_VIEW);
+  } catch (e) {
+    return { success: false, message: 'Unauthorized' };
+  }
 
   // Validate access (is this doctor affiliated with the hospital of the order?)
   // Skipping deep check for prototype speed, but GOOD TO HAVE.
@@ -85,15 +89,18 @@ export async function getOrderDetails(orderId) {
 }
 
 export async function updateDiagnosticResult(prevState, formData) {
-  const session = await auth();
-  if (!session || session.user.role !== 'doctor')
+  let user;
+  try {
+    user = await requirePermission(Permission.EMR_EDIT);
+  } catch (e) {
     return { success: false, message: 'Unauthorized' };
+  }
 
   const orderItemId = formData.get('orderItemId');
   const resultValue = formData.get('resultValue');
   const resultFlag = formData.get('resultFlag'); // normal, high, low, critical
   const notes = formData.get('notes'); // e.g., methodology used
-  const verifiedBy = session.user.id; // Correct ID from session
+  const verifiedBy = user.id; // Correct ID from session
 
   // Check if result exists, if so update, else create
   try {
@@ -142,8 +149,12 @@ export async function updateDiagnosticResult(prevState, formData) {
 }
 
 export async function finalizeOrder(orderId) {
-  const session = await auth();
-  if (!session) return { success: false, message: 'Unauthorized' };
+  let user;
+  try {
+    user = await requirePermission(Permission.EMR_EDIT);
+  } catch (e) {
+    return { success: false, message: 'Unauthorized' };
+  }
 
   try {
     // Check if all items are completed?

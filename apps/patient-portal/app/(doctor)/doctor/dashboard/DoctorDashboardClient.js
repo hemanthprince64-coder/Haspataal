@@ -4,14 +4,70 @@ import { Calendar, Users, FileText, Settings, LogOut, Activity } from 'lucide-re
 
 import { useActionState } from 'react';
 
+import Link from 'next/link';
+
 import { logoutDoctor } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useDoctorMetrics } from '@/hooks/useDashboard';
 
 const initialState = { message: '' };
 
+const QUICK_ACTIONS = [
+  {
+    title: 'Appointments',
+    icon: Calendar,
+    href: '/doctor/schedule',
+  },
+  {
+    title: 'Prescriptions',
+    icon: FileText,
+    href: '/doctor/prescriptions',
+  },
+  {
+    title: 'Patients',
+    icon: Users,
+    href: '/doctor/patients',
+  },
+  {
+    title: 'Settings',
+    icon: Settings,
+    href: '/doctor/settings',
+  },
+];
+
+function SkeletonMetricCard() {
+  return (
+    <Card className="border-slate-200/60 shadow-sm h-[120px]">
+      <CardHeader className="pb-3">
+        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="h-8 w-12" />
+      </CardHeader>
+    </Card>
+  );
+}
+
 export default function DoctorDashboardClient({ user }) {
   const [, formAction, isPending] = useActionState(logoutDoctor, initialState);
+  const { metrics, isLoading, isError } = useDoctorMetrics(user.id);
+
+  const renderMetric = (label, value, subText, Icon, colorClass = 'text-slate-900') => (
+    <Card className="border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <CardDescription className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          {label}
+        </CardDescription>
+        <CardTitle className={`text-2xl font-black mt-1 ${colorClass}`}>{value}</CardTitle>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <Icon className="w-3.5 h-3.5" />
+          <span>{subText}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -23,66 +79,58 @@ export default function DoctorDashboardClient({ user }) {
           <p className="text-slate-500 mt-1">Clinical dashboard and patient management</p>
         </div>
 
+        {isError && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            Failed to load dashboard metrics. Please refresh the page.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border-slate-200/60 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Today&apos;s Appointments
-              </CardDescription>
-              <CardTitle className="text-2xl font-black text-slate-900 mt-1">12</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Next: 10:30 AM</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200/60 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Patients Seen
-              </CardDescription>
-              <CardTitle className="text-2xl font-black text-slate-900 mt-1">8</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Users className="w-3.5 h-3.5" />
-                <span>This week: 45</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200/60 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Pending Records
-              </CardDescription>
-              <CardTitle className="text-2xl font-black text-slate-900 mt-1">3</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <FileText className="w-3.5 h-3.5" />
-                <span>Requires attention</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200/60 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardDescription className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Clinic Status
-              </CardDescription>
-              <CardTitle className="text-2xl font-black text-teal-600 mt-1">Active</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Activity className="w-3.5 h-3.5" />
-                <span>Operating normally</span>
-              </div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <>
+              <SkeletonMetricCard />
+              <SkeletonMetricCard />
+              <SkeletonMetricCard />
+              <SkeletonMetricCard />
+            </>
+          ) : (
+            <>
+              {renderMetric(
+                "Today's Appointments",
+                metrics?.todayAppointments || '0',
+                metrics?.upcomingAppointments
+                  ? `${metrics.upcomingAppointments} upcoming`
+                  : 'No appointments today',
+                Calendar,
+              )}
+              {renderMetric(
+                'Patients Seen',
+                metrics?.patientsSeenThisWeek || '0',
+                'This week',
+                Users,
+              )}
+              {renderMetric(
+                'Pending Records',
+                metrics?.pendingRecords || '0',
+                metrics?.pendingRecords > 0 ? 'Requires attention' : 'All clear',
+                FileText,
+                metrics?.pendingRecords > 0 ? 'text-amber-600' : 'text-slate-900',
+              )}
+              {renderMetric(
+                'Clinic Status',
+                metrics?.clinicStatus === 'ACTIVE'
+                  ? 'Active'
+                  : metrics?.clinicStatus === 'ON_LEAVE'
+                    ? 'On Leave'
+                    : 'Offline',
+                metrics?.clinicStatus === 'ACTIVE'
+                  ? 'Operating normally'
+                  : 'Not accepting patients',
+                Activity,
+                metrics?.clinicStatus === 'ACTIVE' ? 'text-teal-600' : 'text-slate-400',
+              )}
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -93,34 +141,20 @@ export default function DoctorDashboardClient({ user }) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col gap-2 border-slate-200 hover:border-teal-500 hover:text-teal-700"
-                >
-                  <Calendar className="w-5 h-5" />
-                  <span className="text-xs font-semibold">Appointments</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col gap-2 border-slate-200 hover:border-teal-500 hover:text-teal-700"
-                >
-                  <FileText className="w-5 h-5" />
-                  <span className="text-xs font-semibold">Prescriptions</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col gap-2 border-slate-200 hover:border-teal-500 hover:text-teal-700"
-                >
-                  <Users className="w-5 h-5" />
-                  <span className="text-xs font-semibold">Patients</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-20 flex-col gap-2 border-slate-200 hover:border-teal-500 hover:text-teal-700"
-                >
-                  <Settings className="w-5 h-5" />
-                  <span className="text-xs font-semibold">Settings</span>
-                </Button>
+                {QUICK_ACTIONS.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <Link href={action.href} key={action.title}>
+                      <Button
+                        variant="outline"
+                        className="w-full h-20 flex-col gap-2 border-slate-200 hover:border-teal-500 hover:text-teal-700 bg-white"
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-xs font-semibold">{action.title}</span>
+                      </Button>
+                    </Link>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

@@ -1,15 +1,18 @@
 /* eslint-disable */
 'use server';
 
-import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
+import { requirePermission, Permission } from '@haspataal/auth';
+
 import { revalidatePath } from 'next/cache';
+
 import { logAction } from '@/lib/audit';
-import { ROLES } from '@/lib/permissions';
+import prisma from '@/lib/prisma';
 
 export async function createHealthRecord(formData) {
-  const session = await auth();
-  if (!session || session.user.role !== ROLES.DOCTOR) {
+  let user;
+  try {
+    user = await requirePermission(Permission.EMR_EDIT);
+  } catch (e) {
     return { message: 'Unauthorized' };
   }
 
@@ -32,7 +35,7 @@ export async function createHealthRecord(formData) {
     const record = await prisma.patientRecord.create({
       data: {
         patientId,
-        doctorId: session.user.id,
+        doctorId: user.id,
         diagnosis,
         prescription,
         notes,
@@ -46,7 +49,7 @@ export async function createHealthRecord(formData) {
     });
 
     // Log the action
-    await logAction(session.user.id, 'CREATE_EHR', 'PatientRecord', record.id, { patientId });
+    await logAction(user.id, 'CREATE_EHR', 'PatientRecord', record.id, { patientId });
 
     revalidatePath(`/dashboard/doctor`);
     return { success: true, message: 'Health Record saved successfully!' };

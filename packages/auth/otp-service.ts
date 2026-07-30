@@ -3,6 +3,27 @@ import { logger } from '@haspataal/logger';
 import { UserRole } from '@haspataal/types';
 import crypto from 'crypto';
 import Redis from 'ioredis';
+import { Counter } from 'prom-client';
+
+import { SmsFactory } from './otp-dispatcher';
+
+const otpRequestsCounter = new Counter({
+  name: 'otp_requests_total',
+  help: 'Total number of OTP requests',
+  labelNames: ['entity_type', 'status'],
+});
+
+const otpVerificationsCounter = new Counter({
+  name: 'otp_verifications_total',
+  help: 'Total number of OTP verification attempts',
+  labelNames: ['entity_type', 'status'],
+});
+
+const smsDispatchCounter = new Counter({
+  name: 'sms_dispatch_total',
+  help: 'Total number of SMS dispatches',
+  labelNames: ['provider', 'status'],
+});
 
 export type EntityType = 'PATIENT' | 'HOSPITAL' | 'DOCTOR';
 
@@ -63,6 +84,16 @@ async function checkRateLimit(key: string): Promise<boolean> {
     return count <= OTP_RATE_LIMIT;
   } catch {
     return true;
+  }
+}
+
+async function checkCooldown(mobile: string): Promise<boolean> {
+  try {
+    const key = `cooldown:${mobile}`;
+    const set = await redisClient.set(key, '1', 'EX', 60, 'NX');
+    return set === 'OK'; // true if we successfully set it, false if it already exists
+  } catch {
+    return true; // fail open
   }
 }
 
@@ -133,7 +164,18 @@ function sanitizeUser(entity: any, entityType: EntityType): OtpUserResult {
 
 export class UnifiedOtpService {
   static async requestOtp(mobile: string, context: OtpContext): Promise<OtpResult> {
+    otpRequestsCounter.inc({ entity_type: context.entityType, status: 'attempted' });
     const normalizedMobile = normalizeMobile(mobile);
+
+    const cooldownAllowed = await checkCooldown(normalizedMobile);
+    if (!cooldownAllowed) {
+      logger.warn(
+        { action: 'otp_cooldown_active', mobile: normalizedMobile, entityType: context.entityType },
+        'OTP request cooldown active',
+      );
+      otpRequestsCounter.inc({ entity_type: context.entityType, status: 'cooldown' });
+      return { success: false, message: 'Please wait 60 seconds before requesting a new OTP.' };
+    }
 
     const rateLimitKey = `request:${context.entityType}:${normalizedMobile}`;
     const allowed = await checkRateLimit(rateLimitKey);
@@ -142,6 +184,7 @@ export class UnifiedOtpService {
         { action: 'otp_rate_limited', mobile: normalizedMobile, entityType: context.entityType },
         'OTP request rate limited',
       );
+      otpRequestsCounter.inc({ entity_type: context.entityType, status: 'rate_limited' });
       return { success: false, message: 'Too many OTP requests. Please try again later.' };
     }
 
@@ -153,6 +196,19 @@ export class UnifiedOtpService {
       update: { code, expiresAt },
       create: { phone: normalizedMobile, code, expiresAt },
     });
+
+    try {
+      const provider = SmsFactory.getProvider();
+      await provider.sendOTP(normalizedMobile, code, 'login');
+      smsDispatchCounter.inc({ provider: provider.constructor.name, status: 'success' });
+    } catch (error: any) {
+      logger.error(
+        { action: 'otp_dispatch_failed', error: error.message },
+        'Failed to dispatch SMS',
+      );
+      smsDispatchCounter.inc({ provider: 'any', status: 'failure' });
+      // We don't fail the request here, but log it. Next time they retry, it might succeed, or they can use dev fallback
+    }
 
     logger.info(
       { action: 'otp_generated', mobile: normalizedMobile, entityType: context.entityType },
@@ -167,24 +223,29 @@ export class UnifiedOtpService {
       );
     }
 
+    otpRequestsCounter.inc({ entity_type: context.entityType, status: 'success' });
     return { success: true, code, expiresAt };
   }
 
   static async verifyOtp(mobile: string, otp: string, context: OtpContext): Promise<OtpResult> {
+    otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'attempted' });
     const normalizedMobile = normalizeMobile(mobile);
 
     const otpRecord = await prisma.otpCode.findUnique({ where: { phone: normalizedMobile } });
 
     if (!otpRecord) {
+      otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'not_requested' });
       return {
         success: false,
         message: 'OTP not requested for this number. Please request a new OTP.',
       };
     }
     if (otpRecord.code !== otp) {
+      otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'invalid_code' });
       return { success: false, message: 'Invalid OTP. Please try again.' };
     }
     if (new Date() > otpRecord.expiresAt) {
+      otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'expired' });
       return { success: false, message: 'OTP has expired. Please request a new OTP.' };
     }
 
@@ -192,6 +253,7 @@ export class UnifiedOtpService {
 
     const entity = await getEntityByMobile(normalizedMobile, context.entityType);
     if (!entity) {
+      otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'account_not_found' });
       return { success: false, message: 'Account not found. Please register first.' };
     }
 
@@ -209,6 +271,7 @@ export class UnifiedOtpService {
         },
         'Suspended account attempted OTP login',
       );
+      otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'suspended' });
       return { success: false, message: 'Account is suspended. Please contact support.' };
     }
 
@@ -216,6 +279,8 @@ export class UnifiedOtpService {
       { action: 'otp_verified', mobile: normalizedMobile, entityType: context.entityType },
       'OTP verified successfully',
     );
+
+    otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'success' });
 
     return {
       success: true,

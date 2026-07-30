@@ -1,8 +1,10 @@
 'use server';
 
+import { requirePermission, Permission } from '@haspataal/auth';
+import { UserRole } from '@haspataal/types';
+
 import { revalidatePath } from 'next/cache';
 
-import { requireHospitalAccess } from '@/lib/auth/hospital-access';
 import { prisma } from '@/lib/prisma';
 
 import {
@@ -11,10 +13,25 @@ import {
   BlockSlotsSchema,
 } from './validations/schedule';
 
+// Helper for ownership validation
+async function verifyScheduleOwnership(user: any, doctorId: string) {
+  if (user.role === UserRole.HOSPITAL_ADMIN) {
+    if (!user.hospitalId) throw new Error('Hospital context missing');
+    const affiliation = await prisma.doctorHospitalAffiliation.findFirst({
+      where: { doctorId, hospitalId: user.hospitalId, isCurrent: true },
+    });
+    if (!affiliation) throw new Error('Doctor not affiliated with this hospital');
+  } else if (user.role === UserRole.DOCTOR) {
+    if (user.id !== doctorId) throw new Error("Cannot manage another doctor's schedule");
+  }
+}
+
 // 1. getDoctorSchedule(doctorId)
 export async function getDoctorSchedule(doctorId: string) {
   try {
-    await requireHospitalAccess('opd', 'read');
+    const user = await requirePermission(Permission.SCHEDULE_VIEW);
+    // basic ownership check
+    await verifyScheduleOwnership(user, doctorId);
     const schedule = await prisma.doctorSchedule.findMany({
       where: { doctorId },
       orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
@@ -28,8 +45,9 @@ export async function getDoctorSchedule(doctorId: string) {
 // 2. upsertDoctorSchedule(doctorId, dayOfWeek, startTime, endTime, isActive)
 export async function upsertDoctorSchedule(input: unknown) {
   try {
-    await requireHospitalAccess('opd', 'manage_schedule');
+    const user = await requirePermission(Permission.SCHEDULE_MANAGE);
     const validated = UpsertDoctorScheduleSchema.parse(input);
+    await verifyScheduleOwnership(user, validated.doctorId);
 
     const schedule = await prisma.doctorSchedule.upsert({
       where: {
@@ -64,8 +82,9 @@ export async function upsertDoctorSchedule(input: unknown) {
 // 3. generateSlotsFromSchedule(doctorId, dateRange)
 export async function generateSlotsFromSchedule(input: unknown) {
   try {
-    await requireHospitalAccess('opd', 'manage_schedule');
+    const user = await requirePermission(Permission.SCHEDULE_MANAGE);
     const validated = GenerateSlotsSchema.parse(input);
+    await verifyScheduleOwnership(user, validated.doctorId);
 
     const start = new Date(validated.startDate);
     const end = new Date(validated.endDate);
@@ -145,8 +164,9 @@ export async function generateSlotsFromSchedule(input: unknown) {
 // 4. blockExistingSlots(doctorId, date, startTime, endTime, reason)
 export async function blockExistingSlots(input: unknown) {
   try {
-    await requireHospitalAccess('opd', 'manage_schedule');
+    const user = await requirePermission(Permission.SCHEDULE_MANAGE);
     const validated = BlockSlotsSchema.parse(input);
+    await verifyScheduleOwnership(user, validated.doctorId);
 
     const block = await prisma.doctorSlotBlock.create({
       data: {
@@ -167,7 +187,8 @@ export async function blockExistingSlots(input: unknown) {
 // 5. getSlotsForDoctor(doctorId, startDate, endDate)
 export async function getSlotsForDoctor(doctorId: string, startDate: string, endDate: string) {
   try {
-    await requireHospitalAccess('opd', 'read');
+    const user = await requirePermission(Permission.SCHEDULE_VIEW);
+    await verifyScheduleOwnership(user, doctorId);
     const start = new Date(startDate);
     const end = new Date(endDate);
 
