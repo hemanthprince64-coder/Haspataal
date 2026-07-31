@@ -1,7 +1,8 @@
 import { prisma } from '@haspataal/db';
+import { BookingStatus } from '@haspataal/types';
+
 import { Appointment } from '../lib/Appointment';
 import { IAppointmentRepository } from '../lib/IAppointmentRepository';
-import { BookingStatus } from '@haspataal/types';
 
 export class PrismaAppointmentRepository implements IAppointmentRepository {
   async findById(id: string): Promise<Appointment | null> {
@@ -23,18 +24,37 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
     return this.mapToDomain(data);
   }
 
-  async create(appointment: Appointment): Promise<Appointment> {
-    const data = await prisma.appointment.create({
-      data: {
-        patientId: appointment.patientId,
-        doctorId: appointment.doctorId,
-        hospitalId: appointment.hospitalId,
-        date: appointment.date,
-        slot: appointment.slot,
-        status: appointment.status,
+  async getBookedSlots(doctorId: string, date: Date, statuses: BookingStatus[]): Promise<string[]> {
+    const data = await prisma.appointment.findMany({
+      where: {
+        doctorId,
+        date,
+        status: { in: statuses },
       },
+      select: { slot: true },
     });
-    return this.mapToDomain(data);
+    return data.map((d: any) => d.slot);
+  }
+
+  async create(appointment: Appointment): Promise<Appointment> {
+    try {
+      const data = await prisma.appointment.create({
+        data: {
+          patientId: appointment.patientId,
+          doctorId: appointment.doctorId,
+          hospitalId: appointment.hospitalId,
+          date: appointment.date,
+          slot: appointment.slot,
+          status: appointment.status,
+        },
+      });
+      return this.mapToDomain(data);
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new Error('SLOT_ALREADY_TAKEN');
+      }
+      throw error;
+    }
   }
 
   async updateStatus(id: string, status: BookingStatus): Promise<void> {
@@ -53,7 +73,7 @@ export class PrismaAppointmentRepository implements IAppointmentRepository {
       data.date,
       data.slot,
       data.status as BookingStatus,
-      data.notes || undefined
+      data.notes || undefined,
     );
   }
 }
