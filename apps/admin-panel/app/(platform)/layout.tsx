@@ -1,7 +1,8 @@
-import Link from 'next/link';
-import { ScopeGate } from '@haspataal/admin-core';
+import { ScopeGate } from '@haspataal/admin-core/ScopeGate';
 
 import React from 'react';
+
+import Link from 'next/link';
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -67,7 +68,10 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
               <Link href="/incidents" className="block px-3 py-2 rounded-md hover:bg-gray-200">
                 Incidents
               </Link>
-              <Link href="/recommendations" className="block px-3 py-2 rounded-md hover:bg-gray-200">
+              <Link
+                href="/recommendations"
+                className="block px-3 py-2 rounded-md hover:bg-gray-200"
+              >
                 Recommendations
               </Link>
               <Link href="/orchestration" className="block px-3 py-2 rounded-md hover:bg-gray-200">

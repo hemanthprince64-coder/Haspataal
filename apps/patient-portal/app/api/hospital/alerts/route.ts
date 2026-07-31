@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { AlertService } from '@haspataal/core';
-import { prisma } from '@/lib/util/prisma-singleton';
-import { requireHospitalAccess, hospitalAccessError } from '@/lib/auth/hospital-access';
+import { AlertService } from '@haspataal/alerts';
 import { AlertSeverity } from '@prisma/client';
+
+import { NextRequest, NextResponse } from 'next/server';
+
+import { requireHospitalAccess, hospitalAccessError } from '@/lib/auth/hospital-access';
+import { prisma } from '@/lib/util/prisma-singleton';
 
 const alertService = new AlertService(prisma as any);
 
 export async function GET(req: NextRequest) {
   try {
     const access = await requireHospitalAccess('clinical', 'read');
-    
+
     // RBAC: DOCTOR and NURSE have full, HOSPITAL_ADMIN is read-only (which we enforce in action endpoints)
     if (!['DOCTOR', 'NURSE', 'HOSPITAL_ADMIN'].includes(access.user.role)) {
       return NextResponse.json({ error: 'Unauthorized role for alerts' }, { status: 403 });
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     const validStatuses = ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'ALL'];
     const status = validStatuses.includes(statusStr) ? (statusStr as any) : 'ACTIVE';
-    
+
     const severity = severityStr ? (severityStr as AlertSeverity) : undefined;
 
     const alerts = await alertService.getAlerts(access.hospitalId, {
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
       status,
       severity,
       limit,
-      offset
+      offset,
     });
 
     return NextResponse.json({ alerts });

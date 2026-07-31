@@ -54,6 +54,8 @@ model DoctorMaster {
   samplesVerified       LabSample[]                 @relation("SampleVerifiedBy")
   LabOrder              LabOrder[]
   OTSchedule            OTSchedule[]
+  Encounter             Encounter[]
+  ClinicalOrder         ClinicalOrder[]
 
   @@index([email])
   @@map("doctors_master")
@@ -245,6 +247,10 @@ model HospitalsMaster {
   HospitalCapability       HospitalCapability[]
   ClinicalEvent            ClinicalEvent[]
   ClinicalAlert            ClinicalAlert[]
+  Encounter                Encounter[]
+  ClinicalOrder            ClinicalOrder[]
+  ClinicalTask             ClinicalTask[]
+  Sample                   Sample[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -290,6 +296,7 @@ model HospitalDepartment {
   departmentName String          @map("department_name")
   createdAt      DateTime        @default(now()) @map("created_at")
   hospital       HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  Encounter      Encounter[]
 
   @@map("hospital_departments")
 }
@@ -526,6 +533,10 @@ model Patient {
   TransfusionEpisode       TransfusionEpisode[]
   ClinicalEvent            ClinicalEvent[]
   ClinicalAlert            ClinicalAlert[]
+  Encounter                Encounter[]
+  ClinicalOrder            ClinicalOrder[]
+  ClinicalTask             ClinicalTask[]
+  Sample                   Sample[]
 
   @@index([city])
   @@index([email])
@@ -583,12 +594,14 @@ model PatientPrescription {
   patientId         String             @map("patient_id")
   doctorId          String?            @map("doctor_id")
   appointmentId     String?            @map("appointment_id")
+  encounterId       String?            @map("encounter_id")
   type              String
   fileUrl           String?            @map("file_url")
   notes             String?
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
   appointment       Appointment?       @relation(fields: [appointmentId], references: [id])
+  encounter         Encounter?         @relation(fields: [encounterId], references: [id])
   doctor            DoctorMaster?      @relation(fields: [doctorId], references: [id])
   patient           Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
   items             PrescriptionItem[]
@@ -653,6 +666,7 @@ model Appointment {
   visit                 Visit?
   invoices              Invoice[]
   LabOrder              LabOrder[]
+  Encounter             Encounter[]
 
   @@unique([doctorId, date, slot])
   @@index([patientId])
@@ -896,12 +910,14 @@ model Visit {
 }
 
 model VisitNote {
-  id        String   @id @default(uuid())
-  visitId   String   @map("visit_id")
-  content   String
-  type      String   @default("CLINICAL_NOTE")
-  createdAt DateTime @default(now()) @map("created_at")
-  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  id          String     @id @default(uuid())
+  visitId     String?    @map("visit_id")
+  encounterId String?    @map("encounter_id")
+  content     String
+  type        String     @default("CLINICAL_NOTE")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  visit       Visit?     @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  encounter   Encounter? @relation(fields: [encounterId], references: [id])
 
   @@map("visit_notes")
 }
@@ -1020,14 +1036,16 @@ model CareRedFlag {
 }
 
 model ClinicalObservation {
-  id        String   @id @default(uuid())
-  visitId   String   @map("visit_id")
-  type      String
-  value     String
-  unit      String?
-  severity  String   @default("NORMAL")
-  createdAt DateTime @default(now()) @map("created_at")
-  visit     Visit    @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  id          String     @id @default(uuid())
+  visitId     String     @map("visit_id")
+  encounterId String?    @map("encounter_id")
+  type        String
+  value       String
+  unit        String?
+  severity    String     @default("NORMAL")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  visit       Visit      @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  encounter   Encounter? @relation(fields: [encounterId], references: [id])
 
   @@map("clinical_observations")
 }
@@ -1164,19 +1182,21 @@ model PatientMedication {
 }
 
 model VitalRecord {
-  id              String   @id @default(uuid())
-  patientId       String   @map("patient_id")
+  id              String     @id @default(uuid())
+  patientId       String     @map("patient_id")
+  encounterId     String?    @map("encounter_id")
   weight          Decimal?
   height          Decimal?
   bmi             Decimal?
-  bloodPressure   String?  @map("blood_pressure")
+  bloodPressure   String?    @map("blood_pressure")
   pulse           Int?
-  respiratoryRate Int?     @map("respiratory_rate")
-  bloodSugar      Decimal? @map("blood_sugar")
+  respiratoryRate Int?       @map("respiratory_rate")
+  bloodSugar      Decimal?   @map("blood_sugar")
   spo2            Decimal?
   temperature     Decimal?
-  recordedAt      DateTime @default(now()) @map("recorded_at")
-  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recordedAt      DateTime   @default(now()) @map("recorded_at")
+  patient         Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  encounter       Encounter? @relation(fields: [encounterId], references: [id])
 
   @@index([patientId])
   @@map("vital_records")
@@ -1493,15 +1513,23 @@ model OutboxEvent {
 }
 
 model EventLog {
-  id         String   @id @default(uuid())
-  eventType  String   @map("event_type")
-  payload    Json     @default("{}")
-  executedBy String?  @map("executed_by")
-  createdAt  DateTime @default(now()) @map("created_at")
-  hospitalId String?  @map("hospital_id")
-  patientId  String?  @map("patient_id")
+  id            String   @id @default(uuid())
+  eventType     String   @map("event_type")
+  payload       Json     @default("{}")
+  executedBy    String?  @map("executed_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  hospitalId    String?  @map("hospital_id")
+  patientId     String?  @map("patient_id")
+  encounterId   String?  @map("encounter_id")
+  schemaVersion Int      @default(1) @map("schema_version")
+  aggregateId   String?  @map("aggregate_id")
+  aggregateType String?  @map("aggregate_type")
 
   @@index([hospitalId, eventType, createdAt])
+  @@index([encounterId, createdAt])
+  @@index([patientId, createdAt])
+  @@index([hospitalId, createdAt])
+  @@index([eventType, createdAt])
   @@map("event_logs")
 }
 
@@ -1581,6 +1609,7 @@ model FollowUp {
   hospitalId    String          @map("hospital_id")
   patientId     String          @map("patient_id")
   appointmentId String?         @map("appointment_id")
+  encounterId   String?         @map("encounter_id")
   billId        String?         @map("bill_id")
   type          FollowUpType    @default(GENERAL)
   status        FollowUpStatus  @default(PENDING)
@@ -1592,6 +1621,7 @@ model FollowUp {
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
   appointment   Appointment?    @relation(fields: [appointmentId], references: [id])
+  encounter     Encounter?      @relation(fields: [encounterId], references: [id])
   hospital      HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   patient       Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
@@ -1616,8 +1646,6 @@ enum PatientAcuity {
   CRITICAL
   RECOVERING
 }
-
-
 
 enum DischargeProcessStatus {
   NOT_INITIATED
@@ -1724,7 +1752,6 @@ model Admission {
   payload             Json?           @default("{}")
   createdAt           DateTime        @default(now()) @map("created_at")
   updatedAt           DateTime        @updatedAt @map("updated_at")
-
 
   acuity                        PatientAcuity                  @default(STABLE)
   acuityUpdatedAt               DateTime?                      @default(now()) @map("acuity_updated_at")
@@ -3171,9 +3198,11 @@ model TimelineEvent {
   patientId        String    @map("patient_id")
   hospitalId       String?   @map("hospital_id")
   doctorId         String?   @map("doctor_id")
+  encounterId      String?   @map("encounter_id")
   module           String    @default("UNKNOWN")
   entityType       String?   @map("entity_type")
   entityId         String?   @map("entity_id")
+  schemaVersion    Int       @default(1) @map("schema_version")
   eventType        String    @map("event_type")
   category         String    @default("UNKNOWN")
   title            String
@@ -7135,4 +7164,314 @@ model ClinicalAlert {
   @@index([hospitalId, isAcknowledged])
   @@index([patientId, resolvedAt])
   @@map("clinical_alerts")
+}
+
+// --- PHASE 7: CLINICAL ORDERS ENGINE ---
+
+enum EncounterType {
+  OPD
+  IPD
+  EMERGENCY
+  TELECONSULTATION
+  HOME_VISIT
+  DAYCARE
+  FOLLOW_UP
+}
+
+enum EncounterStatus {
+  ACTIVE
+  TRIAGE
+  CONSULTATION
+  COMPLETED
+  CANCELLED
+}
+
+model Encounter {
+  id            String          @id @default(uuid())
+  patientId     String          @map("patient_id")
+  hospitalId    String          @map("hospital_id")
+  appointmentId String?         @map("appointment_id")
+  doctorId      String?         @map("doctor_id")
+  departmentId  String?         @map("department_id")
+  locationId    String?         @map("location_id")
+  encounterType EncounterType   @map("encounter_type")
+  status        EncounterStatus @default(ACTIVE)
+  startedAt     DateTime        @default(now()) @map("started_at")
+  endedAt       DateTime?       @map("ended_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  patient     Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital    HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  appointment Appointment?        @relation(fields: [appointmentId], references: [id])
+  doctor      DoctorMaster?       @relation(fields: [doctorId], references: [id])
+  department  HospitalDepartment? @relation(fields: [departmentId], references: [id])
+
+  orders              ClinicalOrder[]
+  tasks               ClinicalTask[]
+  PatientPrescription PatientPrescription[]
+  VisitNote           VisitNote[]
+  ClinicalObservation ClinicalObservation[]
+  FollowUp            FollowUp[]
+  VitalRecord         VitalRecord[]
+  summary             EncounterSummary?
+
+  @@index([patientId])
+  @@index([patientId, status])
+  @@index([hospitalId])
+  @@index([hospitalId, status])
+  @@index([appointmentId])
+  @@map("encounters")
+}
+
+model EncounterSummary {
+  id              String   @id @default(uuid())
+  encounterId     String   @unique @map("encounter_id")
+  generatedAt     DateTime @default(now()) @map("generated_at")
+  generatedBy     String?  @map("generated_by")
+  summaryMarkdown String   @map("summary_markdown")
+  summaryJson     Json     @map("summary_json")
+  version         Int      @default(1)
+
+  encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@map("encounter_summaries")
+}
+
+enum ClinicalOrderType {
+  LAB
+  RADIOLOGY
+  PROCEDURE
+  PHARMACY
+}
+
+enum ClinicalOrderStatus {
+  ORDERED
+  ACCEPTED
+  SCHEDULED
+  IN_PROGRESS
+  VERIFIED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+model ClinicalOrder {
+  id           String              @id @default(uuid())
+  encounterId  String              @map("encounter_id")
+  patientId    String              @map("patient_id")
+  hospitalId   String              @map("hospital_id")
+  doctorId     String?             @map("doctor_id")
+  departmentId String?             @map("department_id")
+  type         ClinicalOrderType
+  status       ClinicalOrderStatus @default(ORDERED)
+  priority     OrderPriority       @default(ROUTINE)
+
+  requestedAt DateTime  @default(now()) @map("requested_at")
+  scheduledAt DateTime? @map("scheduled_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  cancelledAt DateTime? @map("cancelled_at")
+
+  reason            String?
+  payload           Json? // Order specifics, NOT results
+  resultReferenceId String? @map("result_reference_id")
+
+  requestedBy String? @map("requested_by")
+  assignedTo  String? @map("assigned_to")
+  performedBy String? @map("performed_by")
+  verifiedBy  String? @map("verified_by")
+  version     Int     @default(1)
+
+  samples Sample[]
+
+  encounter Encounter       @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital  HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  doctor    DoctorMaster?   @relation(fields: [doctorId], references: [id])
+
+  @@index([encounterId])
+  @@index([encounterId, status])
+  @@index([patientId])
+  @@index([patientId, status])
+  @@index([hospitalId])
+  @@index([hospitalId, status])
+  @@index([type, status])
+  @@index([priority, status])
+  @@index([status])
+  @@map("clinical_orders")
+}
+
+enum ClinicalTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model ClinicalTask {
+  id          String             @id @default(uuid())
+  encounterId String             @map("encounter_id")
+  patientId   String             @map("patient_id")
+  hospitalId  String             @map("hospital_id")
+  title       String
+  description String?
+  status      ClinicalTaskStatus @default(PENDING)
+
+  requestedBy String? @map("requested_by")
+  performedBy String? @map("performed_by")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  encounter Encounter       @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital  HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([encounterId])
+  @@index([patientId])
+  @@index([hospitalId])
+  @@map("clinical_tasks")
+}
+
+// -----------------------------------------------------------------------------
+// LABORATORY MODULE
+// -----------------------------------------------------------------------------
+
+enum SampleStatus {
+  COLLECTION_PENDING
+  COLLECTED
+  ACCESSIONED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+enum SampleType {
+  BLOOD
+  SERUM
+  PLASMA
+  URINE
+  CSF
+  STOOL
+  SWAB
+  BIOPSY
+  OTHER
+}
+
+model Sample {
+  id              String       @id @default(uuid())
+  clinicalOrderId String       @map("clinical_order_id")
+  hospitalId      String       @map("hospital_id")
+  patientId       String       @map("patient_id")
+  sampleType      SampleType   @map("sample_type")
+  status          SampleStatus @default(COLLECTION_PENDING)
+  barcode         String?      @unique
+
+  collectedBy    String?   @map("collected_by")
+  collectedAt    DateTime? @map("collected_at")
+  accessionedBy  String?   @map("accessioned_by")
+  accessionedAt  DateTime? @map("accessioned_at")
+  rejectedBy     String?   @map("rejected_by")
+  rejectedAt     DateTime? @map("rejected_at")
+  rejectedReason String?   @map("rejected_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinicalOrder ClinicalOrder   @relation(fields: [clinicalOrderId], references: [id], onDelete: Cascade)
+  hospital      HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient       Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([clinicalOrderId])
+  @@index([barcode])
+  @@index([hospitalId, status])
+  @@map("samples")
+}
+
+enum LabResultStatus {
+  DRAFT
+  UNDER_REVIEW
+  VERIFIED
+  AMENDED
+}
+
+model LabResult {
+  id              String          @id @default(uuid())
+  clinicalOrderId String          @unique @map("clinical_order_id")
+  hospitalId      String          @map("hospital_id")
+  patientId       String          @map("patient_id")
+  status          LabResultStatus @default(DRAFT)
+  templateId      String?         @map("template_id")
+
+  enteredBy  String?   @map("entered_by")
+  enteredAt  DateTime? @map("entered_at")
+  verifiedBy String?   @map("verified_by")
+  verifiedAt DateTime? @map("verified_at")
+  amendedBy  String?   @map("amended_by")
+  amendedAt  DateTime? @map("amended_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  values   LabResultValue[]
+  template TestTemplate?    @relation(fields: [templateId], references: [id])
+
+  @@index([hospitalId, status])
+  @@index([patientId])
+  @@map("lab_results")
+}
+
+model LabResultValue {
+  id            String  @id @default(uuid())
+  labResultId   String  @map("lab_result_id")
+  parameterId   String? @map("parameter_id")
+  parameterName String  @map("parameter_name")
+
+  value          String
+  unit           String?
+  referenceRange String? @map("reference_range")
+  flag           String? // e.g. "HIGH", "LOW", "CRITICAL"
+  isCritical     Boolean @default(false) @map("is_critical")
+
+  labResult LabResult              @relation(fields: [labResultId], references: [id], onDelete: Cascade)
+  parameter TestTemplateParameter? @relation(fields: [parameterId], references: [id], onDelete: SetNull)
+
+  @@index([labResultId])
+  @@index([parameterId])
+  @@map("lab_result_values")
+}
+
+model TestTemplate {
+  id          String  @id @default(uuid())
+  hospitalId  String? @map("hospital_id") // null = global template
+  code        String
+  name        String
+  description String?
+  isActive    Boolean @default(true) @map("is_active")
+
+  parameters TestTemplateParameter[]
+  labResults LabResult[]
+
+  @@unique([hospitalId, code])
+  @@map("test_templates")
+}
+
+model TestTemplateParameter {
+  id            String  @id @default(uuid())
+  templateId    String  @map("template_id")
+  name          String
+  unit          String?
+  normalMin     Float?  @map("normal_min")
+  normalMax     Float?  @map("normal_max")
+  criticalMin   Float?  @map("critical_min")
+  criticalMax   Float?  @map("critical_max")
+  displayOrder  Int     @default(0) @map("display_order")
+  decimalPlaces Int     @default(2) @map("decimal_places")
+
+  template     TestTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  resultValues LabResultValue[]
+
+  @@index([templateId])
+  @@map("test_template_parameters")
 }

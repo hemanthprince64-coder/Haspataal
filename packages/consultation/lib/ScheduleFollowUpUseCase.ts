@@ -33,9 +33,14 @@ export class ScheduleFollowUpUseCase {
         );
       }
 
+      const encounter = await tx.encounter.findFirst({
+        where: { appointmentId: visit.appointmentId },
+      });
+
       const note = await tx.visitNote.create({
         data: {
           visitId,
+          encounterId: encounter?.id,
           type: 'FOLLOW_UP',
           content: JSON.stringify(input),
         },

@@ -217,20 +217,58 @@ export interface DoctorVerification {
   notes?: string;
 }
 
-// Patient Clinical Data Types
-export interface TimelineEvent {
-  id: string;
-  hospitalId?: string;
-  patientId: string;
-  eventType: string;
-  title: string;
-  description?: string;
-  metadata?: Record<string, unknown>;
-  timestamp: Date;
-  actorType?: string;
-  actorId?: string;
+export enum TimelineCategory {
+  BOOKING = 'BOOKING',
+  TRIAGE = 'TRIAGE',
+  CONSULTATION = 'CONSULTATION',
+  DIAGNOSIS = 'DIAGNOSIS',
+  PRESCRIPTION = 'PRESCRIPTION',
+  INVESTIGATION = 'INVESTIGATION',
+  LAB = 'LAB',
+  RADIOLOGY = 'RADIOLOGY',
+  PROCEDURE = 'PROCEDURE',
+  BILLING = 'BILLING',
+  DISCHARGE = 'DISCHARGE',
+  FOLLOWUP = 'FOLLOWUP',
+  ALERT = 'ALERT',
+  SYSTEM = 'SYSTEM',
 }
 
+export enum TimelineEventType {
+  VISIT_BOOKED = 'VISIT_BOOKED',
+  PATIENT_CHECKED_IN = 'PATIENT_CHECKED_IN',
+  CONSULTATION_STARTED = 'CONSULTATION_STARTED',
+  VITALS_RECORDED = 'VITALS_RECORDED',
+  DIAGNOSIS_ADDED = 'DIAGNOSIS_ADDED',
+  PRESCRIPTION_CREATED = 'PRESCRIPTION_CREATED',
+  INVESTIGATION_REQUESTED = 'INVESTIGATION_REQUESTED',
+  FOLLOWUP_SCHEDULED = 'FOLLOWUP_SCHEDULED',
+  CONSULTATION_COMPLETED = 'CONSULTATION_COMPLETED',
+  // Can add more specific event types here
+}
+
+export interface ClinicalTimelineEvent {
+  id: string;
+  schemaVersion: number;
+  aggregateId?: string;
+  aggregateType?: string;
+  patientId: string;
+  hospitalId?: string;
+  visitId?: string;
+  encounterId?: string;
+  timestamp: Date;
+  eventType: TimelineEventType | string;
+  category: TimelineCategory;
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  title: string;
+  summary: string;
+  actor: {
+    id: string;
+    name: string;
+    role: UserRole;
+  };
+  payload: Record<string, unknown>;
+}
 export interface PatientSummary {
   id: string;
   name: string;
@@ -329,4 +367,57 @@ export interface DoctorPublicProfile {
     | 'EMERGENCY_ONLY';
   verificationStatus: string;
   hospitalCount: number;
+}
+
+// ============================================================
+// PHASE 7: CLINICAL ORDERS ENGINE TYPES
+// ============================================================
+
+export enum EncounterType {
+  OPD = 'OPD',
+  IPD = 'IPD',
+  EMERGENCY = 'EMERGENCY',
+  TELECONSULTATION = 'TELECONSULTATION',
+  HOME_VISIT = 'HOME_VISIT',
+  DAYCARE = 'DAYCARE',
+  FOLLOW_UP = 'FOLLOW_UP',
+}
+
+export enum EncounterStatus {
+  ACTIVE = 'ACTIVE',
+  TRIAGE = 'TRIAGE',
+  CONSULTATION = 'CONSULTATION',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum ClinicalOrderType {
+  LAB = 'LAB',
+  RADIOLOGY = 'RADIOLOGY',
+  PROCEDURE = 'PROCEDURE',
+  PHARMACY = 'PHARMACY',
+}
+
+export enum ClinicalOrderStatus {
+  ORDERED = 'ORDERED',
+  ACCEPTED = 'ACCEPTED',
+  SCHEDULED = 'SCHEDULED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  VERIFIED = 'VERIFIED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
+}
+
+export enum OrderPriority {
+  ROUTINE = 'ROUTINE',
+  URGENT = 'URGENT',
+  STAT = 'STAT',
+}
+
+export enum ClinicalTaskStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
 }

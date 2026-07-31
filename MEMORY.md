@@ -157,6 +157,20 @@ await client.query('INSERT INTO "EventLog" ...');
 await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(payload));
 ```
 
+### Phase 7.5: EMR Stabilization (Clinical Orders Engine)
+**Date:** July 2026
+**Problem:** The platform was scaling clinical features but lacked a standardized architectural anchor for clinical events and data. `Visit` and `Appointment` models were being incorrectly used as anchors, and the timeline system lacked standard schema structures.
+**Solution:**
+- Created `Encounter` as the true central anchor for all clinical workflows (Vitals, Diagnosis, Prescriptions, Orders, Notes, Summary).
+- Added `EncounterSummary` to store generated clinical summaries per encounter.
+- Added `version` to `ClinicalOrder` for optimistic locking to handle concurrent updates to order status.
+- Standardized `ClinicalTimelineEvent` to include `schemaVersion`, `aggregateId`, `aggregateType`, and `encounterId`.
+- Added `EncounterGuard` and `EncounterStateMachine` to centralize business rules for encounter transitions.
+- Added `ClinicalOrderStateMachine` to manage order lifecycles (ORDERED -> ACCEPTED -> IN_PROGRESS -> COMPLETED).
+- Migrated consultation use cases (`RecordVitals`, `AddDiagnosis`, `PrescribeMedication`, `CompleteConsultation`, `PlaceClinicalOrder`, `UpdateClinicalOrderStatus`) to use `EncounterGuard`, `EncounterStateMachine`, and `ClinicalOrderStateMachine`.
+- Updated the `TimelineSidebar` and `ClinicalOrdersList` UIs to render grouped and categorized data safely based on new abstractions.
+- Refactored `GetPatientTimelineUseCase` to map EventLog fields correctly into standard `ClinicalTimelineEvent`s.
+
 ## 📚 Knowledge Base (Lessons Learned)
 
 - **2026-07-29 (Documentation Reorganization):** Root repository documentation has been reorganized by information lifecycle and audience into `docs/` (`adr`, `architecture`, `compliance`, `engineering`, `manuals`, `operational`). Legacy documents and superseded specs are archived in `openspec/archive/`. `CLAUDE.md` has been archived and fully superseded by `MEMORY.md`. Always use `docs/README.md` as the main documentation index and strictly maintain `MEMORY.md` as the single source of truth for session protocols.
@@ -792,3 +806,9 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 - **Patient Appointments API (`/api/patient/appointments`):** Patient-scoped queries must filter by `patientId` from the session only — never allow a `patientId` query param from the client to override the server-session value.
 - **`packages/db` Singleton Pattern:** The `db/index.ts` export was updated to ensure a single `PrismaClient` instance. When multiple packages import `@haspataal/db`, they must all resolve to the same singleton. If the singleton guard (`global.__prisma`) is not applied, multi-package environments can create excessive Prisma connections that exhaust the pool.
 - **`packages/types` Appointment Shape:** Extended shared types with cancellation and slot availability shapes required by the new use-cases. Always update `packages/types/index.ts` before implementing feature logic so all consuming packages have the correct types at compile time.
+
+- **Phase 6 Timeline Architecture**: Clinical Timeline was elevated to a foundational read model in a dedicated @haspataal/timeline package. It consumes EventLog directly, avoiding coupling with the consultation logic which strictly handles writes. All timeline events are grouped by Encounter/Visit in the UI, and categorization (e.g. BOOKING, TRIAGE, DIAGNOSIS) is standardized across the EMR workspace. _(Implemented 2026-07-31)_
+
+## Knowledge Base Entry: Monorepo Build Health & Cyclic Dependencies (2026-07-31)
+- **Turbo Cyclic Dependencies via Facades:** When domain packages depend on each other through a `core` facade package (e.g., `@haspataal/core`), the facade becomes part of the dependency cycle. `@haspataal/core` should primarily re-export stable APIs and provide shared utilities. It must **avoid importing feature/domain packages** that themselves depend on `core`. Apps should consume domain packages directly to keep the dependency graph acyclic.
+- **Next.js Client/Server Barrel File Crashes:** When using barrel files (`index.ts`), mixing Server Components (using `next/headers` or `'server-only'`) and Client Components in the same barrel export will crash Next.js client builds (e.g. "You're importing a component that needs 'next/headers'"). The bundler evaluates the entire barrel for client imports. Fix this by bypassing the barrel and importing directly from the specific file (e.g. `import { KpiCard } from '@haspataal/admin-core/KpiCard'`) or by leveraging `exports` mapping in `package.json` to separate server/client entry points.

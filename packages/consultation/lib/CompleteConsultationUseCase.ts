@@ -1,63 +1,64 @@
-import { prisma, AppointmentStatus, HandoffStage } from '@haspataal/db';
+import { prisma, AppointmentStatus } from '@haspataal/db';
+import { EncounterGuard, EncounterStateMachine } from '@haspataal/encounter';
 import { logger } from '@haspataal/logger';
+import { getTimelinePublisher, TimelineCategory, TimelineEventType } from '@haspataal/timeline';
+import { EncounterStatus } from '@haspataal/types';
 
-import { ConsultationStateMachine } from './ConsultationStateMachine';
+import { GenerateEncounterSummaryUseCase } from './GenerateEncounterSummaryUseCase';
 
 export class CompleteConsultationUseCase {
   /**
-   * Completes a consultation.
+   * Completes an encounter and generates its summary.
    *
-   * @param visitId The ID of the visit
-   * @param doctorId The ID of the doctor completing the consultation
+   * @param encounterId The ID of the encounter
+   * @param doctorId The ID of the doctor completing the encounter
    */
-  public async execute(visitId: string, doctorId: string) {
-    logger.info(`Doctor ${doctorId} completing consultation for visit ${visitId}`);
+  public async execute(encounterId: string, doctorId: string) {
+    logger.info(`Doctor ${doctorId} completing encounter ${encounterId}`);
+
+    const encounter = await EncounterGuard.requireEncounterDoctor(encounterId, doctorId);
+    await EncounterGuard.requireEncounterNotCompleted(encounterId);
+
+    EncounterStateMachine.validateTransition(
+      encounter.status as EncounterStatus,
+      EncounterStatus.COMPLETED,
+    );
+
+    await GenerateEncounterSummaryUseCase.execute(encounterId, doctorId);
 
     return prisma.$transaction(async (tx) => {
-      const visit = await tx.visit.findUnique({
-        where: { id: visitId },
-        include: { appointment: true },
+      const updatedEncounter = await tx.encounter.update({
+        where: { id: encounterId },
+        data: { status: EncounterStatus.COMPLETED, endedAt: new Date() },
       });
 
-      if (!visit || !visit.appointment) {
-        throw new Error('VISIT_OR_APPOINTMENT_NOT_FOUND');
+      if (encounter.appointmentId) {
+        await tx.appointment.update({
+          where: { id: encounter.appointmentId },
+          data: { status: AppointmentStatus.COMPLETED },
+        });
       }
 
-      if (visit.appointment.doctorId !== doctorId) {
-        throw new Error('FORBIDDEN: Only the assigned doctor can complete this consultation');
-      }
-
-      ConsultationStateMachine.validateTransition(
-        visit.appointment.status,
-        AppointmentStatus.COMPLETED,
-      );
-
-      const updatedVisit = await tx.visit.update({
-        where: { id: visitId },
-        data: { currentStage: HandoffStage.BILLING }, // Assume moves to billing for now
+      await getTimelinePublisher().publish({
+        patientId: encounter.patientId,
+        hospitalId: encounter.hospitalId,
+        encounterId: encounter.id,
+        aggregateType: 'Encounter',
+        aggregateId: encounter.id,
+        schemaVersion: 1,
+        timestamp: new Date(),
+        eventType: TimelineEventType.CONSULTATION_COMPLETED,
+        category: TimelineCategory.CONSULTATION,
+        title: 'Encounter Completed',
+        summary: 'The clinical encounter was marked as completed.',
+        actorType: 'DOCTOR',
+        actorId: doctorId,
       });
 
-      const updatedAppointment = await tx.appointment.update({
-        where: { id: visit.appointment.id },
-        data: { status: AppointmentStatus.COMPLETED },
-      });
-
-      // Emit domain event for notifications/billing (In MVP, we just log it)
-      await tx.auditLog.create({
-        data: {
-          userId: doctorId,
-          hospitalId: visit.hospitalId,
-          action: 'CONSULTATION_COMPLETED',
-          entity: 'VISIT',
-          entityId: visitId,
-        },
-      });
-
-      logger.info(`Consultation successfully completed for visit ${visitId}`);
+      logger.info(`Consultation successfully completed for encounter ${encounterId}`);
 
       return {
-        visit: updatedVisit,
-        appointment: updatedAppointment,
+        encounter: updatedEncounter,
       };
     });
   }

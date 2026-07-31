@@ -28,7 +28,13 @@ export const TimelineEventType = {
   DRUG_DISPENSED: 'DRUG_DISPENSED',
   // Lab
   LAB_ORDERED: 'LAB_ORDERED',
+  LAB_ORDER_ACCEPTED: 'LAB_ORDER_ACCEPTED',
   SAMPLE_COLLECTED: 'SAMPLE_COLLECTED',
+  SAMPLE_REJECTED: 'SAMPLE_REJECTED',
+  RESULT_ENTERED: 'RESULT_ENTERED',
+  RESULT_VERIFIED: 'RESULT_VERIFIED',
+  RESULT_AMENDED: 'RESULT_AMENDED',
+  CRITICAL_VALUE_DETECTED: 'CRITICAL_VALUE_DETECTED',
   LAB_COMPLETED: 'LAB_COMPLETED',
   // Radiology
   RADIOLOGY_ORDERED: 'RADIOLOGY_ORDERED',
@@ -113,11 +119,12 @@ export const TimelineEventSchema = z.object({
   // Optional identity
   hospitalId: z.string().uuid().optional(),
   doctorId: z.string().uuid().optional(),
+  encounterId: z.string().uuid().optional(),
   // Classification
   module: z.string().default('UNKNOWN'),
   category: z.string().default('UNKNOWN'),
-  entityType: z.string().optional(),
-  entityId: z.string().optional(),
+  aggregateType: z.string().optional(),
+  aggregateId: z.string().optional(),
   // Display
   subtitle: z.string().optional(),
   summary: z.string().optional(),
@@ -132,6 +139,7 @@ export const TimelineEventSchema = z.object({
   tags: z.array(z.string()).default([]),
   // Metadata
   metadata: z.any().optional(),
+  schemaVersion: z.number().int().default(1),
   // FHIR
   fhirResourceType: z.string().optional(),
   fhirMapping: z.any().optional(),
@@ -214,3 +222,4 @@ export function getTimelinePublisher(): TimelinePublisher {
 export * from './timeline.consumer';
 export * from './queries';
 export * from './mutations';
+export * from './GetPatientTimelineUseCase';

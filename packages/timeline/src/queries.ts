@@ -1,10 +1,10 @@
 import { prisma } from '@haspataal/db';
-import { Prisma } from '@prisma/client';
 import { PlatformQuery, createPlatformQuerySchema } from '@haspataal/platform-contracts';
-import { z } from 'zod';
-import IORedis from 'ioredis';
-import { createHash } from 'crypto';
 import { SearchService, PostgresSearchProvider } from '@haspataal/search';
+import { Prisma } from '@prisma/client';
+import { createHash } from 'crypto';
+import IORedis from 'ioredis';
+import { z } from 'zod';
 
 const redis = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
@@ -136,7 +136,12 @@ export class TimelineQueryHandler {
         .slice(0, 3),
     };
 
-    return { data, nextCursor: hasMore ? data[data.length - 1].id : null, hasMore, clinicalHighlights };
+    return {
+      data,
+      nextCursor: hasMore ? data[data.length - 1].id : null,
+      hasMore,
+      clinicalHighlights,
+    };
   }
 
   static async getClinicalSummary(query: PlatformQuery<TimelineFilters>) {
@@ -176,7 +181,7 @@ export class TimelineQueryHandler {
   static async getHospitalTimeline(query: PlatformQuery<TimelineFilters>) {
     const { patientId } = query.filters;
     const { hospitalId } = query.tenantScope;
-    
+
     // In hospital timeline, patientId might be optional if we are viewing a global feed
     const whereParams: any = { hospitalId, status: 'ACTIVE' };
     if (patientId) whereParams.patientId = patientId;
@@ -227,7 +232,7 @@ export class TimelineQueryHandler {
 
     return {
       data: finalResults.map((r: any) => ({
-        ...(r.metadata || {}), 
+        ...(r.metadata || {}),
         id: r.entityId,
         rank: r.rank,
         search_highlight: r.highlight,
@@ -265,18 +270,26 @@ export class TimelineQueryHandler {
     const { eventId } = query.filters;
     const event = await prisma.timelineEvent.findUnique({
       where: { id: eventId },
-      select: { patientId: true, eventType: true, timestamp: true, metadata: true, integrityHash: true },
+      select: {
+        patientId: true,
+        eventType: true,
+        timestamp: true,
+        metadata: true,
+        integrityHash: true,
+      },
     });
 
     if (!event) return { valid: false, error: 'Event not found' };
 
     const recomputed = createHash('sha256')
-      .update(JSON.stringify({
-        patientId: event.patientId,
-        eventType: event.eventType,
-        timestamp: event.timestamp.toISOString(),
-        metadata: event.metadata,
-      }))
+      .update(
+        JSON.stringify({
+          patientId: event.patientId,
+          eventType: event.eventType,
+          timestamp: event.timestamp.toISOString(),
+          metadata: event.metadata,
+        }),
+      )
       .digest('hex');
 
     const valid = recomputed === event.integrityHash;

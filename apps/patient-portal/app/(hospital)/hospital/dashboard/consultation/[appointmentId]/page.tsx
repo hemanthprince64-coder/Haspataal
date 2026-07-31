@@ -29,6 +29,13 @@ export default async function ConsultationPage({ params }: { params: { appointme
     },
   });
 
+  const encounter = await prisma.encounter.findFirst({
+    where: { appointmentId: params.appointmentId },
+    include: {
+      ClinicalOrder: true,
+    },
+  });
+
   if (!visit || !visit.appointment) {
     return <div>Visit not found for this appointment. Has the patient been checked in?</div>;
   }
@@ -43,10 +50,12 @@ export default async function ConsultationPage({ params }: { params: { appointme
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">
-        EMR Workspace - {visit.appointment.patient.fullName}
-      </h1>
-      <EMRWorkspaceClient visit={visit} />
+      <h1 className="text-2xl font-bold mb-6">EMR Workspace - {visit.appointment.patient.name}</h1>
+      <EMRWorkspaceClient
+        visit={visit}
+        encounter={encounter}
+        clinicalOrders={encounter?.ClinicalOrder || []}
+      />
     </div>
   );
 }

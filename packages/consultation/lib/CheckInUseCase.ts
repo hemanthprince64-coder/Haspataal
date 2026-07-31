@@ -39,7 +39,7 @@ export class CheckInUseCase {
       });
 
       if (!visit) {
-        // 4. Create Visit anchor
+        // 4. Create Visit anchor (Keeping for backwards compatibility with HandoffStage)
         visit = await tx.visit.create({
           data: {
             appointmentId: appointment.id,
@@ -50,6 +50,25 @@ export class CheckInUseCase {
           },
         });
         logger.info(`Created Visit ${visit.id} for appointment ${appointment.id}`);
+      }
+
+      // 4.1 Create Encounter anchor
+      let encounter = await tx.encounter.findFirst({
+        where: { appointmentId },
+      });
+
+      if (!encounter) {
+        encounter = await tx.encounter.create({
+          data: {
+            appointmentId: appointment.id,
+            hospitalId: appointment.hospitalId!,
+            patientId: appointment.patientId,
+            doctorId: appointment.doctorId,
+            encounterType: 'OPD',
+            status: 'ACTIVE',
+          },
+        });
+        logger.info(`Created Encounter ${encounter.id} for appointment ${appointment.id}`);
       }
 
       // 5. Update appointment status
@@ -63,6 +82,7 @@ export class CheckInUseCase {
       return {
         appointment: updatedAppointment,
         visit,
+        encounter,
       };
     });
   }

@@ -6,6 +6,8 @@
   "dependencies": {
     "@haspataal/db": "*",
     "@haspataal/types": "*",
-    "@haspataal/logger": "*"
+    "@haspataal/logger": "*",
+    "@haspataal/encounter": "*",
+    "@haspataal/timeline": "*"
   }
 }

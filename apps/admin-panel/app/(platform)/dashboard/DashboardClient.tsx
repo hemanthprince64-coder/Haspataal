@@ -1,6 +1,6 @@
 'use client';
 
-import { KpiCard } from '@haspataal/admin-core';
+import { KpiCard } from '@haspataal/admin-core/KpiCard';
 import { ExecutiveDashboardData, RecentHospital } from '@haspataal/platform';
 import {
   Activity,

@@ -1,46 +1,51 @@
 import { prisma } from '@haspataal/db';
+import { EncounterGuard } from '@haspataal/encounter';
 import { logger } from '@haspataal/logger';
+import { getTimelinePublisher, TimelineCategory, TimelineEventType } from '@haspataal/timeline';
 
 export class AddDiagnosisUseCase {
   /**
-   * Adds a diagnosis (or clinical notes) to a visit.
+   * Adds a diagnosis (or clinical notes) to an encounter.
    *
-   * @param visitId The ID of the visit
+   * @param encounterId The ID of the encounter
    * @param content The diagnosis or clinical note text
    * @param doctorId The ID of the doctor adding the note
    */
-  public async execute(visitId: string, content: string, doctorId: string) {
-    logger.info(`Doctor ${doctorId} adding diagnosis to visit ${visitId}`);
+  public async execute(encounterId: string, content: string, doctorId: string) {
+    logger.info(`Doctor ${doctorId} adding diagnosis to encounter ${encounterId}`);
 
-    return prisma.$transaction(async (tx) => {
-      const visit = await tx.visit.findUnique({
-        where: { id: visitId },
-        include: { appointment: true },
-      });
+    const encounter = await EncounterGuard.requireEncounterDoctor(encounterId, doctorId);
+    await EncounterGuard.requireEncounterNotCompleted(encounterId);
 
-      if (!visit || !visit.appointment) {
-        throw new Error('VISIT_OR_APPOINTMENT_NOT_FOUND');
-      }
-
-      if (visit.appointment.doctorId !== doctorId) {
-        throw new Error('FORBIDDEN: Only the assigned doctor can add diagnosis to this visit');
-      }
-
+    const note = await prisma.$transaction(async (tx) => {
       const note = await tx.visitNote.create({
         data: {
-          visitId,
+          encounterId: encounter.id,
           content,
           type: 'DIAGNOSIS',
         },
       });
 
-      // Update the main diagnosis string on the visit as well for quick querying
-      await tx.visit.update({
-        where: { id: visitId },
-        data: { diagnosis: content },
-      });
-
       return note;
     });
+
+    await getTimelinePublisher().publish({
+      patientId: encounter.patientId,
+      hospitalId: encounter.hospitalId,
+      encounterId: encounter.id,
+      aggregateType: 'Encounter',
+      aggregateId: encounter.id,
+      schemaVersion: 1,
+      timestamp: new Date(),
+      eventType: TimelineEventType.DIAGNOSIS_ADDED,
+      category: TimelineCategory.DIAGNOSIS,
+      title: 'Diagnosis Added',
+      summary: content.slice(0, 100),
+      metadata: { content },
+      actorType: 'DOCTOR',
+      actorId: doctorId,
+    });
+
+    return note;
   }
 }

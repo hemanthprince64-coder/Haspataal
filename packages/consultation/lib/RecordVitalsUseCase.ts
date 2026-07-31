@@ -1,5 +1,7 @@
 import { prisma } from '@haspataal/db';
+import { EncounterGuard } from '@haspataal/encounter';
 import { logger } from '@haspataal/logger';
+import { getTimelinePublisher, TimelineCategory, TimelineEventType } from '@haspataal/timeline';
 
 export interface VitalsInput {
   weight?: number;
@@ -15,29 +17,20 @@ export class RecordVitalsUseCase {
   /**
    * Records basic vitals for a patient during a visit triage.
    *
-   * @param visitId The ID of the visit
+   * @param encounterId The ID of the encounter
    * @param actorId The ID of the nurse or doctor recording the vitals
    * @param vitals The vitals to record
    */
-  public async execute(visitId: string, actorId: string, vitals: VitalsInput) {
-    logger.info(`Actor ${actorId} recording vitals for visit ${visitId}`);
+  public async execute(encounterId: string, actorId: string, vitals: VitalsInput) {
+    logger.info(`Actor ${actorId} recording vitals for encounter ${encounterId}`);
 
-    return prisma.$transaction(async (tx) => {
-      const visit = await tx.visit.findUnique({
-        where: { id: visitId },
-        include: { appointment: true },
-      });
+    const encounter = await EncounterGuard.requireActiveEncounter(encounterId);
 
-      if (!visit || !visit.appointment) {
-        throw new Error('VISIT_OR_APPOINTMENT_NOT_FOUND');
-      }
-
-      // For MVP we just allow the assigned doctor or any triage staff (in this case, relying on API route auth)
-      // The patient is extracted from the appointment linked to the visit.
-
-      const vitalRecord = await tx.vitalRecord.create({
+    const vitalRecord = await prisma.$transaction(async (tx) => {
+      return tx.vitalRecord.create({
         data: {
-          patientId: visit.appointment.patientId,
+          patientId: encounter.patientId,
+          encounterId: encounter.id,
           weight: vitals.weight,
           height: vitals.height,
           temperature: vitals.temperature,
@@ -49,8 +42,25 @@ export class RecordVitalsUseCase {
           spo2: vitals.spo2,
         },
       });
-
-      return vitalRecord;
     });
+
+    await getTimelinePublisher().publish({
+      patientId: encounter.patientId,
+      hospitalId: encounter.hospitalId,
+      encounterId: encounter.id,
+      aggregateType: 'Encounter',
+      aggregateId: encounter.id,
+      schemaVersion: 1,
+      timestamp: new Date(),
+      eventType: TimelineEventType.VITALS_RECORDED,
+      category: TimelineCategory.VITALS,
+      title: 'Vitals Recorded',
+      summary: 'Patient vitals were recorded.',
+      metadata: vitals as any,
+      actorType: 'STAFF',
+      actorId: actorId,
+    });
+
+    return vitalRecord;
   }
 }

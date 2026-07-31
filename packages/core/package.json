@@ -4,14 +4,7 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "dependencies": {
-    "@haspataal/alerts": "*",
-    "@haspataal/authorization": "*",
-    "@haspataal/bloodbank": "*",
     "@haspataal/db": "*",
-    "@haspataal/identity": "*",
-    "@haspataal/procedure": "*",
-    "@haspataal/radiology": "*",
-    "@haspataal/referral": "*",
     "@haspataal/types": "*",
     "libphonenumber-js": "^1.11.0"
   },
@@ -20,4 +13,3 @@
     "vitest": "4.1.5"
   }
 }
-

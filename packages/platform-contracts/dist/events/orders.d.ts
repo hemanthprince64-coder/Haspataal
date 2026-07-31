@@ -34,14 +34,14 @@ export declare const OrderAmendedPayloadSchema: z.ZodObject<
   'strip',
   z.ZodTypeAny,
   {
+    version: number;
     orderId: string;
     items: string[];
-    version: number;
   },
   {
+    version: number;
     orderId: string;
     items: string[];
-    version: number;
   }
 >;
 export type OrderAmendedPayload = z.infer<typeof OrderAmendedPayloadSchema>;
@@ -53,12 +53,12 @@ export declare const OrderCancelledPayloadSchema: z.ZodObject<
   'strip',
   z.ZodTypeAny,
   {
-    orderId: string;
     reason: string;
+    orderId: string;
   },
   {
-    orderId: string;
     reason: string;
+    orderId: string;
   }
 >;
 export type OrderCancelledPayload = z.infer<typeof OrderCancelledPayloadSchema>;

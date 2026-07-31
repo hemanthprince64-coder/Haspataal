@@ -1,5 +1,8 @@
-import { AuthorizationService } from '@haspataal/core/domain/authorization/service';
-import { DomainAction, AuthorizationDecision } from '@haspataal/core/domain/authorization/types';
+import {
+  AuthorizationService,
+  DomainAction,
+  AuthorizationDecision,
+} from '@haspataal/authorization';
 import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';

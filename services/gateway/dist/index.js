@@ -56,6 +56,9 @@ try {
     maxRetriesPerRequest: 1,
     lazyConnect: true,
   });
+  redis.on('error', () => {
+    /* ignore build-time connection errors */
+  });
   redis.connect().catch(() => {
     exports.logger.warn('Redis not available — rate limiting disabled');
     redis = null;

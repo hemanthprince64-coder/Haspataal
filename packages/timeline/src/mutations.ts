@@ -20,7 +20,12 @@ export class TimelineMutationHandler {
     });
   }
 
-  static async requestExport(patientId: string, format: string, requestedBy: string, filters?: object) {
+  static async requestExport(
+    patientId: string,
+    format: string,
+    requestedBy: string,
+    filters?: object,
+  ) {
     const exportRecord = await prisma.timelineExport.create({
       data: {
         patientId,
