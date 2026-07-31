@@ -73,6 +73,7 @@ export const ROLE_PERMISSIONS = new Map<UserRole, ReadonlySet<Permission>>([
       Permission.DOCTOR_MANAGE,
       Permission.HOSPITAL_SETTINGS,
       Permission.REPORTS_VIEW,
+      Permission.PLATFORM_DASHBOARD_VIEW,
     ]),
   ],
   // You can expand agent, receptionist, etc. here as needed

@@ -1,23 +1,21 @@
-import { requirePlatformRole } from '@haspataal/auth';
+import { requirePermission, Permission } from '@haspataal/auth';
+import logger from '@haspataal/logger';
+import { PlatformDashboardService } from '@haspataal/platform';
 
 import { NextResponse } from 'next/server';
 
-// Note: MVP implementation. Need to connect to actual cross-tenant service.
-
 export async function GET() {
   try {
-    await requirePlatformRole(['PLATFORM_ADMIN']);
+    await requirePermission(Permission.PLATFORM_DASHBOARD_VIEW);
 
-    // Dummy data for MVP. Later replace with real NetworkOperationsService aggregate calls
-    const kpis = {
-      totalHospitals: 1248,
-      activeSubscriptions: 1102,
-      platformUsers: 45231,
-      activeIncidents: 3,
-    };
+    const dashboardData = await PlatformDashboardService.getExecutiveDashboard();
 
-    return NextResponse.json({ kpis });
+    return NextResponse.json(dashboardData);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 403 });
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    logger.error({ err: error }, 'Failed to fetch executive dashboard');
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

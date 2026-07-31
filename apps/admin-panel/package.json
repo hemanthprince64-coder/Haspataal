@@ -21,7 +21,8 @@
     "@haspataal/auth": "*",
     "@haspataal/db": "*",
     "@haspataal/ui": "*",
-    "@haspataal/workflows": "*"
+    "@haspataal/workflows": "*",
+    "@haspataal/platform": "*"
   },
   "devDependencies": {
     "@types/node": "25.6.0",

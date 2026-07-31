@@ -34,4 +34,7 @@ export enum Permission {
 
   // Reports & Analytics
   REPORTS_VIEW = 'REPORTS_VIEW',
+
+  // Platform Admin
+  PLATFORM_DASHBOARD_VIEW = 'PLATFORM_DASHBOARD_VIEW',
 }
