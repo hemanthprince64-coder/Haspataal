@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import { randomBytes } from 'crypto';
 
 export type InvoiceInputLine = {

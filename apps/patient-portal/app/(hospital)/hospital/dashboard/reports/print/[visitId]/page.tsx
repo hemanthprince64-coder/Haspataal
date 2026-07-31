@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth/requireRole';
 import { UserRole } from '@/types';

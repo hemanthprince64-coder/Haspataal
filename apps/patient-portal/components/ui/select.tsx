@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-function-return-type, local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
+/* eslint-disable local-rules/no-direct-prisma-in-pages */
 'use client';
 
 import { ChevronDown, Check } from 'lucide-react';

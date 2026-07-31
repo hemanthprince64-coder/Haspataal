@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import { prisma } from '@/lib/prisma';
 
 export interface MarkBillPaidOptions {

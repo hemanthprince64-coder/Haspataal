@@ -32,7 +32,7 @@ export class NotificationService {
     }
     currentHourIST = currentHourIST % 24;
 
-    let nextAttemptAt = new Date();
+    const nextAttemptAt = new Date();
     if (currentHourIST >= 22 || currentHourIST < 8) {
       let hoursToAdd = 8 - currentHourIST;
       if (hoursToAdd <= 0) hoursToAdd += 24;

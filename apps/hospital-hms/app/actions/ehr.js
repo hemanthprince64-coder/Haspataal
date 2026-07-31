@@ -48,6 +48,26 @@ export async function createHealthRecord(formData) {
       },
     });
 
+    const radiologyModality = formData.get('radiologyModality');
+    const radiologyReason = formData.get('radiologyReason');
+
+    if (radiologyModality) {
+      try {
+        const { PlaceRadiologyOrderUseCase } = await import('@haspataal/radiology');
+        await PlaceRadiologyOrderUseCase.execute({
+          encounterId: record.id,
+          patientId: patientId,
+          hospitalId: user.hospitalId,
+          doctorId: user.id,
+          modality: radiologyModality,
+          reason: radiologyReason || undefined,
+          requestedBy: user.id,
+        });
+      } catch (err) {
+        // console.error('Failed to place radiology order', err);
+      }
+    }
+
     // Log the action
     await logAction(user.id, 'CREATE_EHR', 'PatientRecord', record.id, { patientId });
 

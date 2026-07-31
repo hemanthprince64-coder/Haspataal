@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 /**
  * Shared SWR fetcher — uses cookie-based auth (no Bearer token needed).
  * Next.js API routes read the session cookie directly.

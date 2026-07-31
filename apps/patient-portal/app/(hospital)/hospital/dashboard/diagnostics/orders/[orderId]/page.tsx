@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 'use client';
 
 import { ChevronLeft, FlaskConical, Microscope, User, Building2, Loader2 } from 'lucide-react';

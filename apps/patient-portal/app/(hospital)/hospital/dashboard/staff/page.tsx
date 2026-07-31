@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 'use client';
 
 import { Plus, Search, Trash2, UserPlus, Stethoscope, Loader2, UserCog } from 'lucide-react';

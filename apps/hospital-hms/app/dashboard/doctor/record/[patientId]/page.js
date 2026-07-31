@@ -130,6 +130,23 @@ export default async function AddHealthRecordPage({ params }) {
             ></textarea>
           </div>
 
+          <div className="grid-layout" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Radiology Modality (Optional)</label>
+              <select name="radiologyModality" className="form-input">
+                <option value="">-- Select Modality --</option>
+                <option value="X-RAY">X-Ray</option>
+                <option value="MRI">MRI</option>
+                <option value="CT">CT Scan</option>
+                <option value="USG">Ultrasound</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Radiology Reason</label>
+              <input name="radiologyReason" className="form-input" placeholder="e.g. Rule out fracture" />
+            </div>
+          </div>
+
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
             Save Record
           </button>

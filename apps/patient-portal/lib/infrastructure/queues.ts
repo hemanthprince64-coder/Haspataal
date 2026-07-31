@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import { getQueueService } from '@haspataal/queue';
 
 const queueService = getQueueService();

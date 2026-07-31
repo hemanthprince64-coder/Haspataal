@@ -27,6 +27,7 @@ export default async function DashboardLayout({ children }) {
     { href: '/dashboard/billing', label: 'OPD & Billing', icon: CreditCard, module: 'BILLING' },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChart3, module: 'REPORTS' },
     { href: '/dashboard/doctors', label: 'Manage Doctors', icon: Users, module: 'DOCTORS' },
+    { href: '/dashboard/radiology', label: 'Radiology', icon: LayoutDashboard, module: 'RADIOLOGY' },
   ];
 
   const navItems = allNavItems.filter((item) =>

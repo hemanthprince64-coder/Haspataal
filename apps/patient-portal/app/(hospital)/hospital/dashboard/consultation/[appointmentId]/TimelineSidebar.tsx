@@ -56,7 +56,7 @@ export function TimelineSidebar({ patientId }: { patientId: string }) {
           </Button>
         </div>
         <div className="mt-2 flex space-x-2 overflow-x-auto pb-2">
-          {['', 'DIAGNOSIS', 'PRESCRIPTION', 'VITALS', 'INVESTIGATION'].map((cat) => (
+          {['', 'DIAGNOSIS', 'PRESCRIPTION', 'VITALS', 'INVESTIGATION', 'RADIOLOGY'].map((cat) => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}

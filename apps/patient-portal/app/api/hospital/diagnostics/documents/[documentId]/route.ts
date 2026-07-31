@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import { logger } from '@haspataal/logger';
 import { z } from 'zod';
 

@@ -251,6 +251,7 @@ model HospitalsMaster {
   ClinicalOrder            ClinicalOrder[]
   ClinicalTask             ClinicalTask[]
   Sample                   Sample[]
+  ImagingStudy             ImagingStudy[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -537,6 +538,7 @@ model Patient {
   ClinicalOrder            ClinicalOrder[]
   ClinicalTask             ClinicalTask[]
   Sample                   Sample[]
+  ImagingStudy             ImagingStudy[]
 
   @@index([city])
   @@index([email])
@@ -5487,22 +5489,45 @@ model AcquisitionSession {
 }
 
 model ImagingStudy {
-  id               String @id @default(uuid())
-  studyInstanceUID String @unique @map("study_instance_uid") // DICOM
-  accessionNumber  String @unique @map("accession_number")
+  id               String  @id @default(uuid())
+  studyInstanceUID String? @unique @map("study_instance_uid") // DICOM
+  accessionNumber  String  @unique @map("accession_number")
 
-  sessionId String             @map("session_id")
-  session   AcquisitionSession @relation(fields: [sessionId], references: [id])
+  clinicalOrderId String? @map("clinical_order_id")
+  encounterId     String? @map("encounter_id")
+  patientId       String? @map("patient_id")
+  hospitalId      String? @map("hospital_id")
+
+  sessionId String?             @map("session_id")
+  session   AcquisitionSession? @relation(fields: [sessionId], references: [id])
 
   dicomStudyDate String? @map("dicom_study_date")
   dicomStudyTime String? @map("dicom_study_time")
 
+  seriesCount Int?      @map("series_count")
+  imageCount  Int?      @map("image_count")
+  modality    String?
+  status      String?
+  scheduledAt DateTime? @map("scheduled_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
   series  ImagingSeries[]
   reports RadiologyReport[]
+
+  clinicalOrder ClinicalOrder?   @relation(fields: [clinicalOrderId], references: [id], onDelete: Cascade)
+  encounter     Encounter?       @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient       Patient?         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital      HospitalsMaster? @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([clinicalOrderId])
+  @@index([encounterId])
+  @@index([patientId])
+  @@index([hospitalId])
+  @@index([accessionNumber])
   @@map("imaging_studies")
 }
 
@@ -5562,24 +5587,32 @@ model ContrastAdministration {
 model RadiologyReport {
   id String @id @default(uuid())
 
-  executionItemId String                 @unique @map("execution_item_id")
-  executionItem   RadiologyExecutionItem @relation(fields: [executionItemId], references: [id])
+  executionItemId String?                 @unique @map("execution_item_id")
+  executionItem   RadiologyExecutionItem? @relation(fields: [executionItemId], references: [id])
 
   studyId String?       @map("study_id")
-  study   ImagingStudy? @relation(fields: [studyId], references: [id])
+  study   ImagingStudy? @relation(fields: [studyId], references: [id], onDelete: Cascade)
 
-  status RadiologyReportStatus @default(DRAFT)
+  status String @default("DRAFT")
+
+  findings       String?
+  impression     String?
+  recommendation String?
+
+  verifiedBy String?   @map("verified_by")
+  verifiedAt DateTime? @map("verified_at")
 
   activeVersionId String?                 @unique @map("active_version_id")
   activeVersion   RadiologyReportVersion? @relation(name: "ActiveReportVersion", fields: [activeVersionId], references: [id])
 
-  versions RadiologyReportVersion[]
-  findings RadiologyCriticalFinding[]
+  versions         RadiologyReportVersion[]
+  criticalFindings RadiologyCriticalFinding[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([executionItemId])
+  @@index([studyId])
   @@map("radiology_reports")
 }
 
@@ -7215,6 +7248,7 @@ model Encounter {
   FollowUp            FollowUp[]
   VitalRecord         VitalRecord[]
   summary             EncounterSummary?
+  ImagingStudy        ImagingStudy[]
 
   @@index([patientId])
   @@index([patientId, status])
@@ -7285,10 +7319,11 @@ model ClinicalOrder {
 
   samples Sample[]
 
-  encounter Encounter       @relation(fields: [encounterId], references: [id], onDelete: Cascade)
-  patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  hospital  HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  doctor    DoctorMaster?   @relation(fields: [doctorId], references: [id])
+  encounter    Encounter       @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient      Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  doctor       DoctorMaster?   @relation(fields: [doctorId], references: [id])
+  ImagingStudy ImagingStudy[]
 
   @@index([encounterId])
   @@index([encounterId, status])

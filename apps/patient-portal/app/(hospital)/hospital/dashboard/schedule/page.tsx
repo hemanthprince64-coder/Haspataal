@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 import { requireHospitalAccess } from '@/lib/auth/hospital-access';
 import { prisma } from '@/lib/prisma';
 
