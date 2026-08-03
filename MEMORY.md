@@ -816,3 +816,6 @@ When creating Order items in tests, they must relate to a valid ClinicalOrderCat
 ## Knowledge Base Entry: Radiology Module & Timeline Integration (2026-08-01)
 - **Radiology Module Use Cases:** Built out `@haspataal/radiology` use-cases using `RadiologyStateMachine`. Placed radiology orders from Encounter UI by forwarding `radiologyModality` and `radiologyReason`. Rendered timeline events by including `RADIOLOGY` in `TimelineSidebar.tsx` filter categories. Connected order state changes to Timeline via `TimelinePublisher`.
 - **OpenSpec Archiving:** When archiving an openspec change, new specs in the delta `specs/` directory must be manually copied to the main `openspec/specs/` directory if they don't already exist, before moving the change directory to `archive/`.
+
+## Knowledge Base Entry: Module Completion (2026-08-03)
+- **Completed Features:** Both `clinical-timeline` and `laboratory-module` have been fully completed and their respective OpenSpec changes archived successfully. Their delta specs have been synchronized to the main `openspec/specs/` directory.
