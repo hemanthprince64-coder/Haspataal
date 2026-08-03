@@ -1,3 +1,5 @@
+'use client';
+
 import { Hospital } from 'lucide-react';
 
 import { patientLogin, requestOtpAction } from '@/app/actions';

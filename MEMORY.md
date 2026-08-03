@@ -173,6 +173,7 @@ await redis.xadd('events', '*', 'type', eventType, 'payload', JSON.stringify(pay
 
 ## 📚 Knowledge Base (Lessons Learned)
 
+- **2026-08-04 (Server to Client Component Props):** Next.js Server Components passing React component references (like `LucideIcon` functions) to Client Components causes build-time prerender errors: "Functions cannot be passed directly to Client Components". Resolve this by either marking the parent component as `'use client'` or passing serializable props instead of components.
 - **2026-08-04 (Next.js Dynamic Route Collisions):** Next.js App Router strictly forbids using different slug names for the same dynamic path segment depth (e.g. `[visitId]` vs `[id]`) across sibling folders. The build will fail with "You cannot use different slug names for the same dynamic path". Ensure only one path parameter name is used at any given depth.
 - **2026-08-04 (Missing auth exports and refactoring imports):** `withAuth` and `ROLES` were deprecated/removed from `@haspataal/auth`, which caused the old API routes in `patient-portal` to fail compilation. Further, when refactoring components into `features/.../components`, remember to globally search and replace the old `@/components/...` import strings, as webpack will fail silently until full build check.
 - **2026-08-04 (Server Action Auth Bypass):** `requirePatientAccess` was missing entirely but used inside Server Actions; we re-implemented it to cleanly wrap `requireAuth('session_patient')` to unblock `patient-portal` development.
