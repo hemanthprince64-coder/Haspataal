@@ -1,3 +1,4 @@
+import { UserRole } from '@haspataal/types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
@@ -29,7 +30,7 @@ describe('Authorization Middleware', () => {
 
   describe('createRoleMiddleware', () => {
     it('should return 403 when user role does not match', async () => {
-      const middleware = createRoleMiddleware('DOCTOR');
+      const middleware = createRoleMiddleware(UserRole.DOCTOR);
       const req = { cookies: { session: 'invalid' } } as any;
       const res = { status: vi.fn().mockReturnThis(), json: vi.fn() } as any;
       const next = vi.fn();

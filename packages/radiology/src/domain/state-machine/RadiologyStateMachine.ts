@@ -1,3 +1,5 @@
+import { BaseStateMachine } from '@haspataal/core';
+
 export type RadiologyState =
   | 'ORDERED'
   | 'SCHEDULED'
@@ -8,71 +10,25 @@ export type RadiologyState =
   | 'COMPLETED'
   | 'CANCELLED';
 
-export type RadiologyEvent =
-  | { type: 'SCHEDULE'; timestamp: Date }
-  | { type: 'ACCESSION'; accessionNumber: string }
-  | { type: 'ACQUIRE_IMAGE'; seriesCount: number; imageCount: number }
-  | { type: 'DRAFT_REPORT'; findings: string; impression: string }
-  | { type: 'VERIFY_REPORT'; verifiedBy: string }
-  | { type: 'COMPLETE' }
-  | { type: 'CANCEL'; reason: string };
+export class RadiologyStateMachine extends BaseStateMachine<RadiologyState> {
+  protected transitions: Record<RadiologyState, RadiologyState[]> = {
+    ORDERED: ['SCHEDULED', 'ACCESSIONED', 'CANCELLED'],
+    SCHEDULED: ['ACCESSIONED', 'CANCELLED'],
+    ACCESSIONED: ['IMAGE_ACQUIRED', 'CANCELLED'],
+    IMAGE_ACQUIRED: ['REPORT_DRAFTED', 'CANCELLED'],
+    REPORT_DRAFTED: ['REPORT_VERIFIED'],
+    REPORT_VERIFIED: ['COMPLETED'],
+    COMPLETED: [],
+    CANCELLED: [],
+  };
 
-export class RadiologyStateMachine {
-  private currentState: RadiologyState;
+  private static instance = new RadiologyStateMachine();
 
-  constructor(initialState: RadiologyState = 'ORDERED') {
-    this.currentState = initialState;
+  public static canTransition(from: RadiologyState, to: RadiologyState): boolean {
+    return RadiologyStateMachine.instance.canTransition(from, to);
   }
 
-  public getState(): RadiologyState {
-    return this.currentState;
-  }
-
-  public transition(event: RadiologyEvent): void {
-    const nextState = this.getNextState(this.currentState, event);
-    if (!nextState) {
-      throw new Error(`Invalid transition from ${this.currentState} with event ${event.type}`);
-    }
-    this.currentState = nextState;
-  }
-
-  private getNextState(state: RadiologyState, event: RadiologyEvent): RadiologyState | null {
-    switch (state) {
-      case 'ORDERED':
-        if (event.type === 'SCHEDULE') return 'SCHEDULED';
-        if (event.type === 'ACCESSION') return 'ACCESSIONED';
-        if (event.type === 'CANCEL') return 'CANCELLED';
-        break;
-
-      case 'SCHEDULED':
-        if (event.type === 'ACCESSION') return 'ACCESSIONED';
-        if (event.type === 'CANCEL') return 'CANCELLED';
-        break;
-
-      case 'ACCESSIONED':
-        if (event.type === 'ACQUIRE_IMAGE') return 'IMAGE_ACQUIRED';
-        if (event.type === 'CANCEL') return 'CANCELLED';
-        break;
-
-      case 'IMAGE_ACQUIRED':
-        if (event.type === 'DRAFT_REPORT') return 'REPORT_DRAFTED';
-        if (event.type === 'CANCEL') return 'CANCELLED';
-        break;
-
-      case 'REPORT_DRAFTED':
-        if (event.type === 'VERIFY_REPORT') return 'REPORT_VERIFIED';
-        // A drafted report can also be re-drafted but we'll stick to verified for now
-        break;
-
-      case 'REPORT_VERIFIED':
-        if (event.type === 'COMPLETE') return 'COMPLETED';
-        break;
-
-      case 'COMPLETED':
-      case 'CANCELLED':
-        // Terminal states
-        return null;
-    }
-    return null;
+  public static validateTransition(from: RadiologyState, to: RadiologyState): void {
+    RadiologyStateMachine.instance.validateTransition(from, to);
   }
 }

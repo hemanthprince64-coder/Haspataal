@@ -1,14 +1,13 @@
-import { Queue, Worker, QueueScheduler, Job } from 'bullmq';
+/* eslint-disable no-console */
+import { prisma } from '@haspataal/db';
+import { Queue, Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-
-import prisma from '../../lib/prisma';
 
 const connection = new IORedis(
   process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || 'redis://localhost:6379',
 );
 
 export const expiryQueue = new Queue('credential-expiry', { connection });
-export const expiryQueueScheduler = new QueueScheduler('credential-expiry', { connection });
 
 const daysThreshold = 30;
 

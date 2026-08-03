@@ -1,12 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { getPatientFullProfile, addWalletTransactionAction } from '@/app/actions';
-import WalletHeader from '@/components/patient/WalletHeader';
-import TransactionHistory from '@/components/patient/TransactionHistory';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   ChevronLeft,
   Plus,
@@ -17,9 +11,18 @@ import {
   History,
   PiggyBank,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+import { useState, useEffect } from 'react';
+
+import Link from 'next/link';
+
+import { getPatientFullProfile, addWalletTransactionAction } from '@/app/actions';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import TransactionHistory from '@/features/patient/components/TransactionHistory';
+import WalletHeader from '@/features/patient/components/WalletHeader';
 
 export default function WalletPage() {
   const [patient, setPatient] = useState(null);

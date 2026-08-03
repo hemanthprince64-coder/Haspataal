@@ -1,55 +1,66 @@
-import { prisma } from '@haspataal/db';
 import { PlaceClinicalOrderUseCase } from '@haspataal/orders';
+import { getTimelinePublisher } from '@haspataal/timeline';
 import { ClinicalOrderType, OrderPriority } from '@haspataal/types';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface PlaceRadiologyOrderDTO {
   encounterId: string;
   patientId: string;
   hospitalId: string;
   doctorId?: string;
-  modality: string;
-  priority?: string;
+  priority?: OrderPriority;
   reason?: string;
   requestedBy: string;
+  actorRole: string;
+  actorName: string;
+  modality: string; // Stored in order payload initially
 }
 
 export class PlaceRadiologyOrderUseCase {
   static async execute(data: PlaceRadiologyOrderDTO) {
-    // 1. Create the base ClinicalOrder via the orders package engine
-    const orderResult = await PlaceClinicalOrderUseCase.execute({
+    const result = await PlaceClinicalOrderUseCase.execute({
       encounterId: data.encounterId,
       patientId: data.patientId,
       hospitalId: data.hospitalId,
       doctorId: data.doctorId,
-      type: ClinicalOrderType.RADIOLOGY,
-      priority: (data.priority as OrderPriority) || OrderPriority.ROUTINE,
+      type: 'RADIOLOGY' as ClinicalOrderType,
+      priority: data.priority,
       reason: data.reason,
+      payload: {
+        modality: data.modality,
+      },
       requestedBy: data.requestedBy,
-      payload: { modality: data.modality },
+      actorName: data.actorName,
+      actorRole: data.actorRole,
     });
 
-    if (!orderResult.success || !orderResult.order) {
-      return { success: false, error: orderResult.error };
+    if (!result.success || !result.order) {
+      throw new Error(result.error || 'Failed to place radiology order');
     }
 
-    // Generate a default accession number (e.g., RAD-YYYYMMDD-UUID)
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const accessionNumber = `RAD-${dateStr}-${uuidv4().slice(0, 6).toUpperCase()}`;
-
-    // 2. Create the specialized ImagingStudy
-    const study = await prisma.imagingStudy.create({
-      data: {
-        clinicalOrderId: orderResult.order.id,
-        encounterId: data.encounterId,
-        patientId: data.patientId,
-        hospitalId: data.hospitalId,
+    const publisher = getTimelinePublisher();
+    await publisher.publishStandardEvent({
+      version: 1,
+      type: 'RADIOLOGY_ORDER_CREATED',
+      patientId: data.patientId,
+      hospitalId: data.hospitalId,
+      encounterId: data.encounterId,
+      aggregateType: 'ClinicalOrder',
+      aggregateId: result.order.id,
+      actor: {
+        id: data.requestedBy,
+        type: 'DOCTOR',
+        name: data.actorName,
+        role: data.actorRole,
+      },
+      occurredAt: new Date(),
+      payload: {
+        clinicalOrderId: result.order.id,
+        reason: data.reason,
+        priority: data.priority,
         modality: data.modality,
-        accessionNumber,
-        status: 'ORDERED',
       },
     });
 
-    return { success: true, order: orderResult.order, study };
+    return result.order;
   }
 }

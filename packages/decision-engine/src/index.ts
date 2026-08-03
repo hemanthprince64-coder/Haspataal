@@ -19,6 +19,7 @@ export class DecisionEngine {
 
     if (matchingRules.length === 0) return null;
     const rule = matchingRules[0]; // Simplified: take highest priority
+    if (!rule) return null;
 
     // 2. Policy Evaluator (Would invoke ai-policy here)
     // 3. Impact Analyzer (Would check side-effects)

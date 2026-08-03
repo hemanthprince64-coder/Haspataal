@@ -1,0 +1,10 @@
+# @haspataal/consultation
+
+Domain package for consultation.
+
+## Responsibilities
+- 
+
+## Boundaries
+- Do not import from applications (apps/)
+- Do not import UI components

@@ -6,7 +6,9 @@
   "dependencies": {
     "@haspataal/core": "*",
     "@haspataal/db": "*",
-    "@haspataal/types": "*"
+    "@haspataal/types": "*",
+    "@haspataal/orders": "*",
+    "@haspataal/timeline": "*"
   },
   "devDependencies": {
     "typescript": "5.9.3",

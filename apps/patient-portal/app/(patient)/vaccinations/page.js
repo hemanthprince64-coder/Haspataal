@@ -1,9 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import { addVaccinationAction } from '@/app/actions';
-import Link from 'next/link';
 import {
   Syringe,
   Plus,
@@ -17,13 +14,19 @@ import {
   CheckCircle2,
   Milestone,
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { useActionState, useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
+import { addVaccinationAction } from '@/app/actions';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import VaccinationsList from '@/components/patient/VaccinationsList';
+import { Skeleton } from '@/components/ui/skeleton';
+import VaccinationsList from '@/features/patient/components/VaccinationsList';
 
 const initialState = { message: '', success: false };
 

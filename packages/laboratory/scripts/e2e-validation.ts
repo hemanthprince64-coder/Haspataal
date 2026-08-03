@@ -19,24 +19,24 @@ async function runE2E() {
 
   // Setup: Mock Hospital, Patient, Encounter
   let hospital = await prisma.hospitalsMaster.findFirst();
-  if (!hospital) hospital = await prisma.hospitalsMaster.create({ data: { name: 'Apollo Demo' } });
+  if (!hospital)
+    hospital = await prisma.hospitalsMaster.create({
+      data: { display_name: 'Apollo Demo' } as any,
+    });
 
   let patient = await prisma.patient.findFirst();
   if (!patient)
     patient = await prisma.patient.create({
       data: {
-        hospitalId: hospital.id,
-        firstName: 'John',
-        lastName: 'Doe',
-        dateOfBirth: new Date(),
-        gender: 'MALE',
+        name: 'John Doe',
+        phone: '9999999999',
       },
     });
 
   let encounter = await prisma.encounter.findFirst();
   if (!encounter)
     encounter = await prisma.encounter.create({
-      data: { hospitalId: hospital.id, patientId: patient.id, type: 'OPD' },
+      data: { hospitalId: hospital.id, patientId: patient.id, encounterType: 'OPD' },
     });
 
   // Create an Order

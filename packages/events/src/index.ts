@@ -2,18 +2,25 @@
 import { Queue } from 'bullmq';
 import { EventEmitter } from 'events';
 
-export interface DomainEvent {
+export interface DomainEvent<TPayload = Record<string, unknown>> {
   id: string;
+  version: number;
   type: string;
-  payload: Record<string, unknown>;
-  timestamp: Date;
-  /** UUID for timeline de-duplication. All publishers SHOULD provide this. */
-  correlationId?: string;
-  /** Source application system (e.g., 'hospital-hms', 'patient-portal'). Required for timeline traceability. */
-  sourceSystem?: string;
+  aggregateId: string;
+  aggregateType: string;
+  encounterId?: string;
+  patientId?: string;
   hospitalId?: string;
-  actorId?: string;
-  actorType?: string;
+  actor?: {
+    id: string;
+    type: string;
+    name?: string;
+    role?: string;
+  };
+  correlationId?: string;
+  causationId?: string;
+  occurredAt: Date;
+  payload: TPayload;
 }
 
 export type EventCallback = (event: DomainEvent) => Promise<void> | void;
@@ -50,7 +57,7 @@ export class EventBus extends EventEmitter {
     if (this.outboxQueue) {
       await this.outboxQueue.add('event', {
         ...event,
-        timestamp: event.timestamp.toISOString(),
+        occurredAt: event.occurredAt.toISOString(),
       });
     }
   }
@@ -65,6 +72,9 @@ export class EventBus extends EventEmitter {
 }
 
 export const eventBus = EventBus.getInstance();
+
+export * from './publishers/BillingPublisher';
+export * from './publishers/NotificationPublisher';
 
 export const EVENT_TYPES = {
   // Patient

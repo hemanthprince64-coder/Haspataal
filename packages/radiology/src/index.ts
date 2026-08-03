@@ -1,4 +1,5 @@
 export * from './use-cases/PlaceRadiologyOrderUseCase';
+export * from './use-cases/ScheduleStudyUseCase';
 export * from './use-cases/AccessionStudyUseCase';
 export * from './use-cases/AcquireImageUseCase';
 export * from './use-cases/DraftReportUseCase';

@@ -1,13 +1,13 @@
-import { PrismaClient, RelationshipStatus } from '@prisma/client';
-
 import {
   AuthorizeRequest,
   AuthorizationResult,
   AuthorizationDecision,
   DomainAction,
-} from './types';
+  IAuthorizationService,
+} from '@haspataal/types';
+import { PrismaClient, RelationshipStatus } from '@prisma/client';
 
-export class AuthorizationService {
+export class AuthorizationService implements IAuthorizationService {
   constructor(private prisma: PrismaClient) {}
 
   async getStaffPermissions(userId: string, role: string): Promise<string[]> {

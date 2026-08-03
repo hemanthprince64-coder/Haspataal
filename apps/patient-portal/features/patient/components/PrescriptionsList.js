@@ -14,10 +14,11 @@ import {
   Download,
   ArrowUpRight,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import PrescriptionReadback from '@/components/PrescriptionReadback';
+import PrescriptionReadback from '@/features/pharmacy/components/PrescriptionReadback';
 
 export default function PrescriptionsList({ prescriptions }) {
   if (!prescriptions || prescriptions.length === 0) {
@@ -112,32 +113,32 @@ export default function PrescriptionsList({ prescriptions }) {
                       <NotebookTabs className="w-3.5 h-3.5" /> Medication List
                     </div>
                     {pres.items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center p-4 bg-slate-50/50 border border-slate-100 rounded-2xl group/med hover:bg-white hover:border-blue-100 transition-all"
-                    >
-                      <div>
-                        <div className="font-black text-slate-800 tracking-tight group-hover/med:text-blue-600 transition-colors">
-                          {item.medicineName}
+                      <div
+                        key={idx}
+                        className="flex justify-between items-center p-4 bg-slate-50/50 border border-slate-100 rounded-2xl group/med hover:bg-white hover:border-blue-100 transition-all"
+                      >
+                        <div>
+                          <div className="font-black text-slate-800 tracking-tight group-hover/med:text-blue-600 transition-colors">
+                            {item.medicineName}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wide">
+                            {item.instructions || 'Follow Standard Protocol'}
+                          </div>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-wide">
-                          {item.instructions || 'Follow Standard Protocol'}
+                        <div className="text-right">
+                          <div className="font-black text-slate-900">{item.dosage}</div>
+                          <Badge
+                            variant="secondary"
+                            className="bg-emerald-100 text-emerald-800 border-none text-[8px] font-black uppercase tracking-widest px-1.5 py-0 mt-1"
+                          >
+                            {item.duration}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-black text-slate-900">{item.dosage}</div>
-                        <Badge
-                          variant="secondary"
-                          className="bg-emerald-100 text-emerald-800 border-none text-[8px] font-black uppercase tracking-widest px-1.5 py-0 mt-1"
-                        >
-                          {item.duration}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                    ))}
+                  </div>
+                </>
+              )}
 
               {isFileUpload && pres.fileUrl ? (
                 <Button

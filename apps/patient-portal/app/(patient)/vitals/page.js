@@ -1,9 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import { addVitalAction } from '@/app/actions';
-import Link from 'next/link';
 import {
   Heart,
   Plus,
@@ -21,14 +18,20 @@ import {
   ActivitySquare,
   Monitor,
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { useActionState, useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
+import { addVitalAction } from '@/app/actions';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import VitalsQuickStats from '@/components/patient/VitalsQuickStats';
-import VitalsHistory from '@/components/patient/VitalsHistory';
+import { Skeleton } from '@/components/ui/skeleton';
+import VitalsHistory from '@/features/patient/components/VitalsHistory';
+import VitalsQuickStats from '@/features/patient/components/VitalsQuickStats';
 
 const initialState = { message: '', success: false };
 

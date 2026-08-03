@@ -2,6 +2,7 @@
 // PUBLISHER
 // ─────────────────────────────────────────────────────────────
 import { prisma } from '@haspataal/db';
+import { DomainEvent } from '@haspataal/events';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
@@ -199,6 +200,29 @@ export class TimelinePublisher {
     });
 
     return { correlationId };
+  }
+
+  async publishStandardEvent(event: Omit<DomainEvent, 'id'>): Promise<{ correlationId: string }> {
+    return this.publish({
+      patientId: event.patientId || '',
+      hospitalId: event.hospitalId,
+      encounterId: event.encounterId,
+      eventType: event.type,
+      title: event.type.replace(/_/g, ' '),
+      timestamp: event.occurredAt,
+      aggregateType: event.aggregateType,
+      aggregateId: event.aggregateId,
+      schemaVersion: event.version,
+      actorId: event.actor?.id,
+      actorType: event.actor?.type,
+      correlationId: event.correlationId,
+      sourceSystem: event.causationId,
+      metadata: {
+        ...event.payload,
+        actorName: event.actor?.name,
+        actorRole: event.actor?.role,
+      },
+    });
   }
 
   async close(): Promise<void> {

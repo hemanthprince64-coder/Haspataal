@@ -2,13 +2,7 @@ import { prisma } from '@haspataal/db';
 import { EncounterGuard } from '@haspataal/encounter';
 import { logger } from '@haspataal/logger';
 import { getTimelinePublisher } from '@haspataal/timeline';
-import {
-  ClinicalOrderType,
-  ClinicalOrderStatus,
-  OrderPriority,
-  TimelineCategory,
-  TimelineEventType,
-} from '@haspataal/types';
+import { ClinicalOrderType, ClinicalOrderStatus, OrderPriority } from '@haspataal/types';
 
 export interface PlaceClinicalOrderDTO {
   encounterId: string;
@@ -20,7 +14,9 @@ export interface PlaceClinicalOrderDTO {
   priority?: OrderPriority;
   reason?: string;
   payload?: any;
-  requestedBy?: string;
+  requestedBy: string;
+  actorName?: string;
+  actorRole?: string;
 }
 
 export class PlaceClinicalOrderUseCase {
@@ -48,19 +44,21 @@ export class PlaceClinicalOrderUseCase {
       });
 
       // Emit timeline event
-      await getTimelinePublisher().publish({
+      await getTimelinePublisher().publishStandardEvent({
+        version: 1,
+        type: 'CLINICAL_ORDER_PLACED',
         patientId: encounter.patientId,
         hospitalId: encounter.hospitalId,
         encounterId: encounter.id,
         aggregateType: 'ClinicalOrder',
         aggregateId: order.id,
-        schemaVersion: 1,
-        eventType: TimelineEventType.INVESTIGATION_REQUESTED,
-        category: TimelineCategory.INVESTIGATION, // Broad category
-        title: `${data.type} Order Placed`,
-        summary: `A ${data.priority || 'ROUTINE'} ${data.type} order was placed.`,
-        actorType: 'DOCTOR',
-        actorId: data.requestedBy || 'system',
+        actor: {
+          id: data.requestedBy,
+          type: data.actorRole || 'DOCTOR',
+          name: data.actorName,
+          role: data.actorRole,
+        },
+        occurredAt: new Date(),
         payload: {
           orderId: order.id,
           type: data.type,

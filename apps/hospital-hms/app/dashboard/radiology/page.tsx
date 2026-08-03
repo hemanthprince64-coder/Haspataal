@@ -3,6 +3,8 @@ import { prisma } from '@haspataal/db';
 import { Card, CardHeader, CardTitle, CardContent } from '@haspataal/ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@haspataal/ui';
 
+import Link from 'next/link';
+
 export default async function RadiologyDashboard() {
   const user = await requireHospitalStaff('session_user');
 
@@ -10,26 +12,26 @@ export default async function RadiologyDashboard() {
   const pendingStudies = await prisma.imagingStudy.findMany({
     where: {
       hospitalId: user.hospitalId,
-      status: { in: ['ORDERED', 'SCHEDULED', 'ACCESSIONED', 'IMAGE_ACQUIRED'] }
+      status: { in: ['ORDERED', 'SCHEDULED', 'ACCESSIONED', 'IMAGE_ACQUIRED'] },
     },
     include: {
       patient: true,
-      clinicalOrder: true
+      clinicalOrder: true,
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   });
 
   // Radiologist Worklist: Pending reports
   const pendingReports = await prisma.imagingStudy.findMany({
     where: {
       hospitalId: user.hospitalId,
-      status: { in: ['IMAGE_ACQUIRED', 'REPORT_DRAFTED'] }
+      status: { in: ['IMAGE_ACQUIRED', 'REPORT_DRAFTED'] },
     },
     include: {
       patient: true,
-      reports: true
+      reports: true,
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   });
 
   return (
@@ -41,14 +43,14 @@ export default async function RadiologyDashboard() {
 
       <Tabs defaultValue="technician">
         <TabsList className="w-full justify-start border-b rounded-none p-0 h-auto">
-          <TabsTrigger 
-            value="technician" 
+          <TabsTrigger
+            value="technician"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent py-3"
           >
             Technician Worklist
           </TabsTrigger>
-          <TabsTrigger 
-            value="radiologist" 
+          <TabsTrigger
+            value="radiologist"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent py-3"
           >
             Radiologist Worklist
@@ -76,9 +78,11 @@ export default async function RadiologyDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingStudies.map(study => (
+                      {pendingStudies.map((study) => (
                         <tr key={study.id} className="border-b">
-                          <td className="px-4 py-3 font-medium">{study.patient?.name || 'Unknown'}</td>
+                          <td className="px-4 py-3 font-medium">
+                            {study.patient?.name || 'Unknown'}
+                          </td>
                           <td className="px-4 py-3">{study.modality}</td>
                           <td className="px-4 py-3">{study.accessionNumber || '-'}</td>
                           <td className="px-4 py-3">
@@ -87,8 +91,12 @@ export default async function RadiologyDashboard() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            {/* Action buttons based on status */}
-                            <button className="text-indigo-600 hover:underline">Update Status</button>
+                            <Link
+                              href={`/dashboard/radiology/${study.id}`}
+                              className="text-indigo-600 hover:underline"
+                            >
+                              View Details
+                            </Link>
                           </td>
                         </tr>
                       ))}
@@ -120,9 +128,11 @@ export default async function RadiologyDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingReports.map(study => (
+                      {pendingReports.map((study) => (
                         <tr key={study.id} className="border-b">
-                          <td className="px-4 py-3 font-medium">{study.patient?.name || 'Unknown'}</td>
+                          <td className="px-4 py-3 font-medium">
+                            {study.patient?.name || 'Unknown'}
+                          </td>
                           <td className="px-4 py-3">{study.modality}</td>
                           <td className="px-4 py-3">
                             <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
@@ -130,7 +140,12 @@ export default async function RadiologyDashboard() {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <button className="text-indigo-600 hover:underline">Draft Report</button>
+                            <Link
+                              href={`/dashboard/radiology/${study.id}`}
+                              className="text-indigo-600 hover:underline"
+                            >
+                              View Report
+                            </Link>
                           </td>
                         </tr>
                       ))}

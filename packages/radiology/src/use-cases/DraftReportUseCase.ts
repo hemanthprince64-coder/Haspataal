@@ -1,14 +1,15 @@
 import { prisma } from '@haspataal/db';
 import { getTimelinePublisher } from '@haspataal/timeline';
-import { TimelineEventType, TimelineCategory } from '@haspataal/types';
+
 import { RadiologyStateMachine } from '../domain/state-machine/RadiologyStateMachine';
 
 export interface DraftReportDTO {
   studyId: string;
   findings: string;
-  impression: string;
-  recommendation?: string;
+  impression?: string;
   actorId: string;
+  actorName: string;
+  actorRole: string;
 }
 
 export class DraftReportUseCase {
@@ -18,48 +19,47 @@ export class DraftReportUseCase {
     });
 
     if (!study) {
-      throw new Error(`Imaging study ${data.studyId} not found`);
+      throw new Error(`ImagingStudy not found`);
     }
 
-    const stateMachine = new RadiologyStateMachine(study.status as any);
-    stateMachine.transition({
-      type: 'DRAFT_REPORT',
-      findings: data.findings,
-      impression: data.impression,
+    RadiologyStateMachine.validateTransition(study.status as any, 'REPORT_DRAFTED');
+
+    // 1. Transition the study
+    const updatedStudy = await prisma.imagingStudy.update({
+      where: { id: study.id },
+      data: { status: 'REPORT_DRAFTED' },
     });
 
-    // Create the report
+    // 2. Create the report
     const report = await prisma.radiologyReport.create({
       data: {
-        studyId: data.studyId,
+        studyId: study.id,
         findings: data.findings,
         impression: data.impression,
-        recommendation: data.recommendation,
         status: 'DRAFT',
+        reportedBy: data.actorId,
       },
     });
 
-    // Update study status
-    const updatedStudy = await prisma.imagingStudy.update({
-      where: { id: data.studyId },
-      data: { status: stateMachine.getState() },
-    });
-
+    // 3. Emit timeline event
     if (study.patientId && study.hospitalId && study.encounterId) {
-      await getTimelinePublisher().publish({
+      await getTimelinePublisher().publishStandardEvent({
+        version: 1,
+        type: 'RADIOLOGY_REPORT_DRAFTED',
         patientId: study.patientId,
         hospitalId: study.hospitalId,
         encounterId: study.encounterId,
         aggregateType: 'RadiologyReport',
         aggregateId: report.id,
-        schemaVersion: 1,
-        eventType: TimelineEventType.INVESTIGATION_UPDATE || 'RADIOLOGY_REPORT_DRAFTED' as any,
-        category: TimelineCategory.INVESTIGATION,
-        title: 'Radiology Report Drafted',
-        summary: 'A radiologist has drafted a report for this study.',
-        actorType: 'DOCTOR',
-        actorId: data.actorId,
+        actor: {
+          id: data.actorId,
+          type: 'DOCTOR',
+          name: data.actorName,
+          role: data.actorRole,
+        },
+        occurredAt: new Date(),
         payload: {
+          clinicalOrderId: study.clinicalOrderId || undefined,
           reportId: report.id,
         },
       });

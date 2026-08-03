@@ -19,7 +19,6 @@ export class AmendResultUseCase {
   public async execute(data: AmendResultDTO) {
     const result = await prisma.labResult.findUnique({
       where: { clinicalOrderId: data.clinicalOrderId },
-      include: { clinicalOrder: true },
     });
 
     if (!result) throw new Error('Lab Result not found');
@@ -36,15 +35,20 @@ export class AmendResultUseCase {
       },
     });
 
+    const clinicalOrder = await prisma.clinicalOrder.findUnique({
+      where: { id: result.clinicalOrderId },
+    });
+
     await timelinePublisher.publish({
       patientId: result.patientId,
-      encounterId: result.clinicalOrder.encounterId,
+      encounterId: clinicalOrder?.encounterId || '',
       hospitalId: result.hospitalId,
-      eventType: 'RESULT_AMENDED' as TimelineEventType,
+      eventType: TimelineEventType.RESULT_AMENDED,
       title: 'Lab Result Amended',
       description: `The laboratory result has been opened for amendment. Reason: ${data.reason}`,
       actorId: data.amendedBy,
-      payload: { labResultId: result.id, reason: data.reason },
+      timestamp: new Date(),
+      metadata: { labResultId: result.id, reason: data.reason },
     });
 
     return amended;

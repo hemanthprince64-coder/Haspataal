@@ -4692,9 +4692,6 @@ model Order {
   executions          OrderExecution[]
   cancellations       OrderCancellation[]
   audits              OrderAudit[]
-  pharmacyExecution   PharmacyExecution?
-  LaboratoryExecution LaboratoryExecution?
-  radiologyExecution  RadiologyExecution?
   ProcedureExecution  ProcedureExecution?
   BloodBankExecution  BloodBankExecution?
   ReferralExecution   ReferralExecution?
@@ -4875,10 +4872,16 @@ model PharmacyExecution {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  orderId String @unique @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id])
+  clinicalOrderId String? @unique @map("clinical_order_id")
+  clinicalOrder   ClinicalOrder?  @relation(fields: [clinicalOrderId], references: [id])
 
-  status PharmacyExecutionStatus @default(PENDING_VERIFICATION)
+  status String @default("PRESCRIBED")
+
+  version     Int     @default(1)
+  verifiedBy  String? @map("verified_by")
+  dispensedBy String? @map("dispensed_by")
+  verifiedAt  DateTime? @map("verified_at")
+  dispensedAt DateTime? @map("dispensed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -4915,6 +4918,11 @@ model PharmacyExecutionItem {
 
   prescribedQuantity Int @map("prescribed_quantity")
   dispensedQuantity  Int @default(0) @map("dispensed_quantity")
+  version     Int     @default(1)
+  verifiedBy  String? @map("verified_by")
+  dispensedBy String? @map("dispensed_by")
+  verifiedAt  DateTime? @map("verified_at")
+  dispensedAt DateTime? @map("dispensed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -5148,8 +5156,8 @@ model LaboratoryExecution {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  orderId String @unique @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id])
+  clinicalOrderId String? @unique @map("clinical_order_id")
+  clinicalOrder   ClinicalOrder?  @relation(fields: [clinicalOrderId], references: [id])
 
   orderVersionId String @map("order_version_id")
 
@@ -5386,8 +5394,8 @@ model RadiologyExecution {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  orderId String @unique @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id])
+  clinicalOrderId String? @unique @map("clinical_order_id")
+  clinicalOrder   ClinicalOrder?  @relation(fields: [clinicalOrderId], references: [id])
 
   status RadiologyExecutionStatus @default(PENDING_SCHEDULING)
 
@@ -5512,6 +5520,10 @@ model ImagingStudy {
   startedAt   DateTime? @map("started_at")
   completedAt DateTime? @map("completed_at")
 
+  scheduledBy   String? @map("scheduled_by")
+  accessionedBy String? @map("accessioned_by")
+  acquiredBy    String? @map("acquired_by")
+
   series  ImagingSeries[]
   reports RadiologyReport[]
 
@@ -5525,9 +5537,11 @@ model ImagingStudy {
 
   @@index([clinicalOrderId])
   @@index([encounterId])
-  @@index([patientId])
-  @@index([hospitalId])
+  @@index([patientId, createdAt])
+  @@index([hospitalId, status])
   @@index([accessionNumber])
+  @@index([studyInstanceUID])
+  @@index([modality, status])
   @@map("imaging_studies")
 }
 
@@ -5595,15 +5609,18 @@ model RadiologyReport {
 
   status String @default("DRAFT")
 
+  clinicalHistory String? @map("clinical_history")
   findings       String?
   impression     String?
   recommendation String?
 
+  reportedBy String?   @map("reported_by")
   verifiedBy String?   @map("verified_by")
   verifiedAt DateTime? @map("verified_at")
 
   activeVersionId String?                 @unique @map("active_version_id")
   activeVersion   RadiologyReportVersion? @relation(name: "ActiveReportVersion", fields: [activeVersionId], references: [id])
+
 
   versions         RadiologyReportVersion[]
   criticalFindings RadiologyCriticalFinding[]
@@ -7324,6 +7341,9 @@ model ClinicalOrder {
   hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
   doctor       DoctorMaster?   @relation(fields: [doctorId], references: [id])
   ImagingStudy ImagingStudy[]
+  PharmacyExecution PharmacyExecution?
+  LaboratoryExecution LaboratoryExecution?
+  RadiologyExecution RadiologyExecution?
 
   @@index([encounterId])
   @@index([encounterId, status])

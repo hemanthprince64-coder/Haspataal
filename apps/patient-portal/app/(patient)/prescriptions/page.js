@@ -1,9 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getPatientFullProfile, uploadPrescriptionAction } from '@/app/actions';
-import Link from 'next/link';
 import { format } from 'date-fns';
 import {
   FileText,
@@ -18,11 +15,17 @@ import {
   ArrowUpRight,
   FolderOpen,
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
+
+import { useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
+import { getPatientFullProfile, uploadPrescriptionAction } from '@/app/actions';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import PrescriptionsList from '@/components/patient/PrescriptionsList';
+import { Skeleton } from '@/components/ui/skeleton';
+import PrescriptionsList from '@/features/patient/components/PrescriptionsList';
 
 export default function PrescriptionsPage() {
   const [patient, setPatient] = useState(null);

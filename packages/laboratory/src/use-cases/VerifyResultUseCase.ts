@@ -59,11 +59,12 @@ export class VerifyResultUseCase {
       patientId: result.patientId,
       encounterId: verifiedResult.order.encounterId,
       hospitalId: result.hospitalId,
-      eventType: 'RESULT_VERIFIED' as TimelineEventType,
+      eventType: TimelineEventType.RESULT_VERIFIED,
       title: 'Lab Result Verified',
       description: 'The laboratory result has been verified and is available for viewing.',
       actorId: data.verifiedBy,
-      payload: { labResultId: result.id },
+      timestamp: new Date(),
+      metadata: { labResultId: result.id },
     });
 
     // 5. If Critical Values exist, dispatch CRITICAL_VALUE_DETECTED event
@@ -73,11 +74,12 @@ export class VerifyResultUseCase {
         patientId: result.patientId,
         encounterId: verifiedResult.order.encounterId,
         hospitalId: result.hospitalId,
-        eventType: 'CRITICAL_VALUE_DETECTED' as TimelineEventType,
+        eventType: TimelineEventType.CRITICAL_VALUE_DETECTED,
         title: 'Critical Lab Value Detected',
         description: 'One or more laboratory values are critically out of range.',
         actorId: 'SYSTEM',
-        payload: { labResultId: result.id, criticality: 'HIGH' },
+        timestamp: new Date(),
+        metadata: { labResultId: result.id, criticality: 'HIGH' },
       });
     }
 

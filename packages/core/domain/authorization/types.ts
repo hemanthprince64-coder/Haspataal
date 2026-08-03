@@ -1,1 +1,1 @@
-export * from '../../../../authorization/lib/types';
+export * from '@haspataal/types';

@@ -4,7 +4,11 @@
   "main": "./index.ts",
   "types": "./index.ts",
   "scripts": {
-    "start:worker:otp": "ts-node workers/otp-cleanup.worker.ts"
+    "start:worker:otp": "ts-node workers/otp-cleanup.worker.ts",
+    "build": "tsc",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "jose": "6.1.3",

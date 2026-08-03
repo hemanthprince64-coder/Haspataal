@@ -1,65 +1,56 @@
 import { prisma } from '@haspataal/db';
 import { getTimelinePublisher } from '@haspataal/timeline';
-import { TimelineEventType, TimelineCategory, ClinicalOrderStatus } from '@haspataal/types';
-import { UpdateClinicalOrderStatusUseCase } from '@haspataal/orders';
+
 import { RadiologyStateMachine } from '../domain/state-machine/RadiologyStateMachine';
 
 export interface AccessionStudyDTO {
   studyId: string;
   studyInstanceUID: string;
   actorId: string;
+  actorName: string;
+  actorRole: string;
 }
 
 export class AccessionStudyUseCase {
   static async execute(data: AccessionStudyDTO) {
     const study = await prisma.imagingStudy.findUnique({
       where: { id: data.studyId },
-      include: { clinicalOrder: true },
     });
 
     if (!study) {
-      throw new Error(`Imaging study ${data.studyId} not found`);
+      throw new Error(`ImagingStudy not found`);
     }
 
-    const stateMachine = new RadiologyStateMachine(study.status as any);
-    stateMachine.transition({ type: 'ACCESSION', accessionNumber: study.accessionNumber });
+    RadiologyStateMachine.validateTransition(study.status as any, 'ACCESSIONED');
 
+    // 1. Transition state to ACCESSIONED and attach UID
     const updatedStudy = await prisma.imagingStudy.update({
-      where: { id: data.studyId },
+      where: { id: study.id },
       data: {
+        status: 'ACCESSIONED',
         studyInstanceUID: data.studyInstanceUID,
-        status: stateMachine.getState(),
-      },
-      include: {
-        clinicalOrder: true,
-        encounter: true,
       },
     });
 
-    // We can also transition the underlying ClinicalOrder to ACCEPTED or SCHEDULED if needed.
-    if (study.clinicalOrderId) {
-      await UpdateClinicalOrderStatusUseCase.execute({
-        orderId: study.clinicalOrderId,
-        status: ClinicalOrderStatus.ACCEPTED,
-        actorId: data.actorId,
-      });
-    }
-
+    // 2. Publish timeline event
     if (updatedStudy.patientId && updatedStudy.hospitalId && updatedStudy.encounterId) {
-      await getTimelinePublisher().publish({
+      await getTimelinePublisher().publishStandardEvent({
+        version: 1,
+        type: 'IMAGING_STUDY_ACCESSIONED',
         patientId: updatedStudy.patientId,
         hospitalId: updatedStudy.hospitalId,
         encounterId: updatedStudy.encounterId,
         aggregateType: 'ImagingStudy',
         aggregateId: study.id,
-        schemaVersion: 1,
-        eventType: TimelineEventType.INVESTIGATION_UPDATE || 'IMAGING_STUDY_ACCESSIONED' as any,
-        category: TimelineCategory.INVESTIGATION,
-        title: 'Imaging Study Accessioned',
-        summary: `Study accessioned with UID: ${data.studyInstanceUID}`,
-        actorType: 'TECHNICIAN',
-        actorId: data.actorId,
+        actor: {
+          id: data.actorId,
+          type: 'TECHNICIAN',
+          name: data.actorName,
+          role: data.actorRole,
+        },
+        occurredAt: new Date(),
         payload: {
+          clinicalOrderId: study.clinicalOrderId || undefined,
           accessionNumber: study.accessionNumber,
           studyInstanceUID: data.studyInstanceUID,
         },

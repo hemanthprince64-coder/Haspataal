@@ -1,19 +1,22 @@
 import { prisma } from '@haspataal/db';
-import { getTimelinePublisher } from '@haspataal/timeline';
-import { TimelineEventType, TimelineCategory, ClinicalOrderStatus } from '@haspataal/types';
 import { UpdateClinicalOrderStatusUseCase } from '@haspataal/orders';
+import { getTimelinePublisher } from '@haspataal/timeline';
+import { ClinicalOrderStatus } from '@haspataal/types';
+
 import { RadiologyStateMachine } from '../domain/state-machine/RadiologyStateMachine';
 
 export interface VerifyReportDTO {
   reportId: string;
   actorId: string;
+  actorName: string;
+  actorRole: string;
 }
 
 export class VerifyReportUseCase {
   static async execute(data: VerifyReportDTO) {
     const report = await prisma.radiologyReport.findUnique({
       where: { id: data.reportId },
-      include: { study: true },
+      include: { study: { include: { clinicalOrder: true } } },
     });
 
     if (!report || !report.study) {
@@ -21,17 +24,8 @@ export class VerifyReportUseCase {
     }
 
     const study = report.study;
-    const stateMachine = new RadiologyStateMachine(study.status as any);
-    
-    // VERIFY_REPORT event
-    stateMachine.transition({
-      type: 'VERIFY_REPORT',
-      verifiedBy: data.actorId,
-    });
-
-    // Also COMPLETE the study automatically upon verification, or leave it for a separate explicit step.
-    // In many radiology workflows, report verification == study completed.
-    stateMachine.transition({ type: 'COMPLETE' });
+    RadiologyStateMachine.validateTransition(study.status as any, 'REPORT_VERIFIED');
+    RadiologyStateMachine.validateTransition('REPORT_VERIFIED', 'COMPLETED');
 
     // Update the report
     const updatedReport = await prisma.radiologyReport.update({
@@ -46,7 +40,7 @@ export class VerifyReportUseCase {
     // Update study status to COMPLETED
     const updatedStudy = await prisma.imagingStudy.update({
       where: { id: study.id },
-      data: { status: stateMachine.getState(), completedAt: new Date() },
+      data: { status: 'COMPLETED', completedAt: new Date() },
     });
 
     // Update the base order to COMPLETED
@@ -54,25 +48,31 @@ export class VerifyReportUseCase {
       await UpdateClinicalOrderStatusUseCase.execute({
         orderId: study.clinicalOrderId,
         status: ClinicalOrderStatus.COMPLETED,
+        version: study.clinicalOrder?.version || 0,
         actorId: data.actorId,
+        actorName: data.actorName,
+        actorRole: data.actorRole,
       });
     }
 
     if (study.patientId && study.hospitalId && study.encounterId) {
-      await getTimelinePublisher().publish({
+      await getTimelinePublisher().publishStandardEvent({
+        version: 1,
+        type: 'RADIOLOGY_REPORT_VERIFIED',
         patientId: study.patientId,
         hospitalId: study.hospitalId,
         encounterId: study.encounterId,
         aggregateType: 'RadiologyReport',
         aggregateId: report.id,
-        schemaVersion: 1,
-        eventType: TimelineEventType.INVESTIGATION_COMPLETED || 'RADIOLOGY_REPORT_VERIFIED' as any,
-        category: TimelineCategory.INVESTIGATION,
-        title: 'Radiology Report Verified',
-        summary: 'The final radiology report has been verified and is available.',
-        actorType: 'DOCTOR',
-        actorId: data.actorId,
+        actor: {
+          id: data.actorId,
+          type: 'DOCTOR',
+          name: data.actorName,
+          role: data.actorRole,
+        },
+        occurredAt: new Date(),
         payload: {
+          clinicalOrderId: study.clinicalOrderId || undefined,
           reportId: report.id,
           findings: report.findings,
           impression: report.impression,

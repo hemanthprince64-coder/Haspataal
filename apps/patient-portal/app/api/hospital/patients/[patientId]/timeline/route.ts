@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { requireHospitalAccess } from '@/lib/api-middleware';
+import { requireAuth } from '@/lib/auth';
 
 const logger = getLogger('timeline-api');
 
@@ -16,7 +16,12 @@ const QuerySchema = z.object({
 
 export async function GET(request: NextRequest, { params }: { params: { patientId: string } }) {
   try {
-    const { user, hospitalId } = await requireHospitalAccess(request);
+    const user = await requireAuth('session_user');
+    const hospitalId = user?.hospitalId;
+
+    if (!hospitalId) {
+      throw new Error('Unauthorized');
+    }
 
     // In Next.js 15, dynamic route params must be awaited
     const { patientId } = await params;

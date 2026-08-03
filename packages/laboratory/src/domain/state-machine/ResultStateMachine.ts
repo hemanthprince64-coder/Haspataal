@@ -1,31 +1,21 @@
+import { BaseStateMachine } from '@haspataal/core';
 import { LabResultStatus } from '@haspataal/db';
 
-export class ResultStateMachine {
-  private static VALID_TRANSITIONS: Record<LabResultStatus, LabResultStatus[]> = {
+export class ResultStateMachine extends BaseStateMachine<LabResultStatus> {
+  protected transitions: Record<LabResultStatus, LabResultStatus[]> = {
     [LabResultStatus.DRAFT]: [LabResultStatus.UNDER_REVIEW, LabResultStatus.VERIFIED],
     [LabResultStatus.UNDER_REVIEW]: [LabResultStatus.DRAFT, LabResultStatus.VERIFIED],
     [LabResultStatus.VERIFIED]: [LabResultStatus.AMENDED],
     [LabResultStatus.AMENDED]: [LabResultStatus.DRAFT, LabResultStatus.VERIFIED],
   };
 
-  /**
-   * Evaluates whether a transition from currentState to nextState is valid.
-   */
-  public static canTransition(currentState: LabResultStatus, nextState: LabResultStatus): boolean {
-    if (currentState === nextState) return true; // Idempotent updates allowed
-    const validNextStates = this.VALID_TRANSITIONS[currentState] || [];
-    return validNextStates.includes(nextState);
+  private static instance = new ResultStateMachine();
+
+  public static canTransition(from: LabResultStatus, to: LabResultStatus): boolean {
+    return ResultStateMachine.instance.canTransition(from, to);
   }
 
-  /**
-   * Validates a transition and throws an error if it is invalid.
-   */
-  public static validateTransition(
-    currentState: LabResultStatus,
-    nextState: LabResultStatus,
-  ): void {
-    if (!this.canTransition(currentState, nextState)) {
-      throw new Error(`Invalid lab result status transition from ${currentState} to ${nextState}`);
-    }
+  public static validateTransition(from: LabResultStatus, to: LabResultStatus): void {
+    ResultStateMachine.instance.validateTransition(from, to);
   }
 }

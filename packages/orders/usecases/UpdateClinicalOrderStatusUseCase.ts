@@ -1,7 +1,7 @@
 import { prisma } from '@haspataal/db';
 import { logger } from '@haspataal/logger';
 import { getTimelinePublisher } from '@haspataal/timeline';
-import { ClinicalOrderStatus, TimelineCategory } from '@haspataal/types';
+import { ClinicalOrderStatus } from '@haspataal/types';
 
 import { ClinicalOrderStateMachine } from '../statemachine/ClinicalOrderStateMachine';
 
@@ -11,7 +11,7 @@ export interface UpdateClinicalOrderStatusDTO {
   version: number;
   actorId: string;
   actorName: string;
-  actorRole: any;
+  actorRole: string;
   reason?: string;
 }
 
@@ -75,19 +75,21 @@ export class UpdateClinicalOrderStatusUseCase {
       if (!order) throw new Error('Order not found after update');
 
       // Emit timeline event based on the new status
-      await getTimelinePublisher().publish({
+      await getTimelinePublisher().publishStandardEvent({
+        version: 1,
+        type: `CLINICAL_ORDER_${data.status}`,
         patientId: order.patientId,
-        hospitalId: order.hospitalId,
-        encounterId: order.encounterId,
+        hospitalId: order.hospitalId || undefined,
+        encounterId: order.encounterId || undefined,
         aggregateType: 'ClinicalOrder',
         aggregateId: order.id,
-        schemaVersion: 1,
-        eventType: `CLINICAL_ORDER_${data.status}`,
-        category: TimelineCategory.INVESTIGATION, // Broad category
-        title: `${order.type} Order ${data.status}`,
-        summary: `The ${order.type} order was updated to ${data.status}.`,
-        actorType: data.actorRole,
-        actorId: data.actorId,
+        actor: {
+          id: data.actorId,
+          type: data.actorRole,
+          name: data.actorName,
+          role: data.actorRole,
+        },
+        occurredAt: new Date(),
         payload: {
           orderId: order.id,
           status: data.status,

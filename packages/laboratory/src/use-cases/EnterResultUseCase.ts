@@ -51,7 +51,6 @@ export class EnterResultUseCase {
     const labResult = await prisma.$transaction(async (tx) => {
       let result = await tx.labResult.findUnique({
         where: { clinicalOrderId: data.clinicalOrderId },
-        include: { clinicalOrder: true },
       });
 
       if (result) {
@@ -68,7 +67,6 @@ export class EnterResultUseCase {
             enteredBy: data.enteredBy,
             enteredAt: new Date(),
           },
-          include: { clinicalOrder: true },
         });
       } else {
         const order = await tx.clinicalOrder.findUnique({ where: { id: data.clinicalOrderId } });
@@ -84,7 +82,6 @@ export class EnterResultUseCase {
             enteredBy: data.enteredBy,
             enteredAt: new Date(),
           },
-          include: { clinicalOrder: true },
         });
       }
 
@@ -95,18 +92,23 @@ export class EnterResultUseCase {
       return result;
     });
 
-    const { TimelinePublisher } = await import('@haspataal/timeline');
+    const { TimelinePublisher, TimelineEventType } = await import('@haspataal/timeline');
     const timelinePublisher = new TimelinePublisher();
+
+    const clinicalOrder = await prisma.clinicalOrder.findUnique({
+      where: { id: data.clinicalOrderId },
+    });
 
     await timelinePublisher.publish({
       patientId: data.patientId,
-      encounterId: labResult.clinicalOrder.encounterId,
+      encounterId: clinicalOrder?.encounterId || '',
       hospitalId: data.hospitalId,
-      eventType: 'RESULT_ENTERED',
+      eventType: TimelineEventType.RESULT_ENTERED,
       title: 'Lab Result Entered (Draft)',
       description: 'The laboratory result has been drafted and is pending verification.',
       actorId: data.enteredBy,
-      payload: { labResultId: labResult.id },
+      timestamp: new Date(),
+      metadata: { labResultId: labResult.id },
     });
 
     return await prisma.labResult.findUnique({

@@ -15,7 +15,6 @@ export class AccessionSampleUseCase {
     // 1. Find sample
     const sample = await prisma.sample.findUnique({
       where: { id: data.sampleId },
-      include: { clinicalOrder: { include: { samples: true } } },
     });
 
     if (!sample) throw new Error('Sample not found');
@@ -42,15 +41,22 @@ export class AccessionSampleUseCase {
       });
 
       const allAccessionedOrFurther = allSamples.every((s) =>
-        [SampleStatus.ACCESSIONED, SampleStatus.PROCESSING, SampleStatus.COMPLETED].includes(
-          s.status,
-        ),
+        (
+          [
+            SampleStatus.ACCESSIONED,
+            SampleStatus.PROCESSING,
+            SampleStatus.COMPLETED,
+          ] as SampleStatus[]
+        ).includes(s.status),
       );
+
+      const order = await tx.clinicalOrder.findUnique({ where: { id: sample.clinicalOrderId } });
 
       if (
         allAccessionedOrFurther &&
-        sample.clinicalOrder.status !== ClinicalOrderStatus.IN_PROGRESS &&
-        sample.clinicalOrder.status !== ClinicalOrderStatus.VERIFIED
+        order &&
+        order.status !== ClinicalOrderStatus.IN_PROGRESS &&
+        order.status !== ClinicalOrderStatus.VERIFIED
       ) {
         await tx.clinicalOrder.update({
           where: { id: sample.clinicalOrderId },

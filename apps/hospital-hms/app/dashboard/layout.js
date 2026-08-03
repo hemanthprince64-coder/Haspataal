@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { requireHospitalStaff } from '@haspataal/auth';
-import { AuthorizationService } from '@haspataal/core';
+import { AuthorizationService } from '@haspataal/authorization';
+import { prisma } from '@haspataal/db';
 import { Button } from '@haspataal/ui';
 import { LayoutDashboard, CreditCard, BarChart3, Users, LogOut } from 'lucide-react';
 
@@ -9,7 +10,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { logoutHospital } from '@/app/actions';
-import { prisma } from '@haspataal/db';
 
 export default async function DashboardLayout({ children }) {
   let user;
@@ -27,7 +27,12 @@ export default async function DashboardLayout({ children }) {
     { href: '/dashboard/billing', label: 'OPD & Billing', icon: CreditCard, module: 'BILLING' },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChart3, module: 'REPORTS' },
     { href: '/dashboard/doctors', label: 'Manage Doctors', icon: Users, module: 'DOCTORS' },
-    { href: '/dashboard/radiology', label: 'Radiology', icon: LayoutDashboard, module: 'RADIOLOGY' },
+    {
+      href: '/dashboard/radiology',
+      label: 'Radiology',
+      icon: LayoutDashboard,
+      module: 'RADIOLOGY',
+    },
   ];
 
   const navItems = allNavItems.filter((item) =>

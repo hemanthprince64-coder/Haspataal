@@ -1,56 +1,44 @@
 import { describe, it, expect } from 'vitest';
+
 import { RadiologyStateMachine } from '../src/domain/state-machine/RadiologyStateMachine';
 
 describe('RadiologyStateMachine', () => {
-  it('should initialize with ORDERED state', () => {
-    const sm = new RadiologyStateMachine();
-    expect(sm.getState()).toBe('ORDERED');
-  });
-
   it('should transition from ORDERED to ACCESSIONED', () => {
-    const sm = new RadiologyStateMachine();
-    sm.transition({ type: 'ACCESSION', accessionNumber: '123' });
-    expect(sm.getState()).toBe('ACCESSIONED');
+    expect(() => RadiologyStateMachine.validateTransition('ORDERED', 'ACCESSIONED')).not.toThrow();
   });
 
   it('should transition through the full happy path', () => {
-    const sm = new RadiologyStateMachine();
-    sm.transition({ type: 'SCHEDULE', timestamp: new Date() });
-    expect(sm.getState()).toBe('SCHEDULED');
-
-    sm.transition({ type: 'ACCESSION', accessionNumber: '123' });
-    expect(sm.getState()).toBe('ACCESSIONED');
-
-    sm.transition({ type: 'ACQUIRE_IMAGE', seriesCount: 2, imageCount: 100 });
-    expect(sm.getState()).toBe('IMAGE_ACQUIRED');
-
-    sm.transition({ type: 'DRAFT_REPORT', findings: 'Normal', impression: 'All good' });
-    expect(sm.getState()).toBe('REPORT_DRAFTED');
-
-    sm.transition({ type: 'VERIFY_REPORT', verifiedBy: 'Dr. Smith' });
-    expect(sm.getState()).toBe('REPORT_VERIFIED');
-
-    sm.transition({ type: 'COMPLETE' });
-    expect(sm.getState()).toBe('COMPLETED');
+    expect(() => RadiologyStateMachine.validateTransition('ORDERED', 'SCHEDULED')).not.toThrow();
+    expect(() =>
+      RadiologyStateMachine.validateTransition('SCHEDULED', 'ACCESSIONED'),
+    ).not.toThrow();
+    expect(() =>
+      RadiologyStateMachine.validateTransition('ACCESSIONED', 'IMAGE_ACQUIRED'),
+    ).not.toThrow();
+    expect(() =>
+      RadiologyStateMachine.validateTransition('IMAGE_ACQUIRED', 'REPORT_DRAFTED'),
+    ).not.toThrow();
+    expect(() =>
+      RadiologyStateMachine.validateTransition('REPORT_DRAFTED', 'REPORT_VERIFIED'),
+    ).not.toThrow();
+    expect(() =>
+      RadiologyStateMachine.validateTransition('REPORT_VERIFIED', 'COMPLETED'),
+    ).not.toThrow();
   });
 
   it('should throw error on invalid transition', () => {
-    const sm = new RadiologyStateMachine();
     expect(() => {
-      sm.transition({ type: 'COMPLETE' });
+      RadiologyStateMachine.validateTransition('ORDERED', 'COMPLETED');
     }).toThrowError(/Invalid transition/);
   });
 
   it('should allow cancellation from ORDERED', () => {
-    const sm = new RadiologyStateMachine();
-    sm.transition({ type: 'CANCEL', reason: 'Patient declined' });
-    expect(sm.getState()).toBe('CANCELLED');
+    expect(() => RadiologyStateMachine.validateTransition('ORDERED', 'CANCELLED')).not.toThrow();
   });
 
   it('should not allow transition after CANCELLED', () => {
-    const sm = new RadiologyStateMachine('CANCELLED');
     expect(() => {
-      sm.transition({ type: 'SCHEDULE', timestamp: new Date() });
+      RadiologyStateMachine.validateTransition('CANCELLED', 'SCHEDULED');
     }).toThrowError(/Invalid transition/);
   });
 });

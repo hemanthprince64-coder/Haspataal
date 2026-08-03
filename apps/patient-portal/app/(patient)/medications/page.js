@@ -1,9 +1,6 @@
 /* eslint-disable */
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
-import { addMedicationAction, deleteMedicationAction } from '@/app/actions';
-import Link from 'next/link';
 import {
   Pill,
   Plus,
@@ -18,12 +15,17 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { useActionState, useEffect, useState } from 'react';
+
+import Link from 'next/link';
+
+import { addMedicationAction, deleteMedicationAction } from '@/app/actions';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -31,7 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import MedicationsList from '@/components/patient/MedicationsList';
+import { Skeleton } from '@/components/ui/skeleton';
+import MedicationsList from '@/features/patient/components/MedicationsList';
 
 const initialState = { message: '', success: false };
 

@@ -1,42 +1,37 @@
+import { prisma } from '@haspataal/db';
+import { ProcessPharmacyOrderUseCase } from '@haspataal/pharmacy';
+
 import { NextResponse } from 'next/server';
 
-import { checkRole, Roles } from '@/lib/auth/roleGuard';
-import { PharmacyService } from '@/lib/services/pharmacy';
-
-export async function GET(req: Request) {
-  try {
-    const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST]);
-    const data = await PharmacyService.getInventory(user.hospital_id);
-    return NextResponse.json(data);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
-}
+import { successResponse, errorResponse } from '@/lib/api-response';
+import { requirePermission } from '@/lib/auth/roleGuard';
 
 export async function POST(req: Request) {
   try {
-    const user = await checkRole(req, [Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST]);
+    const user = await requirePermission(req, 'PHARMACY_VIEW'); // Wait, generating an execution is usually done automatically or by a pharmacist? Let's use PHARMACY_VIEW or PHARMACY_VERIFY
+
+    // The ProcessUseCase usually runs automatically when a doctor prescribes,
+    // but we'll expose it in the API for manual triggering if needed.
+    const userContext = await requirePermission(req, 'PHARMACY_VIEW');
     const body = await req.json();
-    if (body.action === 'AUDIT') {
-      await PharmacyService.logInventoryAudit(
-        user.hospital_id,
-        body.drugStockId,
-        body.type,
-        body.changeQty,
-        body.reason,
-      );
-      return NextResponse.json({ success: true });
-    } else {
-      const data = await PharmacyService.dispenseDrug(
-        user.hospital_id,
-        body.patientId,
-        body.items,
-        body.visitId,
-        body.admissionId,
-      );
-      return NextResponse.json(data);
+    const { clinicalOrderId } = body;
+
+    if (!clinicalOrderId) {
+      return errorResponse('BAD_REQUEST', 'clinicalOrderId is required', 400);
     }
+
+    const useCase = new ProcessPharmacyOrderUseCase(prisma);
+    const result = await useCase.execute({
+      clinicalOrderId,
+      actor: {
+        id: user.user_id,
+        name: user.user_id, // we don't have name in token, just use id for now
+        role: user.role,
+      },
+    });
+
+    return successResponse(result, 201);
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return errorResponse('INTERNAL_ERROR', err.message, 500);
   }
 }

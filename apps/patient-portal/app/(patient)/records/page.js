@@ -12,12 +12,12 @@ import {
 
 import { useState, useEffect } from 'react';
 
-import RecordsList from '@/components/patient/RecordsList';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import RecordsList from '@/features/patient/components/RecordsList';
 
 export default function RecordsPage() {
   const [loading, setLoading] = useState(true);

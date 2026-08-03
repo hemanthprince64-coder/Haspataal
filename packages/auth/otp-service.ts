@@ -191,10 +191,11 @@ export class UnifiedOtpService {
     const code = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
 
+    const purpose = 'login';
     await prisma.otpCode.upsert({
-      where: { phone: normalizedMobile },
-      update: { code, expiresAt },
-      create: { phone: normalizedMobile, code, expiresAt },
+      where: { tenantId_phone_purpose: { tenantId: 'SYSTEM', phone: normalizedMobile, purpose } },
+      update: { otpHash: code, expiresAt, attemptCount: 0, verified: false },
+      create: { tenantId: 'SYSTEM', phone: normalizedMobile, purpose, otpHash: code, expiresAt },
     });
 
     try {
@@ -231,7 +232,10 @@ export class UnifiedOtpService {
     otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'attempted' });
     const normalizedMobile = normalizeMobile(mobile);
 
-    const otpRecord = await prisma.otpCode.findUnique({ where: { phone: normalizedMobile } });
+    const purpose = 'login';
+    const otpRecord = await prisma.otpCode.findUnique({
+      where: { tenantId_phone_purpose: { tenantId: 'SYSTEM', phone: normalizedMobile, purpose } },
+    });
 
     if (!otpRecord) {
       otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'not_requested' });
@@ -240,7 +244,7 @@ export class UnifiedOtpService {
         message: 'OTP not requested for this number. Please request a new OTP.',
       };
     }
-    if (otpRecord.code !== otp) {
+    if (otpRecord.otpHash !== otp) {
       otpVerificationsCounter.inc({ entity_type: context.entityType, status: 'invalid_code' });
       return { success: false, message: 'Invalid OTP. Please try again.' };
     }

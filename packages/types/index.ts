@@ -421,3 +421,5 @@ export enum ClinicalTaskStatus {
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
 }
+
+export * from './src/authorization';

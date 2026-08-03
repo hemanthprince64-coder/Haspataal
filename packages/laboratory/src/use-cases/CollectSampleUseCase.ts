@@ -65,11 +65,12 @@ export class CollectSampleUseCase {
       patientId: data.patientId,
       encounterId: order.encounterId,
       hospitalId: data.hospitalId,
-      eventType: 'SAMPLE_COLLECTED' as TimelineEventType,
+      eventType: TimelineEventType.SAMPLE_COLLECTED,
       title: 'Sample Collected',
       description: `${data.sampleType} sample collected (Barcode: ${data.barcode}).`,
       actorId: data.collectedBy,
-      payload: { sampleId: newSample.id, barcode: data.barcode },
+      timestamp: new Date(),
+      metadata: { sampleId: newSample.id, barcode: data.barcode },
     });
 
     return newSample;

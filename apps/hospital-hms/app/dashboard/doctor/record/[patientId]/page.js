@@ -1,6 +1,7 @@
 /* eslint-disable */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { PatientHistoryService, AuthorizationService } from '@haspataal/core';
+import { AuthorizationService } from '@haspataal/authorization';
+import { PatientHistoryService } from '@haspataal/core';
 
 import { redirect } from 'next/navigation';
 
@@ -130,7 +131,10 @@ export default async function AddHealthRecordPage({ params }) {
             ></textarea>
           </div>
 
-          <div className="grid-layout" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div
+            className="grid-layout"
+            style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}
+          >
             <div className="form-group">
               <label className="form-label">Radiology Modality (Optional)</label>
               <select name="radiologyModality" className="form-input">
@@ -143,7 +147,11 @@ export default async function AddHealthRecordPage({ params }) {
             </div>
             <div className="form-group">
               <label className="form-label">Radiology Reason</label>
-              <input name="radiologyReason" className="form-input" placeholder="e.g. Rule out fracture" />
+              <input
+                name="radiologyReason"
+                className="form-input"
+                placeholder="e.g. Rule out fracture"
+              />
             </div>
           </div>
 

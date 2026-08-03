@@ -1,9 +1,12 @@
- 
 'use client';
 
 import { useState, useEffect } from 'react';
+
 import { getPatientFullProfile } from '@/app/actions';
-import { MaternalHealthAnalytics, PatientProfile } from '@/components/anc/MaternalHealthAnalytics';
+import {
+  MaternalHealthAnalytics,
+  PatientProfile,
+} from '@/features/anc/components/MaternalHealthAnalytics';
 
 export default function TrackerPage() {
   const [patient, setPatient] = useState<any>(null);

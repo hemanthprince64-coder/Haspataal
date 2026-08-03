@@ -22,12 +22,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 import { getPatientFullProfile, patientLogout } from '@/app/actions';
-import ClinicalServices from '@/components/patient/ClinicalServices';
-import ProfileCard from '@/components/patient/ProfileCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +33,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import ClinicalServices from '@/features/patient/components/ClinicalServices';
+import ProfileCard from '@/features/patient/components/ProfileCard';
 
 const actionSections = [
   {
