@@ -18,6 +18,7 @@ const config = {
         'deps',
         'ci',
         'security',
+        'billing',
       ],
     ],
   },

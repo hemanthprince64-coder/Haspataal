@@ -193,9 +193,13 @@ model HospitalsMaster {
   branches                 Branch[]
   verificationLogs         HospitalVerificationLog[]
   agent                    Agent?                      @relation(fields: [agentId], references: [id])
+  chargeItems              ChargeItem[]
+  payments                 Payment[]
   labOrders                LabOrder[]
   admissions               Admission[]
   invoices                 Invoice[]
+  billingAudits            BillingAudit[]
+  paymentIntents           PaymentIntent[]
   notifications            Notification[]
   pharmacyDispenses        PharmacyDispense[]
   rolePermissions          RolePermission[]
@@ -252,6 +256,9 @@ model HospitalsMaster {
   ClinicalTask             ClinicalTask[]
   Sample                   Sample[]
   ImagingStudy             ImagingStudy[]
+  ReceiptSequence          ReceiptSequence?
+  ReceiptTemplate          ReceiptTemplate?
+  Receipt                  Receipt[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -500,6 +507,8 @@ model Patient {
   labOrders                LabOrder[]
   admissions               Admission[]
   invoices                 Invoice[]
+  billingAudits            BillingAudit[]
+  paymentIntents           PaymentIntent[]
   notifications            Notification[]
   pharmacyDispenses        PharmacyDispense[]
   lifecycleTags            PatientLifecycleTag[]
@@ -507,6 +516,8 @@ model Patient {
   addresses                PatientAddress[]
   medicalHistories         PatientMedicalHistory?
   medications              PatientMedication[]
+  billingAccounts          BillingAccount[]
+  chargeItems              ChargeItem[]
   prescriptions            PatientPrescription[]
   records                  PatientRecord[]
   agent                    Agent?                  @relation(fields: [agentId], references: [id])
@@ -539,6 +550,8 @@ model Patient {
   ClinicalTask             ClinicalTask[]
   Sample                   Sample[]
   ImagingStudy             ImagingStudy[]
+  payments                 Payment[]
+  receipts                 Receipt[]
 
   @@index([city])
   @@index([email])
@@ -602,6 +615,7 @@ model PatientPrescription {
   notes             String?
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
+  version           Int                @default(1)
   appointment       Appointment?       @relation(fields: [appointmentId], references: [id])
   encounter         Encounter?         @relation(fields: [encounterId], references: [id])
   doctor            DoctorMaster?      @relation(fields: [doctorId], references: [id])
@@ -664,7 +678,7 @@ model Appointment {
   patient               Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
   followUps             FollowUp[]
   PatientPrescription   PatientPrescription[]
-  payment               Payment?
+  payment               AppointmentPayment?
   visit                 Visit?
   invoices              Invoice[]
   LabOrder              LabOrder[]
@@ -688,19 +702,19 @@ model Slot {
   @@map("slots")
 }
 
-model Payment {
-  id            String        @id @default(uuid())
-  appointmentId String        @unique @map("appointment_id")
+model AppointmentPayment {
+  id            String                   @id @default(uuid())
+  appointmentId String                   @unique @map("appointment_id")
   amount        Int
-  currency      String        @default("INR")
-  status        PaymentStatus @default(PENDING)
-  createdAt     DateTime      @default(now()) @map("created_at")
-  orderId       String        @map("order_id")
-  paymentId     String?       @map("payment_id")
-  appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  currency      String                   @default("INR")
+  status        AppointmentPaymentStatus @default(PENDING)
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  orderId       String                   @map("order_id")
+  paymentId     String?                  @map("payment_id")
+  appointment   Appointment              @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@index([appointmentId])
-  @@map("payments")
+  @@map("appointment_payments")
 }
 
 model DiagnosticCategory {
@@ -1783,39 +1797,44 @@ model Admission {
 }
 
 model Invoice {
-  id                String             @id @default(uuid())
-  hospitalId        String             @map("hospital_id")
-  patientId         String?            @map("patient_id")
-  appointmentId     String?            @map("appointment_id")
-  admissionId       String?            @map("admission_id")
-  diagnosticOrderId String?            @map("diagnostic_order_id")
-  billId            String?            @map("bill_id")
-  invoiceNumber     String             @map("invoice_number")
-  source            String             @default("DIRECT")
-  status            String             @default("DRAFT")
-  subtotal          Decimal            @default(0)
-  gstTotal          Decimal            @default(0) @map("gst_total")
-  discountTotal     Decimal            @default(0) @map("discount_total")
-  totalAmount       Decimal            @default(0) @map("total_amount")
-  paidAmount        Decimal            @default(0) @map("paid_amount")
-  balanceAmount     Decimal            @default(0) @map("balance_amount")
-  finalizedAt       DateTime?          @map("finalized_at")
-  paidAt            DateTime?          @map("paid_at")
-  cancelledAt       DateTime?          @map("cancelled_at")
-  payload           Json?              @default("{}")
-  createdAt         DateTime           @default(now()) @map("created_at")
-  updatedAt         DateTime           @updatedAt @map("updated_at")
-  hospital          HospitalsMaster    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  patient           Patient?           @relation(fields: [patientId], references: [id])
-  appointment       Appointment?       @relation(fields: [appointmentId], references: [id])
-  admission         Admission?         @relation(fields: [admissionId], references: [id])
-  diagnosticOrder   DiagnosticOrder?   @relation(fields: [diagnosticOrderId], references: [id])
-  bill              Bill?              @relation(fields: [billId], references: [id])
+  id                String                 @id @default(uuid())
+  hospitalId        String                 @map("hospital_id")
+  patientId         String?                @map("patient_id")
+  appointmentId     String?                @map("appointment_id")
+  admissionId       String?                @map("admission_id")
+  diagnosticOrderId String?                @map("diagnostic_order_id")
+  billId            String?                @map("bill_id")
+  invoiceNumber     String                 @map("invoice_number")
+  source            String                 @default("DIRECT")
+  status            String                 @default("DRAFT")
+  subtotal          Decimal                @default(0)
+  gstTotal          Decimal                @default(0) @map("gst_total")
+  discountTotal     Decimal                @default(0) @map("discount_total")
+  totalAmount       Decimal                @default(0) @map("total_amount")
+  paidAmount        Decimal                @default(0) @map("paid_amount")
+  balanceAmount     Decimal                @default(0) @map("balance_amount")
+  finalizedAt       DateTime?              @map("finalized_at")
+  paidAt            DateTime?              @map("paid_at")
+  cancelledAt       DateTime?              @map("cancelled_at")
+  payload           Json?                  @default("{}")
+  version           Int                    @default(1)
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+  hospital          HospitalsMaster        @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient           Patient?               @relation(fields: [patientId], references: [id])
+  appointment       Appointment?           @relation(fields: [appointmentId], references: [id])
+  admission         Admission?             @relation(fields: [admissionId], references: [id])
+  diagnosticOrder   DiagnosticOrder?       @relation(fields: [diagnosticOrderId], references: [id])
+  bill              Bill?                  @relation(fields: [billId], references: [id])
   lineItems         InvoiceLineItem[]
-  payments          InvoicePayment[]
+  billingAudits     BillingAudit[]
+  paymentIntents    PaymentIntent[]
+  legacyPayments    LegacyInvoicePayment[]
+  allocations       PaymentAllocation[]
   pharmacyDispenses PharmacyDispense[]
   LabOrder          LabOrder[]
   InsuranceClaim    InsuranceClaim[]
+  ReceiptLine       ReceiptLine[]
 
   @@unique([hospitalId, invoiceNumber])
   @@index([hospitalId, status])
@@ -1842,15 +1861,18 @@ model InvoiceLineItem {
   totalAmount    Decimal         @default(0) @map("total_amount")
   metadata       Json?           @default("{}")
   createdAt      DateTime        @default(now()) @map("created_at")
+  chargeItemId   String?         @map("charge_item_id")
   invoice        Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   service        ServiceCatalog? @relation(fields: [serviceId], references: [id])
+  chargeItem     ChargeItem?     @relation(fields: [chargeItemId], references: [id])
 
   @@index([invoiceId])
   @@index([serviceId])
+  @@index([chargeItemId])
   @@map("invoice_line_items")
 }
 
-model InvoicePayment {
+model LegacyInvoicePayment {
   id              String   @id @default(uuid())
   invoiceId       String   @map("invoice_id")
   hospitalId      String   @map("hospital_id")
@@ -2141,7 +2163,7 @@ enum AppointmentStatus {
   RESCHEDULE_DECLINED
 }
 
-enum PaymentStatus {
+enum AppointmentPaymentStatus {
   PENDING
   SUCCESS
   FAILED
@@ -4280,6 +4302,7 @@ model AuthMethod {
 
   userAccount  UserAccount         @relation(fields: [userAccountId], references: [id])
   contactPoint PatientContactPoint @relation(fields: [contactPointId], references: [id])
+  receipts     Receipt[]
 
   // One auth method per account-contact-type combo
   @@unique([userAccountId, contactPointId, type])
@@ -4685,16 +4708,16 @@ model Order {
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  group               OrderGroup?          @relation(fields: [groupId], references: [id])
-  activeVersion       OrderVersion?        @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
-  versions            OrderVersion[]
-  items               OrderItem[]
-  executions          OrderExecution[]
-  cancellations       OrderCancellation[]
-  audits              OrderAudit[]
-  ProcedureExecution  ProcedureExecution?
-  BloodBankExecution  BloodBankExecution?
-  ReferralExecution   ReferralExecution?
+  group              OrderGroup?         @relation(fields: [groupId], references: [id])
+  activeVersion      OrderVersion?       @relation(name: "ActiveVersion", fields: [activeVersionId], references: [id])
+  versions           OrderVersion[]
+  items              OrderItem[]
+  executions         OrderExecution[]
+  cancellations      OrderCancellation[]
+  audits             OrderAudit[]
+  ProcedureExecution ProcedureExecution?
+  BloodBankExecution BloodBankExecution?
+  ReferralExecution  ReferralExecution?
 
   @@index([hospitalId, patientId])
   @@index([orderedBy])
@@ -4872,14 +4895,14 @@ model PharmacyExecution {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  clinicalOrderId String? @unique @map("clinical_order_id")
-  clinicalOrder   ClinicalOrder?  @relation(fields: [clinicalOrderId], references: [id])
+  clinicalOrderId String?        @unique @map("clinical_order_id")
+  clinicalOrder   ClinicalOrder? @relation(fields: [clinicalOrderId], references: [id])
 
   status String @default("PRESCRIBED")
 
-  version     Int     @default(1)
-  verifiedBy  String? @map("verified_by")
-  dispensedBy String? @map("dispensed_by")
+  version     Int       @default(1)
+  verifiedBy  String?   @map("verified_by")
+  dispensedBy String?   @map("dispensed_by")
   verifiedAt  DateTime? @map("verified_at")
   dispensedAt DateTime? @map("dispensed_at")
 
@@ -4916,13 +4939,13 @@ model PharmacyExecutionItem {
   orderItemId String    @unique @map("order_item_id")
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
 
-  prescribedQuantity Int @map("prescribed_quantity")
-  dispensedQuantity  Int @default(0) @map("dispensed_quantity")
-  version     Int     @default(1)
-  verifiedBy  String? @map("verified_by")
-  dispensedBy String? @map("dispensed_by")
-  verifiedAt  DateTime? @map("verified_at")
-  dispensedAt DateTime? @map("dispensed_at")
+  prescribedQuantity Int       @map("prescribed_quantity")
+  dispensedQuantity  Int       @default(0) @map("dispensed_quantity")
+  version            Int       @default(1)
+  verifiedBy         String?   @map("verified_by")
+  dispensedBy        String?   @map("dispensed_by")
+  verifiedAt         DateTime? @map("verified_at")
+  dispensedAt        DateTime? @map("dispensed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -5156,8 +5179,8 @@ model LaboratoryExecution {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  clinicalOrderId String? @unique @map("clinical_order_id")
-  clinicalOrder   ClinicalOrder?  @relation(fields: [clinicalOrderId], references: [id])
+  clinicalOrderId String?        @unique @map("clinical_order_id")
+  clinicalOrder   ClinicalOrder? @relation(fields: [clinicalOrderId], references: [id])
 
   orderVersionId String @map("order_version_id")
 
@@ -5394,8 +5417,8 @@ model RadiologyExecution {
   hospitalId String @map("hospital_id")
   patientId  String @map("patient_id")
 
-  clinicalOrderId String? @unique @map("clinical_order_id")
-  clinicalOrder   ClinicalOrder?  @relation(fields: [clinicalOrderId], references: [id])
+  clinicalOrderId String?        @unique @map("clinical_order_id")
+  clinicalOrder   ClinicalOrder? @relation(fields: [clinicalOrderId], references: [id])
 
   status RadiologyExecutionStatus @default(PENDING_SCHEDULING)
 
@@ -5610,9 +5633,9 @@ model RadiologyReport {
   status String @default("DRAFT")
 
   clinicalHistory String? @map("clinical_history")
-  findings       String?
-  impression     String?
-  recommendation String?
+  findings        String?
+  impression      String?
+  recommendation  String?
 
   reportedBy String?   @map("reported_by")
   verifiedBy String?   @map("verified_by")
@@ -5620,7 +5643,6 @@ model RadiologyReport {
 
   activeVersionId String?                 @unique @map("active_version_id")
   activeVersion   RadiologyReportVersion? @relation(name: "ActiveReportVersion", fields: [activeVersionId], references: [id])
-
 
   versions         RadiologyReportVersion[]
   criticalFindings RadiologyCriticalFinding[]
@@ -7336,14 +7358,14 @@ model ClinicalOrder {
 
   samples Sample[]
 
-  encounter    Encounter       @relation(fields: [encounterId], references: [id], onDelete: Cascade)
-  patient      Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
-  doctor       DoctorMaster?   @relation(fields: [doctorId], references: [id])
-  ImagingStudy ImagingStudy[]
-  PharmacyExecution PharmacyExecution?
+  encounter           Encounter            @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital            HospitalsMaster      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  doctor              DoctorMaster?        @relation(fields: [doctorId], references: [id])
+  ImagingStudy        ImagingStudy[]
+  PharmacyExecution   PharmacyExecution?
   LaboratoryExecution LaboratoryExecution?
-  RadiologyExecution RadiologyExecution?
+  RadiologyExecution  RadiologyExecution?
 
   @@index([encounterId])
   @@index([encounterId, status])
@@ -7529,4 +7551,338 @@ model TestTemplateParameter {
 
   @@index([templateId])
   @@map("test_template_parameters")
+}
+
+enum BillingSourceEvent {
+  CONSULTATION_COMPLETED
+  LAB_RESULT_VERIFIED
+  RADIOLOGY_COMPLETED
+  MEDICATION_DISPENSED
+  PROCEDURE_COMPLETED
+}
+
+enum SourceAggregateType {
+  ENCOUNTER
+  CLINICAL_ORDER
+  PRESCRIPTION
+  LAB_RESULT
+  RADIOLOGY_REPORT
+  PROCEDURE
+}
+
+enum ChargeCategory {
+  CONSULTATION
+  LAB
+  RADIOLOGY
+  PHARMACY
+  PROCEDURE
+  ROOM
+  MISC
+}
+
+model BillingAccount {
+  id          String   @id @default(uuid())
+  patientId   String   @map("patient_id")
+  balance     Decimal  @default(0)
+  creditLimit Decimal  @default(0) @map("credit_limit")
+  payerType   String   @default("SELF") @map("payer_type")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  chargeItems ChargeItem[]
+
+  @@index([patientId])
+  @@map("billing_accounts")
+}
+
+model ChargeItem {
+  id               String  @id @default(uuid())
+  idempotencyKey   String  @unique @map("idempotency_key")
+  hospitalId       String  @map("hospital_id")
+  patientId        String  @map("patient_id")
+  billingAccountId String? @map("billing_account_id")
+
+  sourceEvent BillingSourceEvent @map("source_event")
+  category    ChargeCategory     @default(MISC)
+
+  currency       String  @default("INR")
+  taxRate        Decimal @default(0) @map("tax_rate")
+  catalogId      String? @map("catalog_id")
+  catalogVersion String? @map("catalog_version")
+
+  sourceEventId       String?              @map("source_event_id")
+  sourceAggregateId   String?              @map("source_aggregate_id")
+  sourceAggregateType SourceAggregateType? @map("source_aggregate_type")
+
+  quantity       Decimal @default(1)
+  unitPrice      Decimal @default(0) @map("unit_price")
+  discountAmount Decimal @default(0) @map("discount_amount")
+  taxAmount      Decimal @default(0) @map("tax_amount")
+  grossAmount    Decimal @default(0) @map("gross_amount")
+  netAmount      Decimal @default(0) @map("net_amount")
+
+  status   String @default("UNBILLED")
+  metadata Json?  @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  createdBy String?  @map("created_by")
+
+  hospital         HospitalsMaster   @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient          Patient           @relation(fields: [patientId], references: [id])
+  billingAccount   BillingAccount?   @relation(fields: [billingAccountId], references: [id])
+  invoiceLineItems InvoiceLineItem[]
+
+  @@index([hospitalId, status])
+  @@index([patientId])
+  @@map("charge_items")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  hospitalId      String        @map("hospital_id")
+  patientId       String        @map("patient_id")
+  intentId        String        @map("intent_id")
+  amount          Decimal
+  allocatedAmount Decimal       @default(0) @map("allocated_amount")
+  currency        String        @default("INR")
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  version         Int           @default(1)
+
+  // Gateway Reference
+  gatewayName          String? @map("gateway_name")
+  gatewayPaymentId     String? @map("gateway_payment_id")
+  gatewayOrderId       String? @map("gateway_order_id")
+  gatewaySignature     String? @map("gateway_signature")
+  gatewayTransactionId String? @map("gateway_transaction_id")
+  gatewayPayload       Json?   @map("gateway_payload") // Immutable raw payload
+
+  receivedAt DateTime @default(now()) @map("received_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  hospital    HospitalsMaster     @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  patient     Patient             @relation(fields: [patientId], references: [id])
+  intent      PaymentIntent       @relation(fields: [intentId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@unique([hospitalId, gatewayTransactionId])
+  @@index([hospitalId, status])
+  @@index([intentId])
+  @@map("payments")
+}
+
+enum BillingAuditAction {
+  CHARGE_CREATED
+  INVOICE_GENERATED
+  INVOICE_ISSUED
+  INVOICE_PRINTED
+  PAYMENT_INTENT_CREATED
+  PAYMENT_INITIATED
+  PAYMENT_COMPLETED
+  PAYMENT_FAILED
+  PAYMENT_CANCELLED
+  PAYMENT_REFUNDED
+  ADJUSTMENT_CREATED
+  INVOICE_VOIDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  NET_BANKING
+  WALLET
+  CHEQUE
+  INSURANCE
+}
+
+enum PaymentIntentStatus {
+  CREATED
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  CANCELLED
+  REFUNDED
+  VOIDED
+}
+
+model BillingAudit {
+  id          String             @id @default(uuid())
+  hospitalId  String             @map("hospital_id")
+  invoiceId   String?            @map("invoice_id")
+  patientId   String?            @map("patient_id")
+  action      BillingAuditAction
+  performedBy String?            @map("performed_by")
+  metadata    Json?              @default("{}")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  invoice  Invoice?        @relation(fields: [invoiceId], references: [id])
+  patient  Patient?        @relation(fields: [patientId], references: [id])
+
+  @@index([hospitalId, invoiceId])
+  @@map("billing_audit")
+}
+
+model PaymentIntent {
+  id             String              @id @default(uuid())
+  hospitalId     String              @map("hospital_id")
+  invoiceId      String              @map("invoice_id")
+  patientId      String              @map("patient_id")
+  idempotencyKey String              @map("idempotency_key")
+  amount         Decimal
+  currency       String              @default("INR")
+  status         PaymentIntentStatus @default(PENDING)
+  paymentMethod  PaymentMethod?      @map("payment_method")
+  gatewayId      String?             @map("gateway_id")
+  metadata       Json?               @default("{}")
+
+  // Retry Policy
+  retryCount        Int       @default(0) @map("retry_count")
+  lastFailureReason String?   @map("last_failure_reason")
+  expiresAt         DateTime? @map("expires_at")
+  nextRetryAt       DateTime? @map("next_retry_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  invoice  Invoice         @relation(fields: [invoiceId], references: [id])
+  patient  Patient         @relation(fields: [patientId], references: [id])
+  payments Payment[]
+
+  @@unique([hospitalId, idempotencyKey])
+  @@index([hospitalId, invoiceId])
+  @@map("payment_intents")
+}
+
+// Scaffolds for Phase 10D
+model CreditNote {
+  id         String   @id @default(uuid())
+  hospitalId String   @map("hospital_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+model Adjustment {
+  id         String   @id @default(uuid())
+  hospitalId String   @map("hospital_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+}
+
+enum AllocationStatus {
+  ACTIVE
+  REVERSED
+}
+
+model PaymentAllocation {
+  id               String           @id @default(uuid())
+  hospitalId       String           @map("hospital_id")
+  paymentId        String           @map("payment_id")
+  invoiceId        String           @map("invoice_id")
+  allocatedAmount  Decimal          @map("allocated_amount")
+  currency         String           @default("INR")
+  allocationNumber String           @map("allocation_number")
+  allocationType   String           @default("PAYMENT") @map("allocation_type")
+  createdBy        String           @map("created_by") // user ID
+  allocatedAt      DateTime         @default(now()) @map("allocated_at")
+  status           AllocationStatus @default(ACTIVE)
+  version          Int              @default(1)
+  metadata         Json?            @default("{}")
+  idempotencyKey   String           @map("idempotency_key")
+  receiptLineId    String?          @map("receipt_line_id") // Populated in 10D.4
+
+  payment     Payment      @relation(fields: [paymentId], references: [id])
+  invoice     Invoice      @relation(fields: [invoiceId], references: [id])
+  ReceiptLine ReceiptLine?
+
+  @@unique([hospitalId, idempotencyKey])
+  @@index([hospitalId])
+  @@index([invoiceId])
+  @@index([paymentId])
+  @@index([allocatedAt])
+  @@map("payment_allocations")
+}
+
+enum ReceiptStatus {
+  ISSUED
+  VOIDED
+}
+
+model ReceiptSequence {
+  id           String   @id @default(uuid())
+  hospitalId   String   @unique @map("hospital_id")
+  prefix       String
+  currentValue Int      @default(0) @map("current_value")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model ReceiptTemplate {
+  id                 String   @id @default(uuid())
+  hospitalId         String   @unique @map("hospital_id")
+  headerText         String?  @map("header_text")
+  footerText         String?  @map("footer_text")
+  termsAndConditions String?  @map("terms_and_conditions")
+  logoUrl            String?  @map("logo_url")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  hospital HospitalsMaster @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model Receipt {
+  id            String        @id @default(uuid())
+  hospitalId    String        @map("hospital_id")
+  patientId     String        @map("patient_id")
+  receiptNumber String        @map("receipt_number")
+  totalAmount   Decimal       @map("total_amount")
+  status        ReceiptStatus @default(ISSUED)
+  snapshot      Json // Immutable copy of patient/hospital/payment at issuance time
+  voidReason    String?       @map("void_reason")
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  hospital     HospitalsMaster @relation(fields: [hospitalId], references: [id])
+  patient      Patient         @relation(fields: [patientId], references: [id])
+  lines        ReceiptLine[]
+  AuthMethod   AuthMethod?     @relation(fields: [authMethodId], references: [id])
+  authMethodId String?
+
+  @@unique([hospitalId, receiptNumber])
+}
+
+model ReceiptLine {
+  id           String  @id @default(uuid())
+  receiptId    String  @map("receipt_id")
+  allocationId String  @unique @map("allocation_id") // 1:1 with PaymentAllocation
+  invoiceId    String  @map("invoice_id")
+  amount       Decimal
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  receipt    Receipt           @relation(fields: [receiptId], references: [id])
+  allocation PaymentAllocation @relation(fields: [allocationId], references: [id])
+  invoice    Invoice           @relation(fields: [invoiceId], references: [id])
+}
+
+model PaymentReconciliation {
+  id         String   @id @default(uuid())
+  hospitalId String   @map("hospital_id")
+  createdAt  DateTime @default(now()) @map("created_at")
 }

@@ -4,7 +4,9 @@ import { EventEmitter } from 'events';
 
 export interface DomainEvent<TPayload = Record<string, unknown>> {
   id: string;
-  version: number;
+  version: number; // Aggregate version
+  eventVersion: number;
+  schemaVersion: number;
   type: string;
   aggregateId: string;
   aggregateType: string;

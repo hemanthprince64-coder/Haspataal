@@ -1,3 +1,4 @@
+import { BillingEventConsumer } from '@haspataal/billing';
 import { prisma } from '@haspataal/db';
 import { eventBus } from '@haspataal/events';
 import { JourneyConsumer } from '@haspataal/journey';
@@ -21,6 +22,7 @@ outboxConsumerRegistry.register(new BedConsumer());
 outboxConsumerRegistry.register(new NotificationConsumer());
 outboxConsumerRegistry.register(new SearchConsumer());
 outboxConsumerRegistry.register(new AnalyticsConsumer());
+outboxConsumerRegistry.register(new BillingEventConsumer());
 
 function generateIntegerHash(input: string): number {
   const hash = crypto.createHash('sha256').update(input).digest();
