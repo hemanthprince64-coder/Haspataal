@@ -1,8 +1,11 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
 import { User, Stethoscope, Hospital, ArrowRight } from 'lucide-react';
+
+import React from 'react';
+
+import Link from 'next/link';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -35,8 +38,8 @@ const portalConfigs = {
     iconBg: 'bg-teal-500/15 text-teal-400',
     btnColor: 'bg-teal-600 hover:bg-teal-700',
     regBtnColor: 'border-teal-500/20 text-teal-400 hover:bg-teal-500/10',
-    loginPath: '/doctor/login',
-    registerPath: '/doctor/register',
+    loginPath: 'http://localhost:3001/login/doctor',
+    registerPath: 'http://localhost:3001/register/doctor',
   },
   hospital: {
     title: 'For Hospitals',
@@ -48,8 +51,8 @@ const portalConfigs = {
     iconBg: 'bg-purple-500/15 text-purple-400',
     btnColor: 'bg-purple-600 hover:bg-purple-700',
     regBtnColor: 'border-purple-500/20 text-purple-400 hover:bg-purple-500/10',
-    loginPath: '/hospital/login',
-    registerPath: '/hospital/register',
+    loginPath: 'http://localhost:3001/login',
+    registerPath: 'http://localhost:3001/register',
   },
 };
 
