@@ -34,7 +34,7 @@
   },
   "scripts": {
     "dev": "turbo run dev --filter=patient-portal",
-    "dev:all": "turbo run dev",
+    "dev:all": "turbo run dev --concurrency=20",
     "dev:patient": "turbo run dev --filter=patient-portal",
     "dev:admin": "turbo run dev --filter=haspataal-admin",
     "dev:gateway": "turbo run dev --filter=@haspataal/api-gateway",
