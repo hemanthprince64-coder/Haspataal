@@ -34,6 +34,25 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/hospital/:path*',
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/hospital/:path*`,
+        permanent: true,
+      },
+      {
+        source: '/doctor/:path*',
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/doctor/:path*`,
+        permanent: true,
+      },
+      {
+        source: '/admin/:path*',
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/admin/:path*`,
+        permanent: true,
+      }
+    ];
+  },
   async headers() {
     return [
       {

@@ -6,49 +6,13 @@ import { verifySessionToken } from './lib/auth/edge-session';
 // --- RBAC Configuration ---
 
 const PUBLIC_ROUTES = [
-  // Admin
-  '/admin',
-  // Hospital
-  '/hospital/login',
-  '/hospital/register',
-  '/hospital/forgot-password',
-  // Doctor
-  '/doctor/login',
-  '/doctor/forgot-password',
   // Patient
   '/login',
   '/register',
   '/forgot-password',
-  // Agent
-  '/agent/login',
 ];
 
-const PROTECTED_ROUTES = [
-  {
-    prefix: '/hospital',
-    cookie: 'session_user',
-    role: 'HOSPITAL_ADMIN',
-    login: '/hospital/login',
-  },
-  {
-    prefix: '/doctor',
-    cookie: 'session_doctor',
-    role: 'DOCTOR',
-    login: '/doctor/login',
-  },
-  {
-    prefix: '/admin',
-    cookie: 'session_admin',
-    role: 'PLATFORM_ADMIN',
-    login: '/admin',
-  },
-  {
-    prefix: '/agent',
-    cookie: 'session_agent',
-    role: 'AGENT',
-    login: '/agent/login',
-  },
-];
+const PROTECTED_ROUTES: Array<{ prefix: string; cookie: string; role: string; login: string }> = [];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
