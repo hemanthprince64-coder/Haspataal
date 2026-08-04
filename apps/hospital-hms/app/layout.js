@@ -1,12 +1,14 @@
 /* eslint-disable */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import './globals.css';
+import { Button } from '@haspataal/ui';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
-import { CSPostHogProvider } from './providers';
+
 import PostHogPageView from './PostHogPageView';
-import { Button } from '@haspataal/ui';
+import './globals.css';
+import { CSPostHogProvider } from './providers';
 
 export const viewport = {
   width: 'device-width',
@@ -29,14 +31,14 @@ export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <CSPostHogProvider>
           <div className="min-h-screen flex flex-col">
             {/* Header */}
@@ -49,9 +51,7 @@ export default function RootLayout({ children }) {
                   height={36}
                   style={{ objectFit: 'contain' }}
                 />
-                <span className="font-bold text-primary text-lg">
-                  Haspataal
-                </span>
+                <span className="font-bold text-primary text-lg">Haspataal</span>
                 <span className="text-[10px] font-semibold text-muted-foreground bg-slate-100 px-2 py-0.5 rounded-full">
                   PARTNER
                 </span>
