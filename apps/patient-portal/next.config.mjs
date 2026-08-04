@@ -33,17 +33,26 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-  },
   async redirects() {
     return [
       {
+        source: '/hospital/login',
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/login`,
+        permanent: true,
+      },
+      {
         source: '/hospital/:path*',
-        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/hospital/:path*`,
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/:path*`,
+        permanent: true,
+      },
+      {
+        source: '/doctor/login',
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/login/doctor`,
         permanent: true,
       },
       {
         source: '/doctor/:path*',
-        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/doctor/:path*`,
+        destination: `${process.env.HOSPITAL_APP_URL || 'http://localhost:3001'}/dashboard/doctor/:path*`,
         permanent: true,
       },
       {
