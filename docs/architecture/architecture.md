@@ -1,5 +1,46 @@
----\nversion: 2.0\nowner: Haspataal Engineering\nlast_updated: 2026-08-04\nstatus: Active\n---\n
+---
+version: 2.0
+owner: Haspataal Engineering
+last_updated: 2026-08-04
+status: Active
+---
+
 # Architecture Overview
+
+## Bounded Contexts
+
+Haspataal is a platform composed of decoupled bounded contexts rather than a monolithic application.
+
+```
+Platform
+│
+├── Identity
+├── Scheduling
+├── Clinical
+│     ├── Encounter
+│     ├── Consultation
+│     ├── Timeline
+│     ├── Orders
+│     ├── Laboratory
+│     ├── Radiology
+│     └── Pharmacy
+│
+├── Financial
+│     ├── Billing
+│     ├── Payments
+│     └── Insurance
+│
+├── Operations
+│     ├── Notifications
+│     ├── Audit
+│     └── Reporting
+│
+└── Platform Services
+      ├── Auth
+      ├── RBAC
+      ├── Events
+      └── Multi-tenancy
+```
 
 ## Monorepo Structure
 
@@ -45,6 +86,18 @@ packages/core/
 - **Event Bus:** Dual-write to PostgreSQL (`EventLog`) and Redis Streams for async processing.
 - **Multi-Tenancy:** Strict Row-Level Security (RLS) on EVERY table using `current_setting('app.hospital_id')`.
 - **Inter-Module Communication:** No direct calls. Modules communicate purely via events.
+
+## Billing Architecture Rules
+
+The Financial Bounded Context is an event-listening orchestration layer.
+1. **Billing never modifies clinical data.**
+2. **Clinical modules never create invoices directly.**
+3. **Only Billing owns invoice lifecycle.**
+4. **All charges originate from immutable events.**
+5. **Payments are append-only.**
+6. **Never delete financial records—use adjustments or reversals.**
+7. **Billing computations must be deterministic and reproducible from stored data** (e.g., `Sum(ChargeItems) + Taxes - Discounts`).
+8. **Financial events are immutable.** (Use Adjustment, Credit Note, Refund, Void, Reversal instead of Updates).
 
 ## Tech Stack & Environment
 
