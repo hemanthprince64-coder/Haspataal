@@ -11,3 +11,5 @@ export * from './pricing/Money';
 export * from './payments/PaymentIntentStateMachine';
 export * from './payments/CreatePaymentIntentUseCase';
 export * from './payments/CancelPaymentIntentUseCase';
+export * from './refunds/aggregates/RefundAggregate';
+export * from './reports/services/FinancialReportingService';

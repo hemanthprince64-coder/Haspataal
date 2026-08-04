@@ -1,15 +1,22 @@
 /* eslint-disable */
 import Razorpay from 'razorpay';
-import { auth } from '@/auth';
+
 import { NextResponse } from 'next/server';
+
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 
-const isLocalMode = process.env.DATABASE_PROVIDER === 'sqlite' || !process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID === 'test_key_id';
+const isLocalMode =
+  process.env.DATABASE_PROVIDER === 'sqlite' ||
+  !process.env.RAZORPAY_KEY_ID ||
+  process.env.RAZORPAY_KEY_ID === 'test_key_id';
 
-const razorpay = !isLocalMode ? new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-}) : null;
+const razorpay = !isLocalMode
+  ? new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    })
+  : null;
 
 export async function POST(req) {
   const session = await auth();
@@ -45,7 +52,9 @@ export async function POST(req) {
         date: new Date(date),
         slot,
         status: 'PENDING',
-        notes: isLocalMode ? 'Local Booking - Awaiting Cash/UPI Verification' : 'Online Booking - Payment Pending',
+        notes: isLocalMode
+          ? 'Local Booking - Awaiting Cash/UPI Verification'
+          : 'Online Booking - Payment Pending',
       },
     });
 
@@ -53,7 +62,7 @@ export async function POST(req) {
       const orderId = `local_order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
       // Create local Payment Record linked to Appointment
-      await prisma.payment.create({
+      await prisma.appointmentPayment.create({
         data: {
           orderId: orderId,
           amount: amount * 100,
@@ -91,7 +100,7 @@ export async function POST(req) {
     const order = await razorpay.orders.create(options);
 
     // 4. Create Payment Record linked to Appointment
-    await prisma.payment.create({
+    await prisma.appointmentPayment.create({
       data: {
         orderId: order.id,
         amount: amount * 100,
@@ -107,4 +116,3 @@ export async function POST(req) {
     return NextResponse.json({ message: 'Failed to create order' }, { status: 500 });
   }
 }
-

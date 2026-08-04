@@ -259,6 +259,7 @@ model HospitalsMaster {
   ReceiptSequence          ReceiptSequence?
   ReceiptTemplate          ReceiptTemplate?
   Receipt                  Receipt[]
+  refunds Refund[]
 
   @@index([city])
   @@map("hospitals_master")
@@ -552,6 +553,7 @@ model Patient {
   ImagingStudy             ImagingStudy[]
   payments                 Payment[]
   receipts                 Receipt[]
+  refunds Refund[]
 
   @@index([city])
   @@index([email])
@@ -1835,6 +1837,7 @@ model Invoice {
   LabOrder          LabOrder[]
   InsuranceClaim    InsuranceClaim[]
   ReceiptLine       ReceiptLine[]
+  refunds Refund[]
 
   @@unique([hospitalId, invoiceNumber])
   @@index([hospitalId, status])
@@ -7666,6 +7669,7 @@ model Payment {
   patient     Patient             @relation(fields: [patientId], references: [id])
   intent      PaymentIntent       @relation(fields: [intentId], references: [id])
   allocations PaymentAllocation[]
+  refunds Refund[]
 
   @@unique([hospitalId, gatewayTransactionId])
   @@index([hospitalId, status])
@@ -7715,6 +7719,7 @@ enum PaymentStatus {
   FAILED
   CANCELLED
   REFUNDED
+  PARTIALLY_REFUNDED
   VOIDED
 }
 
@@ -7885,4 +7890,44 @@ model PaymentReconciliation {
   id         String   @id @default(uuid())
   hospitalId String   @map("hospital_id")
   createdAt  DateTime @default(now()) @map("created_at")
+}
+
+
+model Refund {
+  id              String        @id @default(uuid())
+  hospitalId      String        @map("hospital_id")
+  patientId       String        @map("patient_id")
+  paymentId       String        @map("payment_id")
+  invoiceId       String?       @map("invoice_id")
+  amount          Decimal
+  currency        String        @default("INR")
+  refundNumber    String        @unique @map("refund_number")
+  reason          String
+  status          RefundStatus  @default(PENDING)
+  version         Int           @default(1)
+  
+  gatewayRefundId String?       @map("gateway_refund_id")
+  gatewayPayload  Json?         @map("gateway_payload")
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  processedAt     DateTime?     @map("processed_at")
+  createdBy       String        @map("created_by")
+
+  hospital        HospitalsMaster @relation(fields: [hospitalId], references: [id])
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  payment         Payment       @relation(fields: [paymentId], references: [id])
+  invoice         Invoice?      @relation(fields: [invoiceId], references: [id])
+
+  @@index([hospitalId])
+  @@index([patientId])
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REJECTED
 }

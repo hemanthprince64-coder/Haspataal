@@ -68,3 +68,27 @@ export function createBillGeneratedEvent(
     payload,
   };
 }
+
+export interface PaymentRefundedPayload {
+  refundId: string;
+  paymentId: string;
+  amount: number;
+  reason: string;
+}
+export function createPaymentRefundedEvent(
+  hospitalId: string,
+  payload: PaymentRefundedPayload,
+  eventId: string,
+): CanonicalEventEnvelope {
+  return {
+    eventId,
+    eventType: BillingEventTypes.PAYMENT_REFUNDED,
+    eventVersion: 1,
+    schemaVersion: '1.0.0',
+    occurredAt: new Date().toISOString(),
+    aggregate: { aggregateId: payload.refundId, aggregateType: 'Refund' },
+    actor: { actorId: 'system', actorType: 'SYSTEM' },
+    scope: { hospitalId },
+    payload,
+  };
+}

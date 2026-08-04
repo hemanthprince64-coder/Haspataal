@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing order reference' }, { status: 422 });
   }
 
-  const payment = await prisma.payment.findFirst({
+  const payment = await prisma.appointmentPayment.findFirst({
     where: { orderId: razorpayOrderId },
     include: { appointment: true },
   });
