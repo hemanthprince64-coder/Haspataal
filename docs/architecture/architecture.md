@@ -1,9 +1,4 @@
-Version: 2.0
-Owner: Haspataal Engineering
-Last Updated: 2026-08-04
-Related ADRs: ADR-0001, ADR-0002, ADR-0003
-Related Packages: @haspataal/core, @haspataal/db
-
+---\nversion: 2.0\nowner: Haspataal Engineering\nlast_updated: 2026-08-04\nstatus: Active\n---\n
 # Architecture Overview
 
 ## Monorepo Structure

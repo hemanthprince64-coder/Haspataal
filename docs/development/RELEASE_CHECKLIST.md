@@ -1,7 +1,4 @@
-Version: 2.0
-Owner: Haspataal Engineering
-Last Updated: 2026-08-04
-
+---\nversion: 2.0\nowner: Haspataal Engineering\nlast_updated: 2026-08-04\nstatus: Active\n---\n
 # Pre-Deployment Release Checklist
 
 Before every deployment to production, the following Runbook must be executed:

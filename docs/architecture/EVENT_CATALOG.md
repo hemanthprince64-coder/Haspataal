@@ -1,7 +1,4 @@
-Version: 2.0
-Owner: Haspataal Engineering
-Last Updated: 2026-08-04
-
+---\nversion: 2.0\nowner: Haspataal Engineering\nlast_updated: 2026-08-04\nstatus: Active\n---\n
 # Event Catalog
 
 The platform operates on a dual-write event bus. Every state mutation writes to the PostgreSQL `EventLog` table and publishes to a Redis Stream for async worker processing.

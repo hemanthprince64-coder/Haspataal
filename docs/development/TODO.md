@@ -1,7 +1,4 @@
-Version: 2.0
-Owner: Haspataal Engineering
-Last Updated: 2026-08-04
-
+---\nversion: 2.0\nowner: Haspataal Engineering\nlast_updated: 2026-08-04\nstatus: Active\n---\n
 # Pending Tasks (TODO)
 
 - **Phase 11:** Notifications Engine overhaul (WhatsApp templates, 10pm-8am curfew enforcement).

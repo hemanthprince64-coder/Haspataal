@@ -1,7 +1,4 @@
-Version: 2.0
-Owner: Haspataal Engineering
-Last Updated: 2026-08-04
-
+---\nversion: 2.0\nowner: Haspataal Engineering\nlast_updated: 2026-08-04\nstatus: Active\n---\n
 # Changelog & Completed Work
 
 - **2026-08-04**: Fixed Next.js soft navigation bug by changing `next/link` paths in `PortalCard` to absolute URLs to enforce cross-domain navigation.
