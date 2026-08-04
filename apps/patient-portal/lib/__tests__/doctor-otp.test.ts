@@ -1,12 +1,15 @@
-import { UnifiedOtpService } from '@haspataal/auth';
+import { OtpService, OtpPurpose } from '@haspataal/auth';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { services } from '../services';
 
 vi.mock('@haspataal/auth', () => ({
-  UnifiedOtpService: {
-    requestOtp: vi.fn(),
+  OtpService: {
+    sendOtp: vi.fn(),
     verifyOtp: vi.fn(),
+  },
+  OtpPurpose: {
+    HOSPITAL_LOGIN: 'HOSPITAL_LOGIN',
   },
 }));
 
@@ -17,7 +20,7 @@ describe('Doctor OTP Service (Unified)', () => {
 
   describe('requestOtp', () => {
     it('should request OTP for valid mobile', async () => {
-      vi.mocked(UnifiedOtpService.requestOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.sendOtp).mockResolvedValueOnce({
         success: true,
         code: '123456',
         expiresAt: new Date(),
@@ -26,14 +29,17 @@ describe('Doctor OTP Service (Unified)', () => {
       const result = await services.doctor.requestOtp('9876543210');
 
       expect(result).toBe(true);
-      expect(UnifiedOtpService.requestOtp).toHaveBeenCalledWith('9876543210', {
-        entityType: 'DOCTOR',
-        channel: 'SMS',
-      });
+      expect(OtpService.sendOtp).toHaveBeenCalledWith(
+        { phone: '9876543210', purpose: 'HOSPITAL_LOGIN' },
+        {
+          entityType: 'DOCTOR',
+          channel: 'SMS',
+        },
+      );
     });
 
     it('should normalize mobile number', async () => {
-      vi.mocked(UnifiedOtpService.requestOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.sendOtp).mockResolvedValueOnce({
         success: true,
         code: '123456',
         expiresAt: new Date(),
@@ -41,14 +47,14 @@ describe('Doctor OTP Service (Unified)', () => {
 
       await services.doctor.requestOtp('+91-98765-43210');
 
-      expect(UnifiedOtpService.requestOtp).toHaveBeenCalledWith(
-        '+91-98765-43210',
+      expect(OtpService.sendOtp).toHaveBeenCalledWith(
+        { phone: '+91-98765-43210', purpose: 'HOSPITAL_LOGIN' },
         expect.objectContaining({ entityType: 'DOCTOR' }),
       );
     });
 
     it('should throw on OTP request failure', async () => {
-      vi.mocked(UnifiedOtpService.requestOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.sendOtp).mockResolvedValueOnce({
         success: false,
         message: 'Rate limited',
       });
@@ -59,7 +65,7 @@ describe('Doctor OTP Service (Unified)', () => {
 
   describe('verifyOtp', () => {
     it('should verify valid OTP and return doctor', async () => {
-      vi.mocked(UnifiedOtpService.verifyOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.verifyOtp).mockResolvedValueOnce({
         success: true,
         user: {
           id: 'doctor-1',
@@ -75,13 +81,14 @@ describe('Doctor OTP Service (Unified)', () => {
 
       expect(result.user.id).toBe('doctor-1');
       expect(result.user.role).toBe('DOCTOR');
-      expect(UnifiedOtpService.verifyOtp).toHaveBeenCalledWith('9876543210', '123456', {
-        entityType: 'DOCTOR',
-      });
+      expect(OtpService.verifyOtp).toHaveBeenCalledWith(
+        { phone: '9876543210', otp: '123456', purpose: 'HOSPITAL_LOGIN' },
+        { entityType: 'DOCTOR' },
+      );
     });
 
     it('should reject expired OTP', async () => {
-      vi.mocked(UnifiedOtpService.verifyOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.verifyOtp).mockResolvedValueOnce({
         success: false,
         message: 'OTP has expired',
       });
@@ -92,7 +99,7 @@ describe('Doctor OTP Service (Unified)', () => {
     });
 
     it('should reject invalid OTP code', async () => {
-      vi.mocked(UnifiedOtpService.verifyOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.verifyOtp).mockResolvedValueOnce({
         success: false,
         message: 'Invalid OTP',
       });
@@ -103,7 +110,7 @@ describe('Doctor OTP Service (Unified)', () => {
     });
 
     it('should reject when OTP not found', async () => {
-      vi.mocked(UnifiedOtpService.verifyOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.verifyOtp).mockResolvedValueOnce({
         success: false,
         message: 'OTP not requested',
       });
@@ -114,7 +121,7 @@ describe('Doctor OTP Service (Unified)', () => {
     });
 
     it('should reject suspended accounts', async () => {
-      vi.mocked(UnifiedOtpService.verifyOtp).mockResolvedValueOnce({
+      vi.mocked(OtpService.verifyOtp).mockResolvedValueOnce({
         success: false,
         message: 'Account is suspended',
       });

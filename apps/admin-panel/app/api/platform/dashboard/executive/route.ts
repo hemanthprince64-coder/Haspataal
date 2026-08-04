@@ -1,5 +1,5 @@
 import { requirePermission, Permission } from '@haspataal/auth';
-import logger from '@haspataal/logger';
+import { logger } from '@haspataal/logger';
 import { PlatformDashboardService } from '@haspataal/platform';
 
 import { NextResponse } from 'next/server';

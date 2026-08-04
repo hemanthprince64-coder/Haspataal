@@ -13,6 +13,7 @@
   "dependencies": {
     "@haspataal/db": "*",
     "@haspataal/platform-contracts": "*",
+    "@haspataal/events": "*",
     "bullmq": "*",
     "ioredis": "*",
     "uuid": "*",

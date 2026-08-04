@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { BookAppointmentUseCase } from './BookAppointmentUseCase';
-import { IAppointmentRepository } from '../repositories/IAppointmentRepository';
-import { Appointment } from '../entities/Appointment';
 import { BookingStatus } from '@haspataal/types';
+import { describe, it, expect, vi } from 'vitest';
+
+import { Appointment } from '../entities/Appointment';
+import { IAppointmentRepository } from '../repositories/IAppointmentRepository';
+import { BookAppointmentUseCase } from './BookAppointmentUseCase';
 
 describe('BookAppointmentUseCase (Pure Logic Test)', () => {
   const mockRepo: IAppointmentRepository = {
@@ -21,7 +22,7 @@ describe('BookAppointmentUseCase (Pure Logic Test)', () => {
   it('should successfully book an appointment when slot is available', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 1);
-    
+
     const request = {
       patientId: 'pat-1',
       doctorId: 'doc-1',
@@ -32,7 +33,7 @@ describe('BookAppointmentUseCase (Pure Logic Test)', () => {
 
     // Mock availability check
     vi.mocked(mockRepo.findBySlot).mockResolvedValue(null);
-    
+
     // Mock creation
     vi.mocked(mockRepo.create).mockImplementation(async (app) => app);
 
@@ -46,7 +47,7 @@ describe('BookAppointmentUseCase (Pure Logic Test)', () => {
   it('should throw an error if the slot is already taken', async () => {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 1);
-    
+
     const request = {
       patientId: 'pat-1',
       doctorId: 'doc-1',
@@ -56,16 +57,17 @@ describe('BookAppointmentUseCase (Pure Logic Test)', () => {
     };
 
     // Mock availability check (finds existing)
-    vi.mocked(mockRepo.findBySlot).mockResolvedValue({ id: 'existing' } as any);
+    // The usecase now relies on transactional safety via create
+    vi.mocked(mockRepo.create).mockRejectedValue(new Error('SLOT_ALREADY_TAKEN'));
 
     await expect(useCase.execute(request)).rejects.toThrow('SLOT_ALREADY_TAKEN');
-    expect(mockRepo.create).not.toHaveBeenCalled();
+    expect(mockRepo.create).toHaveBeenCalled();
   });
 
   it('should throw an error if booking in the past', async () => {
     const pastDate = new Date();
     pastDate.setDate(pastDate.getDate() - 1);
-    
+
     const request = {
       patientId: 'pat-1',
       doctorId: 'doc-1',

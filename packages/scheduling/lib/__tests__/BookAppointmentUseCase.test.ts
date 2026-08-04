@@ -1,8 +1,9 @@
+import { BookingStatus } from '@haspataal/types';
 import { describe, it, expect, vi } from 'vitest';
+
+import { Appointment } from '../Appointment';
 import { BookAppointmentUseCase } from '../BookAppointmentUseCase';
 import { IAppointmentRepository } from '../IAppointmentRepository';
-import { Appointment } from '../Appointment';
-import { BookingStatus } from '@haspataal/types';
 
 describe('BookAppointmentUseCase (Pure Logic Test)', () => {
   const mockRepo: IAppointmentRepository = {
@@ -53,10 +54,12 @@ describe('BookAppointmentUseCase (Pure Logic Test)', () => {
       slot: '10:00',
     };
 
-    vi.mocked(mockRepo.findBySlot).mockResolvedValue({ id: 'existing' } as any);
+    // Mock availability check (finds existing)
+    // The usecase now relies on transactional safety via create
+    vi.mocked(mockRepo.create).mockRejectedValue(new Error('SLOT_ALREADY_TAKEN'));
 
     await expect(useCase.execute(request)).rejects.toThrow('SLOT_ALREADY_TAKEN');
-    expect(mockRepo.create).not.toHaveBeenCalled();
+    expect(mockRepo.create).toHaveBeenCalled();
   });
 
   it('should throw an error if booking in the past', async () => {

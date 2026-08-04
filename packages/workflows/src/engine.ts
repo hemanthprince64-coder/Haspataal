@@ -154,12 +154,17 @@ export class WorkflowEngine<State extends string, Action extends string> {
         EventBus.getInstance().publish({
           id: uuidv4(),
           type: rule.domainEvent,
-          timestamp: new Date(),
+          occurredAt: new Date(),
           correlationId,
-          sourceSystem: 'platform-workflows',
-          actorId: actor.id,
-          actorType: actor.role,
+          causationId: 'platform-workflows',
+          actor: {
+            id: actor.id,
+            type: actor.role,
+          },
           hospitalId: entityType === 'HOSPITAL' ? entityId : undefined,
+          version: 1,
+          aggregateId: entityId,
+          aggregateType: entityType,
           payload: {
             entityType,
             entityId,

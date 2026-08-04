@@ -7,7 +7,8 @@ import { NextResponse } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { requirePermission } from '@/lib/auth/roleGuard';
 
-export async function POST(req: Request, { params }: { params: { executionId: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ executionId: string }> }) {
+  const executionId = (await params).executionId;
   try {
     const user = await requirePermission(req, 'PHARMACY_CANCEL');
     const body = await req.json();
@@ -27,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { executionId: st
     const useCase = new CancelPharmacyOrderUseCase(prisma, getTimelinePublisher());
 
     const result = await useCase.execute({
-      executionId: params.executionId,
+      executionId,
       expectedVersion,
       reason,
       actor: {

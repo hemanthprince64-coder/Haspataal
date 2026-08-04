@@ -91,13 +91,10 @@ async function dispatchSms(
           to: `+91${mobile}`,
         });
 
-        logger.info(
-          { action: 'otp_sms_sent', mobile, provider: 'twilio' },
-          'OTP SMS sent via Twilio',
-        );
+        logger.info({ action: 'otp_sms_sent', provider: 'twilio' }, 'OTP SMS sent via Twilio');
         return { success: true, provider: 'twilio' };
       } catch (error) {
-        logger.error({ action: 'otp_sms_failed', mobile, error }, 'Twilio SMS failed');
+        logger.error({ action: 'otp_sms_failed', error }, 'Twilio SMS failed');
         return { success: false, provider: 'twilio', error: 'SMS delivery failed' };
       }
     }
@@ -123,13 +120,10 @@ async function dispatchSms(
           throw new Error(`MSG91 API returned ${response.status}`);
         }
 
-        logger.info(
-          { action: 'otp_sms_sent', mobile, provider: 'msg91' },
-          'OTP SMS sent via MSG91',
-        );
+        logger.info({ action: 'otp_sms_sent', provider: 'msg91' }, 'OTP SMS sent via MSG91');
         return { success: true, provider: 'msg91' };
       } catch (error) {
-        logger.error({ action: 'otp_sms_failed', mobile, error }, 'MSG91 SMS failed');
+        logger.error({ action: 'otp_sms_failed', error }, 'MSG91 SMS failed');
         return { success: false, provider: 'msg91', error: 'SMS delivery failed' };
       }
     }
@@ -150,13 +144,10 @@ async function dispatchSms(
           throw new Error(`Fast2SMS API returned ${response.status}`);
         }
 
-        logger.info(
-          { action: 'otp_sms_sent', mobile, provider: 'fast2sms' },
-          'OTP SMS sent via Fast2SMS',
-        );
+        logger.info({ action: 'otp_sms_sent', provider: 'fast2sms' }, 'OTP SMS sent via Fast2SMS');
         return { success: true, provider: 'fast2sms' };
       } catch (error) {
-        logger.error({ action: 'otp_sms_failed', mobile, error }, 'Fast2SMS SMS failed');
+        logger.error({ action: 'otp_sms_failed', error }, 'Fast2SMS SMS failed');
         return { success: false, provider: 'fast2sms', error: 'SMS delivery failed' };
       }
     }
@@ -164,7 +155,7 @@ async function dispatchSms(
     default: {
       // Console fallback for development
       logger.info(
-        { action: 'otp_sms_console', mobile, code, provider: 'console' },
+        { action: 'otp_sms_console', provider: 'console' },
         `[DEV OTP] SMS to +91${mobile}: ${code} (valid 5 min)`,
       );
       return { success: true, provider: 'console' };
@@ -219,19 +210,19 @@ async function dispatchWhatsApp(
         }
 
         logger.info(
-          { action: 'otp_whatsapp_sent', mobile, provider: 'meta' },
+          { action: 'otp_whatsapp_sent', provider: 'meta' },
           'OTP WhatsApp sent via Meta',
         );
         return { success: true, provider: 'meta' };
       } catch (error) {
-        logger.error({ action: 'otp_whatsapp_failed', mobile, error }, 'Meta WhatsApp failed');
+        logger.error({ action: 'otp_whatsapp_failed', error }, 'Meta WhatsApp failed');
         return { success: false, provider: 'meta', error: 'WhatsApp delivery failed' };
       }
     }
 
     default: {
       logger.info(
-        { action: 'otp_whatsapp_console', mobile, code, provider: 'console' },
+        { action: 'otp_whatsapp_console', provider: 'console' },
         `[DEV OTP] WhatsApp to +91${mobile}: ${code} (valid 5 min)`,
       );
       return { success: true, provider: 'console' };
@@ -279,20 +270,17 @@ async function dispatchEmail(
           throw new Error(`Resend API error: ${response.status} - ${errorBody}`);
         }
 
-        logger.info(
-          { action: 'otp_email_sent', email, provider: 'resend' },
-          'OTP email sent via Resend',
-        );
+        logger.info({ action: 'otp_email_sent', provider: 'resend' }, 'OTP email sent via Resend');
         return { success: true, provider: 'resend' };
       } catch (error) {
-        logger.error({ action: 'otp_email_failed', email, error }, 'Resend email failed');
+        logger.error({ action: 'otp_email_failed', error }, 'Resend email failed');
         return { success: false, provider: 'resend', error: 'Email delivery failed' };
       }
     }
 
     default: {
       logger.info(
-        { action: 'otp_email_console', email, code, provider: 'console' },
+        { action: 'otp_email_console', provider: 'console' },
         `[DEV OTP] Email to ${email}: ${code} (valid 5 min)`,
       );
       return { success: true, provider: 'console' };

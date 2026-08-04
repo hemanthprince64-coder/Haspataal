@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const alertId = (await params).id;
   try {
     const user = await checkRole(request, [
       Roles.ADMIN,
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const session = { hospitalId: user.hospital_id, userId: user.user_id };
 
     const { note } = await request.json().catch(() => ({ note: undefined }));
-    const alertId = params.id;
+    const alertId = (await params).id;
 
     const alert = await prisma.clinicalAlert.findFirst({
       where: {

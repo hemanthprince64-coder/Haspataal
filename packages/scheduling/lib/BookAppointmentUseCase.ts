@@ -29,7 +29,7 @@ export class BookAppointmentUseCase {
 
     // Domain Rule: No booking in the past
     if (targetDate.getTime() < todayMidnight.getTime()) {
-      throw new Error('Cannot book in the past.');
+      throw new Error('CANNOT_BOOK_IN_PAST');
     }
 
     const isToday = targetDate.getTime() === todayMidnight.getTime();

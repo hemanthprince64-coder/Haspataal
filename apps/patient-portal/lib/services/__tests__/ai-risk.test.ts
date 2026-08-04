@@ -4,7 +4,7 @@ import { prisma } from '../../util/prisma-singleton';
 import { abdmMockService } from '../abdm-mock';
 import { aiRiskService } from '../ai-risk';
 
-vi.mock('@/lib/util/prisma-singleton', () => ({
+vi.mock('../../util/prisma-singleton', () => ({
   prisma: {
     pregnancyProfile: {
       findUnique: vi.fn(),

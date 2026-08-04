@@ -2,7 +2,7 @@
 // PUBLISHER
 // ─────────────────────────────────────────────────────────────
 import { prisma } from '@haspataal/db';
-import { DomainEvent } from '@haspataal/events';
+import { DomainEvent, EventBus } from '@haspataal/events';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
@@ -203,6 +203,15 @@ export class TimelinePublisher {
   }
 
   async publishStandardEvent(event: Omit<DomainEvent, 'id'>): Promise<{ correlationId: string }> {
+    const fullEvent: DomainEvent = {
+      ...event,
+      id: uuidv4(),
+    };
+
+    // 1. Dual-write to EventBus so downstream modules (Billing, Notification) receive the DomainEvent
+    await EventBus.getInstance().publish(fullEvent);
+
+    // 2. Write to Outbox for the timeline view model
     return this.publish({
       patientId: event.patientId || '',
       hospitalId: event.hospitalId,

@@ -5,12 +5,13 @@ import { NextResponse } from 'next/server';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { requirePermission } from '@/lib/auth/roleGuard';
 
-export async function GET(req: Request, { params }: { params: { executionId: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ executionId: string }> }) {
+  const executionId = (await params).executionId;
   try {
     await requirePermission(req, 'PHARMACY_VIEW');
 
     const execution = await prisma.pharmacyExecution.findUnique({
-      where: { id: params.executionId },
+      where: { id: executionId },
       include: {
         clinicalOrder: {
           include: {
