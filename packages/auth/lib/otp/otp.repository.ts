@@ -68,14 +68,22 @@ export class OtpRepository {
     });
   }
 
-  static async markVerified(id: string) {
-    return prisma.otpCode.update({
-      where: { id },
+  /**
+   * Atomically marks an OTP as verified.
+   *
+   * Uses a conditional UPDATE (WHERE verified = false) so that only one
+   * concurrent caller can succeed. Returns true if the row was updated,
+   * false if the OTP was already consumed by a racing request.
+   */
+  static async markVerified(id: string): Promise<boolean> {
+    const result = await prisma.otpCode.updateMany({
+      where: { id, verified: false },
       data: {
         verified: true,
         verifiedAt: new Date(),
       },
     });
+    return result.count > 0;
   }
 
   static async invalidate(id: string) {

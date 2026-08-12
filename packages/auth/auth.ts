@@ -1,6 +1,4 @@
 import { cookies } from 'next/headers';
-
-import { UserRole } from '../types';
 import { decrypt } from './session';
 
 export async function requireAuth(sessionName: string) {
@@ -14,7 +12,7 @@ export async function requireAuth(sessionName: string) {
   return payload.user;
 }
 
-export async function getHospitalIdFromSession(req: any) {
+export async function getHospitalIdFromSession() {
   try {
     const cookieStore = await cookies();
     const session = cookieStore.get('session_user')?.value;

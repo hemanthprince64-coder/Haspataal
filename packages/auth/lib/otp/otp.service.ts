@@ -30,7 +30,7 @@ function auditLog(
     {
       audit: true,
       event,
-      phone: maskedPhone,
+      maskedPhone,
       purpose,
       tenantId,
       timestamp: new Date().toISOString(),
@@ -166,8 +166,18 @@ export class OtpService {
       return { success: false, message: 'Invalid OTP. Please try again.' };
     }
 
-    // 5. Success Flow: Mark verified
-    await OtpRepository.markVerified(activeOtp.id);
+    // 5. Success Flow: Atomically mark verified
+    // markVerified returns false if another concurrent request already consumed this OTP
+    const consumed = await OtpRepository.markVerified(activeOtp.id);
+    if (!consumed) {
+      auditLog('OTP_FAILED', phone, purpose, tenantId ?? null, {
+        reason: 'concurrent_consumption',
+      });
+      return {
+        success: false,
+        message: 'OTP has already been verified. Please request a new one.',
+      };
+    }
 
     // Clear Redis attempts / locks
     await OtpRedis.clearLocksAndAttempts(phone);

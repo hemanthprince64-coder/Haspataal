@@ -37,7 +37,7 @@ export async function withPlatformPermission(options: {
   );
 }
 
-export async function scopeContextMiddleware(req: any) {
+export async function scopeContextMiddleware() {
   try {
     const cookieStore = await cookies();
     const session = cookieStore.get('session_admin')?.value;

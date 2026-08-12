@@ -13,7 +13,6 @@ function getSecretKey() {
   return new TextEncoder().encode(secretKey);
 }
 const isProduction = process.env.NODE_ENV === 'production';
-const isBuild = !!process.env.NEXT_PHASE || !!process.env.VERCEL;
 
 interface SessionPayload {
   user: {
@@ -40,7 +39,7 @@ export async function decrypt(session: string): Promise<SessionPayload | null> {
       algorithms: ['HS256'],
     });
     return payload as SessionPayload;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

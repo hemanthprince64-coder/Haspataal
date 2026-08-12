@@ -35,7 +35,7 @@ if (require.main === module) {
   runCleanup()
     .then(() => process.exit(0))
     .catch((err) => {
-      console.error(err);
+      logger.error({ error: err instanceof Error ? err.message : String(err) }, 'OTP cleanup job crashed');
       process.exit(1);
     });
 }

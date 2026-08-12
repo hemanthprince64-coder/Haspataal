@@ -8,15 +8,17 @@ export interface ISmsProvider {
 
 export class TextBeeProvider implements ISmsProvider {
   async sendOTP(phone: string, otp: string, purpose: string): Promise<boolean> {
-    logger.info({ provider: 'TextBee', phone, purpose, otp }, 'Development OTP sent via TextBee');
+    const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
+    logger.info({ provider: 'TextBee', maskedPhone, purpose, otp }, 'Development OTP sent via TextBee');
     // Simulated delay
     await new Promise((resolve) => setTimeout(resolve, 100));
     return true;
   }
 
   async sendTransactional(phone: string, message: string): Promise<boolean> {
+    const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
     logger.info(
-      { provider: 'TextBee', phone, message },
+      { provider: 'TextBee', maskedPhone, message },
       'Development Transactional SMS sent via TextBee',
     );
     return true;
@@ -30,7 +32,8 @@ export class TextBeeProvider implements ISmsProvider {
 export class MSG91Provider implements ISmsProvider {
   async sendOTP(phone: string, otp: string, purpose: string): Promise<boolean> {
     // Real implementation would use fetch/axios to hit MSG91 API
-    logger.info({ provider: 'MSG91', phone, purpose }, 'Production OTP sent via MSG91');
+    const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
+    logger.info({ provider: 'MSG91', maskedPhone, purpose }, 'Production OTP sent via MSG91');
 
     // Simulate a failure 10% of the time to test failovers in staging/dev
     if (process.env.NODE_ENV !== 'production' && Math.random() < 0.1) {
@@ -41,8 +44,9 @@ export class MSG91Provider implements ISmsProvider {
   }
 
   async sendTransactional(phone: string, message: string): Promise<boolean> {
+    const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
     logger.info(
-      { provider: 'MSG91', phone, length: message.length },
+      { provider: 'MSG91', maskedPhone, length: message.length },
       'Production Transactional SMS sent via MSG91',
     );
     return true;
@@ -66,8 +70,9 @@ export class FailoverSmsProvider implements ISmsProvider {
     try {
       return await this.primary.sendOTP(phone, otp, purpose);
     } catch (e: any) {
+      const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
       logger.warn(
-        { error: e.message, phone, purpose, provider: 'primary' },
+        { error: e.message, maskedPhone, purpose, provider: 'primary' },
         'Primary SMS provider failed, falling back to secondary',
       );
       return await this.fallback.sendOTP(phone, otp, purpose);
@@ -78,8 +83,9 @@ export class FailoverSmsProvider implements ISmsProvider {
     try {
       return await this.primary.sendTransactional(phone, message);
     } catch (e: any) {
+      const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
       logger.warn(
-        { error: e.message, phone, provider: 'primary' },
+        { error: e.message, maskedPhone, provider: 'primary' },
         'Primary SMS provider failed, falling back to secondary',
       );
       return await this.fallback.sendTransactional(phone, message);
