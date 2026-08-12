@@ -63,16 +63,19 @@
     "clean": "turbo run clean && Remove-Item -Recurse -Force .next, apps/**/.next, packages/**/dist -ErrorAction SilentlyContinue"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --cache --fix",
-      "prettier --write"
-    ],
     "*.{json,css,md}": [
       "prettier --write"
     ],
     "prisma/schema.prisma": [
       "npx prisma validate",
       "npx prisma format"
+    ],
+    "apps/{patient-portal,admin-panel,hospital-hms}/**/*.{ts,tsx,js,jsx}": [
+      "eslint --cache",
+      "prettier --write"
+    ],
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write"
     ]
   },
   "dependencies": {

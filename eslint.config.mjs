@@ -27,6 +27,15 @@ export default [
   },
   {
     ignores: [
+      'scratch/**',
+      'scripts/**',
+      'tests/e2e/**',
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.integration.test.ts',
+      '**/*.spec.ts',
+      'shannon/**',
+      'bones/**',
       'node_modules/',
       '.next/',
       '.turbo/',
