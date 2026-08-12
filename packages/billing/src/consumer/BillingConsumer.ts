@@ -1,4 +1,5 @@
 import { PrismaClient, BillingSourceEvent, ChargeCategory } from '@haspataal/db';
+import { logger } from '@haspataal/logger';
 
 import { PricingEngine } from '../pricing/PricingEngine';
 
@@ -69,7 +70,7 @@ export class BillingConsumer {
       });
     } catch (error) {
       // In a real transactional outbox, we would log this for retry or DLQ
-      console.error(`Failed to process billing event ${payload.eventId}:`, error);
+      logger.error({ error }, `Failed to process billing event ${payload.eventId}`);
       throw error;
     }
   }

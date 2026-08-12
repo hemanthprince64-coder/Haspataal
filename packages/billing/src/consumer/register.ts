@@ -1,5 +1,6 @@
 import { PrismaClient } from '@haspataal/db';
 import { eventBus, DomainEvent } from '@haspataal/events';
+import { logger } from '@haspataal/logger';
 
 import { BillingConsumer, ClinicalEventPayload } from './BillingConsumer';
 
@@ -10,7 +11,7 @@ export function registerBillingConsumers() {
   const handleClinicalEvent = async (event: DomainEvent) => {
     // Only process events that have a hospitalId and patientId
     if (!event.hospitalId || !event.patientId) {
-      console.warn(
+      logger.warn(
         `[BillingConsumer] Skipped event ${event.id} (${event.type}) due to missing hospitalId or patientId.`,
       );
       return;
@@ -36,5 +37,5 @@ export function registerBillingConsumers() {
   eventBus.subscribe('MEDICATION_DISPENSED', handleClinicalEvent);
   eventBus.subscribe('PROCEDURE_COMPLETED', handleClinicalEvent);
 
-  console.log('[BillingConsumer] Registered successfully.');
+  logger.info('[BillingConsumer] Registered successfully.');
 }

@@ -1,12 +1,6 @@
 import { DomainEvent } from '@haspataal/events';
-import {
-  PrismaClient,
-  PaymentIntent,
-  PaymentStatus,
-  PaymentIntentStatus,
-  PaymentMethod,
-  Payment,
-} from '@prisma/client';
+import { logger } from '@haspataal/logger';
+import { PrismaClient, Payment, PaymentIntentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 import { BillingEventTypes } from '../events/BillingEvents';
@@ -177,7 +171,7 @@ export class PaymentAggregate {
         },
       };
 
-      console.log(`[EventBus] Published ${event.type}`, event);
+      logger.info({ event }, `[EventBus] Published ${event.type}`);
 
       return payment;
     });

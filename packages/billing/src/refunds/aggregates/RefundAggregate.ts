@@ -1,5 +1,5 @@
 import { eventBus } from '@haspataal/events';
-import { PrismaClient, Refund, Payment, Invoice, PaymentAllocation } from '@prisma/client';
+import { PrismaClient, Refund } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
 import { createPaymentRefundedEvent } from '../../events/BillingEvents';
@@ -132,7 +132,7 @@ export class RefundAggregate {
             where: { id: payment.id },
             data: { status: newPaymentStatus },
           });
-        } catch (e) {
+        } catch {
           // If PARTIALLY_REFUNDED isn't in schema, fallback to original
         }
       }

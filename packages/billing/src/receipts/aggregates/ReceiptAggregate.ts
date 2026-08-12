@@ -7,11 +7,6 @@ import { Money } from '../../pricing/Money';
 import { ReceiptNumberGenerator } from '../services/ReceiptNumberGenerator';
 
 const prisma = new PrismaClient();
-const EventBusMock = {
-  publish: (event: any) => {
-    console.log(`[EventBus] Published ${event.eventType}`, event);
-  },
-};
 
 export interface GenerateReceiptCommand {
   hospitalId: string;
@@ -152,15 +147,17 @@ export class ReceiptAggregate {
         });
 
         // 7. Emit Domain Event
-        EventBusMock.publish({
-          eventId: randomUUID(),
-          eventType: BillingEventTypes.RECEIPT_GENERATED,
+        EventBus.publish({
+          id: randomUUID(),
+          type: BillingEventTypes.RECEIPT_GENERATED,
+          version: 1,
           eventVersion: 1,
-          schemaVersion: '1.0.0',
-          occurredAt: new Date().toISOString(),
-          aggregate: { aggregateId: receipt.id, aggregateType: 'Receipt' },
-          actor: { actorId: userId, actorType: 'USER' },
-          scope: { hospitalId },
+          schemaVersion: 1,
+          occurredAt: new Date(),
+          aggregateId: receipt.id,
+          aggregateType: 'Receipt',
+          actor: { id: userId, type: 'USER' },
+          hospitalId,
           payload: {
             receiptNumber,
             totalAmount: totalAmount.toNumber(),
@@ -202,15 +199,17 @@ export class ReceiptAggregate {
           },
         });
 
-        EventBusMock.publish({
-          eventId: randomUUID(),
-          eventType: BillingEventTypes.RECEIPT_VOIDED,
+        EventBus.publish({
+          id: randomUUID(),
+          type: BillingEventTypes.RECEIPT_VOIDED,
+          version: 1,
           eventVersion: 1,
-          schemaVersion: '1.0.0',
-          occurredAt: new Date().toISOString(),
-          aggregate: { aggregateId: receiptId, aggregateType: 'Receipt' },
-          actor: { actorId: userId, actorType: 'USER' },
-          scope: { hospitalId },
+          schemaVersion: 1,
+          occurredAt: new Date(),
+          aggregateId: receiptId,
+          aggregateType: 'Receipt',
+          actor: { id: userId, type: 'USER' },
+          hospitalId,
           payload: {
             receiptNumber: receipt.receiptNumber,
             reason,
