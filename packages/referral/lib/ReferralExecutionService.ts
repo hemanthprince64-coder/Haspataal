@@ -1,6 +1,4 @@
 import { PrismaClient, ReferralStatus, ReferralType, ReferralPriority } from '@prisma/client';
-import { createHash } from 'crypto';
-
 import { OutboxService } from '@haspataal/core/domain/outbox/service';
 import { ReferralEvent, ReferralEventType, CreateReferralInput } from './types';
 

@@ -2,6 +2,7 @@ import { FlatCompat } from '@eslint/eslintrc';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import js from '@eslint/js';
+import localRules from 'eslint-plugin-local-rules';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,7 +16,12 @@ const compat = new FlatCompat({
 export default [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
+    plugins: {
+      'local-rules': localRules,
+    },
     rules: {
+      'local-rules/no-direct-prisma-in-pages': 'error',
+      'local-rules/no-patient-data-in-logs': 'error',
       'react/no-unescaped-entities': 'off',
       'react-hooks/purity': 'off',
       'react-hooks/set-state-in-effect': 'off',
@@ -27,35 +33,33 @@ export default [
   },
   {
     ignores: [
-      'scratch/**',
-      'scripts/**',
-      'tests/e2e/**',
+      '**/scratch/**',
+      '**/scripts/**',
+      '**/tests/e2e/**',
       '**/__tests__/**',
       '**/*.test.ts',
       '**/*.integration.test.ts',
       '**/*.spec.ts',
-      'shannon/**',
-      'bones/**',
-      'node_modules/',
-      '.next/',
-      '.turbo/',
-      'dist/',
-      'out/',
-      'build/',
-      'coverage/',
-      'generated/',
-      'prisma/generated/',
-      'graphify-out/',
-      'scratch/',
-      'tmp/',
-      'downloads/',
-      'next-env.d.ts',
-      'haspataal-in/**',
-      'haspataal-admin/**',
-      'haspataal-com/**',
-      'haspataal-mobile/**',
-      'scripts/**',
-      '.kilo/**',
+      '**/shannon/**',
+      '**/bones/**',
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/.turbo/**',
+      '**/dist/**',
+      '**/out/**',
+      '**/build/**',
+      '**/coverage/**',
+      '**/generated/**',
+      '**/prisma/generated/**',
+      '**/graphify-out/**',
+      '**/tmp/**',
+      '**/downloads/**',
+      '**/next-env.d.ts',
+      '**/haspataal-in/**',
+      '**/haspataal-admin/**',
+      '**/haspataal-com/**',
+      '**/haspataal-mobile/**',
+      '**/.kilo/**',
     ],
   },
 ];

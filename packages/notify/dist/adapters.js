@@ -15,7 +15,7 @@ class TwilioSMSAdapter extends ChannelAdapter {
         return !!config.accountSid && !!config.authToken;
     }
     async deliver() {
-        return { success: true, messageId: 'mock-id' };
+        return { success: false, error: 'Provider unavailable' };
     }
 }
 exports.TwilioSMSAdapter = TwilioSMSAdapter;
@@ -30,7 +30,7 @@ class MetaWhatsAppAdapter extends ChannelAdapter {
         return !!config.accessToken;
     }
     async deliver() {
-        return { success: true, messageId: 'mock-id' };
+        return { success: false, error: 'Provider unavailable' };
     }
 }
 exports.MetaWhatsAppAdapter = MetaWhatsAppAdapter;
@@ -43,7 +43,7 @@ class ResendEmailAdapter extends ChannelAdapter {
         return !!config.apiKey;
     }
     async deliver() {
-        return { success: true, messageId: 'mock-id' };
+        return { success: false, error: 'Provider unavailable' };
     }
 }
 exports.ResendEmailAdapter = ResendEmailAdapter;

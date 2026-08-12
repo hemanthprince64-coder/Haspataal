@@ -3,7 +3,6 @@ import {
   DomainAction,
   AuthorizationDecision,
 } from '@haspataal/authorization';
-import { CareTeamService } from '@haspataal/core';
 import { prisma } from '@haspataal/db';
 
 import { NextResponse } from 'next/server';

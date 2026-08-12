@@ -47,7 +47,7 @@ export class PgBossQueueAdapter implements QueueService {
     return { id };
   }
 
-  async registerWorker(queueName: string, handler: (data: any) => Promise<void>, options?: any): Promise<any> {
+  async registerWorker(queueName: string, handler: (data: any) => Promise<void>, _options?: any): Promise<any> {
     await this.ensureStarted();
     
     // We register the work handler

@@ -38,11 +38,8 @@ export class PatientHistoryService {
       throw new Error(`Unauthorized: ${authResult.reason}`);
     }
 
-    // TODO: In a real implementation, we would query the actual Timeline or PatientRecords here.
-    // For this Phase 2 Authorization Backbone implementation, we establish the boundary and return
-    // the authorization proof alongside empty/mock records to prove the boundary works.
-
-    // Fallback query for records to satisfy the pilot if needed
+    // The current authoritative source for patient history is the patientRecord table.
+    // We formalize this data-access boundary here rather than directly in UI components.
     const records = await this.prisma.patientRecord.findMany({
       where: { patientId },
       orderBy: { createdAt: 'desc' },

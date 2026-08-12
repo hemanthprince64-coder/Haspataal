@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableHeader,
@@ -13,7 +12,7 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const MOCK_ORDERS = [
   { id: '1', patientName: 'John Doe', test: 'CBC', status: 'PENDING_COLLECTION' },

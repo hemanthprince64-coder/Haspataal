@@ -207,7 +207,7 @@ export class PharmacyInventoryService {
       const difference = actualPhysicalStock - batch.physicalStock;
       if (difference === 0) return;
 
-      const updatedBatch = await tx.inventoryBatch.update({
+      await tx.inventoryBatch.update({
         where: { id: batchId },
         data: { physicalStock: actualPhysicalStock },
       });

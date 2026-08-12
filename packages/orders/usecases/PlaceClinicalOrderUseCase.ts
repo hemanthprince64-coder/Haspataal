@@ -45,6 +45,8 @@ export class PlaceClinicalOrderUseCase {
 
       // Emit timeline event
       await getTimelinePublisher().publishStandardEvent({
+        schemaVersion: 1,
+        eventVersion: 1,
         version: 1,
         type: 'CLINICAL_ORDER_PLACED',
         patientId: encounter.patientId,

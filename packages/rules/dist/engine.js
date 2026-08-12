@@ -84,7 +84,6 @@ export class ExecutionEngine {
     }
     async sendNotification(payload, context, tx) {
         const { randomUUID } = await import('crypto');
-        const { createPlatformCommandSchema } = await import('@haspataal/platform-contracts');
         // Wave 6: Write PlatformCommand to Outbox instead of synchronous execution
         const commandId = randomUUID();
         const commandPayload = {

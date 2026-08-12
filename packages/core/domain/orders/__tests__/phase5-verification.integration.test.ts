@@ -125,10 +125,12 @@ describe('Phase 5A Final Verification Gate', () => {
       items: [{ catalogVersionId: catalogVersion.id, catalogCode: 'CDS-DUP-1' }],
     });
 
-    expect(result.passed).toBe(false);
+    expect(result.status).toBe('INDETERMINATE');
     expect(result.warnings.some((w) => w.type === ValidationWarningType.DUPLICATE_ORDER)).toBe(
       true,
     );
+    expect(result.errors).toContain('DRUG_INTERACTION_SERVICE_UNAVAILABLE');
+    expect(result.errors).toContain('ALLERGY_SERVICE_UNAVAILABLE');
 
     // Override and create
     const { order, version } = await stateService.createOrder({

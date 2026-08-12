@@ -1,4 +1,4 @@
-/* eslint-disable local-rules/no-direct-prisma-in-pages */
+
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '../util/prisma-singleton';

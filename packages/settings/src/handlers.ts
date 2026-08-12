@@ -1,8 +1,6 @@
 import { createPlatformCommandSchema, PlatformCommand } from '@haspataal/platform-contracts';
 import { z } from 'zod';
 import { ConfigurationEngine } from './engine';
-import { OpdConfigSchema, IntegrationConfigSchema, BillingProfileSchema, FacilitiesSchema } from './types';
-
 // Generic UPDATE_CONFIG_COMMAND
 export const UpdateConfigPayloadSchema = z.object({
   hospitalId: z.string(),

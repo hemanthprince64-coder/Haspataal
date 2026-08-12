@@ -4,7 +4,7 @@ export class InProcessQueueAdapter implements QueueService {
   private workers = new Map<string, (data: any) => Promise<void>>();
   private closed = false;
 
-  async addJob(queueName: string, jobName: string, data: any, options?: any): Promise<any> {
+  async addJob(queueName: string, jobName: string, data: any, _options?: any): Promise<any> {
     if (this.closed) {
       throw new Error('Queue service is closed');
     }
@@ -44,7 +44,7 @@ export class InProcessQueueAdapter implements QueueService {
     return { id: `in-proc-${Date.now()}-${Math.random().toString(36).substring(2, 11)}` };
   }
 
-  async registerWorker(queueName: string, handler: (data: any) => Promise<void>, options?: any): Promise<any> {
+  async registerWorker(queueName: string, handler: (data: any) => Promise<void>, _options?: any): Promise<any> {
     this.workers.set(queueName, handler);
     console.log(`[InProcessQueue] Registered worker for queue: ${queueName}`);
     return { name: queueName };

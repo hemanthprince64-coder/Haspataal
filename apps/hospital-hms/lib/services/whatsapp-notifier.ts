@@ -69,7 +69,8 @@ export class WhatsAppNotifierConnector {
 
   private async dispatchToProvider(provider: string, message: string, phone: string) {
     // Translates our internal generic request to the specific provider's API shape (Twilio vs Meta vs Wati)
-    logger.info({ provider, phone }, 'Dispatched message to WhatsApp API Provider');
+    const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
+    logger.info({ provider, maskedPhone }, 'Dispatched message to WhatsApp API Provider');
 
     // 1. HTTP POST to Provider
     // 2. Await HTTP 202 Accepted

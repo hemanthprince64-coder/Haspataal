@@ -1,4 +1,4 @@
-import { Rule, Condition, Action } from './types';
+import { Rule } from './types';
 import { prisma } from '@haspataal/db';
 
 export class RuleRegistry {

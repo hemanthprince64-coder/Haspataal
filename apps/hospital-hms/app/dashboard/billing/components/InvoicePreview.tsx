@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 export function InvoicePreview({ invoice }: { invoice: any }) {
   if (!invoice) return <div>Invoice not found.</div>;
 

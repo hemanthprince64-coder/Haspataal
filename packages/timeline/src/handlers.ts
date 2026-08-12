@@ -1,8 +1,6 @@
 import { createPlatformCommandSchema, PlatformCommand } from '@haspataal/platform-contracts';
 import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
-import { z } from 'zod';
-
 import { TimelineEventInput, TimelineEventSchema } from './index';
 
 export const AddToTimelineCommandSchema = createPlatformCommandSchema(TimelineEventSchema as any);

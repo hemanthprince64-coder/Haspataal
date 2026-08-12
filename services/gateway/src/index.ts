@@ -16,7 +16,7 @@ import { prisma } from '@haspataal/db';
 import cors from 'cors';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { jwtVerify, importSPKI } from 'jose';
+import { jwtVerify } from 'jose';
 import pino from 'pino';
 
 // ── Logger ───────────────────────────────────────────────────

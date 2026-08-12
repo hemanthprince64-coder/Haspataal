@@ -1,7 +1,5 @@
 import { prisma } from '@haspataal/db';
-import { eventBus } from '@haspataal/events';
 import { normalizeLegacyOutbox, OutboxDeliveryStatus } from '@haspataal/platform-contracts';
-import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 import logger from '../apps/patient-portal/lib/logger';

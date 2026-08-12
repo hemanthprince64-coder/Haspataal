@@ -3,7 +3,7 @@
 import { Button } from '@haspataal/ui';
 import { Card, CardHeader, CardTitle, CardContent } from '@haspataal/ui';
 import { Badge } from '@haspataal/ui';
-import { Calendar, Clock, MapPin, XCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin } from 'lucide-react';
 import useSWR from 'swr';
 
 import { useState } from 'react';

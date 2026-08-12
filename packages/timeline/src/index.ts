@@ -3,7 +3,6 @@
 // ─────────────────────────────────────────────────────────────
 import { prisma } from '@haspataal/db';
 import { DomainEvent, EventBus } from '@haspataal/events';
-import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';

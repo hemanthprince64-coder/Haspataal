@@ -40,7 +40,7 @@ exports.JourneyTemplates = {
     },
 };
 async function seedJourneyTemplates(hospitalId) {
-    for (const [key, template] of Object.entries(exports.JourneyTemplates)) {
+    for (const template of Object.values(exports.JourneyTemplates)) {
         await db_1.prisma.journeyTemplate.create({
             data: {
                 ...template,

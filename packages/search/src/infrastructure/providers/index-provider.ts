@@ -1,4 +1,4 @@
-import { SearchQuery, SearchResponse, SearchResult, EntityType } from '../../domain/types';
+import { SearchQuery, SearchResponse, EntityType } from '../../domain/types';
 
 export interface SearchIndexProvider {
   search(query: SearchQuery): Promise<SearchResponse>;

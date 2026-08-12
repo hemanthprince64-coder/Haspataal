@@ -77,7 +77,7 @@ class ConfigEngine {
     async updateHospitalConfig(hospitalId, data) {
         return await db_1.prisma.$transaction(async (tx) => {
             // 1. Update DB
-            const updated = await tx.hospitalsMaster.update({
+            await tx.hospitalsMaster.update({
                 where: { id: hospitalId },
                 data: {
                     ...data,

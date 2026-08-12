@@ -1,8 +1,5 @@
 import { prisma } from '@haspataal/db';
 import { ProcessPharmacyOrderUseCase } from '@haspataal/pharmacy';
-
-import { NextResponse } from 'next/server';
-
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { requirePermission } from '@/lib/auth/roleGuard';
 
@@ -12,7 +9,7 @@ export async function POST(req: Request) {
 
     // The ProcessUseCase usually runs automatically when a doctor prescribes,
     // but we'll expose it in the API for manual triggering if needed.
-    const userContext = await requirePermission(req, 'PHARMACY_VIEW');
+
     const body = await req.json();
     const { clinicalOrderId } = body;
 

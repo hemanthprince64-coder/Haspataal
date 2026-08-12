@@ -1,7 +1,4 @@
 import { prisma } from '@haspataal/db';
-
-import { NextResponse } from 'next/server';
-
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { requirePermission } from '@/lib/auth/roleGuard';
 
@@ -17,7 +14,9 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      hospitalId: user.hospital_id,
+    };
     if (status) where.status = status;
     if (priority) where.clinicalOrder = { priority };
     if (doctorId) where.clinicalOrder = { ...where.clinicalOrder, doctorId };

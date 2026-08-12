@@ -12,36 +12,35 @@ Following the completion of Phase 10 (Billing Engine), this sprint is dedicated 
 
 ## Phase 11 Roadmap
 
-**Phase 10 — Billing Engine ✅**
-↓
-**Phase 10.5 — Billing Production Audit ✅**
-↓
+### Phase 3B — Core Hardening ✅
+* Wave 1 — ESLint configuration correction ✅
+* Wave 2 — Security remediation ✅
+* Wave 3 — Type correctness audit ✅
+* Wave 4 — Dead-code remediation ✅
+* Wave 4.1 — Final dead-code audit ✅
+* Wave 4.1.1 — Unsafe `any` removal ✅
+* Wave 5 — Billing + Orders hardening ✅
+* Wave 5.1 — Auth hardening ⚠️ (conditionally complete pending real PostgreSQL integration)
+* Wave 5.2 — Core/Queue/Authorization/Notify hardening ✅
 
-### Phase 11 — Pre-Deployment Stabilization 🔴
+Source-code hardening baseline is **frozen**.
+
 ↓
-**Phase 11A — Secrets & Environment**
-Rotate exposed credentials, verify `.env` non-tracking, cleanup hardcoded secrets.
-↓
-**Phase 11B — Authentication / RBAC / RLS**
-Fix auth bypasses, verify tenant isolation everywhere, fix middleware bypasses.
-↓
-**Phase 11C — Remove Build Suppression**
-Remove `ignoreBuildErrors`, `ignoreDuringBuilds`, and all error suppression flags.
-↓
-**Phase 11D — AI-Code / Mock Audit**
-Audit AI-generated state machines, remove placeholder/mock code, feature-flag prototypes.
-↓
-**Phase 11E — Test & Typecheck Zero Gate**
-Achieve 0 failing tests and 0 TypeScript errors with suppression removed.
-↓
-**Phase 11F — Performance / Accessibility / SEO**
-CSP hardening, PHI logging review, aesthetic consistency check.
-↓
-**Phase 11G — Staging E2E**
-Full end-to-end testing of patient/hospital workflows on staging.
-↓
-### GO-LIVE GATE
-Verify all items in `docs/development/RELEASE_CHECKLIST.md`.
+### Phase 11 — Production Readiness Gate 🔴 (PENDING)
+Validate the hardened repository as an actual deployable system. Do not execute further code refactoring. Focus strictly on executing validation gates and producing a release report.
+
+11.0 Repository & Secret Integrity
+11.1 Static Integrity (Build, Typecheck, Lint)
+11.2 Automated Tests (Unit, Integration)
+11.3 Auth & RBAC
+11.4 Database & RLS
+11.5 Financial Safety
+11.6 E2E Critical Flows
+11.7 Security Audit
+11.8 Staging Deployment
+11.9 Smoke Tests
+11.10 Production Deployment Readiness
+11.11 RELEASE_REPORT.md
 ↓
 ### Production
 

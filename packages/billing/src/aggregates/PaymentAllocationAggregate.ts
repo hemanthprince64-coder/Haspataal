@@ -1,4 +1,4 @@
-import { DomainEvent, eventBus as EventBus } from '@haspataal/events';
+import { eventBus as EventBus } from '@haspataal/events';
 import { PrismaClient, PaymentStatus, AllocationStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 

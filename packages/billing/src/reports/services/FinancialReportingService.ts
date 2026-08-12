@@ -1,7 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-
-import { Money } from '../../pricing/Money';
-
 const prisma = new PrismaClient();
 
 export type ReportDateRange = {

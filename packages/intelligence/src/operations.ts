@@ -27,7 +27,7 @@ export class AiOperationsEngine {
     // In reality, this would use the AI SDK with `model.key` and `prompt.content`
     const confidence = 0.95; // Mock response
     const llmDecision = 'RESTART_WORKER';
-    const llmReasoning = 'Worker stalled for > 5 minutes based on telemetry logs.';
+
 
     // 4. Execution Planner
     const inputHash = crypto.createHash('sha256').update(JSON.stringify(request)).digest('hex');

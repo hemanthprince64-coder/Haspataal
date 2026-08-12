@@ -76,6 +76,8 @@ export class UpdateClinicalOrderStatusUseCase {
 
       // Emit timeline event based on the new status
       await getTimelinePublisher().publishStandardEvent({
+        schemaVersion: 1,
+        eventVersion: 1,
         version: 1,
         type: `CLINICAL_ORDER_${data.status}`,
         patientId: order.patientId,

@@ -1,5 +1,5 @@
 import db from '@haspataal/db';
-import { ToolRegistry } from '@haspataal/tools';
+import { ToolRegistry, ToolDefinition } from '@haspataal/tools';
 
 export class SpecializedCopilotRouter {
   /**
@@ -15,7 +15,7 @@ export class SpecializedCopilotRouter {
     // In a real system, the router uses an Intent Detection model first
     // Here we just delegate based on the session's agentType
 
-    let availableTools = [];
+    let availableTools: (ToolDefinition | undefined)[] = [];
     let systemPrompt = '';
 
     switch (session.agentType) {
@@ -45,6 +45,8 @@ export class SpecializedCopilotRouter {
       agent: session.agentType,
       response: `[Simulated response from ${session.agentType}] Processed: "${message}" using context and restricted tools.`,
       toolsCalled: [],
+      systemPrompt,
+      availableTools,
     };
   }
 }

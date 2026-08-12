@@ -3,8 +3,7 @@ import { verifySession } from '@haspataal/auth';
 import React from 'react';
 
 export async function PermissionGate({
-  resource,
-  action,
+
   children,
   fallback = null,
 }: {

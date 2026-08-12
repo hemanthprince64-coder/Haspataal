@@ -1,5 +1,3 @@
-import db from '@haspataal/db';
-
 import { FeatureStore } from '../common/feature-store';
 
 export class OperationalPredictor {

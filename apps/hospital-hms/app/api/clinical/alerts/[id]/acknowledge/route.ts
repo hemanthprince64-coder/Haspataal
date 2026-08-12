@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRole, Roles } from '@/lib/auth/roleGuard';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const alertId = (await params).id;
+
   try {
     const user = await checkRole(request, [
       Roles.ADMIN,

@@ -13,7 +13,6 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/lib/otp/__tests__/otp.integration.test.ts',
     ],
     // Test-only environment variables.
     // These values are ONLY used in the Vitest environment and are not secrets.

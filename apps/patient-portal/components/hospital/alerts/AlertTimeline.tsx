@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Activity, AlertTriangle, Info, Clock, CheckCircle, Bell } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Activity, Info, Clock, CheckCircle, Bell } from 'lucide-react';
 import AlertActionModal from './AlertActionModal';
 
 interface TimelineItem {
@@ -27,7 +27,7 @@ export default function AlertTimeline({ patientId }: { patientId: string }) {
   const [loading, setLoading] = useState(true);
   const [actionAlert, setActionAlert] = useState<TimelineItem | null>(null);
 
-  const fetchTimeline = async () => {
+  const fetchTimeline = useCallback(async () => {
     try {
       const res = await fetch(`/api/hospital/alerts/timeline?patientId=${patientId}`);
       if (res.ok) {
@@ -39,11 +39,11 @@ export default function AlertTimeline({ patientId }: { patientId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [patientId]);
 
   useEffect(() => {
     fetchTimeline();
-  }, [patientId]);
+  }, [fetchTimeline]);
 
   if (loading) return <div className="animate-pulse p-4 bg-gray-50 rounded-xl h-40">Loading timeline...</div>;
 

@@ -1,7 +1,6 @@
 import { PrismaClient, ReferralOutcome, ReferralStatus } from '@prisma/client';
 
 import { OutboxService } from '@haspataal/core/domain/outbox/service';
-import { ReferralEvent, ReferralEventType } from './types';
 
 export class OutcomeService {
   constructor(

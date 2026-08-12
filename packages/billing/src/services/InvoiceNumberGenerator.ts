@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@haspataal/db';
+import { Prisma } from '@haspataal/db';
 
 export class InvoiceNumberGenerator {
   /**

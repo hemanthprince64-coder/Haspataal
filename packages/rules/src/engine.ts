@@ -1,6 +1,4 @@
 import { prisma } from '@haspataal/db';
-import { NotificationEngine } from '@haspataal/notify';
-
 import { RuleCompiler } from './compiler';
 import { Rule, Action, RuleContext, RuleResult } from './types';
 
@@ -108,7 +106,7 @@ export class ExecutionEngine {
 
   private async sendNotification(payload: any, context: RuleContext, tx?: any): Promise<void> {
     const { randomUUID } = await import('crypto');
-    const { createPlatformCommandSchema } = await import('@haspataal/platform-contracts');
+
 
     // Wave 6: Write PlatformCommand to Outbox instead of synchronous execution
     const commandId = randomUUID();

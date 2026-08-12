@@ -13,6 +13,11 @@ export function getQueueService(): QueueService {
 
   // sqlite requires in-process because we don't assume Redis is running
   if (dbProvider === 'sqlite' || driver === 'in-process') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'PRODUCTION SECURITY VIOLATION: InProcessQueueAdapter is not allowed in production. Configure a real QUEUE_DRIVER (e.g. bullmq, pg-boss) or check DATABASE_PROVIDER.'
+      );
+    }
     console.log('[QueueFactory] Initializing InProcessQueueAdapter');
     instance = new InProcessQueueAdapter();
   } else if (driver === 'pg-boss') {

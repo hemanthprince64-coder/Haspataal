@@ -4,8 +4,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 // Disable pino-pretty in Next.js environment to prevent worker thread crashes
 // Next.js 15 Turbopack has issues with pino.transport worker threads
-const DISABLE_PRETTY =
-  process.env.NEXT_PUBLIC_APP_NAME || process.env.NEXT_PRIVATE_PRETTY_LOGS === 'false';
+
 
 const pinoConfig = {
   level: isDev ? 'debug' : 'info',

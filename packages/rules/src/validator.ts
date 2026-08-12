@@ -1,4 +1,4 @@
-import { Rule, Condition, Action, RuleResult } from './types';
+import { Rule, Condition, Action } from './types';
 
 export class RuleValidator {
   /**

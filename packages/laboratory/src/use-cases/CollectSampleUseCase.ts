@@ -1,8 +1,5 @@
-import { PrismaClient, SampleType, SampleStatus, Prisma } from '@haspataal/db';
+import { PrismaClient, SampleType, SampleStatus } from '@haspataal/db';
 import { TimelinePublisher, TimelineEventType } from '@haspataal/timeline';
-
-import { SampleStateMachine } from '../domain/state-machine/SampleStateMachine';
-
 const prisma = new PrismaClient();
 const timelinePublisher = new TimelinePublisher();
 

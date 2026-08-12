@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertTriangle, AlertCircle, Info, Bell, Activity, Clock, CheckCircle } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, Bell, Clock, CheckCircle } from 'lucide-react';
 import AlertActionModal from './AlertActionModal';
 import Link from 'next/link';
 

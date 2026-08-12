@@ -1,6 +1,6 @@
 import { requireHospitalStaff } from '@haspataal/auth';
 import { prisma } from '@haspataal/db';
-import { Card, CardHeader, CardTitle, CardContent } from '@haspataal/ui';
+import { Card, CardContent } from '@haspataal/ui';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@haspataal/ui';
 
 import Link from 'next/link';

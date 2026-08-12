@@ -1,7 +1,4 @@
 import { prisma } from '@haspataal/db';
-
-import { NextResponse } from 'next/server';
-
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { requirePermission } from '@/lib/auth/roleGuard';
 

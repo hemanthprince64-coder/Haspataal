@@ -1,11 +1,11 @@
 'use client';
 
 import { Button } from '@haspataal/ui';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@haspataal/ui';
+import { Card, CardHeader, CardTitle, CardContent } from '@haspataal/ui';
 import { Input } from '@haspataal/ui';
 import { Label } from '@haspataal/ui';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 

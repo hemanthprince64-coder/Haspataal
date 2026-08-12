@@ -14,7 +14,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorize: async (credentials) => {
         if (!credentials?.mobile || !credentials?.password) return null;
 
-        const { mobile, password, role } = credentials;
+        const { mobile, role } = credentials;
 
         if (role === 'admin') {
           const admin = await prisma.hospitalAdmin.findUnique({

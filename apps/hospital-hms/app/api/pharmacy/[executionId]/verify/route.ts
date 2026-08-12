@@ -1,9 +1,6 @@
 import { prisma } from '@haspataal/db';
 import { VerifyPharmacyOrderUseCase } from '@haspataal/pharmacy';
 import { getTimelinePublisher } from '@haspataal/timeline';
-
-import { NextResponse } from 'next/server';
-
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { requirePermission } from '@/lib/auth/roleGuard';
 

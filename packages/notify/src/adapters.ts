@@ -24,7 +24,7 @@ export class TwilioSMSAdapter extends ChannelAdapter {
   }
 
   async deliver(): Promise<ProviderResponse> {
-    return { success: true, messageId: 'mock-id' };
+    return { success: false, error: 'Provider unavailable' };
   }
 }
 
@@ -42,7 +42,7 @@ export class MetaWhatsAppAdapter extends ChannelAdapter {
   }
 
   async deliver(): Promise<ProviderResponse> {
-    return { success: true, messageId: 'mock-id' };
+    return { success: false, error: 'Provider unavailable' };
   }
 }
 
@@ -58,6 +58,6 @@ export class ResendEmailAdapter extends ChannelAdapter {
   }
 
   async deliver(): Promise<ProviderResponse> {
-    return { success: true, messageId: 'mock-id' };
+    return { success: false, error: 'Provider unavailable' };
   }
 }

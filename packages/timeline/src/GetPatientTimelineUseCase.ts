@@ -15,7 +15,7 @@ export interface TimelineQueryOptions {
 
 export class GetPatientTimelineUseCase {
   async execute(options: TimelineQueryOptions): Promise<ClinicalTimelineEvent[]> {
-    const { patientId, hospitalId, limit = 50, category } = options;
+    const { patientId, hospitalId, limit = 50 } = options;
 
     const where: any = {
       entityId: patientId, // Assuming EventLog stores patientId as entityId or in payload

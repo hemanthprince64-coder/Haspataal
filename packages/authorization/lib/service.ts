@@ -129,7 +129,9 @@ export class AuthorizationService implements IAuthorizationService {
       case DomainAction.TRANSFUSION_START:
       case DomainAction.TRANSFUSION_COMPLETE:
       case DomainAction.TRANSFUSION_REACTION:
-        result = { decision: AuthorizationDecision.DENY, reason: 'Not implemented' }; // TODO: implement authorizePhase5B5BloodBank
+        // FAIL_CLOSED: BloodBank authorization policy is not currently implemented.
+        // Rather than inventing speculative RBAC or allowing bypasses, we return a hard DENY.
+        result = { decision: AuthorizationDecision.DENY, reason: 'BloodBank authorization policy is not implemented' };
         break;
 
       case DomainAction.REFERRAL_CREATE:

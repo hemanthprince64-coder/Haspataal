@@ -1,6 +1,5 @@
 import { Pool } from 'pg';
 import { prisma } from '@haspataal/db';
-import { EventService } from './event.service';
 import { buildMessage } from '../templates/notification-templates';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });

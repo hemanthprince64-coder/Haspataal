@@ -1,7 +1,6 @@
 import {
   PrismaClient,
   PaymentMethod,
-  PaymentIntentStatus,
   BillingAuditAction,
 } from '@haspataal/db';
 import { eventBus } from '@haspataal/events';
@@ -10,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { BillingEventTypes } from '../events/BillingEvents';
 import { ImmutableFinancialAggregateGuard } from '../guards/ImmutableFinancialAggregateGuard';
 import { Money } from '../pricing/Money';
-import { PaymentIntentStateMachine } from './PaymentIntentStateMachine';
 
 interface CreatePaymentIntentRequest {
   hospitalId: string;

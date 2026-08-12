@@ -1,4 +1,4 @@
-import { PrismaClient, OrderItem } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 export enum ValidationWarningType {
   DUPLICATE_ORDER = 'DUPLICATE_ORDER',
@@ -16,8 +16,9 @@ export interface ValidationWarning {
 }
 
 export interface ValidationResult {
-  passed: boolean;
+  status: 'PASS' | 'FAIL' | 'INDETERMINATE';
   warnings: ValidationWarning[];
+  errors?: string[];
 }
 
 export interface OrderContextPayload {
@@ -30,22 +31,40 @@ export class OrderValidationPipeline {
 
   async validate(payload: OrderContextPayload): Promise<ValidationResult> {
     const warnings: ValidationWarning[] = [];
+    let isIndeterminate = false;
+    const errors: string[] = [];
 
     // 1. Duplicate Detection Check
     const duplicateWarnings = await this.checkDuplicates(payload);
     warnings.push(...duplicateWarnings);
 
-    // 2. Mock Drug Interaction Check (future LIS/Pharmacy integration)
-    const interactionWarnings = this.checkDrugInteractions(payload);
-    warnings.push(...interactionWarnings);
+    // 2. Drug Interaction Check (future LIS/Pharmacy integration)
+    const interactionResult = this.checkDrugInteractions(payload);
+    if (interactionResult.status === 'INDETERMINATE') {
+      isIndeterminate = true;
+      errors.push('DRUG_INTERACTION_SERVICE_UNAVAILABLE');
+    }
 
-    // 3. Mock Allergy Check
-    const allergyWarnings = this.checkAllergies(payload);
-    warnings.push(...allergyWarnings);
+    // 3. Allergy Check
+    const allergyResult = this.checkAllergies(payload);
+    if (allergyResult.status === 'INDETERMINATE') {
+      isIndeterminate = true;
+      errors.push('ALLERGY_SERVICE_UNAVAILABLE');
+    }
+
+    let status: ValidationResult['status'] = 'PASS';
+    if (isIndeterminate) {
+      status = 'INDETERMINATE';
+    } else if (warnings.length > 0) {
+      // In a real system, some warnings might cause FAIL, others PASS.
+      // For now, if there are warnings but it's not INDETERMINATE, it's a FAIL.
+      status = 'FAIL';
+    }
 
     return {
-      passed: warnings.length === 0,
+      status,
       warnings,
+      errors: errors.length > 0 ? errors : undefined,
     };
   }
 
@@ -88,13 +107,13 @@ export class OrderValidationPipeline {
     return warnings;
   }
 
-  private checkDrugInteractions(payload: OrderContextPayload): ValidationWarning[] {
-    // Stub implementation
-    return [];
+  private checkDrugInteractions(payload: OrderContextPayload): { status: 'PASS' | 'INDETERMINATE' } {
+    // Explicit unavailable state rather than faking safety
+    return { status: 'INDETERMINATE' };
   }
 
-  private checkAllergies(payload: OrderContextPayload): ValidationWarning[] {
-    // Stub implementation
-    return [];
+  private checkAllergies(payload: OrderContextPayload): { status: 'PASS' | 'INDETERMINATE' } {
+    // Explicit unavailable state rather than faking safety
+    return { status: 'INDETERMINATE' };
   }
 }

@@ -86,7 +86,7 @@ export class ConfigEngine implements ConfigProvider {
   async updateHospitalConfig(hospitalId: string, data: HospitalConfig): Promise<HospitalConfig> {
     return await prisma.$transaction(async (tx) => {
       // 1. Update DB
-      const updated = await tx.hospitalsMaster.update({
+      await tx.hospitalsMaster.update({
         where: { id: hospitalId },
         data: {
           ...data,

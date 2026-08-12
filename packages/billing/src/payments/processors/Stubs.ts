@@ -1,4 +1,4 @@
-import { PaymentIntent, PaymentStatus } from '@prisma/client';
+import { PaymentIntent } from '@prisma/client';
 
 import { Money } from '../../pricing/Money';
 import {

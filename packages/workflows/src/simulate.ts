@@ -1,8 +1,14 @@
+/**
+ * DEVELOPMENT / SIMULATION SCRIPT
+ *
+ * Not imported by production application code.
+ * Used exclusively for local workflow state testing.
+ */
 import { v4 as uuidv4 } from 'uuid';
 
-import { HospitalWorkflow, HospitalState, HospitalAction } from './hospital-lifecycle';
+import { HospitalWorkflow, HospitalState } from './hospital-lifecycle';
 
-async function simulate() {
+export async function simulate() {
   console.log('--- Starting Workflow Simulation ---');
 
   const mockHospitalId = uuidv4();
@@ -10,7 +16,7 @@ async function simulate() {
 
   // Dummy state updater
   let currentState: HospitalState = 'CREATED';
-  const updateFn = async (id: string, newState: HospitalState, tx: any) => {
+  const updateFn = async (id: string, newState: HospitalState, _tx: any) => {
     currentState = newState;
   };
 

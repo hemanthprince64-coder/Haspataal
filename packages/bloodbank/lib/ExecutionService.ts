@@ -14,7 +14,6 @@ export class BloodBankExecutionService {
     hospitalId: string,
     patientId: string,
     items: any[],
-    requestingDoctor: string,
   ) {
     const execution = await this.prisma.bloodBankExecution.create({
       data: {

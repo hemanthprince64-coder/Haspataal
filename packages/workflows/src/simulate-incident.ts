@@ -1,3 +1,10 @@
+/**
+ * DEVELOPMENT / SIMULATION SCRIPT
+ *
+ * Not imported by production application code.
+ * Used exclusively for local workflow state testing.
+ */
+
 import { prisma } from '@haspataal/db';
 
 import { IncidentWorkflow } from './incident-lifecycle';

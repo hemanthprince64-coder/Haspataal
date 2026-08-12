@@ -1,5 +1,3 @@
-import { PrismaClient } from '@prisma/client';
-
 import { SearchService } from './src/application/services/search-service';
 import { PostgresSearchProvider } from './src/infrastructure/providers/postgres-provider';
 

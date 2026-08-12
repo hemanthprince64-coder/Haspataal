@@ -1,4 +1,4 @@
-import { Condition, RuleContext, RuleResult, Action } from './types';
+import { Condition, RuleContext } from './types';
 
 export class RuleCompiler {
   static evaluateCondition(condition: Condition, context: RuleContext): boolean {

@@ -1,4 +1,4 @@
-/* eslint-disable local-rules/no-direct-prisma-in-pages, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // ============================================================
 // PrismaPatientRepository — Prisma implementation
 // ============================================================

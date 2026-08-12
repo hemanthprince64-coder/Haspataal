@@ -140,6 +140,7 @@ export declare const CreateRuleCommandSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     payload?: any;
     timestamp?: Date;
+    correlationId?: string;
     commandId?: string;
     commandVersion?: number;
     target?: string;
@@ -170,12 +171,12 @@ export declare const CreateRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    correlationId?: string;
     causationId?: string;
     idempotencyKey?: string;
 }, {
     payload?: any;
     timestamp?: Date;
+    correlationId?: string;
     commandId?: string;
     commandVersion?: number;
     target?: string;
@@ -206,7 +207,6 @@ export declare const CreateRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    correlationId?: string;
     causationId?: string;
     idempotencyKey?: string;
 }>;
@@ -305,6 +305,7 @@ export declare const ExecuteRuleCommandSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     payload?: any;
     timestamp?: Date;
+    correlationId?: string;
     commandId?: string;
     commandVersion?: number;
     target?: string;
@@ -335,12 +336,12 @@ export declare const ExecuteRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    correlationId?: string;
     causationId?: string;
     idempotencyKey?: string;
 }, {
     payload?: any;
     timestamp?: Date;
+    correlationId?: string;
     commandId?: string;
     commandVersion?: number;
     target?: string;
@@ -371,7 +372,6 @@ export declare const ExecuteRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    correlationId?: string;
     causationId?: string;
     idempotencyKey?: string;
 }>;
