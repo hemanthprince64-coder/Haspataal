@@ -49,7 +49,8 @@ export class CreatePaymentIntentUseCase {
 
       // 2. Asserts
       ImmutableFinancialAggregateGuard.assertPayable(invoice.status);
-      const invoiceTotal = new Money(invoice.totalAmount, invoice.payload?.currency || 'INR');
+      const invoicePayload = invoice.payload as any;
+      const invoiceTotal = new Money(invoice.totalAmount, invoicePayload?.pricing?.currency || 'INR');
 
       // Strict currency check
       requestedMoney.add(new Money(0, invoiceTotal.currency)); // throws if mismatch
@@ -120,14 +121,16 @@ export class CreatePaymentIntentUseCase {
 
       // 7. Publish Event
       await eventBus.publish({
-        eventId: uuidv4(),
-        eventType: BillingEventTypes.PAYMENT_INTENT_CREATED,
+        id: uuidv4(),
+        type: BillingEventTypes.PAYMENT_INTENT_CREATED,
+        version: 1,
         eventVersion: 1,
-        schemaVersion: '1.0.0',
-        occurredAt: new Date().toISOString(),
-        aggregate: { aggregateId: intentId, aggregateType: 'PaymentIntent' },
-        actor: { actorId: request.performedBy, actorType: 'USER' },
-        scope: { hospitalId: request.hospitalId },
+        schemaVersion: 1,
+        occurredAt: new Date(),
+        aggregateId: intentId,
+        aggregateType: 'PaymentIntent',
+        actor: { id: request.performedBy, type: 'USER' },
+        hospitalId: request.hospitalId,
         payload: {
           intentId,
           invoiceId: invoice.id,

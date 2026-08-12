@@ -5,10 +5,18 @@ import {
   CancelPharmacyOrderUseCase,
 } from '@haspataal/pharmacy';
 import { TimelinePublisher } from '@haspataal/timeline';
+import { ClinicalOrderFacade } from '@haspataal/orders';
 import { PrismaClient } from '@prisma/client';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock dependencies
+vi.mock('@haspataal/orders', () => {
+  return {
+    ClinicalOrderFacade: {
+      updateStatus: vi.fn(),
+    }
+  }
+});
 vi.mock('@prisma/client', () => {
   const mPrisma: any = {
     $transaction: vi.fn(async (callback: any) => callback(mPrisma)),
@@ -29,18 +37,17 @@ vi.mock('@prisma/client', () => {
   };
 });
 
+const mockTimelinePublisher = {
+  publishStandardEvent: vi.fn(),
+} as unknown as TimelinePublisher;
+
 vi.mock('@haspataal/timeline', () => {
   return {
-    getTimelinePublisher: vi.fn(() => ({
-      publishStandardEvent: vi.fn(),
-    })),
+    getTimelinePublisher: vi.fn(() => mockTimelinePublisher),
   };
 });
 
 const prisma = new PrismaClient();
-const mockTimelinePublisher = {
-  publishStandardEvent: vi.fn(),
-} as unknown as TimelinePublisher;
 
 describe('Pharmacy Domain Integration', () => {
   beforeEach(() => {
@@ -65,8 +72,12 @@ describe('Pharmacy Domain Integration', () => {
       version: 1,
     });
 
-    const processUseCase = new ProcessPharmacyOrderUseCase(prisma);
-    const exec1 = await processUseCase.execute({ clinicalOrderId: 'order-1', actor });
+    const exec1 = await ProcessPharmacyOrderUseCase.execute({
+      clinicalOrderId: 'order-1',
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
+    });
     expect(exec1.status).toBe('PRESCRIBED');
 
     // 2. Verify
@@ -81,11 +92,16 @@ describe('Pharmacy Domain Integration', () => {
       version: 2,
     });
 
-    const verifyUseCase = new VerifyPharmacyOrderUseCase(prisma, mockTimelinePublisher);
-    const exec2 = await verifyUseCase.execute({ executionId: 'exec-1', expectedVersion: 1, actor });
+    const exec2 = await VerifyPharmacyOrderUseCase.execute({
+      executionId: 'exec-1',
+      expectedVersion: 1,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
+    });
 
     expect(mockTimelinePublisher.publishStandardEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'PHARMACY_ORDER_VERIFIED' }),
+      expect.objectContaining({ type: 'PHARMACY_ORDER_VERIFIED' }),
     );
 
     // 3. Full Dispense
@@ -103,20 +119,22 @@ describe('Pharmacy Domain Integration', () => {
       version: 3,
     });
 
-    const dispenseUseCase = new DispenseMedicationUseCase(prisma, mockTimelinePublisher);
-    const exec3 = await dispenseUseCase.execute({
+    const exec3 = await DispenseMedicationUseCase.execute({
       executionId: 'exec-1',
       expectedVersion: 2,
-      items: [{ itemId: 'item-1', quantity: 10 }],
-      actor,
+      itemsDispensed: [{ itemId: 'item-1', quantity: 10 }],
+      isPartial: false,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
     });
 
     expect(mockTimelinePublisher.publishStandardEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'PHARMACY_ORDER_DISPENSED' }),
+      expect.objectContaining({ type: 'PHARMACY_ORDER_DISPENSED' }),
     );
     // Since full dispense, ClinicalOrderFacade completes the order
-    expect(prisma.clinicalOrder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'COMPLETED' }) }),
+    expect(ClinicalOrderFacade.updateStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ orderId: 'order-1', status: 'COMPLETED' }),
     );
   });
 
@@ -138,26 +156,27 @@ describe('Pharmacy Domain Integration', () => {
       version: 3,
     });
 
-    const dispenseUseCase = new DispenseMedicationUseCase(prisma, mockTimelinePublisher);
-    await dispenseUseCase.execute({
+    await DispenseMedicationUseCase.execute({
       executionId: 'exec-1',
       expectedVersion: 2,
-      items: [{ itemId: 'item-1', quantity: 5 }], // only 5 of 10
-      actor,
+      itemsDispensed: [{ itemId: 'item-1', quantity: 5 }], // only 5 of 10
+      isPartial: true,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
     });
 
     expect(mockTimelinePublisher.publishStandardEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'PHARMACY_ORDER_PARTIALLY_DISPENSED' }),
+      expect.objectContaining({ type: 'PHARMACY_ORDER_PARTIALLY_DISPENSED' }),
     );
     // order should NOT be completed
-    expect(prisma.clinicalOrder.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'COMPLETED' }) }),
+    expect(ClinicalOrderFacade.updateStatus).not.toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'COMPLETED' }),
     );
   });
 
   it('should cancel before verification but fail after', async () => {
     const actor = { id: 'pharm-1', name: 'Pharmacist A', role: 'PHARMACIST' };
-    const cancelUseCase = new CancelPharmacyOrderUseCase(prisma, mockTimelinePublisher);
 
     // Cancel before verification -> succeeds
     (prisma.pharmacyExecution.findUnique as any).mockResolvedValue({
@@ -172,14 +191,16 @@ describe('Pharmacy Domain Integration', () => {
       version: 2,
     });
 
-    await cancelUseCase.execute({
+    await CancelPharmacyOrderUseCase.execute({
       executionId: 'exec-1',
       expectedVersion: 1,
       reason: 'Out of stock',
-      actor,
+      actorId: actor.id,
+      actorName: actor.name,
+      actorRole: actor.role,
     });
     expect(mockTimelinePublisher.publishStandardEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'PHARMACY_ORDER_CANCELLED' }),
+      expect.objectContaining({ type: 'PHARMACY_ORDER_CANCELLED' }),
     );
 
     // Cancel after verification -> state machine should throw (Assuming state machine does not allow VERIFIED -> CANCELLED or handles it. Wait, the state machine actually allows CANCELLED from PRESCRIBED. Let's assume it fails if it doesn't.)
@@ -192,11 +213,13 @@ describe('Pharmacy Domain Integration', () => {
     });
 
     await expect(
-      cancelUseCase.execute({
+      CancelPharmacyOrderUseCase.execute({
         executionId: 'exec-1',
         expectedVersion: 3,
         reason: 'Mistake',
-        actor,
+        actorId: actor.id,
+        actorName: actor.name,
+        actorRole: actor.role,
       }),
     ).rejects.toThrowError(/Invalid state transition/);
   });
@@ -210,11 +233,15 @@ describe('Pharmacy Domain Integration', () => {
       version: 2,
     });
 
-    const verifyUseCase = new VerifyPharmacyOrderUseCase(prisma, mockTimelinePublisher);
-
     // User submits with version 1, but db is at version 2
     await expect(
-      verifyUseCase.execute({ executionId: 'exec-1', expectedVersion: 1, actor }),
-    ).rejects.toThrowError(/Concurrency conflict/);
+      VerifyPharmacyOrderUseCase.execute({
+        executionId: 'exec-1',
+        expectedVersion: 1,
+        actorId: actor.id,
+        actorName: actor.name,
+        actorRole: actor.role,
+      }),
+    ).rejects.toThrowError(/Optimistic locking failure/);
   });
 });

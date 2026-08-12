@@ -92,25 +92,30 @@ setInterval(
           name: 'Unknown Emergency',
           createdAt: { lt: cutoff },
         },
+        include: {
+          lifecycleTags: true,
+        },
       });
 
       for (const p of unresolved) {
+        const hospitalId = p.lifecycleTags?.[0]?.hospitalId || 'system';
+        
         logger.warn(
-          { action: 'unresolved_emergency_escalation', patientId: p.id, hospitalId: p.hospitalId },
+          { action: 'unresolved_emergency_escalation', patientId: p.id, hospitalId },
           `SLA Breach: Emergency patient ${p.id} unresolved for >24 hours`,
         );
 
         await eventBus.publish({
           type: 'NOTIFICATION_SEND' as any,
           id: uuidv4(),
-          hospitalId: p.hospitalId,
+          hospitalId,
           actorId: 'system',
           correlationId: uuidv4(),
           timestamp: new Date().toISOString(),
           payload: {
             channel: 'WHATSAPP',
             recipient: 'SUPERVISOR_GROUP',
-            message: `🚨 URGENT: Emergency patient ${p.uhid} admitted over 24 hours ago has not been reconciled. Please update demographics to unblock billing.`,
+            message: `🚨 URGENT: Emergency patient ${p.id} admitted over 24 hours ago has not been reconciled. Please update demographics to unblock billing.`,
           },
         } as any);
       }

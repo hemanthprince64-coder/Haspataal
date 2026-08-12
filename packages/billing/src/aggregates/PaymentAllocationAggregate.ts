@@ -1,4 +1,4 @@
-import { CanonicalEventEnvelope } from '@haspataal/platform-contracts';
+import { DomainEvent, eventBus as EventBus } from '@haspataal/events';
 import { PrismaClient, PaymentStatus, AllocationStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
@@ -7,11 +7,7 @@ import { Money } from '../pricing/Money';
 
 const prisma = new PrismaClient();
 
-const EventBus = {
-  publish: (event: CanonicalEventEnvelope) => {
-    console.log(`[EventBus] Published ${event.eventType}`, event);
-  },
-};
+
 
 export interface AllocatePaymentCommand {
   paymentId: string;
@@ -105,14 +101,16 @@ export class PaymentAllocationAggregate {
           if (allocateAmountMoney.compare(paymentRemaining) > 0) {
             // Emit overallocation blocked event
             EventBus.publish({
-              eventId: randomUUID(),
-              eventType: BillingEventTypes.PAYMENT_OVERALLOCATION_BLOCKED,
+              id: randomUUID(),
+              type: BillingEventTypes.PAYMENT_OVERALLOCATION_BLOCKED,
+              version: 1,
               eventVersion: 1,
-              schemaVersion: '1.0.0',
-              occurredAt: new Date().toISOString(),
-              aggregate: { aggregateId: invoiceId, aggregateType: 'Invoice' },
-              actor: { actorId: userId, actorType: 'USER' },
-              scope: { hospitalId },
+              schemaVersion: 1,
+              occurredAt: new Date(),
+              aggregateId: invoiceId,
+              aggregateType: 'Invoice',
+              actor: { id: userId, type: 'USER' },
+              hospitalId,
               payload: {
                 paymentId,
                 requestedAmount: amount,
@@ -127,14 +125,16 @@ export class PaymentAllocationAggregate {
           // 8. Rule 3: Allocated Amount <= Invoice Outstanding Balance
           if (allocateAmountMoney.compare(invoiceBalance) > 0) {
             EventBus.publish({
-              eventId: randomUUID(),
-              eventType: BillingEventTypes.PAYMENT_OVERALLOCATION_BLOCKED,
+              id: randomUUID(),
+              type: BillingEventTypes.PAYMENT_OVERALLOCATION_BLOCKED,
+              version: 1,
               eventVersion: 1,
-              schemaVersion: '1.0.0',
-              occurredAt: new Date().toISOString(),
-              aggregate: { aggregateId: invoiceId, aggregateType: 'Invoice' },
-              actor: { actorId: userId, actorType: 'USER' },
-              scope: { hospitalId },
+              schemaVersion: 1,
+              occurredAt: new Date(),
+              aggregateId: invoiceId,
+              aggregateType: 'Invoice',
+              actor: { id: userId, type: 'USER' },
+              hospitalId,
               payload: {
                 paymentId,
                 requestedAmount: amount,
@@ -202,16 +202,18 @@ export class PaymentAllocationAggregate {
           // 13. Publish Accounting Events
           // Payment event
           EventBus.publish({
-            eventId: randomUUID(),
-            eventType: newPaymentAllocated.equals(paymentTotal)
+            id: randomUUID(),
+            type: newPaymentAllocated.equals(paymentTotal)
               ? BillingEventTypes.PAYMENT_ALLOCATED
               : BillingEventTypes.PAYMENT_PARTIALLY_ALLOCATED,
+            version: 1,
             eventVersion: 1,
-            schemaVersion: '1.0.0',
-            occurredAt: new Date().toISOString(),
-            aggregate: { aggregateId: paymentId, aggregateType: 'Payment' },
-            actor: { actorId: userId, actorType: 'USER' },
-            scope: { hospitalId },
+            schemaVersion: 1,
+            occurredAt: new Date(),
+            aggregateId: paymentId,
+            aggregateType: 'Payment',
+            actor: { id: userId, type: 'USER' },
+            hospitalId,
             payload: {
               allocationId: allocation.id,
               invoiceId,
@@ -221,16 +223,18 @@ export class PaymentAllocationAggregate {
 
           // Invoice event
           EventBus.publish({
-            eventId: randomUUID(),
-            eventType: newInvoiceBalance.isZero()
+            id: randomUUID(),
+            type: newInvoiceBalance.isZero()
               ? BillingEventTypes.INVOICE_PAID
               : BillingEventTypes.INVOICE_PARTIALLY_PAID,
+            version: 1,
             eventVersion: 1,
-            schemaVersion: '1.0.0',
-            occurredAt: new Date().toISOString(),
-            aggregate: { aggregateId: invoiceId, aggregateType: 'Invoice' },
-            actor: { actorId: userId, actorType: 'USER' },
-            scope: { hospitalId },
+            schemaVersion: 1,
+            occurredAt: new Date(),
+            aggregateId: invoiceId,
+            aggregateType: 'Invoice',
+            actor: { id: userId, type: 'USER' },
+            hospitalId,
             payload: {
               allocationId: allocation.id,
               paymentId,

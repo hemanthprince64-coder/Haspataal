@@ -1,4 +1,4 @@
-import { PrismaClient, ClinicalEventType, UserRole } from '@prisma/client';
+import { PrismaClient, ClinicalEventType } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 import { AlertEngine } from '../apps/hospital-hms/lib/services/alert-engine';

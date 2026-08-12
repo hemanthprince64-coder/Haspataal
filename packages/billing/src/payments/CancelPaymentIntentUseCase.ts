@@ -45,14 +45,16 @@ export class CancelPaymentIntentUseCase {
 
       // 4. Publish Event
       await eventBus.publish({
-        eventId: uuidv4(),
-        eventType: BillingEventTypes.PAYMENT_INTENT_CANCELLED,
+        id: uuidv4(),
+        type: BillingEventTypes.PAYMENT_INTENT_CANCELLED,
+        version: 1,
         eventVersion: 1,
-        schemaVersion: '1.0.0',
-        occurredAt: new Date().toISOString(),
-        aggregate: { aggregateId: intent.id, aggregateType: 'PaymentIntent' },
-        actor: { actorId: performedBy, actorType: 'USER' },
-        scope: { hospitalId: intent.hospitalId },
+        schemaVersion: 1,
+        occurredAt: new Date(),
+        aggregateId: intent.id,
+        aggregateType: 'PaymentIntent',
+        actor: { id: performedBy, type: 'USER' },
+        hospitalId: intent.hospitalId,
         payload: {
           intentId: intent.id,
           invoiceId: intent.invoiceId,

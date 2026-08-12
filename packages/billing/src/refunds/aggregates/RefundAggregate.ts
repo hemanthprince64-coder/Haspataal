@@ -61,9 +61,9 @@ export class RefundAggregate {
 
       const refundableAmount = paymentTotal.subtract(totalRefunded);
 
-      if (requestedRefund.greaterThan(refundableAmount)) {
+      if (requestedRefund.compare(refundableAmount) > 0) {
         throw new Error(
-          `Refund amount ${command.amount} exceeds refundable balance of ${refundableAmount.getAmount()}`,
+          `Refund amount ${command.amount} exceeds refundable balance of ${refundableAmount.toNumber()}`,
         );
       }
 
@@ -90,7 +90,7 @@ export class RefundAggregate {
       });
 
       // Reverse Allocations (Simplified logic: we just mark the first X active allocations as reversed until the refund is covered)
-      let remainingToReverse = requestedRefund.getAmount();
+      let remainingToReverse = requestedRefund.toNumber();
 
       for (const allocation of payment.allocations) {
         if (remainingToReverse <= 0) break;
@@ -110,7 +110,7 @@ export class RefundAggregate {
 
           await tx.invoice.update({
             where: { id: invoice.id },
-            data: { balanceAmount: newBalance.getAmount() },
+            data: { balanceAmount: newBalance.toNumber() },
           });
         }
 

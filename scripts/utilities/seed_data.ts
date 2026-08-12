@@ -71,15 +71,15 @@ async function main() {
           hospitalId,
           patientId: patient.id,
           testName: 'Complete Blood Count',
-          status: 'COMPLETED',
+          status: 'REPORT_READY',
           result: 'Normal',
         },
-        { hospitalId, patientId: patient.id, testName: 'HbA1c', status: 'PENDING' },
+        { hospitalId, patientId: patient.id, testName: 'HbA1c', status: 'ORDERED' },
         {
           hospitalId,
           patientId: patient.id,
           testName: 'Liver Function Test',
-          status: 'IN_PROGRESS',
+          status: 'PROCESSED',
         },
       ],
     });

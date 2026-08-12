@@ -75,12 +75,12 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload,
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
 
-      await dispatchToConsumers(envelope);
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       const ledgers = await prisma.consumerIdempotencyLedger.findMany({ where: { eventId } });
       const uniqueConsumers = new Set(ledgers.map((l) => l.consumerName));
@@ -106,11 +106,11 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId: randomUUID(), admissionId },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
 
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       await prisma.timelineEvent.deleteMany({ where: { entityId: admissionId } });
       await prisma.consumerIdempotencyLedger.deleteMany({
@@ -144,16 +144,16 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId: randomUUID(), admissionId },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       const firstPass = await prisma.timelineEvent.findMany({ where: { entityId: admissionId } });
       await prisma.timelineEvent.deleteMany({ where: { entityId: admissionId } });
       await prisma.consumerIdempotencyLedger.deleteMany({ where: { consumerName: 'Timeline' } });
 
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       const secondPass = await prisma.timelineEvent.findMany({ where: { entityId: admissionId } });
 
@@ -172,10 +172,10 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId: randomUUID(), admissionId },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       // Artificially downgrade
       await prisma.timelineEvent.updateMany({
@@ -186,7 +186,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
       // Trigger update / replay logic (Our current consumer UPSERTS by default or ignores if ledger is COMPLETED)
       // To force rebuild, ledger is cleared during replay
       await prisma.consumerIdempotencyLedger.deleteMany({ where: { consumerName: 'Timeline' } });
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       const timeline = await prisma.timelineEvent.findFirst({
         where: { entityId: admissionId },
@@ -207,7 +207,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId, admissionId },
         occurredAt: new Date('2024-01-01T10:00:00Z'),
-        scope: { hospitalId: hId },
+        scope: { scopeType: null, tenantId: null, hospitalId: hId },
         version: 1,
       };
       const e2: CanonicalEventEnvelope = {
@@ -215,7 +215,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_CLINICALLY_DISCHARGED',
         payload: { patientId, admissionId },
         occurredAt: new Date('2024-01-02T10:00:00Z'),
-        scope: { hospitalId: hId },
+        scope: { scopeType: null, tenantId: null, hospitalId: hId },
         version: 1,
       };
       const e3: CanonicalEventEnvelope = {
@@ -223,14 +223,14 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_PHYSICALLY_LEFT_STANDARD',
         payload: { patientId, admissionId },
         occurredAt: new Date('2024-01-02T12:00:00Z'),
-        scope: { hospitalId: hId },
+        scope: { scopeType: null, tenantId: null, hospitalId: hId },
         version: 1,
       };
 
       // Process out of order
-      await dispatchToConsumers(e3);
-      await dispatchToConsumers(e1);
-      await dispatchToConsumers(e2);
+      await dispatchToConsumers(e3, e3.payload);
+      await dispatchToConsumers(e1, e1.payload);
+      await dispatchToConsumers(e2, e2.payload);
 
       const timelines = await prisma.timelineEvent.findMany({
         where: { entityId: admissionId },
@@ -280,12 +280,12 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
           },
         },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
 
-      await dispatchToConsumers(envelope);
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       const intents = await prisma.notification.findMany();
       expect(intents.length).toBe(1);
@@ -333,10 +333,10 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_CLINICALLY_DISCHARGED',
         payload: { admissionId: admission.id, patientId: admission.patientId },
         occurredAt: new Date(),
-        scope: { hospitalId: bed.hospitalId },
+        scope: { scopeType: null, tenantId: null, hospitalId: bed.hospitalId },
         version: 1,
       };
-      await dispatchToConsumers(e1);
+      await dispatchToConsumers(e1, e1.payload);
 
       let updatedBed = await prisma.bed.findUnique({ where: { id: bed.id } });
       expect(updatedBed?.status).toBe('OCCUPIED'); // Clinical discharge does NOT clean
@@ -346,10 +346,10 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_PHYSICALLY_LEFT_STANDARD',
         payload: { admissionId: admission.id, patientId: admission.patientId },
         occurredAt: new Date(),
-        scope: { hospitalId: bed.hospitalId },
+        scope: { scopeType: null, tenantId: null, hospitalId: bed.hospitalId },
         version: 1,
       };
-      await dispatchToConsumers(e2);
+      await dispatchToConsumers(e2, e2.payload);
 
       updatedBed = await prisma.bed.findUnique({ where: { id: bed.id } });
       expect(updatedBed?.status).toBe('CLEANING'); // Physical departure cleans
@@ -364,7 +364,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId: randomUUID(), admissionId: randomUUID() },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
 
@@ -377,7 +377,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         .spyOn(originalJourney!, 'handle')
         .mockRejectedValueOnce(new Error('Journey Failed'));
 
-      await expect(dispatchToConsumers(envelope)).rejects.toThrow('Journey Failed');
+      await expect(dispatchToConsumers(envelope, envelope.payload)).rejects.toThrow('Journey Failed');
 
       // Verify Timeline committed (because each consumer has its own transaction)
       const timelineLedger = await prisma.consumerIdempotencyLedger.findUnique({
@@ -399,11 +399,11 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_UNKNOWN_EVENT_V999' as any,
         payload: {},
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
       // Should safely complete without throwing
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
       expect(true).toBe(true);
     });
   });
@@ -415,17 +415,17 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId: randomUUID(), admissionId },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       const timeline = await prisma.timelineEvent.findFirst({ where: { entityId: admissionId } });
       const analytics = await prisma.analyticsAdmissionProjection.findFirst({
         where: { admissionId },
       });
       const journey = await prisma.journeyInstance.findFirst({
-        where: { patientId: envelope.payload.patientId },
+        where: { patientId: (envelope.payload as any).patientId },
       });
 
       expect(timeline).toBeDefined();
@@ -442,7 +442,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         eventType: 'PATIENT_ADMITTED',
         payload: { patientId: randomUUID(), admissionId: randomUUID() },
         occurredAt: new Date(),
-        scope: { hospitalId: randomUUID() },
+        scope: { scopeType: null, tenantId: null, hospitalId: randomUUID() },
         version: 1,
       };
 
@@ -454,14 +454,14 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
         .spyOn(originalTimeline!, 'handle')
         .mockRejectedValueOnce(new Error('DLQ Test'));
 
-      await expect(dispatchToConsumers(envelope)).rejects.toThrow('DLQ Test');
+      await expect(dispatchToConsumers(envelope, envelope.payload)).rejects.toThrow('DLQ Test');
 
       let timelineLedger = await prisma.consumerIdempotencyLedger.findUnique({
         where: { eventId_consumerName_version: { version: 1, eventId, consumerName: 'Timeline' } },
       });
       expect(timelineLedger).toBeNull();
 
-      await dispatchToConsumers(envelope);
+      await dispatchToConsumers(envelope, envelope.payload);
 
       timelineLedger = await prisma.consumerIdempotencyLedger.findUnique({
         where: { eventId_consumerName_version: { version: 1, eventId, consumerName: 'Timeline' } },

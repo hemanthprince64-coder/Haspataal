@@ -1,4 +1,4 @@
-import { CanonicalEventEnvelope } from '@haspataal/platform-contracts';
+import { DomainEvent } from '@haspataal/events';
 
 export const BillingEventTypes = {
   CHARGE_CREATED: 'CHARGE_CREATED',
@@ -29,7 +29,7 @@ export const BillingEventTypes = {
 // Kept for backward compatibility while migrating
 export const BILL_GENERATED_EVENT_TYPE = BillingEventTypes.INVOICE_GENERATED;
 
-export interface BillGeneratedPayload {
+export type BillGeneratedPayload = {
   invoiceId: string;
   invoiceNumber: string;
   billingAccountId?: string;
@@ -41,54 +41,55 @@ export interface BillGeneratedPayload {
   totalAmount: number;
   currency: string;
   chargeItemIds: string[];
-}
+  [key: string]: unknown;
+};
 
 export function createBillGeneratedEvent(
   hospitalId: string,
   payload: BillGeneratedPayload,
   eventId: string,
-): CanonicalEventEnvelope {
+): DomainEvent<BillGeneratedPayload> {
   return {
-    eventId,
-    eventType: BillingEventTypes.INVOICE_GENERATED,
+    id: eventId,
+    type: BillingEventTypes.INVOICE_GENERATED,
+    version: 1,
     eventVersion: 1,
-    schemaVersion: '1.0.0',
-    occurredAt: new Date().toISOString(),
-    aggregate: {
-      aggregateId: payload.invoiceId,
-      aggregateType: 'Invoice',
-    },
+    schemaVersion: 1,
+    occurredAt: new Date(),
+    aggregateId: payload.invoiceId,
+    aggregateType: 'Invoice',
     actor: {
-      actorId: 'system',
-      actorType: 'SYSTEM',
+      id: 'system',
+      type: 'SYSTEM',
     },
-    scope: {
-      hospitalId,
-    },
+    hospitalId,
     payload,
   };
 }
 
-export interface PaymentRefundedPayload {
+export type PaymentRefundedPayload = {
   refundId: string;
   paymentId: string;
   amount: number;
   reason: string;
-}
+  [key: string]: unknown;
+};
 export function createPaymentRefundedEvent(
   hospitalId: string,
   payload: PaymentRefundedPayload,
   eventId: string,
-): CanonicalEventEnvelope {
+): DomainEvent<PaymentRefundedPayload> {
   return {
-    eventId,
-    eventType: BillingEventTypes.PAYMENT_REFUNDED,
+    id: eventId,
+    type: BillingEventTypes.PAYMENT_REFUNDED,
+    version: 1,
     eventVersion: 1,
-    schemaVersion: '1.0.0',
-    occurredAt: new Date().toISOString(),
-    aggregate: { aggregateId: payload.refundId, aggregateType: 'Refund' },
-    actor: { actorId: 'system', actorType: 'SYSTEM' },
-    scope: { hospitalId },
+    schemaVersion: 1,
+    occurredAt: new Date(),
+    aggregateId: payload.refundId,
+    aggregateType: 'Refund',
+    actor: { id: 'system', type: 'SYSTEM' },
+    hospitalId,
     payload,
   };
 }

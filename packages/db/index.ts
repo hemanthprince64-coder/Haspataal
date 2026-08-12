@@ -50,14 +50,15 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
   };
 
   // Middleware: intercept delete → soft-delete
-  (client as any).$use(async (params: any, next: (params: any) => Promise<any>) => {
-    if (SOFT_DELETE_MODELS.includes(params.model)) {
-      // Convert delete to update with deletedAt
-      if (params.action === 'delete') {
-        params.action = 'update';
-        params.args.data = { deletedAt: new Date() };
-      }
-      if (params.action === 'deleteMany') {
+  if (typeof (client as any).$use === 'function') {
+    (client as any).$use(async (params: any, next: (params: any) => Promise<any>) => {
+      if (SOFT_DELETE_MODELS.includes(params.model)) {
+        // Convert delete to update with deletedAt
+        if (params.action === 'delete') {
+          params.action = 'update';
+          params.args.data = { deletedAt: new Date() };
+        }
+        if (params.action === 'deleteMany') {
         params.action = 'updateMany';
         if (params.args.data) {
           params.args.data.deletedAt = new Date();
@@ -85,10 +86,11 @@ const prismaClientSingleton = (): ExtendedPrismaClient => {
         } else {
           params.args.where = { deletedAt: null };
         }
+        }
       }
-    }
-    return next(params);
-  });
+      return next(params);
+    });
+  }
 
   return client;
 };

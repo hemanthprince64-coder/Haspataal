@@ -1,4 +1,4 @@
-export * from './state-machine/InvoiceStateMachine';
+export * from './invoices/InvoiceStateMachine';
 export * from './pricing/PricingEngine';
 export * from './consumer/BillingConsumer';
 export * from './consumer/register';

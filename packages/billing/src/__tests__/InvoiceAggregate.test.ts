@@ -117,7 +117,7 @@ describe('InvoiceAggregate', () => {
     // Check event emission
     expect(eventBus.publish).toHaveBeenCalledTimes(1);
     const eventArg = vi.mocked(eventBus.publish).mock.calls[0][0] as any;
-    expect(eventArg.eventType).toBe('INVOICE_GENERATED');
+    expect(eventArg.type).toBe('INVOICE_GENERATED');
     expect(eventArg.payload.subtotal).toBe(800);
     expect(eventArg.payload.totalAmount).toBe(825);
   });

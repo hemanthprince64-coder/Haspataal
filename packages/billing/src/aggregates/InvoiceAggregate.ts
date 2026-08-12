@@ -102,16 +102,15 @@ export class InvoiceAggregate {
       // 4. Create Expanded Immutable Invoice Snapshot
       const invoiceSnapshot = {
         hospital: {
-          name: hospital.name || hospital.legalName,
+          name: hospital.displayName || hospital.legalName,
           address:
             `${hospital.addressLine1 || ''} ${hospital.city || ''} ${hospital.pincode || ''}`.trim(),
           contactNumber: hospital.contactNumber,
           gstNumber: hospital.gstNumber,
-          stateRegistrationNumber: hospital.stateRegistrationNumber,
+          stateRegistrationNumber: hospital.registrationNumber,
         },
         patient: {
           name: patient.name,
-          mrn: patient.mrn || '',
           contactNumber: patient.phone,
           address: patient.address,
           abhaAddress: patient.abhaAddress,
@@ -133,12 +132,12 @@ export class InvoiceAggregate {
           chargeItemId: li.chargeItemId,
           description: li.description,
           type: li.type,
-          quantity: li.quantity,
-          unitPrice: li.unitPrice,
-          gstAmount: li.gstAmount,
-          discountAmount: li.discountAmount,
-          taxableAmount: li.taxableAmount,
-          totalAmount: li.totalAmount,
+          quantity: li.quantity ? Number(li.quantity) : 1,
+          unitPrice: li.unitPrice instanceof Prisma.Decimal ? li.unitPrice.toNumber() : Number(li.unitPrice),
+          gstAmount: li.gstAmount instanceof Prisma.Decimal ? li.gstAmount.toNumber() : Number(li.gstAmount),
+          discountAmount: li.discountAmount instanceof Prisma.Decimal ? li.discountAmount.toNumber() : Number(li.discountAmount),
+          taxableAmount: li.taxableAmount instanceof Prisma.Decimal ? li.taxableAmount.toNumber() : Number(li.taxableAmount),
+          totalAmount: li.totalAmount instanceof Prisma.Decimal ? li.totalAmount.toNumber() : Number(li.totalAmount),
         })),
       };
 

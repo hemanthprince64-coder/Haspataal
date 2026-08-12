@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
-import { IdentityCryptography } from '../../packages/core/domain/identity/cryptography';
-import { MobileNormalization } from '../../packages/core/domain/identity/normalization';
+import { IdentityCryptography } from '../../../packages/core/domain/identity/cryptography';
+import { MobileNormalization } from '../../../packages/core/domain/identity/normalization';
 
 const prisma = new PrismaClient();
 

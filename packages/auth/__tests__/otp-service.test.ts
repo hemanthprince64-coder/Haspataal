@@ -111,7 +111,7 @@ describe('UnifiedOtpService', () => {
       } as any);
 
       const upsertCall = (prisma.otpCode.upsert as any).mock.calls[0][0];
-      expect(upsertCall.where.phone).toBe('9876543210');
+      expect(upsertCall.where.tenantId_phone_purpose.phone).toBe('9876543210');
     });
 
     it('should overwrite existing OTP for same mobile', async () => {

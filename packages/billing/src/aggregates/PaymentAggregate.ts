@@ -1,4 +1,4 @@
-import { CanonicalEventEnvelope } from '@haspataal/platform-contracts';
+import { DomainEvent } from '@haspataal/events';
 import {
   PrismaClient,
   PaymentIntent,
@@ -158,15 +158,17 @@ export class PaymentAggregate {
         },
       });
 
-      const event: CanonicalEventEnvelope = {
-        eventId: randomUUID(),
-        eventType: BillingEventTypes.PAYMENT_CAPTURED,
+      const event: DomainEvent = {
+        id: randomUUID(),
+        type: BillingEventTypes.PAYMENT_CAPTURED,
+        version: 1,
         eventVersion: 1,
-        schemaVersion: '1.0.0',
-        occurredAt: new Date().toISOString(),
-        aggregate: { aggregateId: payment.id, aggregateType: 'Payment' },
-        actor: { actorId: cashierId, actorType: 'USER' },
-        scope: { hospitalId },
+        schemaVersion: 1,
+        occurredAt: new Date(),
+        aggregateId: payment.id,
+        aggregateType: 'Payment',
+        actor: { id: cashierId, type: 'USER' },
+        hospitalId,
         payload: {
           intentId: lockedIntent.id,
           amount: Number(payment.amount),
@@ -175,7 +177,7 @@ export class PaymentAggregate {
         },
       };
 
-      console.log(`[EventBus] Published ${event.eventType}`, event);
+      console.log(`[EventBus] Published ${event.type}`, event);
 
       return payment;
     });

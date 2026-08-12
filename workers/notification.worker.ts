@@ -70,7 +70,12 @@ function createWorker(queueName: string, adapter: any) {
         await eventBus.publish({
           id: uuidv4(),
           type: 'NOTIFICATION_DELIVERED',
-          timestamp: new Date(),
+          version: 1,
+          eventVersion: 1,
+          schemaVersion: 1,
+          aggregateId: notificationId,
+          aggregateType: 'Notification',
+          occurredAt: new Date(),
           hospitalId: notification.hospitalId,
           payload: { notificationId, channel: adapter.channel }
         });
@@ -93,7 +98,12 @@ function createWorker(queueName: string, adapter: any) {
         await eventBus.publish({
           id: uuidv4(),
           type: 'NOTIFICATION_FAILED',
-          timestamp: new Date(),
+          version: 1,
+          eventVersion: 1,
+          schemaVersion: 1,
+          aggregateId: notificationId,
+          aggregateType: 'Notification',
+          occurredAt: new Date(),
           hospitalId: notification.hospitalId,
           payload: { notificationId, error: result.error, channel: adapter.channel }
         });
@@ -146,10 +156,10 @@ eventBus.subscribe('TRIGGER_NOTIFICATION', async (event) => {
       commandVersion: 1,
       target: 'notification',
       tenantContext: { hospitalId: event.hospitalId || 'system', branchId: 'default' },
-      actorContext: { actorId: event.actorId || 'system', actorType: 'SYSTEM' },
+      actorContext: { createdBy: event.actor?.id || 'SYSTEM', actorType: 'SYSTEM' },
       correlationId: event.correlationId || uuidv4(),
       idempotencyKey: `notify-${event.id}`,
-      timestamp: new Date().toISOString(),
+      occurredAt: new Date().toISOString(),
       payload: {
         hospitalId: event.hospitalId,
         patientId: payload.patientId,

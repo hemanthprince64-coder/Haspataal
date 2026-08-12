@@ -8,6 +8,7 @@ export default defineConfig({
     setupFiles: [path.resolve(__dirname, './vitest.setup.ts')],
     env: {
       NEXTAUTH_SECRET: 'test-secret-for-jwt-signing-which-is-at-least-32-chars-long',
+      DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy',
     },
     alias: {
       '@': path.resolve(__dirname, './'),

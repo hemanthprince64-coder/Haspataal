@@ -65,7 +65,7 @@ function sqls(c: FakePgClient) {
   return c.captured.map((a) => a[0]);
 }
 
-type MockPool = ReturnType<typeof makeMockPool>;
+type MockPool = { connect: import('vitest').Mock };
 function makeMockPool(fakeClient: FakePgClient): MockPool {
   return { connect: vi.fn().mockResolvedValue(fakeClient) };
 }
@@ -76,7 +76,7 @@ const ENV_ID = '00000000-0000-0000-0000-000000000000';
 
 beforeEach(() => {
   vi.restoreAllMocks();
-  evaluateCurfew.mockReset();
+  vi.mocked(evaluateCurfew).mockReset();
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ describe('EscalationWorker — transaction envelope', () => {
     ]);
     EscalationWorker.pool = makeMockPool(client);
     // Defer curfew: attemptEscalate returns immediately → no extra DB calls
-    evaluateCurfew.mockReturnValue('DEFER');
+    vi.mocked(evaluateCurfew).mockReturnValue('DEFER');
     // Acquire lock so we don't get Redis connection errors
     vi.mocked(redis).eval = vi.fn().mockResolvedValue(1);
 
@@ -141,7 +141,7 @@ describe('EscalationWorker — happy path', () => {
       { rowCount: 0 }, // COMMIT
     ]);
     EscalationWorker.pool = makeMockPool(client);
-    evaluateCurfew.mockReturnValue('PROCEED');
+    vi.mocked(evaluateCurfew).mockReturnValue('PROCEED');
 
     await EscalationWorker.processQueue();
 
@@ -204,7 +204,7 @@ describe('EscalationWorker — DLQ after retries exhausted', () => {
       { rowCount: 0 }, // COMMIT
     ]);
     EscalationWorker.pool = makeMockPool(client);
-    evaluateCurfew.mockReturnValue('PROCEED');
+    vi.mocked(evaluateCurfew).mockReturnValue('PROCEED');
 
     await EscalationWorker.processQueue();
 
@@ -240,7 +240,7 @@ describe('EscalationWorker — retry path (attempts < 3)', () => {
       { rowCount: 0 }, // COMMIT
     ]);
     EscalationWorker.pool = makeMockPool(client);
-    evaluateCurfew.mockReturnValue('PROCEED');
+    vi.mocked(evaluateCurfew).mockReturnValue('PROCEED');
 
     await EscalationWorker.processQueue();
 

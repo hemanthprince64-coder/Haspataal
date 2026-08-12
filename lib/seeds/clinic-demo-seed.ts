@@ -38,7 +38,7 @@ async function main() {
       allowOnlineBooking:  true,
       accountStatus:  'ACTIVE',
       verificationStatus: 'verified',
-      hospitalAdmin: {
+      admins: {
         create: {
           fullName: 'Dr. Raj Sharma',
           mobile:   '9876543210',
@@ -87,11 +87,10 @@ async function main() {
       openTime:          '09:00',
       closeTime:         '21:00',
       allowOnlineBooking: true,
-      gstApplicable:     true,
       isMultiBranch:     false,
       accountStatus:     'ACTIVE',
       verificationStatus: 'verified',
-      hospitalAdmin: {
+      admins: {
         create: {
           fullName: 'Ms. Priya Mehta',
           mobile:   '9123456780',

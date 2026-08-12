@@ -121,7 +121,7 @@ async function backfill(opts: { dryRun: boolean; since: Date; batchSize: number 
           [hospitalId, row.appointment_id, doctorId, row.missed_count, row.patient_id],
         );
 
-        if (insertRes.rowCount > 0) {
+        if (insertRes && insertRes.rowCount != null && insertRes.rowCount > 0) {
           totalInserted++;
           console.log(
             `  ✓ EscalationAlert created for hospital ${hospitalId.slice(0,8)} ` +

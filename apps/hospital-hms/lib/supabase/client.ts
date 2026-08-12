@@ -1,10 +1,10 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Creates a Supabase client using the ANON key.
  * Safe for use in middleware, API routes, and anywhere RLS should be enforced.
  */
-export const createAnonClient = () => {
+export const createAnonClient = (): SupabaseClient => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   return createSupabaseClient(supabaseUrl, supabaseKey);
@@ -15,7 +15,7 @@ export const createAnonClient = () => {
  * ⚠️  SERVER-ONLY — Never expose this client to the browser.
  * This bypasses RLS and should only be used for admin operations.
  */
-export const createAdminClient = () => {
+export const createAdminClient = (): SupabaseClient => {
   if (typeof window !== 'undefined') {
     throw new Error('createAdminClient must only be called on the server');
   }

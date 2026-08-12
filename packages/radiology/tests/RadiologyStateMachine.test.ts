@@ -29,7 +29,7 @@ describe('RadiologyStateMachine', () => {
   it('should throw error on invalid transition', () => {
     expect(() => {
       RadiologyStateMachine.validateTransition('ORDERED', 'COMPLETED');
-    }).toThrowError(/Invalid transition/);
+    }).toThrowError(/Invalid state transition/);
   });
 
   it('should allow cancellation from ORDERED', () => {
@@ -39,6 +39,6 @@ describe('RadiologyStateMachine', () => {
   it('should not allow transition after CANCELLED', () => {
     expect(() => {
       RadiologyStateMachine.validateTransition('CANCELLED', 'SCHEDULED');
-    }).toThrowError(/Invalid transition/);
+    }).toThrowError(/Invalid state transition/);
   });
 });

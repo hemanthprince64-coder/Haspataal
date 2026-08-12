@@ -6,7 +6,7 @@ host: aws-1-ap-south-1.pooler.supabase.com
 port: 5432
 database: postgres
 user: postgres.deqcehtgwbpmwlajsore
-password: Haspataal2026
+password: YOUR_DB_PASSWORD_HERE
 
 ---
 kind: tool

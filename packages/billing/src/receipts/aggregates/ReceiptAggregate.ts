@@ -1,4 +1,4 @@
-import { EventBus } from '@haspataal/platform-contracts';
+import { eventBus as EventBus } from '@haspataal/events';
 import { PrismaClient, ReceiptStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 

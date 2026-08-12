@@ -83,14 +83,18 @@ export async function dispatchToConsumers(envelope: CanonicalEventEnvelope, orig
     await eventBus.publish({
       id: envelope.eventId,
       type: effectiveEventType,
+      version: envelope.eventVersion || 1,
+      eventVersion: envelope.eventVersion || 1,
+      schemaVersion: 1,
+      aggregateId: envelope.aggregate?.aggregateId || 'unknown',
+      aggregateType: envelope.aggregate?.aggregateType || 'unknown',
       payload: originalPayload,
-      timestamp: envelope.occurredAt ?? new Date(),
+      occurredAt: envelope.occurredAt ?? new Date(),
       correlationId: envelope.chain?.correlationId ?? undefined,
-      sourceSystem:
+      causationId:
         originalPayload?.producer ?? originalPayload?.sourceSystem ?? 'haspataal-outbox',
       hospitalId: envelope.scope.hospitalId ?? undefined,
-      actorId: envelope.actor?.actorId ?? undefined,
-      actorType: envelope.actor?.actorType ?? undefined,
+      actor: envelope.actor?.actorId ? { id: envelope.actor.actorId, type: envelope.actor?.actorType ?? 'USER' } : undefined,
     });
   });
 }

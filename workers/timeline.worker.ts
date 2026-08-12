@@ -343,7 +343,7 @@ async function onDomainEvent(event: DomainEvent) {
     commandVersion: 1,
     target: 'timeline',
     tenantContext: { hospitalId: event.hospitalId || 'system', branchId: 'default' },
-    actorContext: { actorId: event.actorId || 'system', actorType: 'SYSTEM' },
+    actorContext: { actorId: event.actor?.id || 'system', actorType: 'SYSTEM' },
     correlationId: event.correlationId || uuidv4(),
     idempotencyKey: `timeline-${event.id}`,
     timestamp: new Date().toISOString(),

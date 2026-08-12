@@ -256,3 +256,4 @@ export * from './timeline.consumer';
 export * from './queries';
 export * from './mutations';
 export * from './GetPatientTimelineUseCase';
+export * from './handlers';

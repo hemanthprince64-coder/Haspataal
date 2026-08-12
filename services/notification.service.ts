@@ -50,12 +50,12 @@ export class NotificationService {
             hospitalId: req.hospital_id,
             patientId: req.patient_id,
             channel: req.channel_preference || 'auto',
-            templateKey: req.template_key,
+            templateId: req.template_key,
             recipient: 'Patient',
             body,
             status: 'PENDING',
             scheduledAt: nextAttemptAt,
-            payload: req.variables,
+            variables: req.variables,
           },
         });
         return { success: true, notification_id: res.id };

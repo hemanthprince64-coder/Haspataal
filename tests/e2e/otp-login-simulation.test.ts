@@ -235,15 +235,14 @@ describe('OTP Login End-to-End Simulation', () => {
       expect(result2.message).toContain('wait 60 seconds');
     });
 
-    it('should return code in non-production environment', async () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+    it('should return code in development/test environments for easy debugging', async () => {
+      vi.stubEnv('NODE_ENV', 'development');
 
       try {
         mockPrisma.otpCode.upsert.mockResolvedValue({});
 
         const result = await OtpService.sendOtp({
-          phone: '9000000012',
+          phone: '9000000011',
           purpose: OtpPurpose.PATIENT_LOGIN,
         });
 
@@ -251,13 +250,12 @@ describe('OTP Login End-to-End Simulation', () => {
         expect(result.code).toBeDefined();
         expect(result.code).toMatch(/^\d{6}$/);
       } finally {
-        process.env.NODE_ENV = originalEnv;
+        vi.unstubAllEnvs();
       }
     });
 
     it('should NOT return code in production environment', async () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      vi.stubEnv('NODE_ENV', 'production');
 
       try {
         mockPrisma.otpCode.upsert.mockResolvedValue({});
@@ -270,7 +268,7 @@ describe('OTP Login End-to-End Simulation', () => {
         expect(result.success).toBe(true);
         expect(result.code).toBeUndefined();
       } finally {
-        process.env.NODE_ENV = originalEnv;
+        vi.unstubAllEnvs();
       }
     });
 
@@ -690,7 +688,7 @@ describe('OTP Login End-to-End Simulation', () => {
       mockPrisma.otpCode.findUnique.mockResolvedValue({
         id: 'otp-1',
         phone: '9876543210',
-        code: requestResult.code,
+        otpHash: requestResult.code,
         expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       });
       mockPrisma.doctorMaster.findUnique.mockResolvedValue({
