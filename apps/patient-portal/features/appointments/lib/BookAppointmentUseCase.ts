@@ -7,12 +7,12 @@
 // with mock implementations.
 // ============================================================
 import { BookingStatus } from '../../../types';
-import logger from '../../logger';
+import logger from '@/lib/logger';
 import type {
   IAppointmentRepository,
   AppointmentRecord,
-} from '../../repositories/interfaces/IAppointmentRepository';
-import type { IPatientRepository } from '../../repositories/interfaces/IPatientRepository';
+} from '@/lib/repositories/interfaces/IAppointmentRepository';
+import type { IPatientRepository } from '@/lib/repositories/interfaces/IPatientRepository';
 
 export interface BookAppointmentInput {
   hospitalId: string;

@@ -141,9 +141,11 @@ export declare const CreateRuleCommandSchema: z.ZodObject<{
     payload?: any;
     timestamp?: Date;
     correlationId?: string;
-    commandId?: string;
+    causationId?: string;
     commandVersion?: number;
     target?: string;
+    idempotencyKey?: string;
+    commandId?: string;
     tenantContext?: {
         platformId: string;
         hospitalId: string;
@@ -171,15 +173,15 @@ export declare const CreateRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    causationId?: string;
-    idempotencyKey?: string;
 }, {
     payload?: any;
     timestamp?: Date;
     correlationId?: string;
-    commandId?: string;
+    causationId?: string;
     commandVersion?: number;
     target?: string;
+    idempotencyKey?: string;
+    commandId?: string;
     tenantContext?: {
         platformId: string;
         hospitalId: string;
@@ -207,8 +209,6 @@ export declare const CreateRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    causationId?: string;
-    idempotencyKey?: string;
 }>;
 export declare const ExecuteRuleCommandSchema: z.ZodObject<{
     commandId: z.ZodString;
@@ -306,9 +306,11 @@ export declare const ExecuteRuleCommandSchema: z.ZodObject<{
     payload?: any;
     timestamp?: Date;
     correlationId?: string;
-    commandId?: string;
+    causationId?: string;
     commandVersion?: number;
     target?: string;
+    idempotencyKey?: string;
+    commandId?: string;
     tenantContext?: {
         platformId: string;
         hospitalId: string;
@@ -336,15 +338,15 @@ export declare const ExecuteRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    causationId?: string;
-    idempotencyKey?: string;
 }, {
     payload?: any;
     timestamp?: Date;
     correlationId?: string;
-    commandId?: string;
+    causationId?: string;
     commandVersion?: number;
     target?: string;
+    idempotencyKey?: string;
+    commandId?: string;
     tenantContext?: {
         platformId: string;
         hospitalId: string;
@@ -372,8 +374,6 @@ export declare const ExecuteRuleCommandSchema: z.ZodObject<{
             reason: string;
         } | undefined;
     };
-    causationId?: string;
-    idempotencyKey?: string;
 }>;
 export declare class RuleCommandHandler {
     static handleCreateRule(command: PlatformCommand<z.infer<typeof CreateRulePayloadSchema>>): Promise<Rule>;

@@ -14,10 +14,7 @@ export async function GET(request: Request) {
       },
       include: {
         doctor: {
-          select: { fullName: true, specializations: true },
-        },
-        hospital: {
-          select: { name: true, city: true },
+          select: { fullName: true },
         },
       },
       orderBy: {

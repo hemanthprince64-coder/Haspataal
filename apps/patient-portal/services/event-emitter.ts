@@ -39,8 +39,12 @@ class EventEmitter {
 
 const eventEmitter = new EventEmitter();
 
-export function emitEvent(event: string, data: any): void {
-  eventEmitter.emit(event, data);
+export function emitEvent(eventOrPayload: string | any, data?: any): void {
+  if (typeof eventOrPayload === 'string') {
+    eventEmitter.emit(eventOrPayload, data);
+  } else if (eventOrPayload && eventOrPayload.eventType) {
+    eventEmitter.emit(eventOrPayload.eventType, eventOrPayload);
+  }
 }
 
 export { eventEmitter };

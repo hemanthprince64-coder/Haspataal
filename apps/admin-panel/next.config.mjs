@@ -7,8 +7,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+
   transpilePackages: [
     '@haspataal/admin-core',
     '@haspataal/workflows',

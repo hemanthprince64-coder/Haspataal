@@ -5,8 +5,9 @@ import BookingWizardClient from './BookingWizardClient';
 export default async function BookingPage({
   searchParams,
 }: {
-  searchParams: { doctorId?: string; hospitalId?: string };
+  searchParams: Promise<{ doctorId?: string; hospitalId?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
   await requirePatientAccess();
 
   return (
@@ -21,8 +22,8 @@ export default async function BookingPage({
       </div>
 
       <BookingWizardClient
-        initialDoctorId={searchParams.doctorId}
-        initialHospitalId={searchParams.hospitalId}
+        initialDoctorId={resolvedSearchParams.doctorId}
+        initialHospitalId={resolvedSearchParams.hospitalId}
       />
     </div>
   );

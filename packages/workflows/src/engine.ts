@@ -163,6 +163,8 @@ export class WorkflowEngine<State extends string, Action extends string> {
           },
           hospitalId: entityType === 'HOSPITAL' ? entityId : undefined,
           version: 1,
+          eventVersion: 1,
+          schemaVersion: 1,
           aggregateId: entityId,
           aggregateType: entityType,
           payload: {

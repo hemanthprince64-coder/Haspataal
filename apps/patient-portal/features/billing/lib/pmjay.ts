@@ -34,7 +34,7 @@ export async function generatePMJAYClaim(visitId: string): Promise<PMJAYClaim | 
             patient: true,
             invoices: {
               include: {
-                payments: true,
+                allocations: true,
               },
             },
           },

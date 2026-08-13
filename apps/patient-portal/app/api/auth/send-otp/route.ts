@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = sendOtpSchema.parse(body);
 
-    const ipAddress = req.headers.get('x-forwarded-for') || req.ip || '127.0.0.1';
+    const ipAddress = req.headers.get('x-forwarded-for') || '127.0.0.1';
     const userAgent = req.headers.get('user-agent') || 'Unknown';
 
     const request: SendOtpRequest = {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, message: 'Invalid payload', errors: error.errors },
+        { success: false, message: 'Invalid payload', errors: error.issues },
         { status: 400 },
       );
     }

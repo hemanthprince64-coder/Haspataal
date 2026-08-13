@@ -1536,7 +1536,7 @@ export const services = {
         });
 
         // 4. Emit event (fire-and-forget, outside tx)
-        void void emitEvent({
+        emitEvent({
           eventType: 'hospital_registered',
           hospitalId: hospital.id,
           payload: { hospitalName: data.hospitalName, city: data.city, adminName: data.adminName },
@@ -1623,7 +1623,7 @@ export const services = {
           },
         });
 
-        void void emitEvent({
+        emitEvent({
           eventType: 'lab_registered',
           hospitalId: lab.id,
           payload: { labName: data.labName, city: data.city, adminName: data.adminName },
@@ -1689,7 +1689,7 @@ export const services = {
         },
       });
 
-      void void emitEvent({
+      emitEvent({
         eventType: 'patient_visited',
         hospitalId,
         patientId: patient.id,
@@ -1743,7 +1743,7 @@ export const services = {
           },
         },
       });
-      void void emitEvent({
+      emitEvent({
         eventType: 'doctor_added',
         hospitalId,
         payload: { doctorName: data.name, doctorId: doctor.id },
@@ -1891,7 +1891,7 @@ export const services = {
       const result = await prisma.doctorHospitalAffiliation.deleteMany({
         where: { hospitalId, doctorId },
       });
-      void void emitEvent({ eventType: 'doctor_removed', hospitalId, payload: { doctorId } });
+      emitEvent({ eventType: 'doctor_removed', hospitalId, payload: { doctorId } });
       return result;
     },
   },
@@ -1939,11 +1939,7 @@ export const services = {
     },
     requestOtp: async (mobile: string) => {
       const result = await OtpService.sendOtp(
-        { phone: mobile, purpose: OtpPurpose.HOSPITAL_LOGIN },
-        {
-          entityType: 'DOCTOR',
-          channel: (process.env.DOCTOR_OTP_CHANNEL as any) || 'SMS',
-        },
+        { phone: mobile, purpose: OtpPurpose.HOSPITAL_LOGIN }
       );
       if (!result.success) {
         throw new Error(result.message || 'OTP request failed');
@@ -1998,10 +1994,7 @@ export const services = {
     },
     verifyOtp: async (mobile: string, otp: string) => {
       const result = await OtpService.verifyOtp(
-        { phone: mobile, otp, purpose: OtpPurpose.HOSPITAL_LOGIN },
-        {
-          entityType: 'DOCTOR',
-        },
+        { phone: mobile, otp, purpose: OtpPurpose.HOSPITAL_LOGIN }
       );
 
       if (!result.success) {
@@ -2047,7 +2040,7 @@ export const services = {
             },
           },
         });
-        void void emitEvent({
+        emitEvent({
           eventType: 'doctor_registered',
           payload: { doctorName: data.fullName, mobile: data.mobile },
         });
@@ -2090,7 +2083,6 @@ export const services = {
         prisma.patientRecord.count({
           where: {
             doctorId,
-            status: 'DRAFT',
           },
         }),
 
@@ -2185,7 +2177,7 @@ export const services = {
         where: { id },
         data: { verificationStatus: 'verified', accountStatus: 'inactive' },
       });
-      void void emitEvent({
+      emitEvent({
         eventType: 'hospital_approved',
         hospitalId: id,
         payload: { hospitalName: result.legalName },
@@ -2199,7 +2191,7 @@ export const services = {
         where: { id },
         data: { verificationStatus: 'rejected', accountStatus: 'inactive' },
       });
-      void void emitEvent({
+      emitEvent({
         eventType: 'hospital_rejected',
         hospitalId: id,
         payload: { hospitalName: result.legalName },
@@ -2213,7 +2205,7 @@ export const services = {
         where: { id },
         data: { accountStatus: 'suspended' },
       });
-      void void emitEvent({
+      emitEvent({
         eventType: 'hospital_suspended',
         hospitalId: id,
         payload: { hospitalName: result.legalName },
@@ -2251,7 +2243,7 @@ export const services = {
           commissionRate: 5.0,
         },
       });
-      void void emitEvent({
+      emitEvent({
         eventType: 'agent_registered',
         payload: { agentName: data.fullName, mobile: data.mobile },
       });

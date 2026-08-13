@@ -2,8 +2,8 @@
 // CancelAppointmentUseCase — Cancellation with refund logic
 // ============================================================
 import { BookingStatus, VALID_STATUS_TRANSITIONS } from '../../../types';
-import logger from '../../logger';
-import type { IAppointmentRepository } from '../../repositories/interfaces/IAppointmentRepository';
+import logger from '@/lib/logger';
+import type { IAppointmentRepository } from '@/lib/repositories/interfaces/IAppointmentRepository';
 
 export interface CancelAppointmentInput {
   patientId: string;

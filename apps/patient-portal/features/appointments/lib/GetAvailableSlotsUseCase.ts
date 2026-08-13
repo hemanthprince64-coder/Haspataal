@@ -3,7 +3,7 @@
 // ============================================================
 
 import { BookingStatus } from '../../../types';
-import type { IAppointmentRepository } from '../../repositories/interfaces/IAppointmentRepository';
+import type { IAppointmentRepository } from '@/lib/repositories/interfaces/IAppointmentRepository';
 
 export interface SlotInfo {
   time: string;

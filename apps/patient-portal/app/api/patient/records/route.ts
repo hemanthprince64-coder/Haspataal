@@ -37,7 +37,6 @@ export async function GET() {
       include: {
         hospital: { select: { id: true, displayName: true, legalName: true } },
         lineItems: true,
-        payments: { select: { id: true, amount: true, status: true } },
       },
     }),
     prisma.patientRecord.findMany({

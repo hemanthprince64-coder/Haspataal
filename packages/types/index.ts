@@ -220,6 +220,7 @@ export interface DoctorVerification {
 export enum TimelineCategory {
   BOOKING = 'BOOKING',
   TRIAGE = 'TRIAGE',
+  VITALS = 'VITALS',
   CONSULTATION = 'CONSULTATION',
   DIAGNOSIS = 'DIAGNOSIS',
   PRESCRIPTION = 'PRESCRIPTION',

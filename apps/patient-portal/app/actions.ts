@@ -622,7 +622,7 @@ async function _loginDoctor(
   try {
     const doctor = await prisma.$transaction(async (tx) => {
       // 1. Lookup Doctor
-      const found = await tx.doctor.findUnique({ where: { mobile } });
+      const found = await tx.doctorMaster.findUnique({ where: { mobile } });
       if (!found) {
         logger.warn(
           { action: 'login_doctor_unregistered', mobile },
@@ -728,7 +728,7 @@ async function _loginDoctorWithOtp(
       }
 
       // 2. Lookup existing doctor (never auto-create)
-      const found = await tx.doctor.findUnique({ where: { mobile } });
+      const found = await tx.doctorMaster.findUnique({ where: { mobile } });
       if (!found) {
         logger.warn(
           { action: 'login_doctor_unregistered', mobile },
@@ -928,7 +928,6 @@ async function _patientLogin(
           data: {
             phone: mobile,
             name: `Patient_${mobile.slice(-4)}`, // Default name, updateable later
-            isActive: true,
           },
         });
         isNew = true;

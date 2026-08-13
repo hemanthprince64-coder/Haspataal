@@ -14,8 +14,7 @@ const nextConfig = {
     '@haspataal/queue',
     '@haspataal/types'
   ],
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+
   output: 'standalone',
   images: {
     remotePatterns: [

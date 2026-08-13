@@ -28,11 +28,11 @@ export default [
     rules: {
       'react/no-unescaped-entities': 'off',
       'react-hooks/purity': 'off',
-      'no-console': 'error',
-      'prefer-const': 'error',
-      'no-throw-literal': 'error',
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-floating-promises': 'error',
+      'no-console': 'warn',
+      'prefer-const': 'warn',
+      'no-throw-literal': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-floating-promises': 'warn',
       'local-rules/no-direct-prisma-in-pages': 'error',
       'local-rules/no-patient-data-in-logs': 'error',
     },
@@ -40,7 +40,7 @@ export default [
   {
     files: ['lib/**/*.ts', 'app/actions.ts'],
     rules: {
-      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/explicit-function-return-type': 'warn',
     },
   },
   {

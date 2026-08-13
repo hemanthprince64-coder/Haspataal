@@ -32,8 +32,8 @@ export default function DoctorLogin() {
         {mode === 'password' ? (
           <PasswordFlow
             loginAction={loginDoctor as any}
-            initialPhone={sharedPhone}
-            onPhoneChange={setSharedPhone}
+            initialIdentifier={sharedPhone}
+            onIdentifierChange={setSharedPhone}
           />
         ) : (
           <OtpFlow

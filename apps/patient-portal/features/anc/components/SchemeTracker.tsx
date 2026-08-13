@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Clock, AlertTriangle, IndianRupee } from 'lucide-react';
-import { checkSchemeEligibility, getTotalSchemeBenefit } from '@/lib/anc/scheme-tracker';
+import { checkSchemeEligibility, getTotalSchemeBenefit } from '../lib/scheme-tracker';
 
 interface SchemeTrackerProps {
   profile: any;

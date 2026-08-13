@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
   if (status === 'captured') {
     await prisma.$transaction(async (tx) => {
-      await tx.payment.update({
+      await tx.appointmentPayment.update({
         where: { id: payment.id },
         data: {
           status: 'SUCCESS',
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
 
   if (status === 'failed' || status === 'cancelled') {
     await prisma.$transaction(async (tx) => {
-      await tx.payment.update({
+      await tx.appointmentPayment.update({
         where: { id: payment.id },
         data: { status: 'FAILED' },
       });

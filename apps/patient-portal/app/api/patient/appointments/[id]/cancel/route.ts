@@ -4,10 +4,11 @@ import { NextResponse } from 'next/server';
 
 import { requirePatientAccess } from '@/lib/auth/patient-access';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requirePatientAccess();
-    const appointmentId = params.id;
+    const resolvedParams = await params;
+    const appointmentId = resolvedParams.id;
 
     if (!appointmentId) {
       return NextResponse.json({ error: 'Missing appointment ID' }, { status: 400 });

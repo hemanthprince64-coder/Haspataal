@@ -66,7 +66,7 @@ export function evaluateHighRisk(profile: PregnancyProfileForRisk): HighRiskResu
 /**
  * Evaluates BP readings for PIH (Pregnancy-Induced Hypertension)
  */
-export function evaluatePih(systolic?: number | null, diastolic?: number | null): 'normal' | 'mild' | 'severe' {
+export function evaluateSingleReadingPih(systolic?: number | null, diastolic?: number | null): 'normal' | 'mild' | 'severe' {
   if (!systolic || !diastolic) return 'normal';
   if (systolic >= 160 || diastolic >= 110) return 'severe';
   if (systolic >= 140 || diastolic >= 90) return 'mild';
