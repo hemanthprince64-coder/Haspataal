@@ -54,6 +54,8 @@ export async function accessionStudy(data: { studyId: string; studyInstanceUID: 
     studyId: data.studyId,
     studyInstanceUID: data.studyInstanceUID,
     actorId: user.id,
+    actorName: user.name,
+    actorRole: user.role,
   });
 }
 
@@ -87,8 +89,6 @@ export async function draftReport(data: {
     studyId: data.studyId,
     findings: data.findings,
     impression: data.impression,
-    clinicalHistory: data.clinicalHistory,
-    recommendation: data.recommendation,
     actorId: user.id,
     actorName: user.name,
     actorRole: user.role,

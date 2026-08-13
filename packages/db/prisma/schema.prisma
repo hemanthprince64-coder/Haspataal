@@ -4901,7 +4901,7 @@ model PharmacyExecution {
   clinicalOrderId String?        @unique @map("clinical_order_id")
   clinicalOrder   ClinicalOrder? @relation(fields: [clinicalOrderId], references: [id])
 
-  status String @default("PRESCRIBED")
+  status PharmacyExecutionStatus @default(PENDING_VERIFICATION)
 
   version     Int       @default(1)
   verifiedBy  String?   @map("verified_by")

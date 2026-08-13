@@ -1,18 +1,22 @@
 import { BaseStateMachine } from '@haspataal/core';
 
 export type PharmacyState =
-  | 'PRESCRIBED'
+  | 'PENDING_VERIFICATION'
   | 'VERIFIED'
+  | 'STOCK_RESERVED'
   | 'PARTIALLY_DISPENSED'
-  | 'DISPENSED'
+  | 'FULLY_DISPENSED'
+  | 'COMPLETED'
   | 'CANCELLED';
 
 export class PharmacyStateMachine extends BaseStateMachine<PharmacyState> {
   protected transitions: Record<PharmacyState, PharmacyState[]> = {
-    PRESCRIBED: ['VERIFIED', 'CANCELLED'],
-    VERIFIED: ['PARTIALLY_DISPENSED', 'DISPENSED', 'CANCELLED'],
-    PARTIALLY_DISPENSED: ['DISPENSED', 'CANCELLED'],
-    DISPENSED: [],
+    PENDING_VERIFICATION: ['VERIFIED', 'CANCELLED'],
+    VERIFIED: ['STOCK_RESERVED', 'PARTIALLY_DISPENSED', 'FULLY_DISPENSED', 'CANCELLED'],
+    STOCK_RESERVED: ['PARTIALLY_DISPENSED', 'FULLY_DISPENSED', 'CANCELLED'],
+    PARTIALLY_DISPENSED: ['FULLY_DISPENSED', 'CANCELLED'],
+    FULLY_DISPENSED: ['COMPLETED'],
+    COMPLETED: [],
     CANCELLED: [],
   };
 

@@ -13,9 +13,7 @@
           "title": "Auth.js: getToken() throws an uncaught exception on malformed Bearer authorization headers",
           "url": "https://github.com/advisories/GHSA-xmf8-cvqr-rfgj",
           "severity": "high",
-          "cwe": [
-            "CWE-20"
-          ],
+          "cwe": ["CWE-20"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -29,9 +27,7 @@
           "title": "Auth.js: Email normalizer validates the address before Unicode normalization, allowing a homoglyph @ bypass",
           "url": "https://github.com/advisories/GHSA-7rqj-j65f-68wh",
           "severity": "critical",
-          "cwe": [
-            "CWE-180"
-          ],
+          "cwe": ["CWE-180"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -45,11 +41,7 @@
           "title": "Auth.js: OAuth state, nonce, and PKCE check cookies are not bound to the provider that created them",
           "url": "https://github.com/advisories/GHSA-x445-f3h2-j279",
           "severity": "moderate",
-          "cwe": [
-            "CWE-345",
-            "CWE-346",
-            "CWE-940"
-          ],
+          "cwe": ["CWE-345", "CWE-346", "CWE-940"],
           "cvss": {
             "score": 6.8,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
@@ -57,13 +49,9 @@
           "range": "<=0.41.2"
         }
       ],
-      "effects": [
-        "next-auth"
-      ],
+      "effects": ["next-auth"],
       "range": "<=0.41.2",
-      "nodes": [
-        "node_modules/@auth/core"
-      ],
+      "nodes": ["node_modules/@auth/core"],
       "fixAvailable": {
         "name": "next-auth",
         "version": "5.0.0-beta.32",
@@ -81,13 +69,9 @@
         "@expo/metro-config",
         "@expo/prebuild-config"
       ],
-      "effects": [
-        "expo"
-      ],
+      "effects": ["expo"],
       "range": "<=0.0.0-canary-20231123-1b19f96-4 || >=0.0.1-canary-20231125-d600e44",
-      "nodes": [
-        "node_modules/@expo/cli"
-      ],
+      "nodes": ["node_modules/@expo/cli"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -98,18 +82,10 @@
       "name": "@expo/config",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@expo/config-plugins"
-      ],
-      "effects": [
-        "@expo/metro-config",
-        "expo",
-        "expo-constants"
-      ],
+      "via": ["@expo/config-plugins"],
+      "effects": ["@expo/metro-config", "expo", "expo-constants"],
       "range": "<=0.0.1-canary-20240418-8d74597 || >=3.3.23-alpha.0",
-      "nodes": [
-        "node_modules/@expo/config"
-      ],
+      "nodes": ["node_modules/@expo/config"],
       "fixAvailable": {
         "name": "expo-constants",
         "version": "57.0.10",
@@ -120,19 +96,10 @@
       "name": "@expo/config-plugins",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "xcode"
-      ],
-      "effects": [
-        "@expo/cli",
-        "@expo/config",
-        "@expo/prebuild-config",
-        "expo"
-      ],
+      "via": ["xcode"],
+      "effects": ["@expo/cli", "@expo/config", "@expo/prebuild-config", "expo"],
       "range": "*",
-      "nodes": [
-        "node_modules/@expo/config-plugins"
-      ],
+      "nodes": ["node_modules/@expo/config-plugins"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -143,20 +110,10 @@
       "name": "@expo/metro",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "metro",
-        "metro-config",
-        "metro-transform-worker"
-      ],
-      "effects": [
-        "@expo/cli",
-        "@expo/metro-config",
-        "expo"
-      ],
+      "via": ["metro", "metro-config", "metro-transform-worker"],
+      "effects": ["@expo/cli", "@expo/metro-config", "expo"],
       "range": "*",
-      "nodes": [
-        "node_modules/@expo/metro"
-      ],
+      "nodes": ["node_modules/@expo/metro"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -167,19 +124,10 @@
       "name": "@expo/metro-config",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "@expo/config",
-        "@expo/metro",
-        "postcss"
-      ],
-      "effects": [
-        "@expo/cli",
-        "expo"
-      ],
+      "via": ["@expo/config", "@expo/metro", "postcss"],
+      "effects": ["@expo/cli", "expo"],
       "range": "<=0.0.1-canary-20240418-8d74597 || >=0.1.49-alpha.0",
-      "nodes": [
-        "node_modules/@expo/metro-config"
-      ],
+      "nodes": ["node_modules/@expo/metro-config"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -190,15 +138,10 @@
       "name": "@expo/prebuild-config",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@expo/config",
-        "@expo/config-plugins"
-      ],
+      "via": ["@expo/config", "@expo/config-plugins"],
       "effects": [],
       "range": "*",
-      "nodes": [
-        "node_modules/@expo/prebuild-config"
-      ],
+      "nodes": ["node_modules/@expo/prebuild-config"],
       "fixAvailable": true
     },
     "@opentelemetry/core": {
@@ -213,9 +156,7 @@
           "title": "OpenTelemetry Core: Unbounded memory allocation in W3C Baggage propagation",
           "url": "https://github.com/advisories/GHSA-8988-4f7v-96qf",
           "severity": "moderate",
-          "cwe": [
-            "CWE-770"
-          ],
+          "cwe": ["CWE-770"],
           "cvss": {
             "score": 5.3,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
@@ -233,9 +174,7 @@
         "@opentelemetry/sdk-trace-base"
       ],
       "range": "<2.8.0",
-      "nodes": [
-        "node_modules/@opentelemetry/core"
-      ],
+      "nodes": ["node_modules/@opentelemetry/core"],
       "fixAvailable": {
         "name": "posthog-js",
         "version": "1.416.0",
@@ -252,13 +191,9 @@
         "@opentelemetry/otlp-transformer",
         "@opentelemetry/sdk-logs"
       ],
-      "effects": [
-        "posthog-js"
-      ],
+      "effects": ["posthog-js"],
       "range": "<=0.218.0",
-      "nodes": [
-        "node_modules/@opentelemetry/exporter-logs-otlp-http"
-      ],
+      "nodes": ["node_modules/@opentelemetry/exporter-logs-otlp-http"],
       "fixAvailable": {
         "name": "posthog-js",
         "version": "1.416.0",
@@ -269,15 +204,10 @@
       "name": "@opentelemetry/otlp-exporter-base",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@opentelemetry/core",
-        "@opentelemetry/otlp-transformer"
-      ],
+      "via": ["@opentelemetry/core", "@opentelemetry/otlp-transformer"],
       "effects": [],
       "range": "<=0.218.0",
-      "nodes": [
-        "node_modules/@opentelemetry/otlp-exporter-base"
-      ],
+      "nodes": ["node_modules/@opentelemetry/otlp-exporter-base"],
       "fixAvailable": true
     },
     "@opentelemetry/otlp-transformer": {
@@ -291,22 +221,16 @@
         "@opentelemetry/sdk-metrics",
         "@opentelemetry/sdk-trace-base"
       ],
-      "effects": [
-        "@opentelemetry/otlp-exporter-base"
-      ],
+      "effects": ["@opentelemetry/otlp-exporter-base"],
       "range": "<=0.218.0",
-      "nodes": [
-        "node_modules/@opentelemetry/otlp-transformer"
-      ],
+      "nodes": ["node_modules/@opentelemetry/otlp-transformer"],
       "fixAvailable": true
     },
     "@opentelemetry/resources": {
       "name": "@opentelemetry/resources",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@opentelemetry/core"
-      ],
+      "via": ["@opentelemetry/core"],
       "effects": [],
       "range": "0.8.0 - 2.7.1",
       "nodes": [
@@ -321,66 +245,40 @@
       "name": "@opentelemetry/sdk-logs",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@opentelemetry/core",
-        "@opentelemetry/resources"
-      ],
-      "effects": [
-        "@opentelemetry/otlp-transformer"
-      ],
+      "via": ["@opentelemetry/core", "@opentelemetry/resources"],
+      "effects": ["@opentelemetry/otlp-transformer"],
       "range": "<=0.218.0",
-      "nodes": [
-        "node_modules/@opentelemetry/sdk-logs"
-      ],
+      "nodes": ["node_modules/@opentelemetry/sdk-logs"],
       "fixAvailable": true
     },
     "@opentelemetry/sdk-metrics": {
       "name": "@opentelemetry/sdk-metrics",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@opentelemetry/core",
-        "@opentelemetry/resources"
-      ],
-      "effects": [
-        "@opentelemetry/otlp-transformer"
-      ],
+      "via": ["@opentelemetry/core", "@opentelemetry/resources"],
+      "effects": ["@opentelemetry/otlp-transformer"],
       "range": "<=2.7.1",
-      "nodes": [
-        "node_modules/@opentelemetry/sdk-metrics"
-      ],
+      "nodes": ["node_modules/@opentelemetry/sdk-metrics"],
       "fixAvailable": true
     },
     "@opentelemetry/sdk-trace-base": {
       "name": "@opentelemetry/sdk-trace-base",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "@opentelemetry/core",
-        "@opentelemetry/resources"
-      ],
+      "via": ["@opentelemetry/core", "@opentelemetry/resources"],
       "effects": [],
       "range": "<=2.7.1",
-      "nodes": [
-        "node_modules/@opentelemetry/sdk-trace-base"
-      ],
+      "nodes": ["node_modules/@opentelemetry/sdk-trace-base"],
       "fixAvailable": true
     },
     "@react-native/community-cli-plugin": {
       "name": "@react-native/community-cli-plugin",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "metro",
-        "metro-config"
-      ],
-      "effects": [
-        "react-native"
-      ],
+      "via": ["metro", "metro-config"],
+      "effects": ["react-native"],
       "range": "*",
-      "nodes": [
-        "node_modules/@react-native/community-cli-plugin"
-      ],
+      "nodes": ["node_modules/@react-native/community-cli-plugin"],
       "fixAvailable": {
         "name": "react-native",
         "version": "0.72.17",
@@ -391,16 +289,10 @@
       "name": "@vitest/mocker",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "vite"
-      ],
-      "effects": [
-        "vitest"
-      ],
+      "via": ["vite"],
+      "effects": ["vitest"],
       "range": "<=3.0.0-beta.4",
-      "nodes": [
-        "packages/rules/node_modules/vitest/node_modules/@vitest/mocker"
-      ],
+      "nodes": ["packages/rules/node_modules/vitest/node_modules/@vitest/mocker"],
       "fixAvailable": {
         "name": "vitest",
         "version": "4.1.10",
@@ -419,10 +311,7 @@
           "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
           "url": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-407"
-          ],
+          "cwe": ["CWE-400", "CWE-407"],
           "cvss": {
             "score": 5.3,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
@@ -436,10 +325,7 @@
           "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
           "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-770"
-          ],
+          "cwe": ["CWE-400", "CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -453,10 +339,7 @@
           "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
           "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-770"
-          ],
+          "cwe": ["CWE-400", "CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -470,10 +353,7 @@
           "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
           "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-770"
-          ],
+          "cwe": ["CWE-400", "CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -487,10 +367,7 @@
           "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
           "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-770"
-          ],
+          "cwe": ["CWE-400", "CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -504,10 +381,7 @@
           "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
           "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-770"
-          ],
+          "cwe": ["CWE-400", "CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -549,9 +423,7 @@
           "title": "DOMPurify: IN_PLACE hook removal leaves a detached subtree executable, causing XSS",
           "url": "https://github.com/advisories/GHSA-55q2-fjhq-7xh7",
           "severity": "moderate",
-          "cwe": [
-            "CWE-79"
-          ],
+          "cwe": ["CWE-79"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -561,9 +433,7 @@
       ],
       "effects": [],
       "range": "<=3.4.12",
-      "nodes": [
-        "node_modules/dompurify"
-      ],
+      "nodes": ["node_modules/dompurify"],
       "fixAvailable": true
     },
     "esbuild": {
@@ -578,9 +448,7 @@
           "title": "esbuild enables any website to send any requests to the development server and read the response",
           "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99",
           "severity": "moderate",
-          "cwe": [
-            "CWE-346"
-          ],
+          "cwe": ["CWE-346"],
           "cvss": {
             "score": 5.3,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
@@ -588,9 +456,7 @@
           "range": "<=0.24.2"
         }
       ],
-      "effects": [
-        "vite"
-      ],
+      "effects": ["vite"],
       "range": "<=0.24.2",
       "nodes": [
         "node_modules/vite-node/node_modules/esbuild",
@@ -618,9 +484,7 @@
       ],
       "effects": [],
       "range": ">=41.0.0-alpha.0",
-      "nodes": [
-        "node_modules/expo"
-      ],
+      "nodes": ["node_modules/expo"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -631,16 +495,10 @@
       "name": "expo-asset",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "expo-constants"
-      ],
-      "effects": [
-        "expo"
-      ],
+      "via": ["expo-constants"],
+      "effects": ["expo"],
       "range": "<=0.0.1-canary-20240418-8d74597 || 8.6.1 - 55.0.0-canary-20260223-05214f1 || 55.0.3-canary-20260128-67ce8d5 || 55.0.8-canary-20260424-7bedc9d - 55.0.8-canary-20260429-a5e59cf || 55.0.11-canary-20260327-0789fbc - 55.0.11-canary-20260402-9da566b || 56.0.0-canary-20260212-4f61309 - 56.0.0-canary-20260506-964f25d",
-      "nodes": [
-        "node_modules/expo-asset"
-      ],
+      "nodes": ["node_modules/expo-asset"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -651,19 +509,10 @@
       "name": "expo-constants",
       "severity": "moderate",
       "isDirect": true,
-      "via": [
-        "@expo/config"
-      ],
-      "effects": [
-        "expo",
-        "expo-asset",
-        "expo-linking",
-        "expo-router"
-      ],
+      "via": ["@expo/config"],
+      "effects": ["expo", "expo-asset", "expo-linking", "expo-router"],
       "range": "<=0.0.1-canary-20240418-8d74597 || 10.1.2 - 55.0.14 || 56.0.0-canary-20260212-4f61309 - 56.0.0-canary-20260506-964f25d",
-      "nodes": [
-        "node_modules/expo-constants"
-      ],
+      "nodes": ["node_modules/expo-constants"],
       "fixAvailable": {
         "name": "expo-constants",
         "version": "57.0.10",
@@ -674,14 +523,10 @@
       "name": "expo-linking",
       "severity": "moderate",
       "isDirect": true,
-      "via": [
-        "expo-constants"
-      ],
+      "via": ["expo-constants"],
       "effects": [],
       "range": "<=0.0.1-canary-20240418-8d74597 || 2.2.2 - 55.0.0-canary-20260223-05214f1 || 55.0.4-canary-20260128-67ce8d5 || 55.0.8-canary-20260424-7bedc9d - 55.0.8-canary-20260429-a5e59cf || 55.0.10-canary-20260327-0789fbc - 55.0.10-canary-20260402-9da566b || 56.0.0-canary-20260212-4f61309 - 56.0.0-canary-20260506-964f25d || 57.0.0-canary-20260526-13e89ca - 57.0.0-canary-20260623-1c70a78",
-      "nodes": [
-        "node_modules/expo-linking"
-      ],
+      "nodes": ["node_modules/expo-linking"],
       "fixAvailable": {
         "name": "expo-linking",
         "version": "57.0.5",
@@ -692,15 +537,10 @@
       "name": "expo-router",
       "severity": "moderate",
       "isDirect": true,
-      "via": [
-        "expo-constants",
-        "expo-linking"
-      ],
+      "via": ["expo-constants", "expo-linking"],
       "effects": [],
       "range": "<=0.0.33 || 4.0.13-canary-20241211-61c49bd || 4.0.18-canary-20250124-42fe332 - 4.0.18-canary-20250306-d9d3e02 || 4.0.20-canary-20250320-7a205d3 || 4.0.21 - 5.0.2-preview.6 || 5.2.0-canary-20250611-f0afe80 - 55.0.0-canary-20260223-05214f1 || 55.0.3-canary-20260424-7bedc9d - 55.0.3-canary-20260429-a5e59cf || 55.0.9-canary-20260327-0789fbc - 55.0.9-canary-20260402-9da566b || 56.0.0-canary-20260212-4f61309 - 56.0.0-canary-20260506-964f25d || 56.2.8-canary-20260526-6cd5e37 - 56.2.8-canary-20260701-9100865 || 57.0.0-canary-20260526-13e89ca - 57.0.0-canary-20260623-1c70a78",
-      "nodes": [
-        "node_modules/expo-router"
-      ],
+      "nodes": ["node_modules/expo-router"],
       "fixAvailable": {
         "name": "expo-router",
         "version": "57.0.12",
@@ -719,9 +559,7 @@
           "title": "fast-uri vulnerable to host confusion via backslash authority introducer",
           "url": "https://github.com/advisories/GHSA-7p8r-x3mc-p8w7",
           "severity": "high",
-          "cwe": [
-            "CWE-436"
-          ],
+          "cwe": ["CWE-436"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
@@ -731,9 +569,7 @@
       ],
       "effects": [],
       "range": "3.0.0 - 3.1.4",
-      "nodes": [
-        "node_modules/fast-uri"
-      ],
+      "nodes": ["node_modules/fast-uri"],
       "fixAvailable": true
     },
     "image-size": {
@@ -748,9 +584,7 @@
           "title": "image-size: ICNS parser allows denial of service through an infinite loop",
           "url": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr",
           "severity": "high",
-          "cwe": [
-            "CWE-835"
-          ],
+          "cwe": ["CWE-835"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -764,9 +598,7 @@
           "title": "image-size: JXL and HEIF parsers allow denial of service through infinite loops",
           "url": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq",
           "severity": "high",
-          "cwe": [
-            "CWE-835"
-          ],
+          "cwe": ["CWE-835"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -774,13 +606,9 @@
           "range": "<=2.0.2"
         }
       ],
-      "effects": [
-        "metro"
-      ],
+      "effects": ["metro"],
       "range": "*",
-      "nodes": [
-        "node_modules/image-size"
-      ],
+      "nodes": ["node_modules/image-size"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -799,9 +627,7 @@
           "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported",
           "url": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj",
           "severity": "high",
-          "cwe": [
-            "CWE-407"
-          ],
+          "cwe": ["CWE-407"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -815,9 +641,7 @@
           "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported",
           "url": "https://github.com/advisories/GHSA-5p4m-2wfm-xmqj",
           "severity": "high",
-          "cwe": [
-            "CWE-407"
-          ],
+          "cwe": ["CWE-407"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -837,11 +661,7 @@
       "name": "metro",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "image-size",
-        "metro-config",
-        "metro-transform-worker"
-      ],
+      "via": ["image-size", "metro-config", "metro-transform-worker"],
       "effects": [
         "@expo/metro",
         "@react-native/community-cli-plugin",
@@ -849,9 +669,7 @@
         "metro-transform-worker"
       ],
       "range": ">=0.22.1",
-      "nodes": [
-        "node_modules/metro"
-      ],
+      "nodes": ["node_modules/metro"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -862,17 +680,10 @@
       "name": "metro-config",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "metro"
-      ],
-      "effects": [
-        "@react-native/community-cli-plugin",
-        "metro"
-      ],
+      "via": ["metro"],
+      "effects": ["@react-native/community-cli-plugin", "metro"],
       "range": "*",
-      "nodes": [
-        "node_modules/metro-config"
-      ],
+      "nodes": ["node_modules/metro-config"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -883,16 +694,10 @@
       "name": "metro-transform-worker",
       "severity": "high",
       "isDirect": false,
-      "via": [
-        "metro"
-      ],
-      "effects": [
-        "metro"
-      ],
+      "via": ["metro"],
+      "effects": ["metro"],
       "range": ">=0.60.0",
-      "nodes": [
-        "node_modules/metro-transform-worker"
-      ],
+      "nodes": ["node_modules/metro-transform-worker"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",
@@ -911,9 +716,7 @@
           "title": "nanoid: custom generators can loop indefinitely when size is zero",
           "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8",
           "severity": "high",
-          "cwe": [
-            "CWE-835"
-          ],
+          "cwe": ["CWE-835"],
           "cvss": {
             "score": 5.9,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -923,9 +726,7 @@
       ],
       "effects": [],
       "range": "<3.3.17",
-      "nodes": [
-        "node_modules/nanoid"
-      ],
+      "nodes": ["node_modules/nanoid"],
       "fixAvailable": true
     },
     "next": {
@@ -940,11 +741,7 @@
           "title": "Next Server Actions Source Code Exposure ",
           "url": "https://github.com/advisories/GHSA-w37m-7fhw-fmv9",
           "severity": "moderate",
-          "cwe": [
-            "CWE-497",
-            "CWE-502",
-            "CWE-1395"
-          ],
+          "cwe": ["CWE-497", "CWE-502", "CWE-1395"],
           "cvss": {
             "score": 5.3,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
@@ -958,11 +755,7 @@
           "title": "Next Vulnerable to Denial of Service with Server Components",
           "url": "https://github.com/advisories/GHSA-mwv6-3258-q52c",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-502",
-            "CWE-1395"
-          ],
+          "cwe": ["CWE-400", "CWE-502", "CWE-1395"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -976,10 +769,7 @@
           "title": "Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns configuration",
           "url": "https://github.com/advisories/GHSA-9g9p-9gw9-jx7f",
           "severity": "moderate",
-          "cwe": [
-            "CWE-400",
-            "CWE-770"
-          ],
+          "cwe": ["CWE-400", "CWE-770"],
           "cvss": {
             "score": 5.9,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -993,10 +783,7 @@
           "title": "Next.js HTTP request deserialization can lead to DoS when using insecure React Server Components",
           "url": "https://github.com/advisories/GHSA-h25m-26qc-wcjf",
           "severity": "high",
-          "cwe": [
-            "CWE-400",
-            "CWE-502"
-          ],
+          "cwe": ["CWE-400", "CWE-502"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -1010,9 +797,7 @@
           "title": "Next.js: HTTP request smuggling in rewrites",
           "url": "https://github.com/advisories/GHSA-ggv3-7p47-pfv8",
           "severity": "moderate",
-          "cwe": [
-            "CWE-444"
-          ],
+          "cwe": ["CWE-444"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1026,9 +811,7 @@
           "title": "Next.js: Unbounded next/image disk cache growth can exhaust storage",
           "url": "https://github.com/advisories/GHSA-3x4c-7xq6-9pq8",
           "severity": "moderate",
-          "cwe": [
-            "CWE-400"
-          ],
+          "cwe": ["CWE-400"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1042,9 +825,7 @@
           "title": "Next.js has a Denial of Service with Server Components",
           "url": "https://github.com/advisories/GHSA-q4gf-8mx6-v5v3",
           "severity": "high",
-          "cwe": [
-            "CWE-770"
-          ],
+          "cwe": ["CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -1058,9 +839,7 @@
           "title": "Next.js Vulnerable to Denial of Service with Server Components",
           "url": "https://github.com/advisories/GHSA-8h8q-6873-q5fj",
           "severity": "high",
-          "cwe": [
-            "CWE-770"
-          ],
+          "cwe": ["CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -1074,9 +853,7 @@
           "title": "Next.js has a Middleware / Proxy bypass in App Router applications via segment-prefetch routes - Incomplete Fix Follow-Up",
           "url": "https://github.com/advisories/GHSA-26hh-7cqf-hhc6",
           "severity": "high",
-          "cwe": [
-            "CWE-288"
-          ],
+          "cwe": ["CWE-288"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
@@ -1090,9 +867,7 @@
           "title": "Next.js's Middleware / Proxy redirects can be cache-poisoned",
           "url": "https://github.com/advisories/GHSA-3g8h-86w9-wvmq",
           "severity": "low",
-          "cwe": [
-            "CWE-349"
-          ],
+          "cwe": ["CWE-349"],
           "cvss": {
             "score": 3.7,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L"
@@ -1106,9 +881,7 @@
           "title": "Next.js vulnerable to cross-site scripting in App Router applications using CSP nonces",
           "url": "https://github.com/advisories/GHSA-ffhc-5mcf-pf4q",
           "severity": "moderate",
-          "cwe": [
-            "CWE-79"
-          ],
+          "cwe": ["CWE-79"],
           "cvss": {
             "score": 4.7,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:L/A:N"
@@ -1122,9 +895,7 @@
           "title": "Next.js vulnerable to cache poisoning via collisions in React Server Component cache-busting",
           "url": "https://github.com/advisories/GHSA-vfv6-92ff-j949",
           "severity": "low",
-          "cwe": [
-            "CWE-328"
-          ],
+          "cwe": ["CWE-328"],
           "cvss": {
             "score": 3.7,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N"
@@ -1138,9 +909,7 @@
           "title": "Next.js has cross-site scripting in beforeInteractive scripts with untrusted input",
           "url": "https://github.com/advisories/GHSA-gx5p-jg67-6x7h",
           "severity": "moderate",
-          "cwe": [
-            "CWE-79"
-          ],
+          "cwe": ["CWE-79"],
           "cvss": {
             "score": 6.1,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
@@ -1154,9 +923,7 @@
           "title": "Next.js vulnerable to Denial of Service via connection exhaustion in applications using Cache Components",
           "url": "https://github.com/advisories/GHSA-mg66-mrh9-m8jx",
           "severity": "high",
-          "cwe": [
-            "CWE-770"
-          ],
+          "cwe": ["CWE-770"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -1170,9 +937,7 @@
           "title": "Next.js has a Denial of Service in the Image Optimization API",
           "url": "https://github.com/advisories/GHSA-h64f-5h5j-jqjh",
           "severity": "moderate",
-          "cwe": [
-            "CWE-770"
-          ],
+          "cwe": ["CWE-770"],
           "cvss": {
             "score": 5.9,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -1186,9 +951,7 @@
           "title": "Next.js vulnerable to server-side request forgery in applications using WebSocket upgrades",
           "url": "https://github.com/advisories/GHSA-c4j6-fc7j-m34r",
           "severity": "high",
-          "cwe": [
-            "CWE-918"
-          ],
+          "cwe": ["CWE-918"],
           "cvss": {
             "score": 8.6,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
@@ -1202,9 +965,7 @@
           "title": "Next.js has a Middleware / Proxy bypass through dynamic route parameter injection",
           "url": "https://github.com/advisories/GHSA-492v-c6pp-mqqv",
           "severity": "high",
-          "cwe": [
-            "CWE-288"
-          ],
+          "cwe": ["CWE-288"],
           "cvss": {
             "score": 8.1,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N"
@@ -1218,9 +979,7 @@
           "title": "Next.js vulnerable to cache poisoning in React Server Component responses",
           "url": "https://github.com/advisories/GHSA-wfc6-r584-vfw7",
           "severity": "moderate",
-          "cwe": [
-            "CWE-436"
-          ],
+          "cwe": ["CWE-436"],
           "cvss": {
             "score": 5.4,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:N/I:L/A:L"
@@ -1234,9 +993,7 @@
           "title": "Next.js has a Middleware / Proxy bypass in App Router applications via segment-prefetch routes",
           "url": "https://github.com/advisories/GHSA-267c-6grr-h53f",
           "severity": "high",
-          "cwe": [
-            "CWE-288"
-          ],
+          "cwe": ["CWE-288"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
@@ -1250,9 +1007,7 @@
           "title": "Next.js has a Middleware / Proxy bypass in Pages Router applications using i18n",
           "url": "https://github.com/advisories/GHSA-36qx-fr4f-26g5",
           "severity": "high",
-          "cwe": [
-            "CWE-863"
-          ],
+          "cwe": ["CWE-863"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
@@ -1266,9 +1021,7 @@
           "title": "Next.js: Denial of Service in App Router using Server Actions",
           "url": "https://github.com/advisories/GHSA-m99w-x7hq-7vfj",
           "severity": "high",
-          "cwe": [
-            "CWE-834"
-          ],
+          "cwe": ["CWE-834"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1282,9 +1035,7 @@
           "title": "Next.js: Server-Side Request Forgery in Server Actions on custom servers",
           "url": "https://github.com/advisories/GHSA-89xv-2m56-2m9x",
           "severity": "high",
-          "cwe": [
-            "CWE-918"
-          ],
+          "cwe": ["CWE-918"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1298,9 +1049,7 @@
           "title": "Next.js: Cache confusion of response bodies for requests with bodies",
           "url": "https://github.com/advisories/GHSA-68g3-v927-f742",
           "severity": "moderate",
-          "cwe": [
-            "CWE-524"
-          ],
+          "cwe": ["CWE-524"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1314,9 +1063,7 @@
           "title": "Next.js: Cache confusion of response bodies for requests with bodies containing invalid UTF-8 byte sequences",
           "url": "https://github.com/advisories/GHSA-4633-3j49-mh5q",
           "severity": "moderate",
-          "cwe": [
-            "CWE-116"
-          ],
+          "cwe": ["CWE-116"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1330,9 +1077,7 @@
           "title": "Next.js: Unbounded Server Action payload in Edge runtime",
           "url": "https://github.com/advisories/GHSA-4c39-4ccg-62r3",
           "severity": "moderate",
-          "cwe": [
-            "CWE-770"
-          ],
+          "cwe": ["CWE-770"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1346,9 +1091,7 @@
           "title": "Next.js: Server-Side Request Forgery in rewrites via attacker-controlled destination hostname",
           "url": "https://github.com/advisories/GHSA-p9j2-gv94-2wf4",
           "severity": "high",
-          "cwe": [
-            "CWE-918"
-          ],
+          "cwe": ["CWE-918"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1362,9 +1105,7 @@
           "title": "Next.js: Denial of Service in the Image Optimization API using SVGs",
           "url": "https://github.com/advisories/GHSA-q8wf-6r8g-63ch",
           "severity": "moderate",
-          "cwe": [
-            "CWE-407"
-          ],
+          "cwe": ["CWE-407"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1378,9 +1119,7 @@
           "title": "Next.js: Unauthenticated disclosure of internal Server Function endpoints",
           "url": "https://github.com/advisories/GHSA-955p-x3mx-jcvp",
           "severity": "moderate",
-          "cwe": [
-            "CWE-201"
-          ],
+          "cwe": ["CWE-201"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1392,9 +1131,7 @@
       ],
       "effects": [],
       "range": "9.3.4-canary.0 - 16.3.0-preview.10",
-      "nodes": [
-        "node_modules/next"
-      ],
+      "nodes": ["node_modules/next"],
       "fixAvailable": {
         "name": "next",
         "version": "15.5.23",
@@ -1414,10 +1151,7 @@
           "title": "Auth.js: Configuration errors can cause existence-based auth checks to fail open (auth object populated with an error)",
           "url": "https://github.com/advisories/GHSA-8fpg-xm3f-6cx3",
           "severity": "critical",
-          "cwe": [
-            "CWE-285",
-            "CWE-636"
-          ],
+          "cwe": ["CWE-285", "CWE-636"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1431,9 +1165,7 @@
           "title": "Auth.js: getToken() throws an uncaught exception on malformed Bearer authorization headers",
           "url": "https://github.com/advisories/GHSA-xmf8-cvqr-rfgj",
           "severity": "high",
-          "cwe": [
-            "CWE-20"
-          ],
+          "cwe": ["CWE-20"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
@@ -1447,9 +1179,7 @@
           "title": "Auth.js: Email normalizer validates the address before Unicode normalization, allowing a homoglyph @ bypass",
           "url": "https://github.com/advisories/GHSA-7rqj-j65f-68wh",
           "severity": "critical",
-          "cwe": [
-            "CWE-180"
-          ],
+          "cwe": ["CWE-180"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1463,11 +1193,7 @@
           "title": "Auth.js: OAuth state, nonce, and PKCE check cookies are not bound to the provider that created them",
           "url": "https://github.com/advisories/GHSA-x445-f3h2-j279",
           "severity": "moderate",
-          "cwe": [
-            "CWE-345",
-            "CWE-346",
-            "CWE-940"
-          ],
+          "cwe": ["CWE-345", "CWE-346", "CWE-940"],
           "cvss": {
             "score": 6.8,
             "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N"
@@ -1477,9 +1203,7 @@
       ],
       "effects": [],
       "range": "<=0.0.0-pr.11562.ed0fce23 || 4.24.8 - 5.0.0-beta.31",
-      "nodes": [
-        "node_modules/next-auth"
-      ],
+      "nodes": ["node_modules/next-auth"],
       "fixAvailable": {
         "name": "next-auth",
         "version": "5.0.0-beta.32",
@@ -1490,14 +1214,10 @@
       "name": "pg-boss",
       "severity": "moderate",
       "isDirect": true,
-      "via": [
-        "uuid"
-      ],
+      "via": ["uuid"],
       "effects": [],
       "range": "0.3.5 - 9.0.3",
-      "nodes": [
-        "node_modules/pg-boss"
-      ],
+      "nodes": ["node_modules/pg-boss"],
       "fixAvailable": {
         "name": "pg-boss",
         "version": "12.27.0",
@@ -1516,9 +1236,7 @@
           "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
           "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
           "severity": "moderate",
-          "cwe": [
-            "CWE-79"
-          ],
+          "cwe": ["CWE-79"],
           "cvss": {
             "score": 6.1,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
@@ -1532,10 +1250,7 @@
           "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
           "url": "https://github.com/advisories/GHSA-6g55-p6wh-862q",
           "severity": "high",
-          "cwe": [
-            "CWE-22",
-            "CWE-200"
-          ],
+          "cwe": ["CWE-22", "CWE-200"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
@@ -1549,9 +1264,7 @@
           "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
           "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
           "severity": "high",
-          "cwe": [
-            "CWE-22"
-          ],
+          "cwe": ["CWE-22"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
@@ -1565,10 +1278,7 @@
           "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
           "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
           "severity": "moderate",
-          "cwe": [
-            "CWE-22",
-            "CWE-200"
-          ],
+          "cwe": ["CWE-22", "CWE-200"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1576,10 +1286,7 @@
           "range": "<=8.5.22"
         }
       ],
-      "effects": [
-        "@expo/metro-config",
-        "next"
-      ],
+      "effects": ["@expo/metro-config", "next"],
       "range": "<=8.5.22",
       "nodes": [
         "apps/hospital-hms/node_modules/postcss",
@@ -1596,15 +1303,10 @@
       "name": "posthog-js",
       "severity": "moderate",
       "isDirect": true,
-      "via": [
-        "@opentelemetry/exporter-logs-otlp-http",
-        "@opentelemetry/sdk-logs"
-      ],
+      "via": ["@opentelemetry/exporter-logs-otlp-http", "@opentelemetry/sdk-logs"],
       "effects": [],
       "range": "1.319.0 - 1.379.0",
-      "nodes": [
-        "node_modules/posthog-js"
-      ],
+      "nodes": ["node_modules/posthog-js"],
       "fixAvailable": {
         "name": "posthog-js",
         "version": "1.416.0",
@@ -1615,14 +1317,10 @@
       "name": "react-native",
       "severity": "high",
       "isDirect": true,
-      "via": [
-        "@react-native/community-cli-plugin"
-      ],
+      "via": ["@react-native/community-cli-plugin"],
       "effects": [],
       "range": ">=0.73.0-nightly-20230506-1af868c52",
-      "nodes": [
-        "node_modules/react-native"
-      ],
+      "nodes": ["node_modules/react-native"],
       "fixAvailable": {
         "name": "react-native",
         "version": "0.72.17",
@@ -1641,9 +1339,7 @@
           "title": "sharp inherited vulnerabilities in libvips: CVE-2026-33327, CVE-2026-33328, CVE-2026-35590, CVE-2026-35591",
           "url": "https://github.com/advisories/GHSA-f88m-g3jw-g9cj",
           "severity": "high",
-          "cwe": [
-            "CWE-1395"
-          ],
+          "cwe": ["CWE-1395"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1651,13 +1347,9 @@
           "range": "<0.35.0"
         }
       ],
-      "effects": [
-        "next"
-      ],
+      "effects": ["next"],
       "range": "<0.35.0",
-      "nodes": [
-        "node_modules/sharp"
-      ],
+      "nodes": ["node_modules/sharp"],
       "fixAvailable": {
         "name": "next",
         "version": "15.5.23",
@@ -1676,9 +1368,7 @@
           "title": "Turbo: Unexpected local code execution during Yarn Berry detection",
           "url": "https://github.com/advisories/GHSA-3qcw-2rhx-2726",
           "severity": "low",
-          "cwe": [
-            "CWE-426"
-          ],
+          "cwe": ["CWE-426"],
           "cvss": {
             "score": 9.8,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
@@ -1692,9 +1382,7 @@
           "title": "Turbo: Login callback CSRF/session fixation",
           "url": "https://github.com/advisories/GHSA-hcf7-66rw-9f5r",
           "severity": "moderate",
-          "cwe": [
-            "CWE-352"
-          ],
+          "cwe": ["CWE-352"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1704,9 +1392,7 @@
       ],
       "effects": [],
       "range": "<=2.9.13-canary.1",
-      "nodes": [
-        "node_modules/turbo"
-      ],
+      "nodes": ["node_modules/turbo"],
       "fixAvailable": {
         "name": "turbo",
         "version": "2.10.9",
@@ -1725,10 +1411,7 @@
           "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
           "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
           "severity": "moderate",
-          "cwe": [
-            "CWE-787",
-            "CWE-1285"
-          ],
+          "cwe": ["CWE-787", "CWE-1285"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
@@ -1736,10 +1419,7 @@
           "range": "<11.1.1"
         }
       ],
-      "effects": [
-        "pg-boss",
-        "xcode"
-      ],
+      "effects": ["pg-boss", "xcode"],
       "range": "<11.1.1",
       "nodes": [
         "node_modules/pg-boss/node_modules/uuid",
@@ -1765,10 +1445,7 @@
           "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
           "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
           "severity": "moderate",
-          "cwe": [
-            "CWE-22",
-            "CWE-200"
-          ],
+          "cwe": ["CWE-22", "CWE-200"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1782,10 +1459,7 @@
           "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
           "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3",
           "severity": "moderate",
-          "cwe": [
-            "CWE-73",
-            "CWE-522"
-          ],
+          "cwe": ["CWE-73", "CWE-522"],
           "cvss": {
             "score": 0,
             "vectorString": null
@@ -1799,10 +1473,7 @@
           "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
           "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff",
           "severity": "high",
-          "cwe": [
-            "CWE-22",
-            "CWE-200"
-          ],
+          "cwe": ["CWE-22", "CWE-200"],
           "cvss": {
             "score": 7.5,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
@@ -1811,11 +1482,7 @@
         },
         "esbuild"
       ],
-      "effects": [
-        "@vitest/mocker",
-        "vite-node",
-        "vitest"
-      ],
+      "effects": ["@vitest/mocker", "vite-node", "vitest"],
       "range": "<=6.4.2",
       "nodes": [
         "node_modules/vite-node/node_modules/vite",
@@ -1832,17 +1499,10 @@
       "name": "vite-node",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "vite"
-      ],
-      "effects": [
-        "vitest"
-      ],
+      "via": ["vite"],
+      "effects": ["vitest"],
       "range": "<=2.2.0-beta.2",
-      "nodes": [
-        "node_modules/vite-node",
-        "packages/search/node_modules/vite-node"
-      ],
+      "nodes": ["node_modules/vite-node", "packages/search/node_modules/vite-node"],
       "fixAvailable": {
         "name": "vitest",
         "version": "4.1.10",
@@ -1862,9 +1522,7 @@
           "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
           "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp",
           "severity": "critical",
-          "cwe": [
-            "CWE-862"
-          ],
+          "cwe": ["CWE-862"],
           "cvss": {
             "score": 9.8,
             "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
@@ -1876,10 +1534,7 @@
       ],
       "effects": [],
       "range": "<=3.2.5",
-      "nodes": [
-        "packages/rules/node_modules/vitest",
-        "packages/search/node_modules/vitest"
-      ],
+      "nodes": ["packages/rules/node_modules/vitest", "packages/search/node_modules/vitest"],
       "fixAvailable": {
         "name": "vitest",
         "version": "4.1.10",
@@ -1890,16 +1545,10 @@
       "name": "xcode",
       "severity": "moderate",
       "isDirect": false,
-      "via": [
-        "uuid"
-      ],
-      "effects": [
-        "@expo/config-plugins"
-      ],
+      "via": ["uuid"],
+      "effects": ["@expo/config-plugins"],
       "range": ">=0.9.2",
-      "nodes": [
-        "node_modules/xcode"
-      ],
+      "nodes": ["node_modules/xcode"],
       "fixAvailable": {
         "name": "expo",
         "version": "57.0.12",

@@ -19,16 +19,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ executi
       );
     }
 
-    const useCase = new VerifyPharmacyOrderUseCase(prisma, getTimelinePublisher());
-
-    const result = await useCase.execute({
+    const result = await VerifyPharmacyOrderUseCase.execute({
       executionId,
       expectedVersion,
-      actor: {
-        id: user.user_id,
-        name: user.user_id,
-        role: user.role,
-      },
+      actorId: user.user_id,
+      actorName: user.user_id,
+      actorRole: user.role,
     });
 
     return successResponse(result, 200);

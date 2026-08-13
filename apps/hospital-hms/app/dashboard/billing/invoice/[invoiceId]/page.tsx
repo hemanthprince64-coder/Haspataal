@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { getInvoiceDetails } from '../../actions';
 import { InvoicePreview } from '../../components/InvoicePreview';
 
-export default async function InvoicePreviewPage({ params }: { params: { invoiceId: string } }) {
+export default async function InvoicePreviewPage({ params }: { params: Promise<{ invoiceId: string }> }) {
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('session_user');
 
@@ -13,7 +13,7 @@ export default async function InvoicePreviewPage({ params }: { params: { invoice
     redirect('/login');
   }
 
-  const { invoiceId } = params;
+  const { invoiceId } = await params;
   const invoice = await getInvoiceDetails(invoiceId);
 
   if (!invoice) {

@@ -1,4 +1,4 @@
-import { PrismaClient, PharmacyExecutionStatus, OrderStatus, Prisma } from '@prisma/client';
+import { PrismaClient, PharmacyExecutionStatus, OrderStatus, Prisma } from '@haspataal/db';
 
 import { PharmacyInventoryService } from './InventoryService';
 
@@ -29,7 +29,7 @@ export class PharmacyExecutionService {
 
       // Check if it already exists (idempotency)
       const existing = await tx.pharmacyExecution.findUnique({
-        where: { orderId },
+        where: { clinicalOrderId: orderId },
       });
 
       if (existing) {
@@ -49,7 +49,7 @@ export class PharmacyExecutionService {
         data: {
           hospitalId: order.hospitalId,
           patientId: order.patientId,
-          orderId: order.id,
+          clinicalOrderId: order.id,
           status: PharmacyExecutionStatus.PENDING_VERIFICATION,
           items: {
             create: pharmacyItems.map((item) => ({
@@ -80,7 +80,7 @@ export class PharmacyExecutionService {
   ): Promise<void> {
     const run = async (tx: Prisma.TransactionClient) => {
       const execution = await tx.pharmacyExecution.findUnique({
-        where: { orderId },
+        where: { clinicalOrderId: orderId },
         include: { items: { include: { reservations: true } } },
       });
 

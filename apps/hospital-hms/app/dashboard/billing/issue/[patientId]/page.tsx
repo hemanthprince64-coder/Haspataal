@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { getUnbilledChargeItemsForPatient } from '../../actions';
 import { IssueInvoiceButton } from '../../components/IssueInvoiceButton';
 
-export default async function IssueInvoicePage({ params }: { params: { patientId: string } }) {
+export default async function IssueInvoicePage({ params }: { params: Promise<{ patientId: string }> }) {
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('session_user');
 
@@ -13,7 +13,7 @@ export default async function IssueInvoicePage({ params }: { params: { patientId
     redirect('/login');
   }
 
-  const { patientId } = params;
+  const { patientId } = await params;
   const unbilledItems = await getUnbilledChargeItemsForPatient(patientId);
 
   const totalAmount = unbilledItems.reduce(

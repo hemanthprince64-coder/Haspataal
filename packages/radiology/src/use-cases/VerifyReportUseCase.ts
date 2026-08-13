@@ -58,6 +58,8 @@ export class VerifyReportUseCase {
     if (study.patientId && study.hospitalId && study.encounterId) {
       await getTimelinePublisher().publishStandardEvent({
         version: 1,
+        eventVersion: 1,
+        schemaVersion: 1,
         type: 'RADIOLOGY_REPORT_VERIFIED',
         patientId: study.patientId,
         hospitalId: study.hospitalId,

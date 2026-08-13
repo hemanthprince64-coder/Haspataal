@@ -53,6 +53,8 @@ export class AcquireImageUseCase {
     if (study.patientId && study.hospitalId && study.encounterId) {
       await getTimelinePublisher().publishStandardEvent({
         version: 1,
+        eventVersion: 1,
+        schemaVersion: 1,
         type: 'IMAGING_STUDY_ACQUIRED',
         patientId: study.patientId,
         hospitalId: study.hospitalId,

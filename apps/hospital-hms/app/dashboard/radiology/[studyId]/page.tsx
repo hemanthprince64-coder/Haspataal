@@ -11,11 +11,12 @@ import {
   verifyReport,
 } from '../../../actions/radiology';
 
-export default async function StudyDetailsPage({ params }: { params: { studyId: string } }) {
+export default async function StudyDetailsPage({ params }: { params: Promise<{ studyId: string }> }) {
   const user = await requireHospitalStaff('session_user');
+  const { studyId } = await params;
 
   const study = await prisma.imagingStudy.findUnique({
-    where: { id: params.studyId, hospitalId: user.hospitalId },
+    where: { id: studyId, hospitalId: user.hospitalId },
     include: {
       patient: true,
       clinicalOrder: true,

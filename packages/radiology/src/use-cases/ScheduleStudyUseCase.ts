@@ -58,6 +58,8 @@ export class ScheduleStudyUseCase {
     const publisher = getTimelinePublisher();
     await publisher.publishStandardEvent({
       version: 1,
+        eventVersion: 1,
+        schemaVersion: 1,
       type: 'IMAGING_STUDY_SCHEDULED',
       patientId: order.patientId,
       hospitalId: order.hospitalId || undefined,

@@ -101,7 +101,7 @@ export class UpdateClinicalOrderStatusUseCase {
 
       return { success: true, order };
     } catch (error: any) {
-      logger.error('Failed to update clinical order status', error);
+      logger.error(error, 'Failed to update clinical order status');
       return { success: false, error: error.message };
     }
   }

@@ -1,4 +1,4 @@
-import { PrismaClient, PharmacyExecutionStatus, Prisma } from '@prisma/client';
+import { PrismaClient, PharmacyExecutionStatus, Prisma } from '@haspataal/db';
 
 export class PharmacyInventoryService {
   constructor(private prisma: PrismaClient) {}

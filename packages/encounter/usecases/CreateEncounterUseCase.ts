@@ -32,7 +32,7 @@ export class CreateEncounterUseCase {
 
       return { success: true, encounter };
     } catch (error: any) {
-      logger.error('Failed to create encounter', error);
+      logger.error(error, 'Failed to create encounter');
       return { success: false, error: error.message };
     }
   }

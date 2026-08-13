@@ -40,6 +40,8 @@ export class PlaceRadiologyOrderUseCase {
     const publisher = getTimelinePublisher();
     await publisher.publishStandardEvent({
       version: 1,
+        eventVersion: 1,
+        schemaVersion: 1,
       type: 'RADIOLOGY_ORDER_CREATED',
       patientId: data.patientId,
       hospitalId: data.hospitalId,

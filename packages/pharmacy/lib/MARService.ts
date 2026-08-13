@@ -1,4 +1,4 @@
-import { PrismaClient, MARAttemptStatus } from '@prisma/client';
+import { PrismaClient, MARAttemptStatus } from '@haspataal/db';
 
 export class MARService {
   constructor(private prisma: PrismaClient) {}

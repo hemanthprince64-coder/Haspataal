@@ -1,4 +1,4 @@
-import { PrismaClient, PharmacyExecutionStatus } from '@prisma/client';
+import { PrismaClient, PharmacyExecutionStatus } from '@haspataal/db';
 
 export class PharmacyDispenseService {
   constructor(private prisma: PrismaClient) {}
@@ -147,7 +147,7 @@ export class PharmacyDispenseService {
                 : 'MEDICATION_PARTIALLY_DISPENSED',
             payload: {
               executionId: execution.id,
-              orderId: execution.orderId,
+              orderId: execution.clinicalOrderId,
               orderItemId: item.orderItemId,
               dispenseItemId: dispenseRecord.id,
               quantity: quantityToDispense,

@@ -17,14 +17,11 @@ export async function POST(req: Request) {
       return errorResponse('BAD_REQUEST', 'clinicalOrderId is required', 400);
     }
 
-    const useCase = new ProcessPharmacyOrderUseCase(prisma);
-    const result = await useCase.execute({
+    const result = await ProcessPharmacyOrderUseCase.execute({
       clinicalOrderId,
-      actor: {
-        id: user.user_id,
-        name: user.user_id, // we don't have name in token, just use id for now
-        role: user.role,
-      },
+      actorId: user.user_id,
+      actorName: user.user_id, // we don't have name in token, just use id for now
+      actorRole: user.role,
     });
 
     return successResponse(result, 201);

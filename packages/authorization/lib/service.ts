@@ -105,11 +105,11 @@ export class AuthorizationService implements IAuthorizationService {
         break;
 
       case DomainAction.RADIOLOGY_SCHEDULE:
-      case DomainAction.RADIOLOGY_ARRIVE:
+      case DomainAction.RADIOLOGY_ACCESSION:
       case DomainAction.RADIOLOGY_ACQUIRE:
-      case DomainAction.RADIOLOGY_REPORT_PRELIMINARY:
-      case DomainAction.RADIOLOGY_REPORT_FINAL:
-      case DomainAction.RADIOLOGY_REPORT_AMEND:
+      case DomainAction.RADIOLOGY_REPORT_DRAFT:
+      case DomainAction.RADIOLOGY_REPORT_VERIFY:
+      case DomainAction.RADIOLOGY_VIEW:
         result = this.authorizePhase5B3Radiology(actor, action);
         break;
 
@@ -460,7 +460,7 @@ export class AuthorizationService implements IAuthorizationService {
   ): AuthorizationResult {
     switch (action) {
       case DomainAction.RADIOLOGY_SCHEDULE:
-      case DomainAction.RADIOLOGY_ARRIVE:
+      case DomainAction.RADIOLOGY_ACCESSION:
         if (['SCHEDULER', 'FRONT_DESK', 'RECEPTION', 'RADIOLOGY_TECH'].includes(actor.role)) {
           return {
             decision: AuthorizationDecision.ALLOW,
@@ -484,7 +484,7 @@ export class AuthorizationService implements IAuthorizationService {
           reason: 'Only Radiology Technicians can acquire images.',
         };
 
-      case DomainAction.RADIOLOGY_REPORT_PRELIMINARY:
+      case DomainAction.RADIOLOGY_REPORT_DRAFT:
         if (['RADIOLOGIST', 'CONSULTANT_RADIOLOGIST'].includes(actor.role)) {
           return {
             decision: AuthorizationDecision.ALLOW,
@@ -496,7 +496,7 @@ export class AuthorizationService implements IAuthorizationService {
           reason: 'Only Radiologists can enter preliminary reports.',
         };
 
-      case DomainAction.RADIOLOGY_REPORT_FINAL:
+      case DomainAction.RADIOLOGY_REPORT_VERIFY:
         if (['CONSULTANT_RADIOLOGIST', 'SENIOR_RADIOLOGIST', 'RADIOLOGIST'].includes(actor.role)) {
           return {
             decision: AuthorizationDecision.ALLOW,
@@ -508,7 +508,7 @@ export class AuthorizationService implements IAuthorizationService {
           reason: 'Only Radiologists can verify final reports.',
         };
 
-      case DomainAction.RADIOLOGY_REPORT_AMEND:
+      case DomainAction.RADIOLOGY_VIEW:
         if (
           actor.permissions?.includes('module:RADIOLOGY:action:AMEND') ||
           ['CONSULTANT_RADIOLOGIST', 'SENIOR_RADIOLOGIST'].includes(actor.role)

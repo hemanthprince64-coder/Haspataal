@@ -18,7 +18,7 @@ export class GetActiveEncounterUseCase {
 
       return { success: true, encounter };
     } catch (error: any) {
-      logger.error('Failed to get active encounter', error);
+      logger.error(error, 'Failed to get active encounter');
       return { success: false, error: error.message };
     }
   }

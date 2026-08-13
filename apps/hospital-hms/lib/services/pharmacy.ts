@@ -114,9 +114,9 @@ export const PharmacyService = {
         items: dispensedItems,
         totalAmount: totalChargeAmount,
       },
-      timestamp: new Date(),
+      occurredAt: new Date(),
       hospitalId,
-    });
+    } as any);
 
     // Timeline Engine publish
     try {

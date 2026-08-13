@@ -77,9 +77,9 @@ export const LabService = {
         doctorId,
         tests: createdSamples.map((s) => s.test_id),
       },
-      timestamp: new Date(),
+      occurredAt: new Date(),
       hospitalId,
-    });
+    } as any);
 
     return { order, samples: createdSamples };
   },
@@ -232,9 +232,9 @@ export const LabService = {
           orderId: order.id,
           patientId: sample.patient_id,
         },
-        timestamp: new Date(),
+        occurredAt: new Date(),
         hospitalId: order.hospital_id,
-      });
+      } as any);
 
       // Timeline Engine publish
       try {
@@ -284,9 +284,9 @@ export const LabService = {
               referenceRange: refs,
               flag: 'CRITICAL',
             },
-            timestamp: new Date(),
+            occurredAt: new Date(),
             hospitalId: sample.hospital_id,
-          });
+          } as any);
         }
       }
     }

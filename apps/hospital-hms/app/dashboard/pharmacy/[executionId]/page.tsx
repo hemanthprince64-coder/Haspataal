@@ -9,14 +9,15 @@ import DispenseWorkspace from './DispenseWorkspace';
 export default async function PharmacyExecutionPage({
   params,
 }: {
-  params: { executionId: string };
+  params: Promise<{ executionId: string }>;
 }) {
   // Use session_user to get context
   const user = await requireHospitalStaff('session_user');
+  const { executionId } = await params;
 
   const execution = await prisma.pharmacyExecution.findUnique({
     where: {
-      id: params.executionId,
+      id: executionId,
       hospitalId: user.hospitalId,
     },
     include: {

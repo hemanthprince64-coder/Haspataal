@@ -36,6 +36,8 @@ export class AccessionStudyUseCase {
     if (updatedStudy.patientId && updatedStudy.hospitalId && updatedStudy.encounterId) {
       await getTimelinePublisher().publishStandardEvent({
         version: 1,
+        eventVersion: 1,
+        schemaVersion: 1,
         type: 'IMAGING_STUDY_ACCESSIONED',
         patientId: updatedStudy.patientId,
         hospitalId: updatedStudy.hospitalId,

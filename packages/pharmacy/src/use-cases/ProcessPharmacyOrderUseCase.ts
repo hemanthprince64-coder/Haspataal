@@ -51,6 +51,8 @@ export class ProcessPharmacyOrderUseCase {
     const publisher = getTimelinePublisher();
     await publisher.publishStandardEvent({
       version: 1,
+      schemaVersion: 1,
+      eventVersion: 1,
       type: 'PHARMACY_ORDER_PROCESSED',
       patientId: order.patientId,
       hospitalId: order.hospitalId || undefined,

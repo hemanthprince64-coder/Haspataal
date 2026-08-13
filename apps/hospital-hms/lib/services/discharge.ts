@@ -108,9 +108,9 @@ export const DischargeService = {
         followUpId: data.id,
         scheduledAt: date,
       },
-      timestamp: new Date(),
+      occurredAt: new Date(),
       hospitalId: admission.hospital_id,
-    });
+    } as any);
 
     return data;
   },

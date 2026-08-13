@@ -45,6 +45,8 @@ export class DraftReportUseCase {
     if (study.patientId && study.hospitalId && study.encounterId) {
       await getTimelinePublisher().publishStandardEvent({
         version: 1,
+        eventVersion: 1,
+        schemaVersion: 1,
         type: 'RADIOLOGY_REPORT_DRAFTED',
         patientId: study.patientId,
         hospitalId: study.hospitalId,

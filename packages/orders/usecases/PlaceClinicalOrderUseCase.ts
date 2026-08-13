@@ -71,7 +71,7 @@ export class PlaceClinicalOrderUseCase {
 
       return { success: true, order };
     } catch (error: any) {
-      logger.error('Failed to place clinical order', error);
+      logger.error(error, 'Failed to place clinical order');
       return { success: false, error: error.message };
     }
   }

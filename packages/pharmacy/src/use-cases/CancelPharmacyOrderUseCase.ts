@@ -61,10 +61,11 @@ export class CancelPharmacyOrderUseCase {
     const publisher = getTimelinePublisher();
     await publisher.publishStandardEvent({
       version: 1,
+      schemaVersion: 1,
+      eventVersion: 1,
       type: 'PHARMACY_ORDER_CANCELLED',
       patientId: execution.patientId,
       hospitalId: execution.hospitalId || undefined,
-      encounterId: execution.encounterId || undefined,
       aggregateType: 'PharmacyExecution',
       aggregateId: execution.id,
       actor: {

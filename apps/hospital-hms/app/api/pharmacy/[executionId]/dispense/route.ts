@@ -22,17 +22,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ executi
       return errorResponse('BAD_REQUEST', 'items array is required', 400);
     }
 
-    const useCase = new DispenseMedicationUseCase(prisma, getTimelinePublisher());
-
-    const result = await useCase.execute({
+    const result = await DispenseMedicationUseCase.execute({
       executionId,
       expectedVersion,
-      items,
-      actor: {
-        id: user.user_id,
-        name: user.user_id,
-        role: user.role,
-      },
+      itemsDispensed: items,
+      isPartial: false,
+      actorId: user.user_id,
+      actorName: user.user_id,
+      actorRole: user.role,
     });
 
     return successResponse(result, 200);

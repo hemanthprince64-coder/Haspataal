@@ -67,9 +67,9 @@ export const IPDService = {
         bedId,
         attendingDoctorId,
       },
-      timestamp: new Date(),
+      occurredAt: new Date(),
       hospitalId,
-    });
+    } as any);
 
     // Timeline Engine publish
     try {

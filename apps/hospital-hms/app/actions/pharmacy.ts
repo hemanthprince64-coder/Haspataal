@@ -22,11 +22,12 @@ const getMockUser = () => ({
 
 export async function processPharmacyOrder(data: { clinicalOrderId: string }) {
   const user = getMockUser();
-  const useCase = new ProcessPharmacyOrderUseCase(prisma);
 
-  const result = await useCase.execute({
+  const result = await ProcessPharmacyOrderUseCase.execute({
     clinicalOrderId: data.clinicalOrderId,
-    actor: { id: user.id, name: user.name, role: user.role },
+    actorId: user.id,
+    actorName: user.name,
+    actorRole: user.role,
   });
 
   revalidatePath('/pharmacy');
@@ -35,12 +36,13 @@ export async function processPharmacyOrder(data: { clinicalOrderId: string }) {
 
 export async function verifyPharmacyOrder(data: { executionId: string; expectedVersion: number }) {
   const user = getMockUser();
-  const useCase = new VerifyPharmacyOrderUseCase(prisma, getTimelinePublisher());
 
-  const result = await useCase.execute({
+  const result = await VerifyPharmacyOrderUseCase.execute({
     executionId: data.executionId,
     expectedVersion: data.expectedVersion,
-    actor: { id: user.id, name: user.name, role: user.role },
+    actorId: user.id,
+    actorName: user.name,
+    actorRole: user.role,
   });
 
   revalidatePath('/pharmacy');
@@ -54,13 +56,15 @@ export async function dispenseMedication(data: {
   expectedVersion: number;
 }) {
   const user = getMockUser();
-  const useCase = new DispenseMedicationUseCase(prisma, getTimelinePublisher());
 
-  const result = await useCase.execute({
+  const result = await DispenseMedicationUseCase.execute({
     executionId: data.executionId,
     expectedVersion: data.expectedVersion,
-    items: data.items,
-    actor: { id: user.id, name: user.name, role: user.role },
+    itemsDispensed: data.items,
+    isPartial: false, // Defaulting to false, should be determined by client logic or DTO
+    actorId: user.id,
+    actorName: user.name,
+    actorRole: user.role,
   });
 
   revalidatePath('/pharmacy');
@@ -74,13 +78,14 @@ export async function cancelPharmacyOrder(data: {
   expectedVersion: number;
 }) {
   const user = getMockUser();
-  const useCase = new CancelPharmacyOrderUseCase(prisma, getTimelinePublisher());
 
-  const result = await useCase.execute({
+  const result = await CancelPharmacyOrderUseCase.execute({
     executionId: data.executionId,
     expectedVersion: data.expectedVersion,
     reason: data.reason,
-    actor: { id: user.id, name: user.name, role: user.role },
+    actorId: user.id,
+    actorName: user.name,
+    actorRole: user.role,
   });
 
   revalidatePath('/pharmacy');

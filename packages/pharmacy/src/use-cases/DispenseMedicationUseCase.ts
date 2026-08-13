@@ -29,7 +29,7 @@ export class DispenseMedicationUseCase {
       throw new Error('Optimistic locking failure: execution has been modified.');
     }
 
-    const targetState: PharmacyState = data.isPartial ? 'PARTIALLY_DISPENSED' : 'DISPENSED';
+    const targetState: PharmacyState = data.isPartial ? 'PARTIALLY_DISPENSED' : 'FULLY_DISPENSED';
 
     PharmacyStateMachine.validateTransition(execution.status as PharmacyState, targetState);
 
@@ -72,10 +72,11 @@ export class DispenseMedicationUseCase {
     const publisher = getTimelinePublisher();
     await publisher.publishStandardEvent({
       version: 1,
+      schemaVersion: 1,
+      eventVersion: 1,
       type: data.isPartial ? 'PHARMACY_ORDER_PARTIALLY_DISPENSED' : 'PHARMACY_ORDER_DISPENSED',
       patientId: execution.patientId,
       hospitalId: execution.hospitalId || undefined,
-      encounterId: execution.encounterId || undefined,
       aggregateType: 'PharmacyExecution',
       aggregateId: execution.id,
       actor: {

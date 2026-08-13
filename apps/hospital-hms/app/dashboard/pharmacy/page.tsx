@@ -8,18 +8,19 @@ import Link from 'next/link';
 export default async function PharmacyDashboard({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: Promise<{ tab?: string }>;
 }) {
   // Use session_user to get context. We assume requireHospitalStaff exists and returns { hospitalId, ... }
   // Since we don't have the exact auth mock here, let's just query securely.
   const user = await requireHospitalStaff('session_user');
-  const activeTab = searchParams.tab || 'pending';
+  const resolvedSearchParams = await searchParams;
+  const activeTab = resolvedSearchParams.tab || 'pending';
 
   // Fetch all relevant executions for the pharmacist dashboard
   const executions = await prisma.pharmacyExecution.findMany({
     where: {
       hospitalId: user.hospitalId,
-      status: { in: ['PRESCRIBED', 'VERIFIED', 'PARTIALLY_DISPENSED', 'DISPENSED', 'CANCELLED'] },
+      status: { in: ['PENDING_VERIFICATION', 'VERIFIED', 'PARTIALLY_DISPENSED', 'FULLY_DISPENSED', 'CANCELLED'] },
     },
     include: {
       clinicalOrder: {
@@ -60,7 +61,7 @@ export default async function PharmacyDashboard({
                 <td className="px-4 py-3 font-medium">
                   {execution.clinicalOrder?.patient?.name || 'Unknown'}
                 </td>
-                <td className="px-4 py-3">{execution.clinicalOrder?.doctor?.name || 'Unknown'}</td>
+                <td className="px-4 py-3">{execution.clinicalOrder?.doctor?.fullName || 'Unknown'}</td>
                 <td className="px-4 py-3">{execution.items.length} items</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">

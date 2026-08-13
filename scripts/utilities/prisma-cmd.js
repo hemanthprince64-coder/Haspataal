@@ -1,4 +1,4 @@
-const { prepareSchema } = require('./prepare-schema');
+const { prepareSchema } = require('../migrate/prepare-schema');
 const { execSync } = require('child_process');
 const path = require('path');
 

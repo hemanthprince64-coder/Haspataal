@@ -22,17 +22,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ executi
       return errorResponse('BAD_REQUEST', 'reason is required', 400);
     }
 
-    const useCase = new CancelPharmacyOrderUseCase(prisma, getTimelinePublisher());
-
-    const result = await useCase.execute({
+    const result = await CancelPharmacyOrderUseCase.execute({
       executionId,
       expectedVersion,
       reason,
-      actor: {
-        id: user.user_id,
-        name: user.user_id,
-        role: user.role,
-      },
+      actorId: user.user_id,
+      actorName: user.user_id,
+      actorRole: user.role,
     });
 
     return successResponse(result, 200);

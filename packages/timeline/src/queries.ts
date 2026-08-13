@@ -6,9 +6,15 @@ import { createHash } from 'crypto';
 import IORedis from 'ioredis';
 import { z } from 'zod';
 
-const redis = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
-  maxRetriesPerRequest: null,
-});
+let redisInstance: IORedis | null = null;
+function getRedis() {
+  if (!redisInstance) {
+    redisInstance = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+      maxRetriesPerRequest: null,
+    });
+  }
+  return redisInstance;
+}
 
 const PAGE_SIZE = 50;
 const CACHE_TTL = 300; // 5 minutes
@@ -67,7 +73,7 @@ export class TimelineQueryHandler {
     const cursor = query.pagination?.cursor;
     const cacheKey = `timeline:patient:${patientId}:cursor:${cursor ?? 'start'}:${JSON.stringify(query.filters)}`;
 
-    const cached = await redis.get(cacheKey);
+    const cached = await getRedis().get(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const where = buildWhereClause({ patientId, status: 'ACTIVE' }, query.filters);
@@ -93,7 +99,7 @@ export class TimelineQueryHandler {
     const nextCursor = hasMore ? data[data.length - 1].id : null;
 
     const result = { data, nextCursor, hasMore, pinnedEvents };
-    await redis.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
+    await getRedis().setex(cacheKey, CACHE_TTL, JSON.stringify(result));
     return result;
   }
 

@@ -21,8 +21,8 @@ export declare const SearchQuery: z.ZodObject<{
     sort: z.ZodDefault<z.ZodEnum<["relevance", "created_at", "updated_at"]>>;
     order: z.ZodDefault<z.ZodEnum<["asc", "desc"]>>;
 }, "strip", z.ZodTypeAny, {
-    text: string;
     sort: "relevance" | "created_at" | "updated_at";
+    text: string;
     limit: number;
     order: "asc" | "desc";
     status?: string | undefined;

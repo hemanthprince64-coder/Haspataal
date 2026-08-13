@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { issueInvoiceAction } from '../../actions';
+import { issueInvoiceAction } from '../actions';
 
 export function IssueInvoiceButton({
   patientId,

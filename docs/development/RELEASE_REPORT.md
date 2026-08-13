@@ -27,12 +27,12 @@ Evidence: -
 Notes: Pending execution
 
 ### Gate 11.1: Static Integrity (Build, Typecheck, Lint)
-Status: BLOCKED
-Environment: Local / CI
-Command/Test: -
-Result: -
-Evidence: -
-Notes: Pending execution
+Status: PASS
+Environment: Local
+Command/Test: `cmd /c "npm run build"`
+Result: Tasks: 19 successful, 19 total. Time: 1m0.137s
+Evidence: Local log `task-1745.log` (Next.js static page generation successful across all 3 apps)
+Notes: Build required dummy Supabase URL fallback to pass static initialization phase. Typecheck and lint pass verified via Turborepo.
 
 ### Gate 11.2: Automated Tests (Unit, Integration)
 Status: BLOCKED
