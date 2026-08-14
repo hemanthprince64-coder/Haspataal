@@ -19,10 +19,10 @@ services:
     image: haspataal/patient-portal:latest
     build: 
       context: .
-      dockerfile: apps/patient-portal/Dockerfile
+      dockerfile: Dockerfile
     container_name: patient-portal
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     ports:
       - '3000:3000'
     depends_on:
@@ -43,10 +43,10 @@ services:
     image: haspataal/hospital-hms:latest
     build:
       context: .
-      dockerfile: apps/hospital-hms/Dockerfile
+      dockerfile: Dockerfile.hospital
     container_name: hospital-hms
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     ports:
       - '3001:3000'
     depends_on:
@@ -59,10 +59,10 @@ services:
     image: haspataal/admin-panel:latest
     build:
       context: .
-      dockerfile: apps/admin-panel/Dockerfile
+      dockerfile: Dockerfile.admin
     container_name: admin-panel
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     ports:
       - '3002:3000'
     depends_on:
@@ -79,7 +79,7 @@ services:
     build: ./services/auth
     container_name: auth-service
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     ports:
       - '4001:4001'
     depends_on:
@@ -96,10 +96,12 @@ services:
 
   api-gateway:
     image: haspataal/api-gateway:latest
-    build: ./services/gateway
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
     container_name: api-gateway
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     ports:
       - '4002:4002'
     depends_on:
@@ -123,7 +125,7 @@ services:
     image: postgres:16-alpine
     container_name: haspataal-postgres
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -152,17 +154,30 @@ services:
       timeout: 5s
       retries: 5
 
-  db-migrate:
-    image: node:18-alpine
-    container_name: db-migrate
-    working_dir: /app
+  db-baseline:
+    image: postgres:16-alpine
+    container_name: haspataal-baseline
+    env_file: .env.docker
+    command: >
+      sh -c "psql $$DATABASE_URL -f /app/infra/sql/baseline.sql"
     volumes:
-      - .:/app
-    env_file: .env.local
-    command: /bin/sh -c "npm install -g prisma && prisma generate && prisma migrate deploy"
+      - ./:/app:ro
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - haspataal_network
+    restart: "no"
+
+  db-migrate:
+    image: haspataal/escalation-worker:latest
+    container_name: db-migrate
+    working_dir: /app
+    env_file: .env.docker
+    command: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
+    depends_on:
+      db-baseline:
+        condition: service_completed_successfully
     networks:
       - haspataal_network
 
@@ -171,7 +186,7 @@ services:
     build: ./services/ai-docs
     container_name: ai-docs
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     ports:
       - '4003:4003'
     depends_on:
@@ -214,7 +229,7 @@ services:
       dockerfile: workers/Dockerfile
     container_name: escalation-worker
     restart: unless-stopped
-    env_file: .env.local
+    env_file: .env.docker
     depends_on:
       postgres:
         condition: service_healthy
