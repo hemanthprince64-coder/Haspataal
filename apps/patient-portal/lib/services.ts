@@ -1940,35 +1940,25 @@ export const services = {
     },
     requestOtp: async (mobile: string) => {
       const result = await OtpService.sendOtp(
-        { phone: mobile, purpose: OtpPurpose.HOSPITAL_LOGIN }
+        { phone: mobile, purpose: OtpPurpose.DOCTOR_LOGIN }
       );
       if (!result.success) {
         throw new Error(result.message || 'OTP request failed');
       }
 
       const normalizedMobile = mobile.replace(/\D/g, '').slice(-10);
-      const code = result.code || '';
-      const expiresAt = result.expiresAt ? new Date(result.expiresAt) : new Date();
 
       logger.info(
         { action: 'doctor_otp_generated', mobile: normalizedMobile },
         'Doctor OTP generated',
       );
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log(
-          '%c[DEMO DOCTOR OTP]',
-          'background: #14b8a6; color: black; font-weight: bold; padding: 2px 8px; border-radius: 4px;',
-          `Mobile: ${mobile} | Code: ${code} | Expires: ${expiresAt.toISOString()}`,
-        );
-      }
-
       try {
         const channel = (process.env.DOCTOR_OTP_CHANNEL as OtpChannel) || 'SMS';
         const { dispatchOtpNotification } = await import('./otp-notification-dispatcher');
         const notifyResult = await dispatchOtpNotification({
           mobile: normalizedMobile,
-          code,
+          code: result.code || '',
           channel,
           recipientName: 'Doctor',
         });
@@ -1995,7 +1985,7 @@ export const services = {
     },
     verifyOtp: async (mobile: string, otp: string) => {
       const result = await OtpService.verifyOtp(
-        { phone: mobile, otp, purpose: OtpPurpose.HOSPITAL_LOGIN }
+        { phone: mobile, otp, purpose: OtpPurpose.DOCTOR_LOGIN }
       );
 
       if (!result.success) {

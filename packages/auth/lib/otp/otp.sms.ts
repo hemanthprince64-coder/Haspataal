@@ -9,8 +9,7 @@ export interface ISmsProvider {
 export class TextBeeProvider implements ISmsProvider {
   async sendOTP(phone: string, otp: string, purpose: string): Promise<boolean> {
     const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
-    logger.info({ provider: 'TextBee', maskedPhone, purpose, otp }, 'Development OTP sent via TextBee');
-    // Simulated delay
+    logger.info({ provider: 'TextBee', maskedPhone, purpose }, 'Development OTP sent via TextBee');
     await new Promise((resolve) => setTimeout(resolve, 100));
     return true;
   }

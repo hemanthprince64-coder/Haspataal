@@ -90,12 +90,13 @@ export function useOtpVerification({
   };
 
   const handleOtpChange = (code: string) => {
-    setOtp(code);
-    if (code.length === 6) {
+    const sanitized = code.replace(/\D/g, '').slice(0, 6);
+    setOtp(sanitized);
+    if (sanitized.length === 6) {
       // Auto-submit when 6 digits are reached
       const fd = new FormData();
       fd.append('mobile', phone);
-      fd.append('otp', code);
+      fd.append('otp', sanitized);
       startTransition(() => {
         verifyFormAction(fd);
       });

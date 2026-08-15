@@ -12,7 +12,7 @@ export const auditLogger = pino(
       env: process.env.NODE_ENV,
     },
     redact: {
-      paths: ['password', 'token', 'secret', 'authorization'],
+      paths: ['password', 'token', 'secret', 'authorization', 'otp', 'code', '*.password', '*.token', '*.otp', '*.code'],
       censor: '[REDACTED]',
     },
   },

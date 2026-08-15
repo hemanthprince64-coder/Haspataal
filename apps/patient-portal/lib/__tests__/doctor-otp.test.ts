@@ -9,7 +9,7 @@ vi.mock('@haspataal/auth', () => ({
     verifyOtp: vi.fn(),
   },
   OtpPurpose: {
-    HOSPITAL_LOGIN: 'HOSPITAL_LOGIN',
+    DOCTOR_LOGIN: 'DOCTOR_LOGIN',
   },
 }));
 
@@ -30,7 +30,7 @@ describe('Doctor OTP Service (Unified)', () => {
 
       expect(result).toBe(true);
       expect(OtpService.sendOtp).toHaveBeenCalledWith(
-        { phone: '9876543210', purpose: 'HOSPITAL_LOGIN' }
+        { phone: '9876543210', purpose: 'DOCTOR_LOGIN' }
       );
     });
 
@@ -44,7 +44,7 @@ describe('Doctor OTP Service (Unified)', () => {
       await services.doctor.requestOtp('+91-98765-43210');
 
       expect(OtpService.sendOtp).toHaveBeenCalledWith(
-        expect.objectContaining({ phone: '+91-98765-43210', purpose: 'HOSPITAL_LOGIN' })
+        expect.objectContaining({ phone: '+91-98765-43210', purpose: 'DOCTOR_LOGIN' })
       );
     });
 
@@ -77,7 +77,7 @@ describe('Doctor OTP Service (Unified)', () => {
       expect(result.user.id).toBe('doctor-1');
       expect(result.user.role).toBe('DOCTOR');
       expect(OtpService.verifyOtp).toHaveBeenCalledWith(
-        { phone: '9876543210', otp: '123456', purpose: 'HOSPITAL_LOGIN' }
+        { phone: '9876543210', otp: '123456', purpose: 'DOCTOR_LOGIN' }
       );
     });
 

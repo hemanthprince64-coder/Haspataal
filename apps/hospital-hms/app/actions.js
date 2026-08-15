@@ -12,8 +12,14 @@ import { db } from '@/lib/data';
 import { sendSMS } from '@/lib/notifications';
 import prisma from '@/lib/prisma';
 import { services } from '@/lib/services';
+import { headers } from 'next/headers';
 
 const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
+
+function maskMobile(mobile) {
+  if (!mobile || mobile.length < 5) return '***';
+  return `${mobile.slice(0, 3)}******${mobile.slice(-4)}`;
+}
 
 // ==================== DOCTOR OTP ACTIONS ====================
 
@@ -24,16 +30,35 @@ export async function requestDoctorOtp(prevState, formData) {
   }
 
   try {
+    const reqHeaders = await headers();
+    const ipAddress = reqHeaders.get('x-forwarded-for') || '127.0.0.1';
+    const userAgent = reqHeaders.get('user-agent') || 'Unknown';
+
     const result = await OtpService.sendOtp({
       phone: mobile,
       purpose: OtpPurpose.DOCTOR_LOGIN,
+      ipAddress,
+      userAgent,
     });
+
     if (!result.success) {
       return { message: result.message || 'Failed to send OTP.' };
     }
+
+    logAction('SYSTEM', 'LOGIN_OTP_REQUEST', 'Doctor', mobile, {
+      maskedMobile: maskMobile(mobile),
+      ipAddress,
+      userAgent,
+    });
+
     return { success: true, message: 'OTP sent successfully!' };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to send OTP.';
+    logAction('SYSTEM', 'LOGIN_OTP_FAILED', 'Doctor', mobile || 'unknown', {
+      reason: 'send_otp_error',
+      error: errorMessage,
+      maskedMobile: maskMobile(mobile),
+    });
     return { message: errorMessage };
   }
 }
@@ -47,14 +72,88 @@ export async function loginDoctorWithOtp(prevState, formData) {
   }
 
   try {
+    const reqHeaders = await headers();
+    const ipAddress = reqHeaders.get('x-forwarded-for') || '127.0.0.1';
+    const userAgent = reqHeaders.get('user-agent') || 'Unknown';
+
+    // 1. Server-side verification of OTP
+    const verifyResult = await OtpService.verifyOtp({
+      phone: mobile,
+      otp,
+      purpose: OtpPurpose.DOCTOR_LOGIN,
+      ipAddress,
+      userAgent,
+    });
+
+    if (!verifyResult.success) {
+      logAction('SYSTEM', 'LOGIN_OTP_FAILED', 'Doctor', mobile, {
+        reason: 'invalid_otp',
+        maskedMobile: maskMobile(mobile),
+        ipAddress,
+        userAgent,
+      });
+      return { message: verifyResult.message || 'Invalid or expired OTP.' };
+    }
+
+    // 2. Lookup doctor
+    const doctor = await prisma.doctorMaster.findUnique({
+      where: { mobile },
+    });
+
+    if (!doctor) {
+      logAction('SYSTEM', 'LOGIN_OTP_FAILED', 'Doctor', mobile, {
+        reason: 'doctor_not_found',
+        maskedMobile: maskMobile(mobile),
+        ipAddress,
+        userAgent,
+      });
+      return { message: 'Doctor not found. Please contact your hospital administrator.' };
+    }
+
+    // 3. Account status guard
+    const status = (
+      doctor.account_status ||
+      doctor.accountStatus ||
+      doctor.status ||
+      ''
+    ).toLowerCase();
+    if (['suspended', 'inactive', 'locked'].includes(status)) {
+      logAction('SYSTEM', 'LOGIN_OTP_FAILED', 'Doctor', doctor.id, {
+        reason: 'account_inactive',
+        status,
+        maskedMobile: maskMobile(mobile),
+        ipAddress,
+        userAgent,
+      });
+      return { message: 'Account is suspended. Please contact support.' };
+    }
+
+    // 4. Establish NextAuth session using server-trusted mechanism
     await signIn('credentials', {
       mobile,
       otp,
       role: 'doctor',
       redirect: false,
     });
+
+    const session = await auth();
+    if (session?.user) {
+      await logAction(session.user.id, 'LOGIN_OTP', 'Doctor', session.user.id, {
+        role: 'DOCTOR',
+        maskedMobile: maskMobile(mobile),
+        ipAddress,
+        userAgent,
+      });
+    }
+
+    redirect('/dashboard/doctor');
   } catch (error) {
     if (error instanceof AuthError) {
+      logAction('SYSTEM', 'LOGIN_OTP_FAILED', 'Doctor', mobile || 'unknown', {
+        reason: 'auth_error',
+        type: error.type,
+        maskedMobile: maskMobile(mobile),
+      });
       switch (error.type) {
         case 'CredentialsSignin':
           return { message: 'Invalid or expired OTP.' };
@@ -64,13 +163,6 @@ export async function loginDoctorWithOtp(prevState, formData) {
     }
     throw error;
   }
-
-  const session = await auth();
-  if (session?.user) {
-    await logAction(session.user.id, 'LOGIN_OTP', 'Doctor', session.user.id, { role: 'DOCTOR' });
-  }
-
-  redirect('/dashboard/doctor');
 }
 
 // ==================== HOSPITAL ACTIONS ====================
