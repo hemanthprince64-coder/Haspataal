@@ -34,7 +34,18 @@ vi.mock('../prisma', () => ({
     staff: {
       create: vi.fn(),
     },
-    $transaction: vi.fn((cb) => cb(prisma)),
+    eventLog: {
+      create: vi.fn(),
+    },
+    outboxEvent: {
+      create: vi.fn(),
+    },
+    $transaction: vi.fn((cb) => {
+      if (Array.isArray(cb)) {
+        return Promise.all(cb);
+      }
+      return cb(prisma);
+    }),
     $queryRaw: vi.fn(),
     $executeRaw: vi.fn(),
   },

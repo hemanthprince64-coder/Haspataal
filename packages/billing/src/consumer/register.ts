@@ -1,10 +1,9 @@
-import { PrismaClient } from '@haspataal/db';
+import { prisma } from '@haspataal/db';
 import { eventBus, DomainEvent } from '@haspataal/events';
 import { logger } from '@haspataal/logger';
 
 import { BillingConsumer, ClinicalEventPayload } from './BillingConsumer';
 
-const prisma = new PrismaClient();
 const consumer = new BillingConsumer(prisma);
 
 export function registerBillingConsumers() {

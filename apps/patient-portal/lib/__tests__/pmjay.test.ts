@@ -50,7 +50,7 @@ describe('PMJAY e-claim service tests', () => {
             patient: true,
             invoices: {
               include: {
-                payments: true,
+                allocations: true,
               },
             },
           },

@@ -33,22 +33,22 @@ describe('PaymentAllocationAggregate', () => {
   });
 
   afterAll(async () => {
-    await prisma.billingAudit.deleteMany({});
-    await prisma.paymentAllocation.deleteMany({});
-    await prisma.payment.deleteMany({});
-    await prisma.paymentIntent.deleteMany({});
-    await prisma.invoice.deleteMany({});
-    await prisma.patient.deleteMany({});
-    await prisma.hospitalsMaster.deleteMany({});
+    await prisma.billingAudit.deleteMany({ where: { hospitalId } });
+    await prisma.paymentAllocation.deleteMany({ where: { hospitalId } });
+    await prisma.payment.deleteMany({ where: { hospitalId } });
+    await prisma.paymentIntent.deleteMany({ where: { hospitalId } });
+    await prisma.invoice.deleteMany({ where: { hospitalId } });
+    await prisma.patient.deleteMany({ where: { id: patientId } });
+    await prisma.hospitalsMaster.deleteMany({ where: { id: hospitalId } });
     await prisma.$disconnect();
   });
 
   beforeEach(async () => {
     // Clear state before each test
-    await prisma.paymentAllocation.deleteMany({});
-    await prisma.payment.deleteMany({});
-    await prisma.paymentIntent.deleteMany({});
-    await prisma.invoice.deleteMany({});
+    await prisma.paymentAllocation.deleteMany({ where: { hospitalId } });
+    await prisma.payment.deleteMany({ where: { hospitalId } });
+    await prisma.paymentIntent.deleteMany({ where: { hospitalId } });
+    await prisma.invoice.deleteMany({ where: { hospitalId } });
 
     // Create a fresh invoice with balance 100
     const invoice = await prisma.invoice.create({

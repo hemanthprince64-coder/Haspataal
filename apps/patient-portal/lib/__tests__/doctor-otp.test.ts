@@ -30,11 +30,7 @@ describe('Doctor OTP Service (Unified)', () => {
 
       expect(result).toBe(true);
       expect(OtpService.sendOtp).toHaveBeenCalledWith(
-        { phone: '9876543210', purpose: 'HOSPITAL_LOGIN' },
-        {
-          entityType: 'DOCTOR',
-          channel: 'SMS',
-        },
+        { phone: '9876543210', purpose: 'HOSPITAL_LOGIN' }
       );
     });
 
@@ -48,8 +44,7 @@ describe('Doctor OTP Service (Unified)', () => {
       await services.doctor.requestOtp('+91-98765-43210');
 
       expect(OtpService.sendOtp).toHaveBeenCalledWith(
-        { phone: '+91-98765-43210', purpose: 'HOSPITAL_LOGIN' },
-        expect.objectContaining({ entityType: 'DOCTOR' }),
+        expect.objectContaining({ phone: '+91-98765-43210', purpose: 'HOSPITAL_LOGIN' })
       );
     });
 
@@ -82,8 +77,7 @@ describe('Doctor OTP Service (Unified)', () => {
       expect(result.user.id).toBe('doctor-1');
       expect(result.user.role).toBe('DOCTOR');
       expect(OtpService.verifyOtp).toHaveBeenCalledWith(
-        { phone: '9876543210', otp: '123456', purpose: 'HOSPITAL_LOGIN' },
-        { entityType: 'DOCTOR' },
+        { phone: '9876543210', otp: '123456', purpose: 'HOSPITAL_LOGIN' }
       );
     });
 

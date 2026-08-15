@@ -3,7 +3,6 @@ import { prisma } from '@haspataal/db';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
-import logger from '../../../patient-portal/lib/logger';
 
 // -----------------------------------------------------------------------------
 // ADVANCED REPORTING WORKER (PHI SECURITY FOCUSED)
@@ -21,7 +20,7 @@ export class ReportWorker {
     id: string;
     data: { hospitalId: string; reportType: string; dateRange: any; userId: string };
   }) {
-    logger.info(
+    console.log(
       { jobId: job.id, reportType: job.data.reportType },
       'Starting background report generation',
     );
@@ -49,9 +48,9 @@ export class ReportWorker {
       // 7. Notify User (e.g. via internal InboxEvent or email)
       await this.notifyUserReady(job.data.userId, presignedUrl, iv);
 
-      logger.info({ jobId: job.id }, 'Report generated, encrypted, and pre-signed URL issued.');
+      console.log({ jobId: job.id }, 'Report generated, encrypted, and pre-signed URL issued.');
     } catch (error) {
-      logger.error({ jobId: job.id, err: error }, 'Report generation failed');
+      console.error({ jobId: job.id, err: error }, 'Report generation failed');
       throw error;
     }
   }

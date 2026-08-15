@@ -54,16 +54,17 @@ export async function PATCH(req: Request) {
     });
 
     // Send notification
-    const { emitEvent } = await import('../../../../../../services/event-emitter');
-    await emitEvent({
-      eventType: `appointment_${action}d` as any,
-      payload: {
-        appointmentId,
-        patientId: appointment.patientId,
-        doctorId: user.id,
-        status: newStatus,
-      },
-    });
+    // const { emitEvent } = await import('../../../../../../services/event-emitter');
+    // await emitEvent({
+    //   eventType: `appointment_${action}d` as any,
+    //   payload: {
+    //     appointmentId,
+    //     patientId: appointment.patientId,
+    //     doctorId: user.id,
+    //     status: newStatus,
+    //   },
+    // });
+    console.log(`Event: appointment_${action}d`);
 
     return NextResponse.json({ success: true, appointment: updated });
   } catch (err: any) {

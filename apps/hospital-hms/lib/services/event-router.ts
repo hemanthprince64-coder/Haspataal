@@ -2,7 +2,6 @@
 import { prisma } from '@haspataal/db';
 import crypto from 'crypto';
 
-import logger from '../../../patient-portal/lib/logger';
 
 // -----------------------------------------------------------------------------
 // INTEGRATION HUB: EVENT ROUTER (API GATEWAY PATTERN)
@@ -16,13 +15,13 @@ export class EventRouter {
    * Main entrypoint for processing an event from the internal Event Bus.
    */
   async routeEvent(internalEvent: any) {
-    logger.info({ eventId: internalEvent.id }, 'Event Router received domain event');
+    console.log({ eventId: internalEvent.id }, 'Event Router received domain event');
 
     // 1. Filtering: Find all webhooks configured for this event type and hospital
     const subscriptions = await this.getSubscriptions(internalEvent.hospitalId, internalEvent.type);
 
     if (subscriptions.length === 0) {
-      logger.debug('No external subscriptions found for this event.');
+      console.debug('No external subscriptions found for this event.');
       return;
     }
 
@@ -75,7 +74,7 @@ export class EventRouter {
   private async enqueueForDelivery(jobData: any) {
     // Mock: Submits to a durable queue (e.g., BullMQ / Redis Streams)
     // The worker processing this queue handles exponential backoff (30s -> 2m -> 10m -> DLQ)
-    logger.info(
+    console.log(
       {
         webhook: jobData.webhookUrl,
         idempotencyKey: jobData.idempotencyKey,

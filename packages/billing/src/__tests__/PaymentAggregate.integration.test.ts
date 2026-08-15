@@ -97,20 +97,20 @@ describe('PaymentAggregate', () => {
   });
 
   afterAll(async () => {
-    await prisma.billingAudit.deleteMany({});
-    await prisma.payment.deleteMany({});
-    await prisma.paymentIntent.deleteMany({});
-    await prisma.invoiceLineItem.deleteMany({});
-    await prisma.invoice.deleteMany({});
-    await prisma.patient.deleteMany({});
-    await prisma.hospitalsMaster.deleteMany({});
+    await prisma.billingAudit.deleteMany({ where: { hospitalId } });
+    await prisma.payment.deleteMany({ where: { hospitalId } });
+    await prisma.paymentIntent.deleteMany({ where: { hospitalId } });
+    await prisma.invoiceLineItem.deleteMany({ where: { invoice: { hospitalId } } });
+    await prisma.invoice.deleteMany({ where: { hospitalId } });
+    await prisma.patient.deleteMany({ where: { id: patientId } });
+    await prisma.hospitalsMaster.deleteMany({ where: { id: hospitalId } });
     await prisma.$disconnect();
   });
 
   afterEach(async () => {
-    await prisma.billingAudit.deleteMany({});
-    await prisma.payment.deleteMany({});
-    await prisma.paymentIntent.deleteMany({});
+    await prisma.billingAudit.deleteMany({ where: { hospitalId } });
+    await prisma.payment.deleteMany({ where: { hospitalId } });
+    await prisma.paymentIntent.deleteMany({ where: { hospitalId } });
   });
 
   it('should capture a cash payment successfully', async () => {

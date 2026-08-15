@@ -28,6 +28,8 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
+      'out/**',
+      '**/out/**',
       '.next',
       'node_modules',
       'prisma',

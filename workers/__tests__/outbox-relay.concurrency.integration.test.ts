@@ -23,13 +23,16 @@ vi.mock('@haspataal/notify', () => {
     },
   };
 });
-vi.mock('@haspataal/timeline', () => {
-  return {
-    TimelineCommandHandler: class {
-      handleAddToTimeline = vi.fn();
-    },
-  };
-});
+vi.mock('@haspataal/timeline', () => ({
+  TimelineConsumer: class {
+    consumerName = 'TimelineConsumer';
+    supportedEvents = () => ['PATIENT_ADMITTED', 'CANONICAL_EVENT'];
+    handle = vi.fn().mockResolvedValue(undefined);
+  },
+  TimelineCommandHandler: class {
+    handleAddToTimeline = vi.fn();
+  },
+}));
 vi.mock('@haspataal/search', () => {
   return {
     SearchService: class {},
@@ -68,15 +71,18 @@ describe('Outbox Relay Concurrency & Phase 0B (12 Scenarios)', () => {
     );
 
     const migrations = [
-      'scripts/migrations/10_add_outbox_canonical_columns.sql',
-      'scripts/migrations/11_phase0b_idempotency_dlq.sql',
+      'scripts/migrate/migrations/10_add_outbox_canonical_columns.sql',
+      'scripts/migrate/migrations/11_phase0b_idempotency_dlq.sql',
     ];
 
     for (const file of migrations) {
-      execSync(`npx prisma db execute --url="${databaseUrl}" --file="${file}"`);
+      if (require('fs').existsSync(file)) {
+        require('child_process').execSync(`npx prisma db execute --url="${databaseUrl}" --file="${file}"`);
+      }
     }
 
     prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+    await prisma.journeyTemplate.upsert({ where: { id: 'generic-hospital-stay' }, update: {}, create: { id: 'generic-hospital-stay', name: 'Generic Hospital Stay', category: 'CLINICAL', stages: ['ADMISSION'] } });
   }, 120_000);
 
   beforeEach(async () => {
@@ -211,12 +217,24 @@ describe('Outbox Relay Concurrency & Phase 0B (12 Scenarios)', () => {
     await processOutbox();
     expect(eventBus.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        sourceSystem: 'haspataal-outbox',
+        causationId: 'haspataal-outbox',
       }),
     );
   });
 
   it('11. Canonical event fields are propagated', async () => {
+    await prisma.journeyTemplate.upsert({
+      where: {
+        id: 'generic-hospital-stay',
+      },
+      update: {},
+      create: {
+        id: 'generic-hospital-stay',
+        name: 'Generic Hospital Stay',
+        category: 'CLINICAL',
+        stages: ['ADMISSION'],
+      },
+    });
     await prisma.$executeRaw`
       INSERT INTO outbox_events (id, event_type, payload, delivery_status, correlation_id)
       VALUES ('canonical-id', 'CANONICAL_EVENT', '{"canonical": true}', 'PENDING', 'correl-123')

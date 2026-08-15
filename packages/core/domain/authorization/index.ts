@@ -1,1 +1,1 @@
-export * from '../../../../authorization/lib';
+export * from '../../../authorization/lib';

@@ -10,6 +10,8 @@ export default defineConfig({
     env: {
       NEXTAUTH_SECRET: 'test-secret-for-jwt-signing-which-is-at-least-32-chars-long',
       JWT_SECRET: 'test-secret-for-jwt-signing-which-is-at-least-32-chars-long',
+      DATABASE_URL: 'postgresql://postgres:Haspataal2026@localhost:5432/haspataal',
+      DIRECT_URL: 'postgresql://postgres:Haspataal2026@localhost:5432/haspataal',
     },
     alias: {
       '@': path.resolve(__dirname, './'),
@@ -29,6 +31,8 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
+      'out/**',
+      '**/out/**',
       '.next',
       'node_modules',
       'prisma',

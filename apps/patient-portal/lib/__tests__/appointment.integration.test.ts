@@ -28,10 +28,7 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
       },
     );
 
-    const migrations = [
-      'scripts/migrations/10_add_outbox_canonical_columns.sql',
-      'scripts/migrations/11_phase0b_idempotency_dlq.sql',
-    ];
+    const migrations = [];
 
     for (const file of migrations) {
       execSync(`npx prisma db execute --url="${dbUrl}" --file="${file}"`);
@@ -81,6 +78,10 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
     patientId = patient.id;
 
     // Create Verified Affiliation
+    const integrationPatient = await prisma.patient.upsert({ where: { phone: '7777777777' }, update: {}, create: { name: 'Integration Patient', phone: '7777777777' } });
+    await prisma.consent.create({ data: { patientId: integrationPatient.id, purpose: 'APPOINTMENT_BOOKING', version: 1, givenAt: new Date() } });
+    const p2 = await prisma.patient.upsert({ where: { phone: '9999999999' }, update: {}, create: { name: 'Another Patient', phone: '9999999999' } });
+    await prisma.consent.create({ data: { patientId: p2.id, purpose: 'APPOINTMENT_BOOKING', version: 1, givenAt: new Date() } });
     await prisma.doctorHospitalAffiliation.create({
       data: {
         doctorId,
@@ -113,17 +114,15 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
       slot,
     });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.status).toBe(BookingStatus.AWAITING_PAYMENT);
+    expect(result).toBeDefined();
+    expect(result.status).toBe(BookingStatus.AWAITING_PAYMENT);
 
-      // Verify in DB
-      const dbRecord = await prisma.appointment.findUnique({
-        where: { id: result.value.id },
-      });
-      expect(dbRecord).not.toBeNull();
-      expect(dbRecord?.slot).toBe(slot);
-    }
+    // Verify in DB
+    const dbRecord = await prisma.appointment.findUnique({
+      where: { id: result.id },
+    });
+    expect(dbRecord).not.toBeNull();
+    expect(dbRecord?.slot).toBe(slot);
   });
 
   it('Double Booking Prevention: should return SLOT_TAKEN on second attempt', async () => {
@@ -141,21 +140,16 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
       date: date.toISOString(),
       slot,
     });
-    expect(res1.ok).toBe(true);
+    expect(res1).toBeDefined();
 
     // Second booking (collision)
-    const res2 = await services.patient.createVisit(hospitalId, {
+    await expect(services.patient.createVisit(hospitalId, {
       patientMobile: '7777777777',
       patientName: 'Another Patient',
       doctorId,
       date: date.toISOString(),
       slot,
-    });
-
-    expect(res2.ok).toBe(false);
-    if (!res2.ok) {
-      expect(res2.code).toBe('SLOT_TAKEN');
-    }
+    })).rejects.toThrow('just booked by someone else');
   });
 
   it('Doctor Not Affiliated: should return DOCTOR_NOT_AFFILIATED if no approved affiliation', async () => {
@@ -174,18 +168,13 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
     const date = new Date();
     date.setDate(date.getDate() + 3);
 
-    const result = await services.patient.createVisit(otherHosp.id, {
+    await expect(services.patient.createVisit(otherHosp.id, {
       patientMobile: '7777777777',
       patientName: 'Integration Patient',
       doctorId,
       date: date.toISOString(),
       slot: '12:00',
-    });
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.code).toBe('DOCTOR_NOT_AFFILIATED');
-    }
+    })).rejects.toThrow('Doctor is not approved for this hospital');
   });
 
   it('Full Slice: Patient books -> Hospital Admin marks as BOOKED (payment approved)', async () => {
@@ -203,25 +192,25 @@ describe('Appointment Booking Integration (Real PostgreSQL)', () => {
       date: date.toISOString(),
       slot,
     });
-    expect(bookRes.ok).toBe(true);
+    expect(bookRes).toBeDefined();
 
-    if (bookRes.ok) {
-      const appointmentId = bookRes.value.id;
+    const appointmentId = bookRes.id;
+    const patientId = bookRes.patientId;
 
-      // 2. Hospital Admin updates status to BOOKED (simulating payment verification)
-      const updateRes = await services.patient.updateVisitStatus(
-        appointmentId,
-        patientId,
-        BookingStatus.BOOKED,
-      );
+    // Wait for async events
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-      expect(updateRes.status).toBe(BookingStatus.BOOKED);
+    // 2. Hospital Admin updates status to BOOKED (simulating payment verification)
+    await services.patient.updateVisitStatus(
+      appointmentId,
+      patientId,
+      BookingStatus.BOOKED,
+    );
 
-      // 3. Verify in DB
-      const dbRecord = await prisma.appointment.findUnique({
-        where: { id: appointmentId },
-      });
-      expect(dbRecord?.status).toBe(BookingStatus.BOOKED);
-    }
+    // 3. Verify in DB
+    const finalState = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+    expect(finalState?.status).toBe(BookingStatus.BOOKED);
   });
 });

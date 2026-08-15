@@ -995,7 +995,7 @@ describe('Scenarios 43–47: Shadow Mode', () => {
       },
     });
 
-    const { PatientHistoryService } = await import('../../history/patientHistoryService');
+    const { PatientHistoryService } = await import('../../../core/domain/history/patientHistoryService');
     const historyService = new PatientHistoryService(prisma, authService);
 
     const historyResult = await historyService.getLongitudinalHistory(

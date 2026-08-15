@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { prisma } from '@haspataal/db';
 
-import logger from '../../../patient-portal/lib/logger';
 
 // -----------------------------------------------------------------------------
 // DIAGNOSTIC BILLING POLICY ENGINE
@@ -27,7 +26,7 @@ export class DiagnosticBillingService {
     hospitalId: string,
     policy: DiagnosticBillingPolicy,
   ): Promise<boolean> {
-    logger.info({ executionId, policy }, 'Evaluating Diagnostic Billing Policy Gate');
+    console.log({ executionId, policy }, 'Evaluating Diagnostic Billing Policy Gate');
 
     switch (policy) {
       case 'PRE_COLLECTION':

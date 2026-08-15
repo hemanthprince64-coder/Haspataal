@@ -9,3 +9,11 @@ Dockerfile
 dist
 out
 coverage
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/out
+
+.env
+.env.*

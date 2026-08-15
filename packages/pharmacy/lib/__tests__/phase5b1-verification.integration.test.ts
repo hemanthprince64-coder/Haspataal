@@ -2,13 +2,11 @@ import { PrismaClient, ClinicalContext } from '@prisma/client';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { execSync } from 'child_process';
 
-import {
-  PharmacyExecutionService,
-  PharmacyVerificationService,
-  PharmacyInventoryService,
-  PharmacyDispenseService,
-  MARService,
-} from '../../index';
+import { PharmacyExecutionService } from '../ExecutionService';
+import { PharmacyVerificationService } from '../VerificationService';
+import { PharmacyInventoryService } from '../InventoryService';
+import { PharmacyDispenseService } from '../DispenseService';
+import { MARService } from '../MARService';
 
 describe('Phase 5B.1 Final Verification Gate', () => {
   let container: any;
@@ -107,7 +105,7 @@ describe('Phase 5B.1 Final Verification Gate', () => {
     itemsData: any[],
     clinicalContext: ClinicalContext = ClinicalContext.OPD,
   ) => {
-    return await prisma.order.create({
+    const order = await prisma.order.create({
       data: {
         hospitalId,
         patientId,
@@ -118,6 +116,30 @@ describe('Phase 5B.1 Final Verification Gate', () => {
         },
       },
     });
+
+    const encounter = await prisma.encounter.create({
+      data: {
+        hospitalId,
+        patientId,
+        encounterType: 'OPD',
+        status: 'ACTIVE',
+        startedAt: new Date(),
+      }
+    });
+
+    const cOrder = await prisma.clinicalOrder.create({
+      data: {
+        id: order.id,
+        encounterId: encounter.id,
+        patientId,
+        hospitalId,
+        type: 'PHARMACY',
+      }
+    });
+
+    console.log('Created ClinicalOrder with ID:', cOrder.id, 'Expected:', order.id);
+
+    return order;
   };
 
   const createBatch = async (

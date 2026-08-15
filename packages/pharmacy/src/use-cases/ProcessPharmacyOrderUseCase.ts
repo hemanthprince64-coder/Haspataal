@@ -32,7 +32,7 @@ export class ProcessPharmacyOrderUseCase {
         clinicalOrderId: order.id,
         patientId: order.patientId,
         hospitalId: order.hospitalId,
-        status: 'PRESCRIBED' as PharmacyState,
+        status: 'PENDING_VERIFICATION' as PharmacyState,
         version: 1,
       },
     });

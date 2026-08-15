@@ -1,1 +1,1 @@
-export { CareResponsibilityService } from '../../../../authorization/lib/careResponsibilityService';
+export { CareResponsibilityService } from '../../../authorization/lib/careResponsibilityService';

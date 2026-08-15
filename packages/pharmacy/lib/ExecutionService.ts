@@ -44,7 +44,6 @@ export class PharmacyExecutionService {
         return 'no-op';
       }
 
-      // 3. Create the Execution aggregate
       const execution = await tx.pharmacyExecution.create({
         data: {
           hospitalId: order.hospitalId,

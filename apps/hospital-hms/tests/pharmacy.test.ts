@@ -68,7 +68,7 @@ describe('Pharmacy Domain Integration', () => {
     });
     (prisma.pharmacyExecution.create as any).mockResolvedValue({
       id: 'exec-1',
-      status: 'PRESCRIBED',
+      status: 'PENDING_VERIFICATION',
       version: 1,
     });
 
@@ -78,12 +78,12 @@ describe('Pharmacy Domain Integration', () => {
       actorName: actor.name,
       actorRole: actor.role,
     });
-    expect(exec1.status).toBe('PRESCRIBED');
+    expect(exec1.status).toBe('PENDING_VERIFICATION');
 
     // 2. Verify
     (prisma.pharmacyExecution.findUnique as any).mockResolvedValue({
       id: 'exec-1',
-      status: 'PRESCRIBED',
+      status: 'PENDING_VERIFICATION',
       version: 1,
     });
     (prisma.pharmacyExecution.update as any).mockResolvedValue({
@@ -181,7 +181,7 @@ describe('Pharmacy Domain Integration', () => {
     // Cancel before verification -> succeeds
     (prisma.pharmacyExecution.findUnique as any).mockResolvedValue({
       id: 'exec-1',
-      status: 'PRESCRIBED',
+      status: 'PENDING_VERIFICATION',
       version: 1,
       clinicalOrderId: 'order-1',
     });
@@ -229,7 +229,7 @@ describe('Pharmacy Domain Integration', () => {
 
     (prisma.pharmacyExecution.findUnique as any).mockResolvedValue({
       id: 'exec-1',
-      status: 'PRESCRIBED',
+      status: 'PENDING_VERIFICATION',
       version: 2,
     });
 

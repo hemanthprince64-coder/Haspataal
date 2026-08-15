@@ -1,1 +1,1 @@
-export type { IAuthorizationService as AuthorizationService } from '@haspataal/types';
+export { AuthorizationService } from '../../../authorization/lib/service';

@@ -1,8 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
-import logger from '../../../patient-portal/lib/logger';
-
 // -----------------------------------------------------------------------------
 // CROSS-TENANT NETWORK OPERATIONS SERVICE
 // -----------------------------------------------------------------------------
@@ -32,7 +30,7 @@ export class NetworkOperationsService {
     quantity: number,
     actorId: string,
   ) {
-    logger.info({ transferId, sourceHospitalId }, 'Initiating cross-tenant stock dispatch');
+    console.log('Initiating cross-tenant stock dispatch', { transferId, sourceHospitalId });
 
     try {
       // 1. Transactionally lock and deduct from Source
@@ -69,7 +67,7 @@ export class NetworkOperationsService {
 
       return { success: true };
     } catch (err: any) {
-      logger.error({ transferId, error: err.message }, 'Failed to dispatch cross-tenant transfer');
+      console.error('Failed to dispatch cross-tenant transfer', { transferId, error: err.message });
       throw err;
     }
   }
@@ -87,7 +85,7 @@ export class NetworkOperationsService {
     expiryDate: Date,
     actorId: string,
   ) {
-    logger.info({ transferId, destHospitalId }, 'Initiating cross-tenant stock receive');
+    console.log('Initiating cross-tenant stock receive', { transferId, destHospitalId });
 
     try {
       // 1. Transactionally add to Destination
@@ -129,7 +127,7 @@ export class NetworkOperationsService {
 
       return { success: true };
     } catch (err: any) {
-      logger.error({ transferId, error: err.message }, 'Failed to receive cross-tenant transfer');
+      console.error('Failed to receive cross-tenant transfer', { transferId, error: err.message });
       throw err;
     }
   }

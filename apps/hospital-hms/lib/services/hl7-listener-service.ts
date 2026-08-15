@@ -2,7 +2,6 @@
 import { prisma } from '@haspataal/db';
 import { v4 as uuidv4 } from 'uuid';
 
-import logger from '../../../patient-portal/lib/logger';
 
 // -----------------------------------------------------------------------------
 // HL7 / FHIR INTEGRATION & EVENT PUBLISHING BLUEPRINT
@@ -19,7 +18,7 @@ export class HL7ListenerService {
    * Mocks the ingestion of an HL7 ORU message from a physical analyzer.
    */
   async processHL7Result(hl7Payload: string, hospitalId: string) {
-    logger.info({ hospitalId }, 'Received HL7 ORU message from Analyzer');
+    console.log({ hospitalId }, 'Received HL7 ORU message from Analyzer');
 
     // In a real implementation, we would parse the HL7 string (e.g. using node-hl7-parser)
     // For this blueprint, we simulate extracting the Accession ID and Result values.
@@ -73,7 +72,7 @@ export class HL7ListenerService {
         },
       });
 
-      logger.info({ eventId, accessionId }, 'Published LAB_RESULT_VERIFIED domain event');
+      console.log({ eventId, accessionId }, 'Published LAB_RESULT_VERIFIED domain event');
     });
 
     return { success: true };

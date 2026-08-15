@@ -3,7 +3,7 @@ import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { execSync } from 'child_process';
 import { vi } from 'vitest';
 
-import { AuthorizationService } from '../../authorization/service';
+import { AuthorizationService } from '@haspataal/authorization';
 import { DomainAction } from '../../authorization/types';
 import { OrderStateService } from '../state-service';
 import { OrderValidationPipeline, ValidationWarningType } from '../validation-pipeline';

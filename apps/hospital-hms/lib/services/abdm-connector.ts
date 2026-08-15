@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import logger from '../../../patient-portal/lib/logger';
-
 // -----------------------------------------------------------------------------
 // ABDM CONNECTOR (INDIA) - BOUNDED CONTEXT
 // -----------------------------------------------------------------------------
@@ -13,7 +10,7 @@ export class ABDMConnector {
    * Translates an internal Patient ID lookup request into an ABDM ABHA fetch.
    */
   async lookupAbhaId(abhaNumber: string): Promise<any> {
-    logger.info({ abhaNumber }, 'Initiating ABHA Lookup via ABDM API');
+    console.log('Initiating ABHA Lookup via ABDM API', { abhaNumber });
 
     // MOCK: Exchange internal auth token for ABDM session token
     const sessionToken = await this.refreshAbdmToken();
@@ -28,7 +25,7 @@ export class ABDMConnector {
       address: 'Delhi',
     };
 
-    logger.info({ abdmHealthId: abhaProfile.healthId }, 'Successfully resolved ABHA ID');
+    console.log('Successfully resolved ABHA ID', { abdmHealthId: abhaProfile.healthId });
 
     // Publish integration result event to EventBus so internal services (Registration) can consume it
     // eventRouter.publish('AbhaProfileResolved', abhaProfile);
@@ -40,14 +37,14 @@ export class ABDMConnector {
    * Exchanges an internal clinical encounter for an ABDM FHIR Bundle.
    */
   async pushClinicalEncounterToAbdm(encounterId: string, hospitalId: string): Promise<void> {
-    logger.info({ encounterId, hospitalId }, 'Translating Encounter to FHIR Bundle');
+    console.log('Translating Encounter to FHIR Bundle', { encounterId, hospitalId });
 
     // 1. Fetch encounter from internal DB
     // 2. Map to FHIR R4 Bundle (Patient, Encounter, Observation, DiagnosticReport)
     // 3. Call ABDM Health Information Provider (HIP) API
     // 4. Log audit trail
 
-    logger.info({ encounterId }, 'Successfully pushed FHIR Bundle to ABDM Gateway');
+    console.log('Successfully pushed FHIR Bundle to ABDM Gateway', { encounterId });
   }
 
   // --- Internal Governance ---

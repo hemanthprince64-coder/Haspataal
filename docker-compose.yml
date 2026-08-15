@@ -154,30 +154,17 @@ services:
       timeout: 5s
       retries: 5
 
-  db-baseline:
-    image: postgres:16-alpine
-    container_name: haspataal-baseline
-    env_file: .env.docker
-    command: >
-      sh -c "psql $$DATABASE_URL -f /app/infra/sql/baseline.sql"
-    volumes:
-      - ./:/app:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - haspataal_network
-    restart: "no"
-
   db-migrate:
-    image: haspataal/escalation-worker:latest
+    build:
+      context: .
+      dockerfile: workers/Dockerfile
     container_name: db-migrate
     working_dir: /app
     env_file: .env.docker
     command: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
     depends_on:
-      db-baseline:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     networks:
       - haspataal_network
 

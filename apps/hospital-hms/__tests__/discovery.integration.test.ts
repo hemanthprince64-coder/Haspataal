@@ -23,10 +23,7 @@ describe('DoctorDiscoveryService', () => {
       },
     );
 
-    const migrations = [
-      'scripts/migrations/10_add_outbox_canonical_columns.sql',
-      'scripts/migrations/11_phase0b_idempotency_dlq.sql',
-    ];
+    const migrations = [];
 
     for (const file of migrations) {
       execSync(`npx prisma db execute --url="${databaseUrl}" --file="${file}"`);

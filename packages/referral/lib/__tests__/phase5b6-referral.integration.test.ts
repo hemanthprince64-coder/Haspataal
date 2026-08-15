@@ -12,7 +12,7 @@ import {
 import { randomUUID } from 'crypto';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-import { AuthorizationService } from '@haspataal/core/domain/authorization/service';
+import { AuthorizationService } from '@haspataal/authorization';
 import { DomainAction } from '@haspataal/core/domain/authorization/types';
 import { OutboxService } from '@haspataal/core/domain/outbox/service';
 import { CareTransferService } from '../CareTransferService';

@@ -20,6 +20,9 @@ RUN npm install --ignore-scripts
 
 # Copy source code
 COPY --from=builder /app/out/full/ .
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/eslint.config.mjs ./eslint.config.mjs
+COPY --from=builder /app/eslint-local-rules.js ./eslint-local-rules.js
 
 # Generate Prisma Client
 RUN npx prisma generate --schema=packages/db/prisma/schema.prisma

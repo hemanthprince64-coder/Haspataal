@@ -1,6 +1,5 @@
 import { prisma } from '@haspataal/db';
 
-import logger from '../../../patient-portal/lib/logger';
 
 // -----------------------------------------------------------------------------
 // WHATSAPP NOTIFIER CONNECTOR
@@ -15,7 +14,7 @@ export class WhatsAppNotifierConnector {
    * Event Listener Entrypoint. Invoked asynchronously by the Event Bus worker.
    */
   async handleDomainEvent(event: any) {
-    logger.info({ eventType: event.type }, 'WhatsApp Connector received domain event');
+    console.log({ eventType: event.type }, 'WhatsApp Connector received domain event');
 
     // MOCK: Fetch hospital's WhatsApp API configuration
     const config = await prisma.integrationConfig.findFirst({
@@ -26,7 +25,7 @@ export class WhatsAppNotifierConnector {
     });
 
     if (!config) {
-      logger.debug('No WhatsApp provider configured for this hospital. Ignoring event.');
+      console.debug('No WhatsApp provider configured for this hospital. Ignoring event.');
       return;
     }
 
@@ -48,7 +47,7 @@ export class WhatsAppNotifierConnector {
   // --- Message Handlers ---
 
   private async sendLabReadyMessage(payload: any, config: any) {
-    logger.info({ accessionId: payload.accessionId }, 'Sending WhatsApp: Lab Results Ready');
+    console.log({ accessionId: payload.accessionId }, 'Sending WhatsApp: Lab Results Ready');
 
     // MOCK: Call the underlying HTTP API using the stored config.webhookSecret/Token
     const message = `Hello! Your lab results for accession ${payload.accessionId} are now ready. You can view them on the Patient Portal.`;
@@ -57,7 +56,7 @@ export class WhatsAppNotifierConnector {
   }
 
   private async sendAppointmentConfirmation(payload: any, config: any) {
-    logger.info(
+    console.log(
       { appointmentId: payload.appointmentId },
       'Sending WhatsApp: Appointment Confirmed',
     );
@@ -70,7 +69,7 @@ export class WhatsAppNotifierConnector {
   private async dispatchToProvider(provider: string, message: string, phone: string) {
     // Translates our internal generic request to the specific provider's API shape (Twilio vs Meta vs Wati)
     const maskedPhone = phone.length > 4 ? phone.slice(0, 3) + '******' + phone.slice(-2) : '***';
-    logger.info({ provider, maskedPhone }, 'Dispatched message to WhatsApp API Provider');
+    console.log({ provider, maskedPhone }, 'Dispatched message to WhatsApp API Provider');
 
     // 1. HTTP POST to Provider
     // 2. Await HTTP 202 Accepted

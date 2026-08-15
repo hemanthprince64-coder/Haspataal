@@ -21,6 +21,7 @@ describe('Phase 4 Consumers Integration & Verification Gate', () => {
     await prisma.notification.deleteMany({});
     await prisma.projectionCheckpoint.deleteMany({});
     await prisma.bed.deleteMany({});
+    await prisma.journeyTemplate.upsert({ where: { id: 'generic-hospital-stay' }, update: {}, create: { id: 'generic-hospital-stay', name: 'Generic Hospital Stay', category: 'CLINICAL', stages: ['ADMISSION'] } });
   });
 
   afterAll(async () => {

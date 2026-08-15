@@ -6,7 +6,7 @@ import {
   AnesthesiaType,
 } from '@prisma/client';
 
-import { AuthorizationService } from '@haspataal/core';
+import { AuthorizationService } from '@haspataal/authorization';
 import { OutboxService } from '@haspataal/core';
 import { AnesthesiaService } from '../AnesthesiaService';
 import { ChecklistService } from '../ChecklistService';
@@ -43,13 +43,14 @@ describe('Phase 5B.4 - Procedure & Operating Theatre Execution Engine', () => {
 
   beforeAll(async () => {
     // 1. Setup Master Data
+    const uid = Math.random().toString(36).substring(2, 9);
     const hospital = await prisma.hospitalsMaster.create({
       data: {
-        legalName: 'Procedure Test Hospital',
-        registrationNumber: 'REG-123',
-        stateRegistrationNumber: 'REG-123',
+        legalName: `Procedure Test Hospital ${uid}`,
+        registrationNumber: `REG-${uid}`,
+        stateRegistrationNumber: `SREG-${uid}`,
         addressLine1: '123 Test St',
-        officialEmail: 'test@example.com',
+        officialEmail: `test-${uid}@example.com`,
       },
     });
     hospitalId = hospital.id;
@@ -59,7 +60,7 @@ describe('Phase 5B.4 - Procedure & Operating Theatre Execution Engine', () => {
         name: 'Proc Test',
         dob: new Date('1990-01-01'),
         gender: 'MALE',
-        phone: '1234567890',
+        phone: `+91${Math.floor(1000000000 + Math.random() * 9000000000)}`,
       },
     });
     patientId = patient.id;
@@ -71,7 +72,7 @@ describe('Phase 5B.4 - Procedure & Operating Theatre Execution Engine', () => {
         hospitalId,
         type: 'PROCEDURE',
         name: 'Standard Appendectomy',
-        code: 'PROC-APP-01',
+        code: `PROC-APP-${uid}`,
       },
     });
 
@@ -136,6 +137,7 @@ describe('Phase 5B.4 - Procedure & Operating Theatre Execution Engine', () => {
     await prisma.procedureExecution.deleteMany({ where: { hospitalId } });
     await prisma.procedureRoom.deleteMany({ where: { hospitalId } });
 
+    await prisma.bloodBankExecutionItem.deleteMany({ where: { orderItem: { order: { hospitalId } } } });
     await prisma.orderItem.deleteMany({ where: { order: { hospitalId } } });
     await prisma.order.deleteMany({ where: { hospitalId } });
     await prisma.clinicalOrderCatalogVersion.deleteMany({ where: { catalog: { hospitalId } } });

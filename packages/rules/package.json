@@ -18,6 +18,7 @@
   "dependencies": {
     "@haspataal/db": "*",
     "@haspataal/platform-contracts": "*",
+    "@haspataal/timeline": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

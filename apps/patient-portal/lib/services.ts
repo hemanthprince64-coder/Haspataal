@@ -739,6 +739,7 @@ export const services = {
 
       // Strict State Machine Enforcement
       const validTransitions: Record<string, string[]> = {
+        [BookingStatus.AWAITING_PAYMENT]: [BookingStatus.BOOKED, BookingStatus.CANCELLED],
         [BookingStatus.BOOKED]: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
         [BookingStatus.CONFIRMED]: [BookingStatus.COMPLETED, BookingStatus.CANCELLED],
         [BookingStatus.CANCELLED]: [],
