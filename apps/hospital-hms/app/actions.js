@@ -1,16 +1,77 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
-import { services } from '@/lib/services';
-import { db } from '@/lib/data';
-import { redirect } from 'next/navigation';
-import prisma from '@/lib/prisma';
-import { signIn, signOut, auth } from '@/auth';
+import { OtpService, OtpPurpose } from '@haspataal/auth';
+
 import { AuthError } from 'next-auth';
-import { sendSMS } from '@/lib/notifications';
+import { redirect } from 'next/navigation';
+
+import { signIn, signOut, auth } from '@/auth';
 import { logAction } from '@/lib/audit';
+import { db } from '@/lib/data';
+import { sendSMS } from '@/lib/notifications';
+import prisma from '@/lib/prisma';
+import { services } from '@/lib/services';
 
 const DEFAULT_CONSULTATION_FEE = Number(process.env.DEFAULT_CONSULTATION_FEE || 500);
+
+// ==================== DOCTOR OTP ACTIONS ====================
+
+export async function requestDoctorOtp(prevState, formData) {
+  const mobile = formData.get('mobile');
+  if (!mobile || mobile.length < 10) {
+    return { message: 'Please enter a valid 10-digit mobile number.' };
+  }
+
+  try {
+    const result = await OtpService.sendOtp({
+      phone: mobile,
+      purpose: OtpPurpose.DOCTOR_LOGIN,
+    });
+    if (!result.success) {
+      return { message: result.message || 'Failed to send OTP.' };
+    }
+    return { success: true, message: 'OTP sent successfully!' };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to send OTP.';
+    return { message: errorMessage };
+  }
+}
+
+export async function loginDoctorWithOtp(prevState, formData) {
+  const mobile = formData.get('mobile');
+  const otp = formData.get('otp');
+
+  if (!mobile || !otp) {
+    return { message: 'Please enter both mobile number and OTP.' };
+  }
+
+  try {
+    await signIn('credentials', {
+      mobile,
+      otp,
+      role: 'doctor',
+      redirect: false,
+    });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return { message: 'Invalid or expired OTP.' };
+        default:
+          return { message: 'Authentication failed.' };
+      }
+    }
+    throw error;
+  }
+
+  const session = await auth();
+  if (session?.user) {
+    await logAction(session.user.id, 'LOGIN_OTP', 'Doctor', session.user.id, { role: 'DOCTOR' });
+  }
+
+  redirect('/dashboard/doctor');
+}
 
 // ==================== HOSPITAL ACTIONS ====================
 

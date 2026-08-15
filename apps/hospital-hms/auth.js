@@ -1,7 +1,9 @@
+import { OtpService, OtpPurpose } from '@haspataal/auth';
+
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
+
 import prisma from '@/lib/prisma';
-// import bcrypt from "bcryptjs" // In real app, verify password hash. For now, matching plain text or simple check for speed if hashes not set.
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -9,28 +11,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         mobile: {},
         password: {},
+        otp: {},
         role: {}, // 'admin' or 'doctor'
       },
       authorize: async (credentials) => {
-        if (!credentials?.mobile || !credentials?.password) return null;
+        if (!credentials?.mobile) return null;
 
-        const { mobile, role } = credentials;
+        const { mobile, password, otp, role } = credentials;
 
         if (role === 'admin') {
+          if (!password) return null;
           const admin = await prisma.hospitalAdmin.findUnique({
             where: { mobile },
             include: { hospital: true },
           });
-
-          // In real app: if (!admin || !bcrypt.compareSync(password, admin.password)) return null;
-          // But HospitalAdmin doesn't have a password column in schema yet!
-          // Spec said "Primary Admin added via Onboarding". Auth?
-          // Let's assume for prototype: Password is '1234' or we add a password field.
-          // Wait, Schema has `Staff` with password, but `HospitalAdmin` has no password column.
-          // I will use `mobile` as login and `password` as fixed '1234' for now to unblock,
-          // OR key off `Staff` table?
-          // The implementation plan said "Verify against HospitalAdmin".
-          // I'll allow login if record exists.
 
           if (!admin) return null;
 
@@ -42,20 +36,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             hospitalId: admin.hospitalId,
           };
         } else if (role === 'doctor') {
+          if (!otp) return null;
+
+          // 1. Server-side verification of OTP
+          const verifyResult = await OtpService.verifyOtp({
+            phone: mobile,
+            otp,
+            purpose: OtpPurpose.DOCTOR_LOGIN,
+          });
+
+          if (!verifyResult.success) {
+            return null;
+          }
+
+          // 2. Lookup doctor
           const doctor = await prisma.doctorMaster.findUnique({
             where: { mobile },
           });
 
-          // Doctor also has no password in schema!
           if (!doctor) return null;
+
+          // 3. Account status guard
+          const status = (
+            doctor.account_status ||
+            doctor.accountStatus ||
+            doctor.status ||
+            ''
+          ).toLowerCase();
+          if (['suspended', 'inactive', 'locked'].includes(status)) {
+            return null;
+          }
 
           return {
             id: doctor.id,
             name: doctor.fullName,
             email: doctor.email,
             role: 'doctor',
-            // Doctor might be associated with multiple hospitals.
-            // For now, we don't bind `hospitalId` here, actions will fetch it or pass it.
           };
         }
 

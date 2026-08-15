@@ -160,14 +160,7 @@ export function OtpFlow({
           />
         </div>
 
-        <div className="flex justify-between items-center px-2 mt-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none flex items-center gap-1">
-              Demo Mode <Info className="w-3 h-3 cursor-help" />
-            </p>
-          </div>
-
+        <div className="flex justify-end items-center px-2 mt-2">
           {countdown > 0 ? (
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Resend in {countdown}s

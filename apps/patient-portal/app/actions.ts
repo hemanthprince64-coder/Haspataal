@@ -600,77 +600,6 @@ export const registerDoctor = withRateLimit(_registerDoctor, {
   windowSeconds: 60 * 60, // 1 hour
 });
 
-async function _loginDoctor(
-  prevState: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const mobile = formData.get('mobile') as string;
-  const password = formData.get('password') as string;
-
-  const mobileParse = MobileSchema.safeParse(mobile);
-  if (!mobileParse.success) {
-    return {
-      success: false,
-      message: 'Mobile number must be at least 10 digits',
-    };
-  }
-
-  if (!mobile || !password) {
-    return { message: 'Please enter both mobile and password.' };
-  }
-
-  try {
-    const doctor = await prisma.$transaction(async (tx) => {
-      // 1. Lookup Doctor
-      const found = await tx.doctorMaster.findUnique({ where: { mobile } });
-      if (!found) {
-        logger.warn(
-          { action: 'login_doctor_unregistered', mobile },
-          'Unregistered doctor attempted password login',
-        );
-        throw new Error('Invalid credentials.');
-      }
-
-      // 2. Verify Password
-      const bcrypt = require('bcryptjs');
-      const isMatch = await bcrypt.compare(password, found.password);
-      if (!isMatch) {
-        throw new Error('Invalid credentials.');
-      }
-
-      // 3. Log success atomically
-      logger.info(
-        { action: 'login_doctor_password_success', mobile, doctorId: found.id },
-        'Doctor password login successful',
-      );
-
-      return found;
-    });
-
-    // 4. Issue session only after commit
-    await createSession('session_doctor', {
-      user: { id: doctor.id, role: 'DOCTOR', name: doctor.fullName },
-    });
-
-    redirect('/doctor/dashboard');
-  } catch (e: unknown) {
-    if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
-    const errorMessage = e instanceof Error ? e.message : 'Invalid credentials.';
-
-    logger.warn(
-      { action: 'login_doctor_failed', mobile, error: errorMessage },
-      'Doctor login failed',
-    );
-    return { message: errorMessage };
-  }
-}
-
-export const loginDoctor = withRateLimit(_loginDoctor, {
-  actionName: 'loginDoctor',
-  limit: 10,
-  windowSeconds: 15 * 60, // 15 mins
-});
-
 export async function logoutDoctor() {
   await deleteSession('session_doctor');
   redirect('/doctor/login');
@@ -735,6 +664,21 @@ async function _loginDoctorWithOtp(
           'Unregistered doctor attempted OTP login',
         );
         throw new Error('Doctor not found. Please contact your hospital administrator.');
+      }
+
+      // Account status guard
+      const status = (
+        (found as any).account_status ||
+        (found as any).accountStatus ||
+        (found as any).status ||
+        ''
+      ).toLowerCase();
+      if (['suspended', 'inactive', 'locked'].includes(status)) {
+        logger.warn(
+          { action: 'login_doctor_suspended', mobile, doctorId: found.id, status },
+          'Suspended/inactive doctor attempted login',
+        );
+        throw new Error('Account is suspended. Please contact support.');
       }
 
       // 3. Log success atomically

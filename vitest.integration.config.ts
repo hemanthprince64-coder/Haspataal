@@ -41,7 +41,7 @@ export default defineConfig({
       'tests/smoke/**',
     ],
     // For integration tests, we want to allow longer timeouts for containers to start
-    testTimeout: 60000,
-    hookTimeout: 60000,
+    testTimeout: 180000,
+    hookTimeout: 180000,
   },
 });
