@@ -38,8 +38,8 @@ const portalConfigs = {
     iconBg: 'bg-teal-500/15 text-teal-400',
     btnColor: 'bg-teal-600 hover:bg-teal-700',
     regBtnColor: 'border-teal-500/20 text-teal-400 hover:bg-teal-500/10',
-    loginPath: 'http://localhost:3001/login/doctor',
-    registerPath: 'http://localhost:3001/register/doctor',
+    loginPath: '/doctor/login',
+    registerPath: '/doctor/login',
   },
   hospital: {
     title: 'For Hospitals',
@@ -51,8 +51,8 @@ const portalConfigs = {
     iconBg: 'bg-purple-500/15 text-purple-400',
     btnColor: 'bg-purple-600 hover:bg-purple-700',
     regBtnColor: 'border-purple-500/20 text-purple-400 hover:bg-purple-500/10',
-    loginPath: 'http://localhost:3001/login',
-    registerPath: 'http://localhost:3001/register',
+    loginPath: '/hospital/login',
+    registerPath: '/hospital/register',
   },
 };
 

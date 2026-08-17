@@ -18,7 +18,7 @@ export default function PatientLogin() {
           icon: Hospital,
           subtitle: 'Medical Partner?',
           title: 'Hospital HMS Access',
-          href: 'http://localhost:3001/login',
+          href: '/hospital/login',
         }}
       />
     </main>

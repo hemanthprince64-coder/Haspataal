@@ -295,7 +295,7 @@ export default function DoctorLoginPage() {
             </Link>
 
             <a
-              href="http://localhost:3000"
+              href={process.env.NEXT_PUBLIC_APP_URL || '/'}
               className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between group cursor-pointer hover:border-blue-200 transition-all"
             >
               <div className="flex items-center gap-3.5">

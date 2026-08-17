@@ -5,6 +5,10 @@ import { requireHospital } from '@/lib/auth/middleware';
 import prisma from '@/lib/prisma';
 
 export async function GET(req: Request) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Endpoint not available in production' }, { status: 404 });
+  }
+
   try {
     const auth = await requireHospital(req);
     if (auth.error) {
@@ -22,16 +26,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Hospital not found in Prisma' }, { status: 404 });
     }
 
-    // Fetch counts via Prisma (using staff and patients linked to hospital)
+    // Fetch counts via Prisma (using staff and appointments linked to hospital)
     const usersCount = await prisma.staff.count({
       where: { hospitalId: hospitalId },
     });
 
     let patientsCount = 0;
     try {
-      patientsCount = await prisma.patient.count(); // Simplified to just patient count to avoid schema relation errors
+      patientsCount = await prisma.patient.count({
+        where: {
+          appointments: {
+            some: {
+              hospitalId: hospitalId,
+            },
+          },
+        },
+      });
     } catch (e: any) {
-      // console.error('Patient count error:', e.message);
+      // ignore
     }
 
     return NextResponse.json({
@@ -42,7 +54,6 @@ export async function GET(req: Request) {
       user_role: auth.user.role,
     });
   } catch (err: any) {
-    // console.error('Dashboard test exception:', err.message || err);
     return NextResponse.json({ error: 'Caught Exception', details: err.message }, { status: 500 });
   }
 }

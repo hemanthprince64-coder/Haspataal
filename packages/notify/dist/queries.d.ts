@@ -278,7 +278,7 @@ export declare class NotificationQueryHandler {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
-    static getAnalytics(query: PlatformQuery<{}>): Promise<{
+    static getAnalytics(query: PlatformQuery<Record<string, unknown>>): Promise<{
         delivery: {
             total: number;
             sent: number;
@@ -294,7 +294,7 @@ export declare class NotificationQueryHandler {
             count: number;
         }[];
     }>;
-    static getTemplates(query: PlatformQuery<{}>): Promise<{
+    static getTemplates(query: PlatformQuery<Record<string, unknown>>): Promise<{
         id: string;
         hospitalId: string;
         name: string;
@@ -309,7 +309,7 @@ export declare class NotificationQueryHandler {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
-    static getCampaigns(query: PlatformQuery<{}>): Promise<{
+    static getCampaigns(query: PlatformQuery<Record<string, unknown>>): Promise<{
         id: string;
         hospitalId: string | null;
         name: string;

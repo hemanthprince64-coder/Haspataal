@@ -6,11 +6,10 @@ import { verifyToken } from './lib/auth/jwt';
 export async function middleware(req: Request) {
   const url = new URL(req.url);
 
-  // Bypass middleware for authentication routes and the dashboard-test which has its own auth
+  // Bypass middleware for authentication routes
   if (
     url.pathname.startsWith('/api/hospital/auth') ||
-    url.pathname.startsWith('/api/auth') ||
-    url.pathname.startsWith('/api/hospital/dashboard-test')
+    url.pathname.startsWith('/api/auth')
   ) {
     return NextResponse.next();
   }

@@ -123,8 +123,8 @@ export default function FooterLinks() {
             </Link>
           </li>
           <li>
-            <Link href="#" className="hover:text-blue-400 transition-colors no-underline">
-              Help Center
+            <Link href="/contact" className="hover:text-blue-400 transition-colors no-underline">
+              Help & Support Center
             </Link>
           </li>
         </ul>

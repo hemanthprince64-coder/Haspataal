@@ -27,7 +27,7 @@ export class NotificationQueryHandler {
     return notifications;
   }
 
-  static async getAnalytics(query: PlatformQuery<{}>) {
+  static async getAnalytics(query: PlatformQuery<Record<string, unknown>>) {
     const { hospitalId } = query.tenantScope;
     const { NotificationAnalytics } = await import('./analytics');
     
@@ -39,7 +39,7 @@ export class NotificationQueryHandler {
     
     return { delivery, failure, channelUsage };
   }
-  static async getTemplates(query: PlatformQuery<{}>) {
+  static async getTemplates(query: PlatformQuery<Record<string, unknown>>) {
     const { hospitalId } = query.tenantScope;
     return await prisma.notificationTemplate.findMany({
       take: 100,
@@ -48,7 +48,7 @@ export class NotificationQueryHandler {
     });
   }
 
-  static async getCampaigns(query: PlatformQuery<{}>) {
+  static async getCampaigns(query: PlatformQuery<Record<string, unknown>>) {
     const { hospitalId } = query.tenantScope;
     return await prisma.notificationCampaign.findMany({
       take: 100,

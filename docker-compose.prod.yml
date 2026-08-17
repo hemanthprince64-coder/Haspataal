@@ -18,6 +18,23 @@ services:
     networks:
       - haspataal-network
 
+  hospital-hms:
+    build:
+      context: .
+      dockerfile: Dockerfile.hospital
+    restart: always
+    env_file:
+      - .env.staging
+    expose:
+      - "3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - haspataal-network
+
   admin-panel:
     build:
       context: .
@@ -26,7 +43,7 @@ services:
     env_file:
       - .env.staging
     expose:
-      - "3002"
+      - "3000"
     depends_on:
       db:
         condition: service_healthy
@@ -115,6 +132,7 @@ services:
       - ./data/certbot/www:/var/www/certbot
     depends_on:
       - app
+      - hospital-hms
       - gateway
       - admin-panel
     networks:

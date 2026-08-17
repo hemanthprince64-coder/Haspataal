@@ -11,17 +11,17 @@ export declare const SearchFiltersSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     query: string;
     types?: string[] | undefined;
-    from?: string | undefined;
-    to?: string | undefined;
     limit?: number | undefined;
     cursor?: string | undefined;
+    from?: string | undefined;
+    to?: string | undefined;
 }, {
     query: string;
     types?: string[] | undefined;
-    from?: string | undefined;
-    to?: string | undefined;
     limit?: number | undefined;
     cursor?: string | undefined;
+    from?: string | undefined;
+    to?: string | undefined;
 }>;
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 export declare const AutocompleteFiltersSchema: z.ZodObject<{
@@ -531,10 +531,10 @@ export declare class SearchQueryHandler {
     constructor(searchService: SearchService);
     handleSearch(query: PlatformQuery<SearchFilters>): Promise<{
         results: {
-            id: string;
             entityType: "patient" | "doctor" | "hospital" | "appointment" | "journey" | "prescription" | "lab" | "radiology" | "bill" | "medicine" | "investigation" | "notification" | "task" | "clinical" | "timeline";
             entityId: string;
             title: string;
+            id: string;
             rank: number;
             createdAt: Date;
             updatedAt: Date;
