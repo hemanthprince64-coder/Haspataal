@@ -398,6 +398,14 @@ jobs:
         if: steps.nm-cache.outputs.cache-hit == 'true'
         run: npx prisma generate
 
+      - name: Build applications before browser tests
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          NEXTAUTH_SECRET: 'ci-e2e-placeholder-not-a-real-secret'
+          NEXTAUTH_URL: 'http://127.0.0.1:3000'
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
