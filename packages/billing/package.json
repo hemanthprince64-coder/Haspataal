@@ -1,0 +1,21 @@
+{
+  "name": "@haspataal/billing",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@haspataal/db": "*",
+    "@haspataal/types": "*",
+    "@haspataal/events": "*",
+    "@haspataal/platform-contracts": "*"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.5"
+  }
+}

@@ -1,0 +1,515 @@
+# Search APIs - Complete OpenAPI 3.1 Specification
+
+## Info
+```yaml
+openapi: 3.1.0
+info:
+  title: Haspataal Unified Search & Discovery API
+  version: 1.0.0
+  description: Universal search across all healthcare entities
+```
+
+## Authentication
+```yaml
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sessionId
+```
+
+## Universal Search Endpoint
+```yaml
+  /api/search:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Universal search across all entities
+      operationId: universalSearch
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 500
+          description: Search query text
+        - name: types
+          in: query
+          schema:
+            type: string
+            description: Comma-separated entity types filter
+        - name: hospital_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: Entity status filter
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [relevance, created_at, updated_at, name]
+            default: relevance
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+```
+
+## Patient Search
+```yaml
+  /api/search/patient:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Search patients
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: age_group
+          in: query
+          schema:
+            type: string
+            enum: [pediatric, adult, senior]
+      responses:
+        '200':
+          description: Patient search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientSearchResponse'
+```
+
+## Doctor Search
+```yaml
+  /api/search/doctor:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Search doctors
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Doctor search results
+```
+
+## Hospital Search
+```yaml
+  /api/search/hospital:
+    get:
+      security:
+        - sessionAuth: []
+      summary: Search hospitals
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Hospital search results (public info)
+```
+
+## Admin Search Endpoints
+```yaml
+  /api/admin/search/reindex:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Trigger reindex (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entity_type:
+                  type: string
+                full:
+                  type: boolean
+                since:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Reindex job started
+
+  /api/admin/search/health:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get search index health
+      responses:
+        '200':
+          description: Health metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchHealth'
+```
+
+## Autocomplete Endpoint
+```yaml
+  /api/search/autocomplete:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Autocomplete suggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - name: types
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Suggestion'
+```
+
+## Saved Searches Endpoints
+```yaml
+  /api/search/bookmarks:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get saved searches
+    post:
+      security:
+        - bearerAuth: []
+      summary: Save a search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, query]
+              properties:
+                name:
+                  type: string
+                query:
+                  type: string
+                filters:
+                  type: object
+                types:
+                  type: array
+                  items:
+                    type: string
+
+  /api/search/bookmarks/{id}:
+    delete:
+      security:
+        - bearerAuth: []
+      summary: Delete saved search
+```
+
+## Recent Searches Endpoint
+```yaml
+  /api/search/recent:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get recent searches
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Recent searches
+```
+
+## Schemas
+```yaml
+  SearchResponse:
+    type: object
+    properties:
+      results:
+        type: array
+        items:
+          $ref: '#/components/schemas/SearchResult'
+      total:
+        type: integer
+      nextCursor:
+        type: string
+        nullable: true
+      tookMs:
+        type: integer
+      facets:
+        $ref: '#/components/schemas/Facets'
+
+  SearchResult:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+      entityType:
+        type: string
+      entityId:
+        type: string
+        format: uuid
+      hospitalId:
+        type: string
+        format: uuid
+        nullable: true
+      title:
+        type: string
+      content:
+        type: string
+        nullable: true
+      metadata:
+        type: object
+      rank:
+        type: number
+        format: float
+      highlight:
+        type: object
+        properties:
+          title:
+            type: array
+            items:
+              type: string
+      createdAt:
+        type: string
+        format: date-time
+      updatedAt:
+        type: string
+        format: date-time
+
+  Suggestion:
+    type: object
+    properties:
+      text:
+        type: string
+      entityType:
+        type: string
+      entityId:
+        type: string
+        format: uuid
+      count:
+        type: integer
+
+  Facets:
+    type: object
+    additionalProperties:
+      type: array
+      items:
+        type: object
+        properties:
+          value:
+            type: string
+          count:
+            type: integer
+
+  SearchHealth:
+    type: object
+    properties:
+      status:
+        type: string
+        enum: [healthy, degraded, error]
+      indexSize:
+        type: integer
+      documentCount:
+        type: integer
+      queueDepth:
+        type: integer
+      avgLatencyMs:
+        type: number
+      lastError:
+        type: string
+        nullable: true
+```
+
+## Error Responses
+```yaml
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: string
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Authentication required"
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+    RateLimited:
+      description: Too many requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              retryAfter:
+                type: integer
+```
+
+## Future Search Plugins
+
+### Plugin Interface
+```yaml
+components:
+  schemas:
+    SearchPlugin:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        handler:
+          type: string
+        weight:
+          type: number
+          default: 1.0
+        features:
+          type: array
+          items:
+            type: string
+            enum: [autocomplete, synonym, ranking, filter]
+```
+
+### Plugin Registration
+```yaml
+  /api/admin/search/plugins:
+    get:
+      summary: List search plugins
+    post:
+      summary: Register search plugin
+```

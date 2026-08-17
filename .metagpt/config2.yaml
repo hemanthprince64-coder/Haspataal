@@ -1,36 +1,36 @@
 llm:
-  api_type: "groq"
-  model: "llama-3.3-70b-versatile"
+  api_type: 'groq'
+  model: 'llama-3.3-70b-versatile'
   # Keys will be read from environment variables (GROQ_API_KEY)
 
 # Hybrid routing for specific roles
 roles:
   ProductManager:
     llm:
-      api_type: "groq"
-      model: "llama-3.3-70b-versatile"
+      api_type: 'groq'
+      model: 'llama-3.3-70b-versatile'
   Architect:
     llm:
-      api_type: "groq"
-      model: "llama-3.3-70b-versatile"
+      api_type: 'groq'
+      model: 'llama-3.3-70b-versatile'
   ProjectManager:
     llm:
-      api_type: "groq"
-      model: "llama-3.3-70b-versatile"
+      api_type: 'groq'
+      model: 'llama-3.3-70b-versatile'
   Engineer:
     llm:
-      api_type: "ollama"
-      base_url: "http://localhost:11434/api"
-      model: "deepseek-coder:6.7b"
+      api_type: 'ollama'
+      base_url: 'http://localhost:11434/api'
+      model: 'deepseek-coder:6.7b'
       num_ctx: 16384
       timeout: 1200
       stream: true
       temperature: 0.3
   QaEngineer:
     llm:
-      api_type: "ollama"
-      base_url: "http://localhost:11434/api"
-      model: "qwen2.5:7b"
+      api_type: 'ollama'
+      base_url: 'http://localhost:11434/api'
+      model: 'qwen2.5:7b'
       num_ctx: 16384
       timeout: 1200
       stream: true
@@ -42,7 +42,7 @@ use_fixed_sop: true
 
 # Project metadata
 inc:
-  PRD_path: "docs/metagpt/prd.md"
-  design_path: "docs/metagpt/design.md"
-  tasks_path: "docs/metagpt/tasks.md"
-  code_path: "docs/metagpt/code/"
+  PRD_path: 'docs/metagpt/prd.md'
+  design_path: 'docs/metagpt/design.md'
+  tasks_path: 'docs/metagpt/tasks.md'
+  code_path: 'docs/metagpt/code/'

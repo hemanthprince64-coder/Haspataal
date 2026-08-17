@@ -1,0 +1,43 @@
+- [x] Phase 0: Repository Discovery
+  - [x] Deep-dive into packages/, apps/, and services/
+  - [x] Generate ENGINE_INVENTORY.md
+- [x] Phase 1: Responsibility Audit
+  - [x] Define capabilities for Configuration, Timeline, Rules, Notification, Journey, and Search Engines
+  - [x] Generate ENGINE_RESPONSIBILITY_MATRIX.md
+- [x] Phase 2: Source-of-Truth Matrix
+  - [x] Map authoritative tables and services for all major domain entities
+  - [x] Generate SOURCE_OF_TRUTH.md
+- [x] Phase 3: Dependency Graph
+  - [x] Classify dependencies (allowed, high-risk, forbidden) across the 6 engines
+  - [x] Generate DEPENDENCY_AUDIT.md
+- [x] Phase 4: Shared Platform Contracts
+  - [x] Define canonical TenantContext, ActorContext, AccessContext
+  - [x] Define Event, Command, and Query Envelopes
+  - [x] Define Configuration Resolution and Standard Error models
+  - [x] Generate ENGINE_CONTRACTS.md
+- [x] Phase 5: Communication Decision Matrix
+  - [x] Document engine interactions (Query, Command, Event, Configuration Lookup)
+  - [x] Generate EVENT_CATALOG.md
+  - [x] Generate COMMAND_CATALOG.md
+  - [x] Generate QUERY_CATALOG.md
+- [x] Phase 6 & 7: Delivery Guarantees & Circular Event Protection
+  - [x] Define idempotency, outbox/inbox, correlation chains, recursion bounds
+  - [x] Generate INTEGRATION_ARCHITECTURE.md
+- [x] Phase 8 & 9: Security/Authorization & Portal Projection
+  - [x] Define unified permission vocabulary (timeline.read.self, etc.)
+  - [x] Map BFF aggregations (Patient Portal, HMS, Admin)
+  - [x] Generate PERMISSION_MATRIX.md
+  - [x] Generate PORTAL_PROJECTION_MAP.md
+- [x] Phase 10: Failure Mode Analysis
+  - [x] Document dependency failure behaviors
+  - [x] Generate FAILURE_MODE_MATRIX.md
+- [x] Phase 11 & 12: Observability & Test Architecture
+  - [x] Instrument structured logging, metrics, traces
+  - [x] Document Contract, Isolation, Authorization, Loop, End-to-End test suites
+  - [x] Generate OBSERVABILITY_PLAN.md
+  - [x] Generate TEST_PLAN.md
+- [x] Phase 13: Migration Plan & Final Documentation
+  - [x] Outline 9-wave incremental migration
+  - [x] Generate MIGRATION_PLAN.md
+  - [x] Create/Update openspec/changes/six-engine-integration artifacts
+  - [x] Update ADMIN.md, ARCHITECTURE.md, SECURITY.md, CHANGELOG.md

@@ -1,0 +1,1 @@
+export { TransferOfCareService } from '../../../authorization/lib/transferOfCareService';

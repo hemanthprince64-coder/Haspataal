@@ -1,0 +1,1 @@
+export { BookAppointmentUseCase } from '../../../scheduling/lib/BookAppointmentUseCase';

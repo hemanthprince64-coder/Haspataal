@@ -1,0 +1,331 @@
+openapi: 3.1.0
+info:
+  title: Haspataal Phase 1 Foundation API
+  version: 1.0.0
+  description: Core APIs for multi-tenant healthcare platform
+
+servers:
+  - url: https://api.haspataal.com/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        code:
+          type: string
+        meta:
+          type: object
+
+    DoctorRegistration:
+      type: object
+      required:
+        - mobile
+        - email
+      properties:
+        mobile:
+          type: string
+          pattern: '^[6-9][0-9]{9}$'
+          description: Indian mobile number
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        dob:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER, UNKNOWN]
+
+    DoctorProfile:
+      type: object
+      properties:
+        fullName:
+          type: string
+        gender:
+          type: string
+        dob:
+          type: string
+          format: date
+        photoUrl:
+          type: string
+          format: uri
+        languages:
+          type: array
+          items:
+            type: string
+        bio:
+          type: string
+        designation:
+          type: string
+        medicalCouncil:
+          type: object
+          properties:
+            registrationNumber:
+              type: string
+            councilName:
+              type: string
+            validity:
+              type: string
+              format: date
+
+    HospitalSetup:
+      type: object
+      required:
+        - legalName
+        - registrationNumber
+      properties:
+        legalName:
+          type: string
+        displayName:
+          type: string
+        registrationNumber:
+          type: string
+        gstNumber:
+          type: string
+        address:
+          type: object
+          properties:
+            line1:
+              type: string
+            line2:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+        contact:
+          type: object
+          properties:
+            phone:
+              type: string
+            email:
+              type: string
+        branding:
+          type: object
+          properties:
+            logoUrl:
+              type: string
+            brandColor:
+              type: string
+
+    PatientRegistration:
+      type: object
+      required:
+        - mobile
+        - name
+        - dob
+        - gender
+      properties:
+        mobile:
+          type: string
+        name:
+          type: string
+        dob:
+          type: string
+          format: date
+        gender:
+          type: string
+        bloodGroup:
+          type: string
+        address:
+          type: string
+        emergencyContact:
+          type: object
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+            relation:
+              type: string
+        abhaId:
+          type: string
+        consents:
+          type: array
+          items:
+            type: string
+            enum: [CLINICAL_CARE, AI_ASSISTANT, RECORD_SHARING, RESEARCH, NOTIFICATIONS]
+
+    PatientSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        age:
+          type: integer
+        gender:
+          type: string
+        bloodGroup:
+          type: string
+        allergies:
+          type: array
+          items:
+            type: string
+        chronicDiseases:
+          type: array
+          items:
+            type: string
+        currentMedications:
+          type: array
+          items:
+            type: string
+        recentVisits:
+          type: array
+          items:
+            type: object
+        alerts:
+          type: array
+          items:
+            type: string
+
+paths:
+  /auth/patient/otp:
+    post:
+      summary: Send OTP to patient mobile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mobile]
+              properties:
+                mobile:
+                  type: string
+      responses:
+        '200':
+          description: OTP sent successfully
+
+  /auth/patient/verify:
+    post:
+      summary: Verify patient OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mobile, code]
+              properties:
+                mobile:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: Session token returned
+
+  /doctors/register:
+    post:
+      summary: Register doctor on platform
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorRegistration'
+      responses:
+        '201':
+          description: Doctor registered with DRAFT status
+
+  /doctors/{id}/profile:
+    put:
+      summary: Update doctor profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoctorProfile'
+
+  /hospitals/setup:
+    post:
+      summary: Initialize hospital setup wizard
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HospitalSetup'
+
+  /patients:
+    post:
+      summary: Register patient with consent
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientRegistration'
+
+  /patients/search:
+    post:
+      summary: Multi-method patient lookup
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mobile:
+                  type: string
+                patientId:
+                  type: string
+                abhaId:
+                  type: string
+                mrn:
+                  type: string
+      responses:
+        '200':
+          description: Patient search results
+
+  /patients/{id}/summary:
+    get:
+      summary: Privacy-aware patient summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Patient summary for clinician view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientSummary'

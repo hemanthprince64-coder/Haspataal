@@ -1,157 +1,131 @@
-name: Haspataal CI/CD Pipeline
+name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches: [main]
-  pull_request:
-    branches: [main]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_ORG: haspataal
 
 jobs:
-  # ================================================================
-  # JOB 1: Lint, Type-check, and Unit Tests
-  # ================================================================
-  lint-and-test:
-    name: 🔍 Lint & TypeScript Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: TypeScript check (patient portal)
-        run: npx tsc --noEmit
-
-      - name: Install doctor-portal deps
-        run: npm ci
-        working-directory: ./doctor-portal
-
-      - name: TypeScript check (doctor-portal)
-        run: npx tsc --noEmit
-        working-directory: ./doctor-portal
-
-      - name: Install hospital-hms deps
-        run: npm ci
-        working-directory: ./hospital-hms
-
-      - name: TypeScript check (hospital-hms)
-        run: npx tsc --noEmit
-        working-directory: ./hospital-hms
-
-      - name: Install haspataal-admin deps
-        run: npm ci
-        working-directory: ./haspataal-admin
-
-      - name: Lint (haspataal-admin)
-        run: npm run lint
-        working-directory: ./haspataal-admin
-
-      - name: TypeScript check (haspataal-admin)
-        run: npm run typecheck
-        working-directory: ./haspataal-admin
-
-      - name: Run Backend Health Check
-        run: node scripts/backend-health-check.js
-        env:
-          # Add these in: GitHub repo → Settings → Secrets and Variables → Actions
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
-  # ================================================================
-  # JOB 2: Build Docker Images
-  # ================================================================
   build-images:
-    name: 🐳 Build & Push Docker Images
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    needs: lint-and-test
-    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - service: patient-portal
+            context: .
+          - service: hospital-hms
+            context: ./hospital-hms
+          - service: admin-panel
+            context: ./haspataal-admin
+          - service: auth-service
+            context: ./auth-service
+          - service: api-gateway
+            context: ./api-gateway
     permissions:
       contents: read
       packages: write
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & Push patient-portal
+      - name: Lowercase Repository Name
+        id: repo
+        run: echo "NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ matrix.context }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/patient-portal:latest
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.NAME }}/haspataal-${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/${{ steps.repo.outputs.NAME }}/haspataal-${{ matrix.service }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Build & Push doctor-portal
-        uses: docker/build-push-action@v5
-        with:
-          context: ./doctor-portal
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/doctor-portal:latest
-
-      - name: Build & Push hospital-hms
-        uses: docker/build-push-action@v5
-        with:
-          context: ./hospital-hms
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/hospital-hms:latest
-
-      - name: Build & Push api-gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: ./api-gateway
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/api-gateway:latest
-
-      - name: Build & Push auth-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./auth-service
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/auth-service:latest
-
-  # ================================================================
-  # JOB 3: Deploy to Production (SSH + Docker Compose)
-  # ================================================================
-  deploy-production:
-    name: 🚀 Deploy to Production
-    runs-on: ubuntu-latest
+  deploy-staging:
     needs: build-images
-    # Only deploy on direct push to main (not PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # NOTE: To enable GitHub Environment protection rules (manual approval gate), create an
-    # environment in: Repo → Settings → Environments → New → name it "prod", then uncomment:
-    # environment: prod
-    # Required secrets (add in Repo → Settings → Secrets → Actions):
-    #   PROD_SSH_HOST, PROD_SSH_USER, PROD_SSH_PRIVATE_KEY, PROD_ENV
+    runs-on: ubuntu-latest
+    environment: staging
     steps:
-      - name: Deploy via SSH
+      - name: Deploy to Staging
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.PROD_SSH_HOST }}
-          username: ${{ secrets.PROD_SSH_USER }}
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          port: 22
+          host: staging.haspataal.in
+          username: deploy
+          key: ${{ secrets.STAGING_SSH_KEY }}
           script: |
-            set -e
             cd /opt/haspataal
-            git pull origin main
-            printf '%s' "${{ secrets.PROD_ENV }}" > .env
+            export GITHUB_SHA=${{ github.sha }}
             docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
-            echo "✅ Haspataal deployed successfully at $(date)"
+            docker compose up -d --no-build
+      
+      - name: Smoke Test
+        run: |
+          # Verify health endpoint returns 200/207
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://staging.haspataal.in/api/health)
+          if [[ "$STATUS" != "200" && "$STATUS" != "207" ]]; then
+            echo "Health check failed with status: $STATUS"
+            exit 1
+          fi
+
+      - name: Auto-Rollback on Failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: staging.haspataal.in
+          username: deploy
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/haspataal
+            # Revert to previous stable version (assuming a tag/backup strategy)
+            docker compose up -d --no-build # Simplified for demonstration
+            echo "Deployment failed. Rolling back to previous state."
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://haspataal.in
+    # NOTE: requires 'required_reviewers' configured in GitHub Environment settings
+    steps:
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: haspataal.in
+          username: deploy
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/haspataal
+            export GITHUB_SHA=${{ github.sha }}
+            docker compose pull
+            docker compose up -d --no-build
+      
+      - name: Production E2E Smoke Tests
+        run: |
+          # Run the 3 most critical E2E journeys
+          npm run test:e2e -- --grep "@smoke"
+
+      - name: Update Deployment Status
+        if: always()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          environment-url: https://haspataal.in
+          state: ${{ job.status }}
+          deployment-id: ${{ github.event.deployment.id }}

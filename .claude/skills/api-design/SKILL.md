@@ -1,9 +1,13 @@
 # API Design Patterns — Haspataal
+
 # Adapted from everything-claude-code `api-design` skill (MIT license)
+
 # Applies to: api.haspataal.com (api-gateway)
 
 ## When to Use This Skill
+
 Invoke before:
+
 - Adding new routes to `api-gateway/index.js`
 - Designing a new microservice endpoint
 - Reviewing an existing API for consistency
@@ -64,6 +68,7 @@ GET    /health                           → Health check (public, no auth)
 ```
 
 Rules:
+
 - Always `/v1/` prefix — enables non-breaking versioning
 - Use **nouns**, not verbs (`/appointments`, not `/createAppointment`)
 - Use **PATCH** for partial updates, **PUT** only for full replacement
@@ -77,10 +82,10 @@ Rules:
 const { z } = require('zod');
 
 const bookAppointmentSchema = z.object({
-  doctorId:    z.string().uuid(),
-  hospitalId:  z.string().uuid(),
+  doctorId: z.string().uuid(),
+  hospitalId: z.string().uuid(),
   scheduledAt: z.string().datetime(),
-  notes:       z.string().max(500).optional(),
+  notes: z.string().max(500).optional(),
 });
 
 router.post('/v1/appointments', requireAuth, async (req, res) => {
@@ -98,15 +103,15 @@ router.post('/v1/appointments', requireAuth, async (req, res) => {
 
 Standard error codes for Haspataal API:
 
-| Code | HTTP Status | Meaning |
-|---|---|---|
-| `UNAUTHORIZED` | 401 | Missing or invalid JWT |
-| `FORBIDDEN` | 403 | Valid JWT but wrong role/hospital |
-| `NOT_FOUND` | 404 | Resource doesn't exist |
-| `VALIDATION_ERROR` | 400 | Zod validation failed |
-| `SLOT_UNAVAILABLE` | 409 | Appointment slot already booked |
-| `RATE_LIMITED` | 429 | Too many requests |
-| `INTERNAL_ERROR` | 500 | Unexpected server error |
+| Code               | HTTP Status | Meaning                           |
+| ------------------ | ----------- | --------------------------------- |
+| `UNAUTHORIZED`     | 401         | Missing or invalid JWT            |
+| `FORBIDDEN`        | 403         | Valid JWT but wrong role/hospital |
+| `NOT_FOUND`        | 404         | Resource doesn't exist            |
+| `VALIDATION_ERROR` | 400         | Zod validation failed             |
+| `SLOT_UNAVAILABLE` | 409         | Appointment slot already booked   |
+| `RATE_LIMITED`     | 429         | Too many requests                 |
+| `INTERNAL_ERROR`   | 500         | Unexpected server error           |
 
 ---
 
@@ -116,27 +121,32 @@ Standard error codes for Haspataal API:
 // Query params for list endpoints
 // GET /v1/hospitals/:id/patients?cursor=LAST_ID&limit=20
 
-router.get('/v1/hospitals/:id/patients', requireAuth, requireRole('hospital_admin'), async (req, res) => {
-  const { cursor, limit = 20 } = req.query;
-  const take = Math.min(parseInt(limit), 100); // Max 100 per page
+router.get(
+  '/v1/hospitals/:id/patients',
+  requireAuth,
+  requireRole('hospital_admin'),
+  async (req, res) => {
+    const { cursor, limit = 20 } = req.query;
+    const take = Math.min(parseInt(limit), 100); // Max 100 per page
 
-  const patients = await prisma.patient.findMany({
-    where: { hospitalId: req.params.id },
-    take: take + 1,               // Fetch one extra to check hasMore
-    skip: cursor ? 1 : 0,
-    cursor: cursor ? { id: cursor } : undefined,
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, name: true, mrNumber: true, createdAt: true }
-  });
+    const patients = await prisma.patient.findMany({
+      where: { hospitalId: req.params.id },
+      take: take + 1, // Fetch one extra to check hasMore
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, name: true, mrNumber: true, createdAt: true },
+    });
 
-  const hasMore = patients.length > take;
-  const data = hasMore ? patients.slice(0, -1) : patients;
+    const hasMore = patients.length > take;
+    const data = hasMore ? patients.slice(0, -1) : patients;
 
-  return ok(res, data, {
-    cursor: data.at(-1)?.id ?? null,
-    hasMore
-  });
-});
+    return ok(res, data, {
+      cursor: data.at(-1)?.id ?? null,
+      hasMore,
+    });
+  },
+);
 ```
 
 ---
@@ -150,16 +160,16 @@ const rateLimit = require('express-rate-limit');
 
 // General API rate limit
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 min
+  windowMs: 15 * 60 * 1000, // 15 min
   max: 300,
-  message: { success: false, error: 'Too many requests', code: 'RATE_LIMITED' }
+  message: { success: false, error: 'Too many requests', code: 'RATE_LIMITED' },
 });
 
 // Strict limit for auth endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { success: false, error: 'Too many login attempts', code: 'RATE_LIMITED' }
+  message: { success: false, error: 'Too many login attempts', code: 'RATE_LIMITED' },
 });
 
 app.use('/v1/', apiLimiter);
@@ -171,6 +181,7 @@ app.use('/v1/', apiLimiter);
 ## 7. API Design Checklist
 
 Before shipping a new route:
+
 - [ ] Route follows `/v1/resource/:id` naming pattern
 - [ ] Returns `{ success, data }` or `{ success, error, code }` format
 - [ ] Input validated with Zod before DB operations
@@ -181,4 +192,5 @@ Before shipping a new route:
 - [ ] Route documented in CLAUDE.md commands table
 
 ---
-*Adapted from everything-claude-code `api-design` skill (MIT license) — tailored for Haspataal api.haspataal.com*
+
+_Adapted from everything-claude-code `api-design` skill (MIT license) — tailored for Haspataal api.haspataal.com_

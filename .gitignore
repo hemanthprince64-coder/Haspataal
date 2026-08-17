@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.staging.example
 
 # vercel
 .vercel
@@ -40,4 +41,73 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/lib/generated/prisma
+# Dev mock DB
+apps/common/*.json
+
+graphify-out/
+.kilo/
+.agent/
+.metagpt/
+.turbo/
+
+# Test artifacts & simulation noise
+playwright-report/
+test-results/
+simulation_results.json
+temp_transcript.txt
+
+# SQLite / embedded DB files (never commit dev databases)
+*.db
+*.sqlite
+*.sqlite3
+dev.db
+*.db-journal
+
+# TLS / PKI artifacts (never commit certificates or private keys)
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# Coverage
+coverage/
+lcov.info
+tmp/  
+downloads/  
+*.log 
+
+
+# AI Agent & IDE Directories
+.agent/
+.agents/
+.amazonq/
+.augment/
+.bob/
+.claude/
+.cline/
+.clinerules/
+.codebuddy/
+.codex/
+.continue/
+.cospec/
+.crush/
+.cursor/
+.factory/
+.forge/
+.gemini/
+.iflow/
+.junie/
+.kilo/
+.kilocode/
+.kiro/
+.lingma/
+.metagpt/
+.opencode/
+.pi/
+.planning/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.windsurf/

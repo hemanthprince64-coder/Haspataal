@@ -3,6 +3,7 @@
 We use [Conventional Commits](https://www.conventionalcommits.org/) to automatically generate changelogs and maintain a readable project history.
 
 ## Format
+
 ```
 <type>(<scope>): <subject>
 
@@ -12,6 +13,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) to automatic
 ```
 
 ## Allowed Types
+
 - **feat**: A new feature
 - **fix**: A bug fix
 - **security**: A vulnerability fix or security enhancement
@@ -24,6 +26,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) to automatic
 - **chore**: Other changes that don't modify src or test files
 
 ## Allowed Scopes
+
 - `patient` - Patient portal and flows
 - `hospital` - Hospital HMS and admin flows
 - `admin` - Platform admin panel
@@ -39,6 +42,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) to automatic
 - `ci` - GitHub actions, Husky, Turborepo
 
 ## 10 Real Examples from Haspataal
+
 1. `feat(patient): add MedChat AI triage component`
 2. `fix(hospital): prevent crash when doctorId is null in removeDoctorAction`
 3. `security(db): add @ignore to HospitalsMaster.password field`

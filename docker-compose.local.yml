@@ -1,0 +1,127 @@
+version: '3.9'
+
+networks:
+  haspataal_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+
+services:
+  # ================================================================
+  # FRONTENDS — Next.js portals running locally
+  # ================================================================
+  patient-portal:
+    image: haspataal/patient-portal:latest
+    build: 
+      context: .
+      dockerfile: apps/patient-portal/Dockerfile
+    container_name: patient-portal
+    restart: unless-stopped
+    env_file: .env.local
+    environment:
+      - DATABASE_PROVIDER=postgres
+      - QUEUE_DRIVER=pg-boss
+    ports:
+      - '3000:3000'
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - haspataal_network
+
+  hospital-hms:
+    image: haspataal/hospital-hms:latest
+    build:
+      context: .
+      dockerfile: apps/hospital-hms/Dockerfile
+    container_name: hospital-hms
+    restart: unless-stopped
+    env_file: .env.local
+    environment:
+      - DATABASE_PROVIDER=postgres
+      - QUEUE_DRIVER=pg-boss
+    ports:
+      - '3001:3000'
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    networks:
+      - haspataal_network
+
+  admin-panel:
+    image: haspataal/admin-panel:latest
+    build:
+      context: .
+      dockerfile: apps/admin-panel/Dockerfile
+    container_name: admin-panel
+    restart: unless-stopped
+    env_file: .env.local
+    environment:
+      - DATABASE_PROVIDER=postgres
+      - QUEUE_DRIVER=pg-boss
+    ports:
+      - '3002:3000'
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    networks:
+      - haspataal_network
+
+  # ================================================================
+  # RESOURCE-CONSTRAINED INFRASTRUCTURE
+  # ================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: haspataal-postgres
+    restart: unless-stopped
+    env_file: .env.local
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=20", "-c", "work_mem=2MB", "-c", "maintenance_work_mem=32MB", "-c", "effective_cache_size=256MB"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - haspataal_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d haspataal']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-migrate:
+    image: node:20-alpine
+    container_name: db-migrate
+    working_dir: /app
+    volumes:
+      - .:/app
+    env_file: .env.local
+    environment:
+      - DATABASE_PROVIDER=postgres
+    command: /bin/sh -c "npm install -g prisma && node scripts/prepare-schema.js && prisma generate && prisma migrate deploy"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - haspataal_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: haspataal-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - '80:80'
+    depends_on:
+      - patient-portal
+      - hospital-hms
+      - admin-panel
+    networks:
+      - haspataal_network

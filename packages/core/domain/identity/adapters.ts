@@ -1,0 +1,1 @@
+export { getCanonicalPatientIdFromSession, IdentityCompatibilityExtension } from '../../../../identity/lib/adapters';

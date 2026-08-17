@@ -1,0 +1,15 @@
+{
+  "name": "@haspataal/referral",
+  "version": "1.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@haspataal/core": "*",
+    "@haspataal/db": "*",
+    "@haspataal/types": "*"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "4.1.5"
+  }
+}

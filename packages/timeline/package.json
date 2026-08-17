@@ -1,0 +1,27 @@
+{
+  "name": "@haspataal/timeline",
+  "version": "1.0.0",
+  "description": "Clinical Timeline Engine publisher package for Haspataal",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@haspataal/db": "*",
+    "@haspataal/platform-contracts": "*",
+    "@haspataal/events": "*",
+    "@haspataal/search": "*",
+    "bullmq": "*",
+    "ioredis": "*",
+    "uuid": "*",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "@types/uuid": "*",
+    "typescript": "*"
+  }
+}

@@ -1,0 +1,1 @@
+export { MobileNormalization } from '../../../../identity/lib/normalization';

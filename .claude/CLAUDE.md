@@ -1,6 +1,7 @@
 # 🩺 HASPATAAL — Project Configuration
 
 ## 🎯 High-Level Mission
+
 **MISSION: BUILD PRACTO-SCALE HEALTHCARE PLATFORM INFRASTRUCTURE (HASPATAAL)**
 
 We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engineering team. The objective is to design and implement a scalable healthcare platform using a single domain (`haspataal.com`) with multiple subdomains for role-based dashboards. The system must support millions of users, feature Row-Level Security, multi-tenant hospital architecture, high SEO performance, and follow production-grade HIPAA-style architecture used by companies like Practo.
@@ -8,12 +9,14 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 ---
 
 ## ⚠️ Session Protocol (MANDATORY)
+
 1. **READ FIRST:** At the start of every session, **always read this file before doing any work.** No exceptions.
 2. **UPDATE AFTER EVERY BUG FIX:** After fixing any bug, immediately add an entry to the **Knowledge Base** section with the root cause and fix.
 3. **NEVER REPEAT MISTAKES:** Before writing code, check the Knowledge Base for known pitfalls. If a past lesson applies, follow it.
 4. **Accountability:** If a bug recurs that is already documented in the Knowledge Base, treat it as a critical failure and flag it.
 
 ## 🧠 Recursive Memory & Learning (CRITICAL)
+
 - **Self-Correction:** After every bug fix, identify the root cause. If it's a project-specific pattern, update the Knowledge Base immediately.
 - **Onboarding:** When asked "What's the status?", review recent PRs and internal history to provide a concise summary.
 
@@ -21,18 +24,18 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 
 ## 🏗 Platform Architecture (Microservices)
 
-| Portal | Domain | Purpose | Tech Stack |
-|---|---|---|---|
-| **Patient Portal** | haspataal.com | Doctor booking, discovery, MedChat AI, records | Next.js, React |
-| **Doctor Dashboard** | doctor.haspataal.com | Doctor specific tools, appointments, RX | Next.js |
-| **Hospital HMS** | hospital.haspataal.com | OPD/IPD, billing, multi-tenant isolation | Next.js |
-| **Admin Control** | admin.haspataal.com | Onboarding, commissions, platform management | Next.js |
-| **Backend APIs** | api.haspataal.com | Core centralized backend microservices | Node.js (NestJS/FastAPI) |
-| **Auth Service** | auth.haspataal.com | JWT + OAuth centralized authentication | Node.js |
-| **CDN Assets** | cdn.haspataal.com | Fast delivery of static assets & media | Cloudflare |
-
+| Portal               | Domain                 | Purpose                                        | Tech Stack               |
+| -------------------- | ---------------------- | ---------------------------------------------- | ------------------------ |
+| **Patient Portal**   | haspataal.com          | Doctor booking, discovery, MedChat AI, records | Next.js, React           |
+| **Doctor Dashboard** | doctor.haspataal.com   | Doctor specific tools, appointments, RX        | Next.js                  |
+| **Hospital HMS**     | hospital.haspataal.com | OPD/IPD, billing, multi-tenant isolation       | Next.js                  |
+| **Admin Control**    | admin.haspataal.com    | Onboarding, commissions, platform management   | Next.js                  |
+| **Backend APIs**     | api.haspataal.com      | Core centralized backend microservices         | Node.js (NestJS/FastAPI) |
+| **Auth Service**     | auth.haspataal.com     | JWT + OAuth centralized authentication         | Node.js                  |
+| **CDN Assets**       | cdn.haspataal.com      | Fast delivery of static assets & media         | Cloudflare               |
 
 ### 🛠 Decomposed Services (MetaGPT Design)
+
 - **Auth Service:** JWT via `jose` + `bcryptjs`, RBAC.
 - **Doctor/Hospital Service:** Profile management, credential verification.
 - **Appointment Service:** Real-time slot management (Redis-backed).
@@ -41,6 +44,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 - **Video Consult Service:** WebRTC-based secure sessions.
 
 ### Shared Infrastructure
+
 - **Primary DB:** Supabase PostgreSQL with Row-Level Security (RLS).
 - **Cache/State:** Redis for real-time slot locking and session management.
 - **Validation:** Zod 4 for all internal/external schemas.
@@ -50,12 +54,14 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 ## 🛠 Tech Stack
 
 ### Frontend
+
 - **Framework:** Next.js 16 (App Router) + React 19
 - **Styling:** Tailwind CSS 3.4
 - **Mobile:** Expo (React Native) for `haspataal-mobile`
 - **Design Engine:** Stitch MCP (vibe-to-code)
 
 ### Backend
+
 - **Runtime:** Node.js
 - **ORM:** Prisma 5.10
 - **Database:** Supabase PostgreSQL
@@ -65,6 +71,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 - **AI:** Google Gemini 2.0 Flash (MedChat triage)
 
 ### Infrastructure
+
 - **Environment:** AntiGravity Agentic IDE
 - **Data Optimization:** TOON Serialization (`@toon-format/toon`) for AI-to-AI data
 - Row-Level Security (RLS) for hospital data isolation
@@ -75,6 +82,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 ## 📦 Modules
 
 ### Patient Side
+
 - Doctor booking & slot management
 - Hospital discovery with city-based filtering
 - **MedChat AI** — Hybrid triage (deterministic rules + Gemini 2.0)
@@ -84,6 +92,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 - Multilingual support (Hindi/English)
 
 ### Hospital Side
+
 - OPD/IPD management
 - Billing & invoicing
 - Appointment management
@@ -91,12 +100,14 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 - Analytics dashboard
 
 ### Admin
+
 - Hospital onboarding & verification
 - Commission management
 - Platform-wide analytics
 - User management
 
 ### Diagnostics
+
 - Lab registration & management
 - Diagnostic test ordering
 - Results delivery
@@ -104,6 +115,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 ---
 
 ## 🔒 Data Security
+
 - HIPAA-inspired practices
 - RLS-based hospital data isolation (see `supabase_rls_audit_day11.sql`)
 - Audit logging for all sensitive operations
@@ -113,6 +125,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 ---
 
 ## 🚀 AntiGravity / Stitch Workflow
+
 - **Vibe-to-Code:** Always use `stitch-mcp` to generate or "vibe" a UI mockup before writing frontend implementation.
 - **Verification:** Do not mark a task as "Done" until the AntiGravity integrated browser has verified the UI/UX.
 - **Implementation Plan:** For any change involving >2 files, provide a bulleted plan and wait for "Go" before editing.
@@ -124,6 +137,7 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 > These rules are adapted from the **everything-claude-code SaaS Next.js CLAUDE.md** (battle-tested with Next.js + Supabase + Stripe).
 
 ### Database (CRITICAL — Supabase/Prisma)
+
 - All queries use Supabase client **with RLS enabled** — never bypass RLS with service role key on client
 - Prisma migrations in `prisma/migrations/` — never modify the database directly via Supabase Studio
 - Use `select: { field: true }` in Prisma — never `findMany()` without field selection
@@ -132,34 +146,36 @@ We are operating in **WAR ROOM MODE** with a full MetaGPT-style autonomous engin
 - `hospital_id` must be present on all patient-scoped tables — no exceptions
 
 ### Authentication
+
 - Use `createServerClient()` from `@supabase/ssr` in Server Components
 - Use `createBrowserClient()` from `@supabase/ssr` in Client Components
 - Protected routes verify JWT via `requireAuth` middleware — never trust client-sent role claims
 - Never trust `getSession()` alone for auth — always verify with `getUser()` server-side
 
 ### API Pattern (Zod-First)
+
 ```typescript
 // Standardized API Response format for api.haspataal.com
-type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; code?: string }
+type ApiResponse<T> = { success: true; data: T } | { success: false; error: string; code?: string };
 ```
 
 ### Server Action Pattern
-```typescript
-'use server'
-import { z } from 'zod'
 
-const schema = z.object({ id: z.string().uuid() })
+```typescript
+'use server';
+import { z } from 'zod';
+
+const schema = z.object({ id: z.string().uuid() });
 
 export async function bookAppointment(formData: FormData) {
-  const parsed = schema.safeParse({ id: formData.get('appointmentId') })
-  if (!parsed.success) return { success: false, error: parsed.error.flatten() }
+  const parsed = schema.safeParse({ id: formData.get('appointmentId') });
+  if (!parsed.success) return { success: false, error: parsed.error.flatten() };
   // ... verify JWT, check hospital_id isolation, then write
 }
 ```
 
 ### Code Style
+
 - Immutable patterns only — spread operator, never mutate objects
 - Server Components: no `'use client'`, no `useState`/`useEffect`
 - Client Components: `'use client'` at top, minimal state — extract logic to hooks
@@ -167,21 +183,25 @@ export async function bookAppointment(formData: FormData) {
 - TypeScript strict mode enabled — `"strict": true` in tsconfig
 
 ### Architecture
+
 - Modular services with clear separation of concerns
 - API-first architecture — frontend consumes `api.haspataal.com` only
 - Never expose Supabase service role key to frontend bundles
 
 ### Naming Conventions
+
 - `PascalCase` for React Components
 - `camelCase` for variables and functions
 - `kebab-case` for folder and file names
 - `SCREAMING_SNAKE_CASE` for env var names
 
 ### Imports
+
 - Use absolute paths: `@/components/...`, `@/lib/...`
 - Never use relative imports for cross-module references
 
 ### Commits (Conventional Commits)
+
 ```
 feat: new feature
 fix: bug fix
@@ -195,27 +215,29 @@ security: security patch
 
 ## 🤖 Agent Personas (`.claude/agents/`)
 
-| Agent | File | When to Use |
-|---|---|---|
+| Agent                 | File                   | When to Use                                               |
+| --------------------- | ---------------------- | --------------------------------------------------------- |
 | **Database Reviewer** | `database-reviewer.md` | Before any Prisma migration, schema change, or slow query |
-| **Security Reviewer** | `security-reviewer.md` | Before any PR touching auth, middleware, or APIs |
+| **Security Reviewer** | `security-reviewer.md` | Before any PR touching auth, middleware, or APIs          |
 
 Run AgentShield security scan anytime: `npx ecc-agentshield scan`
 
 ---
 
 ## 🛠 Commands
-| Command | Purpose |
-|---|---|
-| `npm install` | Install dependencies |
-| `npm run dev` | Start dev server (port 3000) |
-| `npm run build` | Production build |
-| `npx eslint . --fix` | Lint & auto-fix |
+
+| Command                                 | Purpose                        |
+| --------------------------------------- | ------------------------------ |
+| `npm install`                           | Install dependencies           |
+| `npm run dev`                           | Start dev server (port 3000)   |
+| `npm run build`                         | Production build               |
+| `npx eslint . --fix`                    | Lint & auto-fix                |
 | `./scripts/run-metagpt.ps1 -Idea '...'` | Run optimized MetaGPT pipeline |
 
 ---
 
 ## 🤖 MetaGPT CORE TEAM (AGENT PERSONAS)
+
 We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 
 - **CEO Agent**: Defines product vision, roadmap, and feature priorities.
@@ -228,6 +250,7 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **Database Engineer Agent**: Designs PostgreSQL schema supporting multi-hospital tenancy using `hospital_id`.
 
 **Execution Phases:**
+
 - **Phase 1** → Infrastructure setup
 - **Phase 2** → Core backend APIs
 - **Phase 3** → Frontend dashboards
@@ -235,10 +258,10 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **Phase 5** → SEO growth engine (dynamic routing)
 - **Phase 6** → Production deployment
 
-
 ---
 
 ## 🧠 AI & Agentic Scaling
+
 - **MedChat 2.0:** Devolving the triage agent into specialized diagnostic sub-agents (e.g., PediatricAgent, CardioAgent).
 - **Auto-Fixing Agents:** Integrating MetaGPT directly into the CI/CD pipeline to automatically repair bugs identified in audits.
 - **Predictive Analytics:** Using patient history for preventative health suggestions.
@@ -249,8 +272,8 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 
 > **MANDATORY:** Update this section after every bug fix. Check before writing code.
 
-- **Prisma select/include conflict:** Never mix `select` and `include` on the same relation field — use one or the other. *(Fixed in conversation 842dbe37)*
-- **Logout flow:** Patient logout requires a dedicated server action that clears the JWT cookie; client-side only clearing is insufficient. *(Fixed in conversation 4c8aae98)*
+- **Prisma select/include conflict:** Never mix `select` and `include` on the same relation field — use one or the other. _(Fixed in conversation 842dbe37)_
+- **Logout flow:** Patient logout requires a dedicated server action that clears the JWT cookie; client-side only clearing is insufficient. _(Fixed in conversation 4c8aae98)_
 - **Supabase RLS:** Row-Level Security policies must be audited when adding new tables or modifying access patterns — see `supabase_rls_audit_day11.sql` for reference.
 - **Backend Strengthening (Redis):** Implemented distributed locking in `lib/redis-lock.ts` to prevent race conditions during appointment bookings. Always use `acquireSlotLock` before transactional booking logic.
 - **AI Triage Isolation:** Offloaded AI clinical reasoning to a dedicated FastAPI microservice in `services/medchat-ai-service/` for better performance and Python ecosystem integration.
@@ -258,8 +281,8 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **Scaling Roadmaps:** See `SCALING_STRATEGY.md` for long-term growth plans across Vertical, Horizontal, and AI axes.
 - **MedChat triage is async:** `triagePatient()` is now `async` due to Gemini integration — always `await` it.
 - **Gemini fallback:** If `GEMINI_API_KEY` is not set, MedChat gracefully falls back to deterministic rules.
-- **MetaGPT `_think()` guard:** When using `use_fixed_sop=True`, role `_think()` methods must use `state > len(actions) - 1` (not `>=`) to prevent infinite loops. *(Fixed in conversation 4459901a)*
-- **MetaGPT Ollama system prompts dropped:** `OllamaMessageChat.apply()` only processed `messages[0]`, dropping the system prompt. Fixed to iterate all messages preserving roles. *(Fixed in conversation 4459901a)*
+- **MetaGPT `_think()` guard:** When using `use_fixed_sop=True`, role `_think()` methods must use `state > len(actions) - 1` (not `>=`) to prevent infinite loops. _(Fixed in conversation 4459901a)_
+- **MetaGPT Ollama system prompts dropped:** `OllamaMessageChat.apply()` only processed `messages[0]`, dropping the system prompt. Fixed to iterate all messages preserving roles. _(Fixed in conversation 4459901a)_
 - **MetaGPT n_round:** 5 rounds is insufficient for a full team (PM+Arch+PM+Eng+QA). Use `n_round=15` minimum for complete pipeline execution.
 - **MetaGPT Groq model:** Use `llama-3.3-70b-versatile` instead of `llama-3.1-8b-instant` — the 8B model hits rate limits quickly and produces poor architectural output.
 - **MetaGPT Ollama timeout:** Local 7B models need 1200s timeout and streaming enabled (`stream: True`) for long code generation prompts.
@@ -274,13 +297,13 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **WAR ROOM Audit — Admin Panel path:** `haspataal-admin` uses the non-src Next.js 13+ layout (`app/` not `src/app/`). Always check the pattern per project before assuming `src/` structure.
 - **WAR ROOM Audit — NEXTAUTH_SECRET:** The `.env` file had `NEXTAUTH_SECRET` commented out. Must be active for JWT signing in auth-service. Run `node scripts/platform-health-check.js` to verify env vars before deployment.
 - **WAR ROOM Audit — create-next-app conflict:** `create-next-app` refuses to scaffold into a pre-existing directory even if it only has a few files (e.g., `.env.local`, `src/`). Workaround: Copy scaffold files (package.json, tsconfig, next.config.mjs) manually from a working portal.
-- **WAR ROOM Health Check — layout.tsx:** The platform health check specifically looks for `layout.tsx` in portal root directories (e.g., `./app/layout.tsx`). If the file is named `.js`, the check fails. Always migrate root layouts to `.tsx` for strict compliance. *(Fixed in conversation d643a053)*
+- **WAR ROOM Health Check — layout.tsx:** The platform health check specifically looks for `layout.tsx` in portal root directories (e.g., `./app/layout.tsx`). If the file is named `.js`, the check fails. Always migrate root layouts to `.tsx` for strict compliance. _(Fixed in conversation d643a053)_
 - **Infrastructure Staging:** When adding complex infrastructure (e.g., `lib/infrastructure/`), ensure all new files are staged and verified via `platform-health-check.js` to avoid broken production builds.
-- **HospitalsMaster Core Renaming (WAR ROOM):** Renamed the base `Hospital` model to `HospitalsMaster` in `prisma/schema.prisma` and all downstream services/scripts to satisfy architectural health check audits. Maintained a `Hospital` type alias in `types/index.ts` for backward compatibility with UI components. *(Fixed in conversation d643a053)*
+- **HospitalsMaster Core Renaming (WAR ROOM):** Renamed the base `Hospital` model to `HospitalsMaster` in `prisma/schema.prisma` and all downstream services/scripts to satisfy architectural health check audits. Maintained a `Hospital` type alias in `types/index.ts` for backward compatibility with UI components. _(Fixed in conversation d643a053)_
 - **WAR ROOM Health Check — HospitalsMaster:** The platform health check explicitly looks for `HospitalsMaster` in `prisma/schema.prisma`. If the model is named `Hospital`, the check issues a warning. Always use the master naming convention for core entities.
-- **Phase 5 SEO Engine (WAR ROOM):** Implemented dynamic, data-driven Hub routing for `/city/[specialty]` pages. Integrated Prisma-backed discovery logic in `lib/services.ts` and automated sitemap generation in `app/sitemap.ts`. *(Implemented in conversation d643a053)*
-- **Prisma RLS Session Hardening (SECURITY):** Implemented `prisma.withAuth` helper in `lib/prisma.ts`. This pattern uses a transaction to set `request.jwt.claims` for the current thread, ensuring that even Node.js superuser database connections respect tenant-level RLS policies. Always use `withAuth` for hospital-scoped clinical data queries. *(Implemented in conversation d643a053)*
-- **Next.js Duplicate Page Migration:** Route resolution fails if both `.js` and `.tsx` versions of a page exist. Always delete redundant `.js` files after migrating to TypeScript to avoid `Duplicate page detected` warnings. *(Fixed in conversation d643a053)*
+- **Phase 5 Clinical Timeline Engine (2026-06-30):** Added 8 models (TimelineEvent, TimelineAttachment, TimelineTag, TimelineBookmark, TimelineVersion, TimelineAudit, TimelineExport, TimelineSubscription, TimelineSnapshot), 15+ event transformers, PostgreSQL tsvector FTS index migration, BullMQ ingestion workers with integrity hashing for medical record immutability.
+- **Prisma RLS Session Hardening (SECURITY):** Implemented `prisma.withAuth` helper in `lib/prisma.ts`. This pattern uses a transaction to set `request.jwt.claims` for the current thread, ensuring that even Node.js superuser database connections respect tenant-level RLS policies. Always use `withAuth` for hospital-scoped clinical data queries. _(Implemented in conversation d643a053)_
+- **Next.js Duplicate Page Migration:** Route resolution fails if both `.js` and `.tsx` versions of a page exist. Always delete redundant `.js` files after migrating to TypeScript to avoid `Duplicate page detected` warnings. _(Fixed in conversation d643a053)_
 - **WAR ROOM Session Status (2026-04-04):** Successfully completed **Phase 4 (Security)** and **Phase 5 (SEO Engine)**. Resolved duplicate Next.js page warnings. All 64/64 health checks remain **PASS**. Environment is ready for Stage 6 / Production deployment.
 - **Continuous Care AI Engine (2026-04-05):** Architected and deployed a 14-day recovery lifecycle engine. Replaced static summaries with a dynamic "Recovery Roadmap" that predicts day-wise symptoms and improvement markers. Integrated multimodal vision (Gemini 1.5 Flash) for Rx OCR and added an interactive "Medication Checklist" and "Symptom Check-in" system to the patient home page to drive adherence and re-consultation conversion.
 - **Service Layer Design (Care Lifecycle):** Created `CareLifecycleService` and `ContinuousCareHub` component. Used the database as a "Virtual Job Queue" for scheduling 14-day recovery nudges without external Redis dependencies.
@@ -289,23 +312,28 @@ We use a **hybrid routing** strategy and collaborate in **WAR ROOM MODE**:
 - **Routing & Render Purity Constraints:** Standardized 6+ internal portals to properly utilize the Next.js `<Link>` component instead of raw `<a>` tags. Also secured render cycle purity by ensuring unpredictable APIs like `Math.random()` or `Date.now()` are strictly constrained to `useEffect` hooks and not run on SSR/initial hydration cycles.
 
 ### Key Process Improvements & Hacks
-*   **Dev Database Tunnel:** Migrations run on default pooler `6543`, but Next.js local dev MUST use the standard direct connection `5432` to bypass Next.js 16/Turbopack connection exhaustion causing "`Can't reach database server`" errors.
-*   **React 19 Render Purity:** Solved systemic hydration mismatches by eliminating side-effects (`Math.random()`, `Date.now()`) from component render phases. Refactored ID generation into deterministic UUID structures passed down from server.
-*   **SSR Hydration Robustness:** Hardcoded `suppressHydrationWarning` on login inputs to gracefully handle Chrome extension injections (`fdprocessedid`, password manager wrappers).
-*   **Routing Standardization:** Enforced strictly Next.js `<Link>` elements over primitive `<a>` tags globally to maintain router state context and eliminate silent reload bugs.
-*   **React Hook Dependency Flow:** Patched stale closures in complex stateful components (like `BookingForm`) applying `useRef` as a dependency bailout instead of triggering infinite re-fetch loops.
-*   **Haspataal Admin Stability:** Fixed Turbopack inference bugs where the root `proxy.js` middleware incorrectly injected dependencies into the Admin dashboard build context, resolved via tailored `lib/session` aliasing. Swapped `next/font/google` builds to pure system font stacks to eliminate CI network lockouts. 
-*   **UI Asset Modernization:** Systematically stripped raw `<img>` tags in favor of Edge-optimized `<Image />` components across portals.
-- **Shadcn UI Integration (2026-04-12):** Successfully integrated Shadcn UI locally in the root project. Components use a custom "Medical" theme merged into the Shadcn Slate base. Path aliases are configured as `@/components/ui` and `@/lib/utils`.
-- **Architectural Hardening — Auth (2026-04-12):** Centralized `auth-service` now connects to Prisma for real database validation against Patient, Doctor, and HospitalAdmin models. Implemented `bcryptjs` for secure password hashing.
-- **API Resilience & Rate Limiting (2026-04-12):** Implemented Redis-backed rate limiting in `api-gateway` using `express-rate-limit` and `rate-limit-redis`. Defined a two-tier strategy: a general `apiLimiter` (100 req/15 min) and a `strictLimiter` (5 req/min) for sensitive discovery endpoints.
-- **Cache Aside Pattern (2026-04-12):** Deployed a Redis caching layer in `api-gateway` using the "Cache Aside" pattern. Significantly reduces DB load for frequent READ operations like doctor discovery and hospital metadata lookups.
-- **Infrastructure Health Checks (2026-04-12):** Updated `nginx.conf` upstreams with `max_fails` and `fail_timeout` parameters. Added `healthcheck` protocols to `docker-compose.yml` for automated service monitoring and failover.
-- **Fail-Fast Environment Validation (2026-04-12):** Created a Zod-based environment schema (`lib/env-schema.ts`) to validate all critical credentials (DATABASE_URL, JWT secrets, Redis URL) at startup, preventing partial or insecure deployments.
+
+- **Phase 5 Clinical Rules Engine (2026-07-01):** Designed Rule, RuleExecution, RuleSchedule models with JSON-based conditions/actions, multi-tenant RLS, event/scheduled triggers. All workflows now powered by configurable rules instead of hardcoded logic.
+
+- **Dev Database Tunnel:** Migrations run on default pooler `6543`, but Next.js local dev MUST use the standard direct connection `5432` to bypass Next.js 16/Turbopack connection exhaustion causing "`Can't reach database server`" errors.
+- **React 19 Render Purity:** Solved systemic hydration mismatches by eliminating side-effects (`Math.random()`, `Date.now()`) from component render phases. Refactored ID generation into deterministic UUID structures passed down from server.
+- **SSR Hydration Robustness:** Hardcoded `suppressHydrationWarning` on login inputs to gracefully handle Chrome extension injections (`fdprocessedid`, password manager wrappers).
+- **Routing Standardization:** Enforced strictly Next.js `<Link>` elements over primitive `<a>` tags globally to maintain router state context and eliminate silent reload bugs.
+- **React Hook Dependency Flow:** Patched stale closures in complex stateful components (like `BookingForm`) applying `useRef` as a dependency bailout instead of triggering infinite re-fetch loops.
+- **Haspataal Admin Stability:** Fixed Turbopack inference bugs where the root `proxy.js` middleware incorrectly injected dependencies into the Admin dashboard build context, resolved via tailored `lib/session` aliasing. Swapped `next/font/google` builds to pure system font stacks to eliminate CI network lockouts.
+- **UI Asset Modernization:** Systematically stripped raw `<img>` tags in favor of Edge-optimized `<Image />` components across portals.
+
+* **Shadcn UI Integration (2026-04-12):** Successfully integrated Shadcn UI locally in the root project. Components use a custom "Medical" theme merged into the Shadcn Slate base. Path aliases are configured as `@/components/ui` and `@/lib/utils`.
+* **Architectural Hardening — Auth (2026-04-12):** Centralized `auth-service` now connects to Prisma for real database validation against Patient, Doctor, and HospitalAdmin models. Implemented `bcryptjs` for secure password hashing.
+* **API Resilience & Rate Limiting (2026-04-12):** Implemented Redis-backed rate limiting in `api-gateway` using `express-rate-limit` and `rate-limit-redis`. Defined a two-tier strategy: a general `apiLimiter` (100 req/15 min) and a `strictLimiter` (5 req/min) for sensitive discovery endpoints.
+* **Cache Aside Pattern (2026-04-12):** Deployed a Redis caching layer in `api-gateway` using the "Cache Aside" pattern. Significantly reduces DB load for frequent READ operations like doctor discovery and hospital metadata lookups.
+* **Infrastructure Health Checks (2026-04-12):** Updated `nginx.conf` upstreams with `max_fails` and `fail_timeout` parameters. Added `healthcheck` protocols to `docker-compose.yml` for automated service monitoring and failover.
+* **Fail-Fast Environment Validation (2026-04-12):** Created a Zod-based environment schema (`lib/env-schema.ts`) to validate all critical credentials (DATABASE_URL, JWT secrets, Redis URL) at startup, preventing partial or insecure deployments.
 
 ---
 
 ## 🤖 Agent Personality
+
 - Be concise.
 - Use "we" (e.g., "We should update the hook...").
 - If a request is ambiguous, ask for clarification before guessing.

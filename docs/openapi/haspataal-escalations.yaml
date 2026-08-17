@@ -1,0 +1,182 @@
+openapi: "3.1.0"
+info:
+  title: Haspataal API
+  version: "1.0.0"
+  description: Haspataal multi-tenant hospital SaaS — API specification
+
+servers:
+  - url: http://localhost:4002
+    description: Local API Gateway
+  - url: https://api.haspataal.com
+    description: Production
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ESCALATION ALERTS — add-retention-followup-escalation
+# ─────────────────────────────────────────────────────────────────────────────
+
+paths:
+
+  /v1/escalations:
+    get:
+      summary: List unacknowledged escalation alerts
+      description: >
+        Returns a paginated list of unacknowledged EscalationAlerts for the
+        authenticated doctor. Alerts are those where a patient has missed N
+        consecutive chronic-care follow-ups and the treating doctor has not yet
+        reviewed them.
+      tags: [Escalation]
+      security:
+        - session_user: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Page size (max 100)
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+          description: Number of records to skip
+      responses:
+        "200":
+          description: Paginated escalation list
+          headers:
+            X-Request-ID:
+              schema: { type: string, format: uuid }
+              description: Correlation ID for tracing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestId:
+                    type: string
+                    format: uuid
+                  escalations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EscalationAlert'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden — DOCTOR role required
+        "500":
+          description: Internal server error
+      x-rate-limit:
+        label: DOCTOR
+        limit: 120
+        window: 60
+
+  /v1/escalations/{id}:
+    patch:
+      summary: Acknowledge an escalation alert
+      description: >
+        Marks a single escalation alert as acknowledged (doctor reviewed).
+        Idempotent — calling it on an already-acknowledged alert returns 404.
+        Scoped to the authenticated doctor; other doctors cannot acknowledge
+        alerts they did not receive.
+      tags: [Escalation]
+      security:
+        - session_user: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: EscalationAlert UUID
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                escalationId:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: acknowledged — no body
+          headers:
+            X-Request-ID:
+              schema: { type: string, format: uuid }
+        "401":
+          description: Unauthenticated
+        "403":
+          description: Forbidden — DOCTOR role required
+        "404":
+          description: Alert not found or already acknowledged / not owned by this doctor
+        "422":
+          description: Invalid escalation ID
+        "500":
+          description: Internal server error
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SHARED SCHEMAS
+# ─────────────────────────────────────────────────────────────────────────────
+
+components:
+  securitySchemes:
+    session_user:
+      type: apiKey
+      in: cookie
+      name: session_user
+
+  schemas:
+
+    EscalationAlert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hospitalId:
+          type: string
+          format: uuid
+        hospitalName:
+          type: string
+        patientId:
+          type: string
+          format: uuid
+        patientName:
+          type: string
+        patientPhone:
+          type: string
+        doctorId:
+          type: string
+          format: uuid
+        missedCount:
+          type: integer
+          description: Consecutive missed follow-ups at trigger time
+        chronicTag:
+          type: string
+          enum: [DIABETES, CANCER, CARDIAC]
+          description: Chronic disease tag if known
+        notificationSent:
+          type: boolean
+        sentVia:
+          type: string
+          enum: [WHATSAPP, SMS, PENDING]
+        createdAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean

@@ -1,4 +1,4 @@
-export default {
+const config = {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'scope-enum': [
@@ -15,28 +15,13 @@ export default {
         'gateway',
         'db',
         'infra',
-        'mobile',
         'deps',
         'ci',
-      ],
-    ],
-    'type-enum': [
-      2,
-      'always',
-      [
-        'feat',
-        'fix',
-        'docs',
-        'style',
-        'refactor',
-        'perf',
-        'test',
-        'build',
-        'ci',
-        'chore',
-        'revert',
         'security',
+        'billing',
       ],
     ],
   },
 };
+
+export default config;

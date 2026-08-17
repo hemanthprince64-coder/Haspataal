@@ -1,0 +1,290 @@
+openapi: 3.0.3
+info:
+  title: Haspataal Rules Engine API
+  description: API for managing and executing clinical and business rules.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /rules:
+    get:
+      summary: List rules
+      description: Retrieve a paginated list of rules, optionally filtered by category.
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [CLINICAL, BUSINESS, NOTIFICATION, RETENTION, BILLING, SECURITY, VALIDATION]
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: A paginated list of rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleListResponse'
+    post:
+      summary: Create a rule
+      description: Create a new rule with conditions and actions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleCreateInput'
+      responses:
+        '201':
+          description: Rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+  /rules/{id}:
+    get:
+      summary: Get a rule
+      description: Retrieve details of a specific rule by ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Rule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+        '404':
+          description: Rule not found
+    put:
+      summary: Update a rule
+      description: Update an existing rule's definition.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleUpdateInput'
+      responses:
+        '200':
+          description: Rule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+    delete:
+      summary: Soft-delete a rule
+      description: Marks a rule as inactive or deleted.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Rule deleted successfully
+  /rules/{id}/execute:
+    post:
+      summary: Execute a rule manually
+      description: Triggers a manual execution of a rule for testing or manual intervention.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleExecutionContext'
+      responses:
+        '200':
+          description: Execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleExecutionResult'
+components:
+  schemas:
+    Rule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hospitalId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        triggerType:
+          type: string
+        triggerEvent:
+          type: string
+        conditionJson:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        actionJson:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        isActive:
+          type: boolean
+        priority:
+          type: integer
+    Condition:
+      type: object
+      properties:
+        field:
+          type: string
+        operator:
+          type: string
+        value:
+          type: array
+          items: {}
+    Action:
+      type: object
+      properties:
+        type:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+    RuleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+    RuleCreateInput:
+      type: object
+      required:
+        - name
+        - category
+        - triggerType
+        - conditionJson
+        - actionJson
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        triggerType:
+          type: string
+        triggerEvent:
+          type: string
+        conditionJson:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        actionJson:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        isActive:
+          type: boolean
+        priority:
+          type: integer
+    RuleUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        triggerType:
+          type: string
+        triggerEvent:
+          type: string
+        conditionJson:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
+        actionJson:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        isActive:
+          type: boolean
+        priority:
+          type: integer
+    RuleExecutionContext:
+      type: object
+      required:
+        - timestamp
+      properties:
+        patientId:
+          type: string
+          format: uuid
+        hospitalId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        event:
+          type: object
+          additionalProperties: true
+    RuleExecutionResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        executedActions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        skipped:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string

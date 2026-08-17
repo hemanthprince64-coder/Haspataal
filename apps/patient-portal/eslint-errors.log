@@ -1,0 +1,124 @@
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\app\(patient)\search\page.tsx
+   34:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+   36:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  130:3  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\app\api\hospital\billing\procedure\route.ts
+  64:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\app\api\hospital\billing\radiology\route.ts
+  60:95  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\bones\registry.ts
+   4:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   6:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\components\anc\FollowUpWizard.tsx
+  42:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\eslint.config.mjs
+  16:1  warning  Assign array to a variable before exporting as module default  import/no-anonymous-default-export
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\hooks\useDoctorDiscovery.ts
+   4:63  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\repositories\PrismaAppointmentRepository.ts
+  24:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\repositories\PrismaHospitalRepository.ts
+  21:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  90:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\repositories\PrismaPatientRepository.ts
+  63:17  warning  '_' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  63:27  warning  '__' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  66:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\repositories\interfaces\IAppointmentRepository.ts
+   5:15  warning  'BookingStatus' is defined but never used  @typescript-eslint/no-unused-vars
+  68:45  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\schedule-actions.ts
+   15:8   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+   23:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:8   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+   59:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:8   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  140:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:8   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  162:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:8   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  199:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\services.ts
+     2:3   warning  'hospitalRegistrationsCounter' is defined but never used  @typescript-eslint/no-unused-vars
+    16:3   warning  'Appointment' is defined but never used                   @typescript-eslint/no-unused-vars
+    35:11  warning  'password' is assigned a value but never used             @typescript-eslint/no-unused-vars
+    38:10  warning  'stripSensitiveArray' is defined but never used           @typescript-eslint/no-unused-vars
+   340:32  warning  'hospitalId' is defined but never used                    @typescript-eslint/no-unused-vars
+   470:13  warning  'validated' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  2293:15  warning  'patient' is assigned a value but never used              @typescript-eslint/no-unused-vars
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\services\abdm-mock.ts
+  15:39  warning  'adharNumber' is defined but never used  @typescript-eslint/no-unused-vars
+  63:3   error    Missing return type on function          @typescript-eslint/explicit-function-return-type
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\services\ai-risk.ts
+  103:16  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  104:9   error    Unexpected console statement     no-console
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\services\anc.ts
+   13:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+   26:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+   26:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+   77:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+   86:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  102:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  115:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  123:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  123:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  169:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  182:3   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\services\otp.ts
+  30:1   error  Missing return type on function           @typescript-eslint/explicit-function-return-type
+  49:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:78  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  92:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\lib\services\pmjay.ts
+  43:7   error    Unexpected console statement                   no-console
+  47:31  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  48:35  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  49:11  warning  'hospital' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  49:32  error    Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+  73:5   error    Unexpected console statement                   no-console
+  76:5   error    Unexpected console statement                   no-console
+
+C:\Users\heman\.gemini\antigravity\scratch\haspataal\apps\patient-portal\services\event-emitter.ts
+   4:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:11  error  Unexpected console statement              no-console
+  42:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 82 problems (65 errors, 17 warnings)
+  0 errors and 3 warnings potentially fixable with the `--fix` option.
+

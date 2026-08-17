@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.next/
+coverage/
+apps/*/lib/generated/
+apps/*/prisma/
+packages/*/dist/
+reports/

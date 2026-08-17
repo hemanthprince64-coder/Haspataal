@@ -1,0 +1,1 @@
+export { IAppointmentRepository } from '../../../scheduling/lib/IAppointmentRepository';

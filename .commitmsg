@@ -1,0 +1,15 @@
+feat(infra): implement phase 4 event consumers and phase 3 discharge state
+
+- Implemented ConsumerRegistry to dynamically route outbox events
+  to registered consumers.
+- Refactored outbox-relay.worker.ts to decouple it from hardcoded
+  projections.
+- Added TimelineConsumer, JourneyConsumer, SearchConsumer,
+  BedConsumer, AnalyticsConsumer, and NotificationConsumer.
+- Introduced projection versioning and projection checkpoints for
+  deterministic replay capability.
+- Added phase 3 discharge state machine schemas to support physical
+  departure tracking.
+- Created generic hospital stay journey template auto-derivation.
+- Included comprehensive test and migration scripts.
+- Updated documentation in MEMORY.md and walkthrough.md.

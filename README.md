@@ -1,63 +1,71 @@
-# Haspataal - Hospital Management Platform
+# Haspataal
+> The Unified Healthcare Operating System for India.
 
-Haspataal is a comprehensive B2B2C platform connecting hospitals, doctors, and patients. It streamlines OPD management, appointment booking, and health record maintenance.
+![CI Status](https://github.com/haspataal/haspataal/actions/workflows/ci.yml/badge.svg)
 
-## Project Structure
+Haspataal is a comprehensive B2B2C healthcare monorepo that connects patients, doctors, and hospitals through a secure, high-performance platform. Built with Turborepo, Next.js, and Clean Architecture.
 
--   `haspataal-in`: The main Next.js web application (Patient Portal, Hospital Admin, Super Admin).
--   `haspataal-mobile`: The React Native (Expo) mobile application for patients.
--   `workers`: Background job processors (e.g., notifications).
+```mermaid
+graph TD
+    subgraph Client_Portals
+        PP[Patient Portal]
+        HP[Hospital HMS]
+        AP[Admin Panel]
+    end
 
-## 🚀 Getting Started
+    subgraph API_Layer
+        NG[Nginx Proxy]
+        GW[API Gateway]
+    end
+    
+    subgraph Core_Services
+        AS[Auth Service]
+        MC[MedChat AI Service]
+        DS[Dashboard Service]
+    end
 
-### Prerequisites
--   Node.js 18+
--   PostgreSQL
--   Redis (for background jobs)
+    subgraph Data_Persistence
+        DB[(PostgreSQL)]
+        RD[(Redis)]
+    end
 
-### 1. Web Application (`haspataal-in`)
+PP & HP & AP --> NG
+    NG --> GW
+    GW --> AS & MC & DS
+    AS & MC & DS --> DB
+    DS --> RD
+```
 
-1.  Navigate to the directory:
+## 🚀 Quick Start
+
+Get your local development environment running in 2 minutes:
+
+1. **Clone & Enter**:
     ```bash
-    cd haspataal-in
+    git clone https://github.com/haspataal/haspataal.git && cd haspataal
     ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Set up environment variables in `.env` (see `.env.example`).
-4.  Run database migrations:
-    ```bash
-    npx prisma migrate dev
-    ```
-5.  Start the development server:
-    ```bash
-    npm run dev
-    ```
-    The app will be available at `http://localhost:3001`.
 
-### 2. Mobile App (`haspataal-mobile`)
-
-1.  Navigate to the directory:
+2. **Environment Setup**:
     ```bash
-    cd haspataal-mobile
+    cp .env.example .env.local
     ```
-2.  Install dependencies:
+
+3. **Launch Stack**:
     ```bash
-    npm install
+    docker compose up -d && npm install && npm run dev
     ```
-3.  Start the Expo development server:
-    ```bash
-    npx expo start
-    ```
-4.  Scan the QR code with the Expo Go app on your phone.
 
-## 🛠️ Key Features
+## 📂 Project Structure
 
--   **Hospital Management**: Manage doctors, staff, and appointments.
--   **Patient Portal**: Book appointments, view health records.
--   **ABDM Integration**: ABHA linking and consent management (Sandbox).
--   **Analytics**: Admin and Hospital dashboards powerd by Recharts and PostHog.
+- **`apps/`**: Next.js applications (Patient Portal, Hospital Admin, Marketing).
+- **`packages/`**: Shared logic (DB, Auth, Types, Config).
+- **`services/`**: Backend microservices (Auth, Gateway, MedChat).
 
-## 📚 Documentation
--   [ABDM Integration Guide](./haspataal-in/ABDM_GUIDE.md)
+## 📚 Resources
+
+- **[CONTRIBUTING.md](./docs/engineering/CONTRIBUTING.md)**: Onboarding, commit conventions, and development guidelines.
+- **[ARCHITECTURE.md](./docs/architecture/architecture.md)**: Detailed architectural decisions and ADRs.
+- **[SECURITY.md](./docs/compliance/SECURITY.md)**: PHI handling and security protocols.
+
+---
+Built with ❤️ for the Indian Healthcare Ecosystem.

@@ -1,0 +1,18 @@
+{
+  "name": "Haspataal — Healthcare Assistance Platform",
+  "short_name": "Haspataal",
+  "description": "India's smart hospital assistance platform connecting patients with local hospitals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

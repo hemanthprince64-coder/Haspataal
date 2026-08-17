@@ -1,0 +1,14 @@
+chore: execute phase 3 post-mvp deferrals and cleanup
+
+- Extracted the `shannon/` sub-monorepo out of the repository 
+  and documented the migration in `docs/engineering/shannon-migration.md`.
+- Ignored all AI agent directories (`.claude/`, `.cursor/`, etc.) 
+  in `.gitignore` to prevent version control pollution.
+- Moved all root SQL migration scripts to `infra/sql/` and 
+  updated all internal script and markdown references to match.
+- Moved root helper scripts and proofs (e.g. `test_ipd.ts`, 
+  `proxy.js`) to `scratch/scripts/`.
+- Deleted temporary artifacts (`temp.prisma`, `diff_prisma.txt`, 
+  `temp_transcript.txt`) and `haspataal-source.zip`.
+- Created `infra/README.md` to document the purpose of the folder 
+  for post-MVP migrations.

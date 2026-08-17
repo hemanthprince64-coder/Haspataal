@@ -1,0 +1,21 @@
+{
+  "name": "@haspataal/workflows",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@haspataal/db": "*",
+    "@haspataal/events": "*",
+    "@haspataal/types": "*",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/uuid": "^9.0.8",
+    "@haspataal/config": "*"
+  }
+}

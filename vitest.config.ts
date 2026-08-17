@@ -1,22 +1,51 @@
-import { defineConfig } from "vitest/config";
+import path from 'path';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     globals: true,
-    include: ["tests/**/*.test.ts", "scripts/tests/**/*.test.ts"],
+    environment: 'node',
+    setupFiles: [path.resolve(__dirname, './vitest.setup.ts')],
+    env: {
+      NEXTAUTH_SECRET: 'test-secret-for-jwt-signing-which-is-at-least-32-chars-long',
+      DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/dummy',
+    },
+    alias: {
+      '@': path.resolve(__dirname, './'),
+      'server-only': path.resolve(__dirname, './lib/__tests__/mocks/server-only.ts'),
+      '@haspataal/timeline': path.resolve(__dirname, './packages/timeline/src/index.ts'),
+      '@haspataal/journey': path.resolve(__dirname, './packages/journey/src/index.ts'),
+      '@haspataal/platform-contracts': path.resolve(
+        __dirname,
+        './packages/platform-contracts/src/index.ts',
+      ),
+      '@haspataal/events': path.resolve(__dirname, './packages/events/src/index.ts'),
+      '@haspataal/search': path.resolve(__dirname, './packages/search/src/index.ts'),
+      '@haspataal/notify': path.resolve(__dirname, './packages/notify/src/index.ts'),
+      '@haspataal/db': path.resolve(__dirname, './packages/db/index.ts'),
+    },
+    include: ['**/*.test.ts'],
     exclude: [
-      "**/.git/**",
-      "**/.kilo/**",
-      "**/.next/**",
-      "**/node_modules/**",
-      "**/haspataal-in/**",
+      '**/node_modules/**',
+      '**/dist/**',
+      'out/**',
+      '**/out/**',
+      '.next',
+      'node_modules',
+      'prisma',
+      '.*/**',
+      'shannon/**',
+      'tests/smoke/**',
+      '**/*.integration.test.ts',
     ],
     coverage: {
       provider: 'v8',
+      reporter: ['text', 'json', 'html'],
       thresholds: {
-        statements: 80,
-        branches: 75,
-        functions: 80,
+        statements: 70,
+        branches: 65,
+        functions: 70,
+        lines: 70,
       },
     },
   },

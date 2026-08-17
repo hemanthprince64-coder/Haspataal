@@ -9,7 +9,6 @@ export enum UserRole {
   DOCTOR = 'DOCTOR',
   HOSPITAL_ADMIN = 'HOSPITAL_ADMIN',
   AGENT = 'AGENT',
-  PLATFORM_ADMIN = 'SUPER_ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
   RECEPTIONIST = 'RECEPTIONIST',
   BILLING = 'BILLING',
@@ -190,3 +189,4 @@ export const CITIES: City[] = [
   { id: 'pune', name: 'Pune', state: 'Maharashtra' },
   { id: 'ahmedabad', name: 'Ahmedabad', state: 'Gujarat' },
 ];
+export * from './authorization';

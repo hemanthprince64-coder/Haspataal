@@ -1,0 +1,1 @@
+export { PrismaAppointmentRepository } from '../../../scheduling/infrastructure/PrismaAppointmentRepository';

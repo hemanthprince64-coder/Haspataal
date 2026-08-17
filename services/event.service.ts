@@ -1,12 +1,25 @@
+import { prisma } from '@haspataal/db';
 import { createHash } from 'crypto';
 import { Pool } from 'pg';
-import { createClient } from 'redis';
-import { EventType, CreateEventInput } from '../types/events';
+
+import redis from '../lib/redis';
+
+type EventType = string;
 
 // Assuming global instances or injected dependencies.
 // In a real app, these would be initialized elsewhere and injected.
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const redis = createClient({ url: process.env.REDIS_URL });
+
+// Phase 0A EventLog repair: targets the real `event_logs` table (Prisma @@map).
+// `idempotency_key` has a partial unique index (WHERE idempotency_key IS NOT NULL),
+// so ON CONFLICT DO NOTHING is safe even though not every row supplies a key.
+// Exported for unit testing the repair without a live database.
+export const EVENT_LOG_INSERT_SQL = `
+  INSERT INTO event_logs (hospital_id, patient_id, event_type, metadata, idempotency_key)
+  VALUES ($1, $2, $3, $4, $5)
+  ON CONFLICT (idempotency_key) DO NOTHING
+  RETURNING *;
+`;
 
 export class EventService {
   /**
@@ -16,12 +29,14 @@ export class EventService {
   private static generateIdempotencyKey(
     hospitalId: string,
     eventType: string,
-    resourceId: string
+    resourceId: string,
   ): string {
     const day = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const raw = `${hospitalId}:${eventType}:${resourceId}:${day}`;
     return createHash('sha256').update(raw).digest('hex');
   }
+
+  private static processedKeys = new Set<string>();
 
   /**
    * Publishes an event to the EventLog (PostgreSQL) and Redis Stream.
@@ -32,22 +47,54 @@ export class EventService {
     payload: Record<string, any>,
     hospitalId: string,
     patientId: string | null = null,
-    resourceId: string = 'global' // defaults to 'global' if no specific resource
+    resourceId: string = 'global', // defaults to 'global' if no specific resource
   ): Promise<boolean> {
     const idempotencyKey = this.generateIdempotencyKey(hospitalId, eventType, resourceId);
+    const isSqlite = process.env.DATABASE_PROVIDER === 'sqlite';
+
+    if (isSqlite) {
+      if (this.processedKeys.has(idempotencyKey)) {
+        console.log(`[EventService] Skipped duplicate event: ${eventType} (${idempotencyKey})`);
+        return true;
+      }
+      this.processedKeys.add(idempotencyKey);
+
+      // Keep in-memory cache pruned
+      if (this.processedKeys.size > 1000) {
+        const iterator = this.processedKeys.values();
+        for (let i = 0; i < 200; i++) {
+          const val = iterator.next().value;
+          if (val) this.processedKeys.delete(val);
+        }
+      }
+
+      try {
+        await prisma.eventLog.create({
+          data: {
+            eventType,
+            payload: payload || {},
+            hospitalId,
+            patientId,
+          },
+        });
+      } catch (err) {
+        console.error('[EventService] SQLite event log create failed:', err);
+      }
+      return true;
+    }
 
     const client = await pool.connect();
     try {
-      // 1. Write to Single Source of Truth (EventLog) with Idempotency
-      const result = await client.query(
-        `
-        INSERT INTO "EventLog" (hospital_id, patient_id, event_type, metadata, idempotency_key)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (idempotency_key) DO NOTHING
-        RETURNING *;
-        `,
-        [hospitalId, patientId, eventType, JSON.stringify(payload), idempotencyKey]
-      );
+      // 1. Write to Single Source of Truth (event_logs) with Idempotency.
+      // Phase 0A repair: table is `event_logs` (not "EventLog"); the schema now
+      // provides `idempotency_key` (partial unique) and `metadata` (jsonb) columns.
+      const result = await client.query(EVENT_LOG_INSERT_SQL, [
+        hospitalId,
+        patientId,
+        eventType,
+        JSON.stringify(payload),
+        idempotencyKey,
+      ]);
 
       // If no rows were returned, it was a duplicate event
       if (result.rowCount === 0) {
@@ -58,14 +105,22 @@ export class EventService {
       const eventRecord = result.rows[0];
 
       // 2. Publish to Redis Stream for Async Processing
-      const streamKey = `events:${eventType}`;
-      if (!redis.isOpen) await redis.connect();
-      
-      await redis.xAdd(streamKey, '*', {
-        event_id: eventRecord.id,
-        hospital_id: eventRecord.hospital_id,
-        payload: JSON.stringify(eventRecord)
-      });
+      if (redis) {
+        const streamKey = `events:${eventType}`;
+        // ioredis xadd: XADD key ID field value [field value ...]
+        await redis.xadd(
+          streamKey,
+          '*',
+          'event_id',
+          eventRecord.id,
+          'hospital_id',
+          eventRecord.hospital_id,
+          'payload',
+          JSON.stringify(eventRecord),
+        );
+      } else {
+        console.warn(`[EventService] Redis unavailable, skipped stream publish for: ${eventType}`);
+      }
 
       return true;
     } catch (error) {
@@ -84,49 +139,54 @@ export class EventService {
     eventType: EventType,
     consumerGroup: string,
     consumerName: string,
-    handler: (event: any) => Promise<void>
+    handler: (event: any) => Promise<void>,
   ) {
     const streamKey = `events:${eventType}`;
-    
-    if (!redis.isOpen) await redis.connect();
 
-    // Ensure consumer group exists
-    try {
-      await redis.xGroupCreate(streamKey, consumerGroup, '0', { MKSTREAM: true });
-    } catch (error: any) {
-      if (!error.message.includes('BUSYGROUP')) {
-        throw error;
+    // Ensure consumer group exists (ioredis: XGROUP CREATE key group id [MKSTREAM])
+    if (redis) {
+      try {
+        await redis.xgroup('CREATE', streamKey, consumerGroup, '0', 'MKSTREAM');
+      } catch (error: any) {
+        if (!error.message.includes('BUSYGROUP')) {
+          throw error;
+        }
       }
+    } else {
+      console.warn(`[EventService] Redis unavailable, cannot subscribe to: ${eventType}`);
+      return;
     }
 
     // Polling loop
     while (true) {
+      if (!redis) break;
       try {
-        const response = await redis.xReadGroup(
+        // ioredis xreadgroup: XREADGROUP GROUP group consumer [COUNT n] [BLOCK ms] STREAMS key id
+        const response = (await redis.xreadgroup(
+          'GROUP',
           consumerGroup,
           consumerName,
-          [
-            {
-              key: streamKey,
-              id: '>',
-            }
-          ],
-          {
-            COUNT: 10,
-            BLOCK: 5000,
-          }
-        );
+          'COUNT',
+          '10',
+          'BLOCK',
+          '5000',
+          'STREAMS',
+          streamKey,
+          '>',
+        )) as any[] | null;
 
         if (response) {
-          for (const stream of (response as any[])) {
-            for (const message of stream.messages) {
-              const eventPayload = JSON.parse(message.message.payload as string);
-              
+          for (const [, messages] of response) {
+            for (const [msgId, fields] of messages) {
+              // ioredis returns flat [field, value, field, value] array
+              const payloadIdx = fields.indexOf('payload');
+              const eventPayload = payloadIdx !== -1 ? JSON.parse(fields[payloadIdx + 1]) : {};
+
               // Process event
               await handler(eventPayload);
 
-              // Acknowledge message processing
-              await redis.xAck(streamKey, consumerGroup, message.id);
+              // Acknowledge message
+              await redis.xack(streamKey, consumerGroup, msgId);
             }
           }
         }

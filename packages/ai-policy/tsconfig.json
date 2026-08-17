@@ -1,0 +1,3 @@
+{
+  "extends": "@haspataal/config/tsconfig.base.json"
+}

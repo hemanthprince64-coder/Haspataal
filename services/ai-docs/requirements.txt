@@ -1,0 +1,9 @@
+# services/ai-docs/requirements.txt
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.9.2
+httpx==0.27.2
+prometheus-client==0.21.0
+sentry-sdk==2.16.0
+python-dotenv==1.0.1
+gunicorn==22.0.0

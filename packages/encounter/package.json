@@ -1,0 +1,17 @@
+{
+  "name": "@haspataal/encounter",
+  "version": "0.1.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@haspataal/db": "*",
+    "@haspataal/types": "*",
+    "@haspataal/logger": "*"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

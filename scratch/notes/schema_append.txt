@@ -1,0 +1,108 @@
+
+enum AccountStatus { ACTIVE LOCKED DISABLED }
+enum AuthMethodType { MOBILE_OTP }
+enum AuthStatus { ACTIVE DISABLED }
+enum ContactType { MOBILE EMAIL }
+enum ContactStatus { ACTIVE UNVERIFIED INACTIVE }
+enum ContactRelationshipType { SELF PARENT GUARDIAN CAREGIVER EMERGENCY_CONTACT OTHER }
+enum VerificationChallengeStatus { PENDING VERIFIED EXPIRED CONSUMED }
+enum MergeRequestStatus { REQUESTED UNDER_REVIEW APPROVED EXECUTED REJECTED }
+
+model UserAccount {
+  id           String        @id @default(uuid())
+  patientId    String        @unique @map("patient_id")
+  status       AccountStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  authMethods  AuthMethod[]
+
+  @@map("user_accounts")
+}
+
+model PatientContactPoint {
+  id               String                  @id @default(uuid())
+  patientId        String                  @map("patient_id")
+  type             ContactType
+  relationship     ContactRelationshipType @default(SELF)
+  valueEncrypted   String                  @map("value_encrypted")
+  valueLookupHash  String                  @map("value_lookup_hash")
+  lookupKeyVersion String                  @map("lookup_key_version")
+  verifiedAt       DateTime?               @map("verified_at")
+  isPrimary        Boolean                 @default(false) @map("is_primary")
+  status           ContactStatus           @default(UNVERIFIED)
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+  patient          Patient                 @relation(fields: [patientId], references: [id])
+  authMethods      AuthMethod[]
+
+  @@index([type, valueLookupHash])
+  @@map("patient_contact_points")
+}
+
+model AuthMethod {
+  id                   String              @id @default(uuid())
+  userAccountId        String              @map("user_account_id")
+  contactPointId       String              @map("contact_point_id")
+  type                 AuthMethodType
+  status               AuthStatus          @default(ACTIVE)
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  userAccount          UserAccount         @relation(fields: [userAccountId], references: [id])
+  contactPoint         PatientContactPoint @relation(fields: [contactPointId], references: [id])
+
+  @@unique([userAccountId, contactPointId, type])
+  @@map("auth_methods")
+}
+
+model MobileVerificationChallenge {
+  id               String                      @id @default(uuid())
+  mobileLookupHash String                      @map("mobile_lookup_hash")
+  mobileEncrypted  String                      @map("mobile_encrypted")
+  purpose          String
+  otpDigest        String                      @map("otp_digest")
+  attemptCount     Int                         @default(0) @map("attempt_count")
+  status           VerificationChallengeStatus @default(PENDING)
+  expiresAt        DateTime                    @map("expires_at")
+  verifiedAt       DateTime?                   @map("verified_at")
+  consumedAt       DateTime?                   @map("consumed_at")
+  createdAt        DateTime                    @default(now()) @map("created_at")
+  updatedAt        DateTime                    @updatedAt @map("updated_at")
+
+  @@index([mobileLookupHash, status])
+  @@map("mobile_verification_challenges")
+}
+
+model PatientAlias {
+  id                 String   @id @default(uuid())
+  aliasPatientId     String   @unique @map("alias_patient_id")
+  canonicalPatientId String   @map("canonical_patient_id")
+  reason             String?
+  mergedAt           DateTime @default(now()) @map("merged_at")
+  mergedBy           String?  @map("merged_by")
+  mergeRequestId     String?  @map("merge_request_id")
+  
+  aliasPatient       Patient  @relation("AliasPatient", fields: [aliasPatientId], references: [id])
+  canonicalPatient   Patient  @relation("CanonicalPatient", fields: [canonicalPatientId], references: [id])
+
+  @@map("patient_aliases")
+}
+
+model IdentityMergeRequest {
+  id                      String             @id @default(uuid())
+  sourcePatientIds        String[]           @map("source_patient_ids")
+  targetPatientId         String             @map("target_patient_id")
+  status                  MergeRequestStatus @default(REQUESTED)
+  requestedBy             String             @map("requested_by")
+  requesterOrganizationId String?            @map("requester_organization_id")
+  reviewedBy              String?            @map("reviewed_by")
+  approvedBy              String?            @map("approved_by")
+  executedBy              String?            @map("executed_by")
+  reason                  String
+  requestedAt             DateTime           @default(now()) @map("requested_at")
+  reviewedAt              DateTime?          @map("reviewed_at")
+  approvedAt              DateTime?          @map("approved_at")
+  executedAt              DateTime?          @map("executed_at")
+
+  @@map("identity_merge_requests")
+}

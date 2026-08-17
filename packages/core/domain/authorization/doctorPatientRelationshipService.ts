@@ -1,0 +1,1 @@
+export { DoctorPatientRelationshipService } from '../../../authorization/lib/doctorPatientRelationshipService';

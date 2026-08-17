@@ -13,27 +13,27 @@ graph TD
     Client_Patient[Patient Browser/App] --> CF[Cloudflare CDN]
     Client_Doctor[Doctor Browser] --> CF
     Client_Hospital[Hospital HMS] --> CF
-    
+
     CF --> Nginx[Nginx Reverse Proxy / Load Balancer]
-    
+
     Nginx --> |haspataal.com| Next_Patient[Next.js Patient Portal]
     Nginx --> |doctor.haspataal.com| Next_Doctor[Next.js Doctor Dashboard]
     Nginx --> |hospital.haspataal.com| Next_HMS[Next.js Hospital HMS]
     Nginx --> |admin.haspataal.com| Next_Admin[Next.js Admin Panel]
-    
+
     Nginx --> |api.haspataal.com| API_Gateway[Node.js / NestJS Core API]
     Nginx --> |auth.haspataal.com| Auth_Service[Auth Microservice]
-    
+
     Next_Patient --> API_Gateway
     Next_Doctor --> API_Gateway
     Next_HMS --> API_Gateway
-    
+
     API_Gateway --> Auth_Service
     API_Gateway --> Redis[(Redis Cache)]
     API_Gateway --> DB[(PostgreSQL Master)]
-    
+
     DB --> ReadReplica1[(PostgreSQL Replica)]
-    
+
     subgraph K8s Cluster
         Next_Patient
         Next_Doctor
@@ -50,15 +50,15 @@ graph TD
 
 All DNS records should be managed via Cloudflare (Proxied) with Wildcard SSL (`*.haspataal.com`).
 
-| Type | Name | Content | Proxy Status | Purpose |
-|---|---|---|---|---|
-| A | @ | `<Load_Balancer_IP>` | Proxied | Patient Portal |
-| A | doctor | `<Load_Balancer_IP>` | Proxied | Doctor Dashboard |
-| A | hospital | `<Load_Balancer_IP>` | Proxied | Hospital HMS |
-| A | admin | `<Load_Balancer_IP>` | Proxied | Admin Control Panel |
-| A | api | `<Load_Balancer_IP>` | Proxied | Core API Routing |
-| A | auth | `<Load_Balancer_IP>` | Proxied | JWT Auth Service |
-| CNAME | cdn | `haspataal.cdn.cloudflare.net` | DNS Only | Static Assets |
+| Type  | Name     | Content                        | Proxy Status | Purpose             |
+| ----- | -------- | ------------------------------ | ------------ | ------------------- |
+| A     | @        | `<Load_Balancer_IP>`           | Proxied      | Patient Portal      |
+| A     | doctor   | `<Load_Balancer_IP>`           | Proxied      | Doctor Dashboard    |
+| A     | hospital | `<Load_Balancer_IP>`           | Proxied      | Hospital HMS        |
+| A     | admin    | `<Load_Balancer_IP>`           | Proxied      | Admin Control Panel |
+| A     | api      | `<Load_Balancer_IP>`           | Proxied      | Core API Routing    |
+| A     | auth     | `<Load_Balancer_IP>`           | Proxied      | JWT Auth Service    |
+| CNAME | cdn      | `haspataal.cdn.cloudflare.net` | DNS Only     | Static Assets       |
 
 ---
 
@@ -90,7 +90,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # Security headers
         add_header X-Frame-Options "SAMEORIGIN";
         add_header Content-Security-Policy "default-src 'self' cdn.haspataal.com";
@@ -147,19 +147,20 @@ CREATE POLICY "Doctors see own patients" ON appointments
 
 ## Deliverable 5: API Specification (Core Architecture)
 
-| Subdomain | Endpoint | Method | Role | Purpose |
-|---|---|---|---|---|
-| `auth.` | `/oauth/token` | POST | All | Request JWT / Verify Auth |
-| `api.` | `/v1/search/doctors` | GET | Public | Discovery engine (SEO powered) |
-| `api.` | `/v1/appointments` | POST | Patient | Lock slot (Redis) & Create |
-| `api.` | `/v1/hospitals/:id/patients` | GET | Hosp. Admin | Retrieve isolated patient list |
-| `api.` | `/v1/telemed/session` | POST | Doctor | Initialize WebRTC signaling |
+| Subdomain | Endpoint                     | Method | Role        | Purpose                        |
+| --------- | ---------------------------- | ------ | ----------- | ------------------------------ |
+| `auth.`   | `/oauth/token`               | POST   | All         | Request JWT / Verify Auth      |
+| `api.`    | `/v1/search/doctors`         | GET    | Public      | Discovery engine (SEO powered) |
+| `api.`    | `/v1/appointments`           | POST   | Patient     | Lock slot (Redis) & Create     |
+| `api.`    | `/v1/hospitals/:id/patients` | GET    | Hosp. Admin | Retrieve isolated patient list |
+| `api.`    | `/v1/telemed/session`        | POST   | Doctor      | Initialize WebRTC signaling    |
 
 ---
 
 ## Deliverable 6: Infrastructure Deployment Plan
 
 **Environment:** AWS / Kubernetes (EKS)
+
 1. **Container Registry:** Push Next.js and Node.js images to ECR.
 2. **K8s Namspaces:** Create `production`, `staging`, `monitoring`.
 3. **Deployments:** Scale Node.js APIs horizontally; Next.js frontend pods.
@@ -171,6 +172,7 @@ CREATE POLICY "Doctors see own patients" ON appointments
 ## Deliverable 7: CI/CD Workflow
 
 **Tool:** GitHub Actions
+
 ```yaml
 stages:
   - lint-and-test: Run Zod schemas and Jest stability checks.
@@ -210,5 +212,7 @@ stages:
 1. **0 - 1M Users:** Single RDS Master with vertical scaling. Redis for session cache.
 2. **1M - 5M Users:** Add 3 Read Replicas. Implement connection pooling (PgBouncer) for `api.`. Switch frontend assets entirely to `cdn.` edge caching.
 3. **5M - 10M Users:** Introduce Database Sharding by `city` or region. Devolve the monolithic `api.` into true isolated microservices (Billing, Appointments, Telemed) using Apache Kafka for event-driven states.
+
 ---
-*Generated by System Architect Agent in War Room Mode*
+
+_Generated by System Architect Agent in War Room Mode_

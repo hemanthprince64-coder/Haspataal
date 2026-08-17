@@ -1,0 +1,9 @@
+Total Errors: 2565
+Total Warnings: 41721
+
+Top 5 Violations:
+@typescript-eslint/no-unused-expressions: 28347
+@typescript-eslint/no-unused-vars: 12039
+@typescript-eslint/no-unsafe-function-type: 1484
+no-console: 1327
+@typescript-eslint/no-empty-object-type: 469

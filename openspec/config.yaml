@@ -1,0 +1,25 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+context: |
+  Tech stack: Next.js 16 (App Router), Express.js, TypeScript, Prisma 5, PostgreSQL (Supabase), Redis (ioredis), BullMQ, Turborepo, Tailwind CSS, shadcn/ui, Zod, jose JWT, pino logging
+  Package manager: npm workspaces + Turborepo
+  Monorepo structure: apps/ (patient-portal, hospital-hms, admin-panel), packages/ (db, types, auth, core, config), services/ (gateway, auth, medchat)
+  Health domain: Multi-tenant hospital SaaS for Tier-2/3 Indian cities. Must enforce Row-Level Security (RLS), PHI protection, ABDM/ABHA integration, and GDPR/DPDP compliance
+  Auth: JWT-based with role-specific cookies (session_user, session_patient, session_admin, session_agent). Per-role rate limits: PATIENT=60, DOCTOR=120, HOSPITAL_ADMIN=200, SUPER_ADMIN=unlimited
+  Observability: Sentry + Pino structured logging (PHI auto-redacted), /api/health endpoint
+  Coding standards: PascalCase components, camelCase vars, kebab-case folders. Use @/ absolute imports. Use @haspataal/logger for all logging. Server Actions must be TypeScript with Zod validation. Direct Prisma access in pages/layouts is forbidden — use service/core layer
+  Commit convention: Conventional Commits (type(scope): subject)
+  Environment: Node.js 20+, PostgreSQL, Redis, Docker (make dev)
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours

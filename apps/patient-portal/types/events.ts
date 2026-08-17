@@ -1,0 +1,37 @@
+/**
+ * EventType Enum for the EventLog table
+ * These are the string-typed event codes used by the event-emitter service
+ */
+export type EventType =
+  | 'APPOINTMENT_BOOKED'
+  | 'APPOINTMENT_CONFIRMED'
+  | 'APPOINTMENT_CANCELLED'
+  | 'APPOINTMENT_COMPLETED'
+  | 'PATIENT_REGISTERED'
+  | 'PATIENT_UPDATED'
+  | 'HOSPITAL_REGISTERED'
+  | 'HOSPITAL_APPROVED'
+  | 'VISIT_CREATED'
+  | 'VISIT_COMPLETED'
+  | 'BILL_CREATED'
+  | 'BILL_PAID'
+  | 'PRESCRIPTION_ISSUED'
+  | 'LAB_ORDER_CREATED'
+  | 'LAB_RESULT_UPLOADED'
+  | 'AGENT_COMMISSION_EARNED'
+  | 'ANC_VISIT_RECORDED'
+  | 'ANC_HIGH_RISK_FLAGGED'
+  | 'RETENTION_ALERT_TRIGGERED'
+  | 'SYNC_REPLAY_APPLIED'
+  | 'SETTLEMENT_CALCULATED'
+  | 'DATA_MIGRATION_QUEUED'
+  | 'hospital_registered'
+  | 'lab_registered'
+  | 'patient_visited'
+  | 'doctor_added'
+  | 'doctor_removed'
+  | 'doctor_registered'
+  | 'hospital_approved'
+  | 'hospital_rejected'
+  | 'hospital_suspended'
+  | 'agent_registered';

@@ -1,18 +1,46 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
+<<<<<<< Updated upstream
+      interval: 'weekly'
+=======
       interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+>>>>>>> Stashed changes
     groups:
       radix-ui:
         patterns:
-          - "@radix-ui/*"
+          - '@radix-ui/*'
       types:
         patterns:
-          - "@types/*"
+<<<<<<< Updated upstream
+          - '@types/*'
     ignore:
-      - dependency-name: "*"
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    reviewers:
+      - 'security-team'
+=======
+          - "@types/*"
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
     reviewers:
-      - "security-team"
+      - "$YOUR_GITHUB_USERNAME"
+    vulnerability-alerts:
+      labels:
+        - "security"
+>>>>>>> Stashed changes

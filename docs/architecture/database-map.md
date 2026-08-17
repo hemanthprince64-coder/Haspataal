@@ -1,0 +1,2620 @@
+# Database Map (PostgreSQL via Prisma)
+
+This file contains the complete database map of the Haspataal platform, detailing all models, their fields, mappings, and relationships.
+
+## Models and Fields
+
+### Model: DoctorMaster (`db: doctors_master`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `fullName` | `String` | @map("full_name") |
+| `dob` | `DateTime?` | @db.Date |
+| `gender` | `String?` | - |
+| `mobile` | `String` | @unique |
+| `email` | `String` | @unique |
+| `profilePhotoUrl` | `String?` | @map("profile_photo_url") |
+| `kycStatus` | `KycStatus` | @default(PENDING) @map("kyc_status") |
+| `accountStatus` | `AccountStatus` | @default(ACTIVE) @map("account_status") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `experienceYears` | `Int?` | @map("experience_years") |
+| `password` | `String?` | - |
+| `appointments` | `Appointment[]` | - |
+| `admissions` | `Admission[]` | - |
+| `prescribedOrders` | `DiagnosticOrder[]` | - |
+| `verifiedResults` | `DiagnosticResult[]` | - |
+| `flags` | `DoctorFlag[]` | - |
+| `affiliations` | `DoctorHospitalAffiliation[]` | - |
+| `identityDocs` | `DoctorIdentityDoc[]` | - |
+| `professionalHistory` | `DoctorProfessionalHistory[]` | - |
+| `registration` | `DoctorRegistration?` | - |
+| `roles` | `DoctorRole[]` | - |
+| `PatientPrescription` | `PatientPrescription[]` | - |
+| `records` | `PatientRecord[]` | - |
+| `reviews` | `Review[]` | - |
+| `slots` | `Slot[]` | - |
+| `referralsSent` | `InternalReferral[]` | @relation("ReferralsSent") |
+| `referralsReceived` | `InternalReferral[]` | @relation("ReferralsReceived") |
+| `consultantSettlements` | `ConsultantSettlement[]` | - |
+| `escalationAlerts` | `EscalationAlert[]` | - |
+
+---
+
+### Model: DoctorIdentityDoc (`db: doctor_identity_docs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `documentType` | `String` | @map("document_type") |
+| `documentUrl` | `String` | @map("document_url") |
+| `verificationStatus` | `VerificationStatus` | @default(PENDING) @map("verification_status") |
+| `verifiedBy` | `String?` | @map("verified_by") |
+| `verifiedAt` | `DateTime?` | @map("verified_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DoctorRegistration (`db: doctor_registration`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @unique @map("doctor_id") |
+| `registrationNumber` | `String` | @unique @map("registration_number") |
+| `councilName` | `String` | @map("council_name") |
+| `registrationYear` | `Int?` | @map("registration_year") |
+| `degree` | `String?` | - |
+| `verificationStatus` | `VerificationStatus` | @default(PENDING) @map("verification_status") |
+| `verifiedBy` | `String?` | @map("verified_by") |
+| `verifiedAt` | `DateTime?` | @map("verified_at") |
+| `expiryDate` | `DateTime?` | @map("expiry_date") @db.Date |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalsMaster (`db: hospitals_master`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `legalName` | `String` | @map("legal_name") |
+| `displayName` | `String?` | @map("display_name") |
+| `registrationNumber` | `String` | @unique @map("registration_number") |
+| `gstNumber` | `String?` | @map("gst_number") |
+| `panNumber` | `String?` | @map("pan_number") |
+| `cinNumber` | `String?` | @map("cin_number") |
+| `hospitalType` | `String?` | @map("hospital_type") |
+| `nabhAccredited` | `Boolean` | @default(false) @map("nabh_accredited") |
+| `nablAccredited` | `Boolean` | @default(false) @map("nabl_accredited") |
+| `bedStrength` | `Int?` | @map("bed_strength") |
+| `addressLine1` | `String?` | @map("address_line1") |
+| `addressLine2` | `String?` | @map("address_line2") |
+| `city` | `String?` | - |
+| `state` | `String?` | - |
+| `pincode` | `String?` | - |
+| `contactNumber` | `String?` | @map("contact_number") |
+| `officialEmail` | `String?` | @map("official_email") |
+| `verificationStatus` | `String` | @default("pending") @map("verification_status") |
+| `accountStatus` | `String` | @default("inactive") @map("account_status") |
+| `name` | `String?` | @ignore |
+| `password` | `String?` | @ignore |
+| `adminUserId` | `String?` | @map("admin_user_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `agentId` | `String?` | @map("agent_id") |
+| `type` | `HospitalType` | @default(HOSPITAL) |
+| `updatedAt` | `DateTime` | @default(now()) @updatedAt @map("updated_at") |
+| `logoUrl` | `String?` | @map("logo_url") |
+| `faviconUrl` | `String?` | @map("favicon_url") |
+| `brandColor` | `String?` | @map("brand_color") |
+| `stateRegistrationNumber` | `String?` | @map("state_registration_number") |
+| `nabhCertUrl` | `String?` | @map("nabh_cert_url") |
+| `nablCertUrl` | `String?` | @map("nabl_cert_url") |
+| `timezone` | `String` | @default("Asia/Kolkata") |
+| `workingDays` | `String[]` | @map("working_days") |
+| `openTime` | `String?` | @map("open_time") |
+| `closeTime` | `String?` | @map("close_time") |
+| `emergencyContact` | `String?` | @map("emergency_contact") |
+| `isMultiBranch` | `Boolean` | @default(false) @map("is_multi_branch") |
+| `invoicePrefix` | `String` | @default("INV") @map("invoice_prefix") |
+| `nextInvoiceNumber` | `Int` | @default(1001) @map("next_invoice_number") |
+| `gstInclusivePricing` | `Boolean` | @default(false) @map("gst_inclusive_pricing") |
+| `letterheadTemplate` | `String?` | @map("letterhead_template") |
+| `prescriptionHeader` | `String?` | @map("prescription_header") |
+| `prescriptionFooter` | `String?` | @map("prescription_footer") |
+| `isListedOnMarketplace` | `Boolean` | @default(false) @map("is_listed_on_marketplace") |
+| `marketplaceTagline` | `String?` | @map("marketplace_tagline") |
+| `marketplaceAbout` | `String?` | @map("marketplace_about") |
+| `marketplaceFacilities` | `String[]` | @map("marketplace_facilities") |
+| `showConsultationFees` | `Boolean` | @default(true) @map("show_consultation_fees") |
+| `showBedCharges` | `Boolean` | @default(false) @map("show_bed_charges") |
+| `showPackagePrices` | `Boolean` | @default(false) @map("show_package_prices") |
+| `allowOnlineBooking` | `Boolean` | @default(true) @map("allow_online_booking") |
+| `requiresApproval` | `Boolean` | @default(false) @map("requires_approval") |
+| `cancellationPolicy` | `String` | @default("FLEXIBLE") @map("cancellation_policy") |
+| `depositRequired` | `Boolean` | @default(false) @map("deposit_required") |
+| `depositAmount` | `Decimal?` | @map("deposit_amount") |
+| `rankingScore` | `Float` | @default(0) @map("ranking_score") |
+| `coverImageUrl` | `String?` | @map("cover_image_url") |
+| `galleryUrls` | `String[]` | @default([]) @map("gallery_urls") |
+| `insurancePanels` | `String[]` | @default([]) @map("insurance_panels") |
+| `customCancellationTerms` | `String?` | @map("custom_cancellation_terms") |
+| `allowsInstantBooking` | `Boolean` | @default(true) @map("allows_instant_booking") |
+| `specialities` | `String[]` | @default([]) @map("specialities") |
+| `beds` | `Bed[]` | - |
+| `bills` | `Bill[]` | - |
+| `diagnosticOrders` | `DiagnosticOrder[]` | - |
+| `affiliations` | `DoctorHospitalAffiliation[]` | - |
+| `doctorRoles` | `DoctorRole[]` | - |
+| `drugStocks` | `DrugStock[]` | - |
+| `followUps` | `FollowUp[]` | - |
+| `admins` | `HospitalAdmin[]` | - |
+| `billingProfile` | `HospitalBillingProfile?` | - |
+| `departments` | `HospitalDepartment[]` | - |
+| `newDepartments` | `Department[]` | - |
+| `diagnosticPricing` | `HospitalDiagnosticPricing[]` | - |
+| `facilities` | `HospitalFacilities?` | - |
+| `panelPricing` | `HospitalPanelPricing[]` | - |
+| `roles` | `HospitalRole[]` | - |
+| `services` | `HospitalService[]` | - |
+| `serviceCatalog` | `ServiceCatalog[]` | - |
+| `paymentGateways` | `PaymentGateway[]` | - |
+| `retentionRules` | `RetentionRule[]` | - |
+| `chronicConditions` | `ChronicCondition[]` | - |
+| `opdConfig` | `OpdConfig?` | - |
+| `integrationConfigs` | `IntegrationConfig[]` | - |
+| `branches` | `Branch[]` | - |
+| `verificationLogs` | `HospitalVerificationLog[]` | - |
+| `agent` | `Agent?` | @relation(fields: [agentId], references: [id]) |
+| `labOrders` | `LabOrder[]` | - |
+| `admissions` | `Admission[]` | - |
+| `invoices` | `Invoice[]` | - |
+| `notifications` | `Notification[]` | - |
+| `pharmacyDispenses` | `PharmacyDispense[]` | - |
+| `rolePermissions` | `RolePermission[]` | - |
+| `qualityControls` | `LabQualityControl[]` | - |
+| `reviews` | `Review[]` | - |
+| `staff` | `Staff[]` | - |
+| `visits` | `Visit[]` | - |
+| `NotificationTemplate` | `NotificationTemplate[]` | - |
+| `NotificationEventMapping` | `NotificationEventMapping[]` | - |
+| `Supplier` | `Supplier[]` | - |
+| `clinicProfile` | `ClinicProfile?` | - |
+| `patientAcquisitions` | `PatientAcquisition[]` | - |
+| `aiDocuments` | `AIDocument[]` | - |
+| `escalationAlerts` | `EscalationAlert[]` | - |
+| `facilityType` | `FacilityType` | @default(HOSPITAL) @map("facility_type") |
+| `gstExempt` | `Boolean` | @default(false) @map("gst_exempt") |
+| `clinicTier` | `ClinicTier?` | @map("clinic_tier") |
+| `operatingHours` | `Json?` | @map("operating_hours") // { "open": "09:00", "close": "21:00" } |
+| `approvalDocumentUrl` | `String?` | @map("approval_document_url") |
+| `medicalCouncilNumber` | `String?` | @map("medical_council_number") |
+| `latitude` | `Float?` | @map("latitude") |
+| `longitude` | `Float?` | @map("longitude") |
+| `googleLocationUrl` | `String?` | @map("google_location_url") |
+| `clinicOperationalProfile` | `ClinicOperationalProfile?` | - |
+| `internalReferrals` | `InternalReferral[]` | - |
+| `consultantSettlements` | `ConsultantSettlement[]` | - |
+| `departmentHandoffs` | `DepartmentHandoff[]` | - |
+
+---
+
+### Model: HospitalFacilities (`db: hospital_facilities`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @unique @map("hospital_id") |
+| `icuAvailable` | `Boolean` | @default(false) @map("icu_available") |
+| `nicuAvailable` | `Boolean` | @default(false) @map("nicu_available") |
+| `otCount` | `Int` | @default(0) @map("ot_count") |
+| `emergency24x7` | `Boolean` | @default(false) @map("emergency_24x7") |
+| `ambulanceAvailable` | `Boolean` | @default(false) @map("ambulance_available") |
+| `pharmacyAvailable` | `Boolean` | @default(false) @map("pharmacy_available") |
+| `labAvailable` | `Boolean` | @default(false) @map("lab_available") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalAdmin (`db: hospital_admins`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `fullName` | `String` | @map("full_name") |
+| `designation` | `String?` | - |
+| `mobile` | `String` | @unique |
+| `email` | `String` | @unique |
+| `idDocumentUrl` | `String?` | @map("id_document_url") |
+| `verificationStatus` | `String` | @default("pending") @map("verification_status") |
+| `isPrimary` | `Boolean` | @default(true) @map("is_primary") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalDepartment (`db: hospital_departments`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `departmentName` | `String` | @map("department_name") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalService (`db: hospital_services`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `serviceName` | `String` | @map("service_name") |
+| `basePrice` | `Decimal` | @map("base_price") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalBillingProfile (`db: hospital_billing_profile`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @unique @map("hospital_id") |
+| `bankAccountNumber` | `String?` | @map("bank_account_number") |
+| `bankIfsc` | `String?` | @map("bank_ifsc") |
+| `gstApplicable` | `Boolean` | @default(false) @map("gst_applicable") |
+| `tdsApplicable` | `Boolean` | @default(true) @map("tds_applicable") |
+| `commissionPercentage` | `Decimal?` | @map("commission_percentage") |
+| `payoutCycle` | `String?` | @map("payout_cycle") |
+| `invoiceLayout` | `String?` | @default("STANDARD") @map("invoice_layout") |
+| `headerText` | `String?` | @map("header_text") |
+| `footerText` | `String?` | @map("footer_text") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalRole (`db: hospital_roles`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `roleName` | `String` | @map("role_name") |
+| `permissions` | `Json?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalVerificationLog (`db: hospital_verification_logs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `verifiedBy` | `String?` | @map("verified_by") |
+| `verificationNotes` | `String?` | @map("verification_notes") |
+| `verificationStatus` | `String?` | @map("verification_status") |
+| `verifiedAt` | `DateTime?` | @map("verified_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DoctorHospitalAffiliation (`db: doctor_hospital_affiliations`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `role` | `String` | - |
+| `department` | `String?` | - |
+| `joiningDate` | `DateTime?` | @map("joining_date") @db.Date |
+| `relievingDate` | `DateTime?` | @map("relieving_date") @db.Date |
+| `isCurrent` | `Boolean` | @default(true) @map("is_current") |
+| `verificationStatus` | `VerificationStatus` | @default(PENDING) @map("verification_status") |
+| `approvedBy` | `String?` | @map("approved_by") |
+| `approvedAt` | `DateTime?` | @map("approved_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `schedule` | `String?` | - |
+| `consultationFee` | `Decimal?` | @map("consultation_fee") |
+| `followUpFee` | `Decimal?` | @map("follow_up_fee") |
+| `followUpWindowDays` | `Int?` | @default(7) @map("follow_up_window_days") |
+| `payload` | `Json?` | @map("payload") |
+| `consultationDurationMins` | `Int` | @default(15) @map("consultation_duration_mins") |
+| `allowsOnlineBooking` | `Boolean` | @default(true) @map("allows_online_booking") |
+| `branchIds` | `String[]` | @default([]) @map("branch_ids") |
+| `availableFrom` | `DateTime?` | @map("available_from") |
+| `experienceYears` | `Int?` | @map("experience_years") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DoctorProfessionalHistory (`db: doctor_professional_history`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `organizationName` | `String` | @map("organization_name") |
+| `designation` | `String?` | - |
+| `startDate` | `DateTime?` | @map("start_date") @db.Date |
+| `endDate` | `DateTime?` | @map("end_date") @db.Date |
+| `proofDocumentUrl` | `String?` | @map("proof_document_url") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DoctorRole (`db: doctor_roles`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `permissions` | `Json?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DoctorFlag (`db: doctor_flags`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `reason` | `String?` | - |
+| `flagType` | `String` | @map("flag_type") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Staff (`db: staff`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `email` | `String?` | @unique |
+| `mobile` | `String` | @unique |
+| `password` | `String` | - |
+| `role` | `Role` | @default(RECEPTIONIST) |
+| `designation` | `String?` | @map("designation") |
+| `qualifications` | `String[]` | @default([]) |
+| `idDocumentUrl` | `String?` | @map("id_document_url") |
+| `bloodGroup` | `String?` | @map("blood_group") |
+| `departmentId` | `String?` | @map("department_id") |
+| `shift` | `ShiftType?` | @map("shift") |
+| `permissions` | `Json?` | @map("permissions") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `branchId` | `String?` | @map("branch_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `branch` | `Branch?` | @relation(fields: [branchId], references: [id]) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `rolePermissions` | `RolePermission[]` | - |
+| `departmentHandoffs` | `DepartmentHandoff[]` | - |
+
+---
+
+### Model: Patient (`db: patients`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `name` | `String` | - |
+| `phone` | `String` | @unique |
+| `email` | `String?` | - |
+| `password` | `String` | - |
+| `city` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `abhaAddress` | `String?` | @unique @map("abha_address") |
+| `role` | `Role` | @default(PATIENT) |
+| `address` | `String?` | - |
+| `bloodGroup` | `String?` | @map("blood_group") |
+| `dob` | `DateTime?` | @db.Date |
+| `gender` | `String?` | - |
+| `pincode` | `String?` | - |
+| `updatedAt` | `DateTime` | @default(now()) @updatedAt @map("updated_at") |
+| `agentId` | `String?` | @map("agent_id") |
+| `country` | `String?` | - |
+| `emergencyContactAltPhone` | `String?` | @map("emergency_contact_alt_phone") |
+| `emergencyContactName` | `String?` | @map("emergency_contact_name") |
+| `emergencyContactPhone` | `String?` | @map("emergency_contact_phone") |
+| `consents` | `Consent[]` | - |
+| `emergencyContactRelation` | `String?` | @map("emergency_contact_relation") |
+| `maritalStatus` | `String?` | @map("marital_status") |
+| `occupation` | `String?` | - |
+| `preferredDoctor` | `String?` | @map("preferred_doctor") |
+| `preferredHospital` | `String?` | @map("preferred_hospital") |
+| `preferredSpeciality` | `String?` | @map("preferred_speciality") |
+| `profilePhotoUrl` | `String?` | @map("profile_photo_url") |
+| `state` | `String?` | - |
+| `nickname` | `String?` | - |
+| `appointments` | `Appointment[]` | - |
+| `bed` | `Bed?` | - |
+| `bills` | `Bill[]` | - |
+| `orders` | `DiagnosticOrder[]` | - |
+| `familyMembers` | `FamilyMember[]` | - |
+| `followUps` | `FollowUp[]` | - |
+| `insuranceDetails` | `InsuranceDetail[]` | - |
+| `labOrders` | `LabOrder[]` | - |
+| `admissions` | `Admission[]` | - |
+| `invoices` | `Invoice[]` | - |
+| `notifications` | `Notification[]` | - |
+| `pharmacyDispenses` | `PharmacyDispense[]` | - |
+| `lifecycleTags` | `PatientLifecycleTag[]` | - |
+| `medicalRecords` | `MedicalRecord[]` | - |
+| `addresses` | `PatientAddress[]` | - |
+| `medicalHistories` | `PatientMedicalHistory?` | - |
+| `medications` | `PatientMedication[]` | - |
+| `prescriptions` | `PatientPrescription[]` | - |
+| `records` | `PatientRecord[]` | - |
+| `agent` | `Agent?` | @relation(fields: [agentId], references: [id]) |
+| `pregnancyProfile` | `PregnancyProfile?` | - |
+| `reviews` | `Review[]` | - |
+| `vaccinationRecords` | `VaccinationRecord[]` | - |
+| `vitalRecords` | `VitalRecord[]` | - |
+| `wallet` | `Wallet?` | - |
+| `internalReferrals` | `InternalReferral[]` | - |
+| `escalationAlerts` | `EscalationAlert[]` | - |
+| `newbornRecord` | `NewbornRecord?` | - |
+
+---
+
+### Model: PatientAddress (`db: patient_addresses`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `type` | `String` | @default("Home") |
+| `address` | `String` | - |
+| `city` | `String` | - |
+| `state` | `String?` | - |
+| `pincode` | `String` | - |
+| `landmark` | `String?` | - |
+| `isDefault` | `Boolean` | @default(false) @map("is_default") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Wallet (`db: wallets`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @unique @map("patient_id") |
+| `balance` | `Decimal` | @default(0.0) |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `transactions` | `WalletTransaction[]` | - |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: WalletTransaction (`db: wallet_transactions`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `walletId` | `String` | @map("wallet_id") |
+| `type` | `String` | - |
+| `amount` | `Decimal` | - |
+| `source` | `String` | - |
+| `description` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `wallet` | `Wallet` | @relation(fields: [walletId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PatientPrescription (`db: patient_prescriptions`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `doctorId` | `String?` | @map("doctor_id") |
+| `appointmentId` | `String?` | @map("appointment_id") |
+| `type` | `String` | - |
+| `fileUrl` | `String?` | @map("file_url") |
+| `notes` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `appointment` | `Appointment?` | @relation(fields: [appointmentId], references: [id]) |
+| `doctor` | `DoctorMaster?` | @relation(fields: [doctorId], references: [id]) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `items` | `PrescriptionItem[]` | - |
+| `pharmacyDispenses` | `PharmacyDispense[]` | - |
+
+---
+
+### Model: PrescriptionItem (`db: prescription_items`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `prescriptionId` | `String` | @map("prescription_id") |
+| `medicineName` | `String` | @map("medicine_name") |
+| `dosage` | `String` | - |
+| `duration` | `String` | - |
+| `instructions` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `prescription` | `PatientPrescription` | @relation(fields: [prescriptionId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Review (`db: reviews`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `doctorId` | `String?` | @map("doctor_id") |
+| `hospitalId` | `String?` | @map("hospital_id") |
+| `rating` | `Int` | - |
+| `comment` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `doctor` | `DoctorMaster?` | @relation(fields: [doctorId], references: [id]) |
+| `hospital` | `HospitalsMaster?` | @relation(fields: [hospitalId], references: [id]) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Appointment (`db: appointments`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `doctorId` | `String` | @map("doctor_id") |
+| `date` | `DateTime` | @db.Date |
+| `slot` | `String` | - |
+| `status` | `AppointmentStatus` | @default(BOOKED) |
+| `notes` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `deletedAt` | `DateTime?` | @map("deleted_at") |
+| `hospitalId` | `String?` | @map("hospital_id") |
+| `idempotencyKey` | `String?` | @unique @map("idempotency_key") |
+| `patientGlobalId` | `String?` | @map("patient_global_id") |
+| `slotTime` | `DateTime?` | @map("slot_time") |
+| `scheduledAt` | `DateTime?` | @map("scheduled_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `followUps` | `FollowUp[]` | - |
+| `PatientPrescription` | `PatientPrescription[]` | - |
+| `payment` | `Payment?` | - |
+| `visit` | `Visit?` | - |
+| `invoices` | `Invoice[]` | - |
+
+---
+
+### Model: Slot (`db: slots`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `day` | `String` | - |
+| `time` | `String` | - |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Payment (`db: payments`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `appointmentId` | `String` | @unique @map("appointment_id") |
+| `amount` | `Int` | - |
+| `currency` | `String` | @default("INR") |
+| `status` | `PaymentStatus` | @default(PENDING) |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `orderId` | `String` | @map("order_id") |
+| `paymentId` | `String?` | @map("payment_id") |
+| `appointment` | `Appointment` | @relation(fields: [appointmentId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DiagnosticCategory (`db: diagnostic_categories`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `name` | `String` | @unique |
+| `parentCategoryId` | `String?` | @map("parent_category_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `parent` | `DiagnosticCategory?` | @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id]) |
+| `children` | `DiagnosticCategory[]` | @relation("CategoryHierarchy") |
+| `tests` | `DiagnosticMasterTest[]` | - |
+| `panels` | `DiagnosticPanel[]` | - |
+
+---
+
+### Model: DiagnosticMasterTest (`db: diagnostic_master_tests`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `categoryId` | `String` | @map("category_id") |
+| `testName` | `String` | @map("test_name") |
+| `testCode` | `String?` | @unique @map("test_code") |
+| `sampleType` | `String?` | @map("sample_type") |
+| `method` | `String?` | - |
+| `normalRangeText` | `String?` | @map("normal_range_text") |
+| `unit` | `String?` | - |
+| `fastingRequired` | `Boolean` | @default(false) @map("fasting_required") |
+| `preparationInstructions` | `String?` | @map("preparation_instructions") |
+| `referenceRanges` | `Json?` | @map("reference_ranges") |
+| `equipmentCode` | `String?` | @map("equipment_code") |
+| `isInstrumentBased` | `Boolean` | @default(false) @map("is_instrument_based") |
+| `turnaroundTimeHours` | `Int?` | @map("turnaround_time_hours") |
+| `isPanel` | `Boolean` | @default(false) @map("is_panel") |
+| `modality` | `String?` | - |
+| `contrastRequired` | `Boolean?` | @map("contrast_required") |
+| `bodyRegion` | `String?` | @map("body_region") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `category` | `DiagnosticCategory` | @relation(fields: [categoryId], references: [id]) |
+| `orderItems` | `DiagnosticOrderItem[]` | - |
+| `panelLinks` | `DiagnosticPanelTest[]` | - |
+| `hospitalPricing` | `HospitalDiagnosticPricing[]` | - |
+| `qcLogs` | `LabQualityControl[]` | - |
+
+---
+
+### Model: DiagnosticPanel (`db: diagnostic_panels`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `panelName` | `String` | @map("panel_name") |
+| `categoryId` | `String` | @map("category_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `tests` | `DiagnosticPanelTest[]` | - |
+| `category` | `DiagnosticCategory` | @relation(fields: [categoryId], references: [id]) |
+| `hospitalPricing` | `HospitalPanelPricing[]` | - |
+
+---
+
+### Model: DiagnosticPanelTest (`db: diagnostic_panel_tests`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `panelId` | `String` | @map("panel_id") |
+| `testId` | `String` | @map("test_id") |
+| `panel` | `DiagnosticPanel` | @relation(fields: [panelId], references: [id], onDelete: Cascade) |
+| `test` | `DiagnosticMasterTest` | @relation(fields: [testId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalDiagnosticPricing (`db: hospital_diagnostic_pricing`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `testId` | `String` | @map("test_id") |
+| `price` | `Decimal` | - |
+| `isAvailable` | `Boolean` | @default(true) @map("is_available") |
+| `tatOverrideHours` | `Int?` | @map("tat_override_hours") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `test` | `DiagnosticMasterTest` | @relation(fields: [testId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: HospitalPanelPricing (`db: hospital_panel_pricing`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `panelId` | `String` | @map("panel_id") |
+| `panelPrice` | `Decimal` | @map("panel_price") |
+| `isAvailable` | `Boolean` | @default(true) @map("is_available") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `panel` | `DiagnosticPanel` | @relation(fields: [panelId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DiagnosticOrder (`db: diagnostic_orders`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `doctorId` | `String?` | @map("doctor_id") |
+| `orderStatus` | `String` | @map("order_status") |
+| `totalAmount` | `Decimal` | @map("total_amount") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `deletedAt` | `DateTime?` | @map("deleted_at") |
+| `items` | `DiagnosticOrderItem[]` | - |
+| `invoices` | `Invoice[]` | - |
+| `doctor` | `DoctorMaster?` | @relation(fields: [doctorId], references: [id]) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: DiagnosticOrderItem (`db: diagnostic_order_items`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `orderId` | `String` | @map("order_id") |
+| `testId` | `String` | @map("test_id") |
+| `priceAtOrder` | `Decimal` | @map("price_at_order") |
+| `status` | `String` | - |
+| `order` | `DiagnosticOrder` | @relation(fields: [orderId], references: [id], onDelete: Cascade) |
+| `test` | `DiagnosticMasterTest` | @relation(fields: [testId], references: [id]) |
+| `results` | `DiagnosticResult[]` | - |
+
+---
+
+### Model: DiagnosticResult (`db: diagnostic_results`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `orderItemId` | `String` | @map("order_item_id") |
+| `resultValue` | `String?` | @map("result_value") |
+| `resultFlag` | `String?` | @map("result_flag") |
+| `reportFileUrl` | `String?` | @map("report_file_url") |
+| `verifiedBy` | `String?` | @map("verified_by") |
+| `verifiedAt` | `DateTime?` | @map("verified_at") |
+| `structuredData` | `Json?` | @map("structured_data") |
+| `orderItem` | `DiagnosticOrderItem` | @relation(fields: [orderItemId], references: [id], onDelete: Cascade) |
+| `verifier` | `DoctorMaster?` | @relation(fields: [verifiedBy], references: [id]) |
+
+---
+
+### Model: LabQualityControl (`db: lab_quality_controls`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `testId` | `String` | @map("test_id") |
+| `controlResult` | `String?` | @map("control_result") |
+| `qcStatus` | `String?` | @map("qc_status") |
+| `recordedAt` | `DateTime` | @default(now()) @map("recorded_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `test` | `DiagnosticMasterTest` | @relation(fields: [testId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Visit (`db: visits`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `appointmentId` | `String?` | @unique @map("appointment_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientName` | `String` | @map("patient_name") |
+| `patientPhone` | `String` | @map("patient_phone") |
+| `diagnosis` | `String?` | - |
+| `amount` | `Int` | @default(0) |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `deletedAt` | `DateTime?` | @map("deleted_at") |
+| `careJourney` | `CareJourney?` | - |
+| `observations` | `ClinicalObservation[]` | - |
+| `notes` | `VisitNote[]` | - |
+| `appointment` | `Appointment?` | @relation(fields: [appointmentId], references: [id]) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `currentStage` | `HandoffStage` | @default(RECEPTION) @map("current_stage") |
+| `departmentHandoffs` | `DepartmentHandoff[]` | - |
+
+---
+
+### Model: VisitNote (`db: visit_notes`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `visitId` | `String` | @map("visit_id") |
+| `content` | `String` | - |
+| `type` | `String` | @default("CLINICAL_NOTE") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `visit` | `Visit` | @relation(fields: [visitId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: CareJourney (`db: care_journeys`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `visitId` | `String` | @unique @map("visit_id") |
+| `conditionSimple` | `String` | @map("condition_simple") |
+| `explanation` | `String` | - |
+| `seriousness` | `String` | - |
+| `timeline` | `String?` | - |
+| `language` | `String` | @default("en") |
+| `pediatricMode` | `Boolean` | @default(false) @map("pediatric_mode") |
+| `safetyCheck` | `Boolean` | @default(false) @map("safety_check") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `status` | `String` | @default("ACTIVE") |
+| `checkIns` | `CareCheckIn[]` | - |
+| `visit` | `Visit` | @relation(fields: [visitId], references: [id], onDelete: Cascade) |
+| `redFlags` | `CareRedFlag[]` | - |
+| `engagements` | `EngagementLog[]` | - |
+| `followUp` | `FollowUpPlan?` | - |
+| `medications` | `MedicationPlan[]` | - |
+| `nudges` | `NudgeSchedule[]` | - |
+| `recoverySteps` | `RecoveryStep[]` | - |
+
+---
+
+### Model: RecoveryStep (`db: recovery_steps`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @map("care_journey_id") |
+| `dayNumber` | `Int` | @map("day_number") |
+| `expectedSymptoms` | `String` | @map("expected_symptoms") |
+| `markers` | `String` | - |
+| `guidance` | `String` | - |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: EngagementLog (`db: engagement_logs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @map("care_journey_id") |
+| `type` | `String` | - |
+| `metadata` | `Json?` | - |
+| `timestamp` | `DateTime` | @default(now()) |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: CareCheckIn (`db: care_check_ins`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @map("care_journey_id") |
+| `dayNumber` | `Int` | @map("day_number") |
+| `status` | `String` | - |
+| `analysis` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: NudgeSchedule (`db: nudge_schedules`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @map("care_journey_id") |
+| `scheduledAt` | `DateTime` | @map("scheduled_at") |
+| `messageType` | `String` | @map("message_type") |
+| `isTriggered` | `Boolean` | @default(false) @map("is_triggered") |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: MedicationPlan (`db: medication_plans`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @map("care_journey_id") |
+| `medName` | `String` | @map("med_name") |
+| `dosage` | `String` | - |
+| `duration` | `String` | - |
+| `instructions` | `String?` | - |
+| `morning` | `Boolean` | @default(false) |
+| `afternoon` | `Boolean` | @default(false) |
+| `night` | `Boolean` | @default(false) |
+| `beforeFood` | `Boolean` | @default(false) @map("before_food") |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: FollowUpPlan (`db: follow_up_plans`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @unique @map("care_journey_id") |
+| `recommendedDays` | `Int` | @map("recommended_days") |
+| `reason` | `String` | - |
+| `bookingStatus` | `String` | @default("PENDING") @map("booking_status") |
+| `ctaTriggered` | `Boolean` | @default(false) @map("cta_triggered") |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: CareRedFlag (`db: care_red_flags`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `careJourneyId` | `String` | @map("care_journey_id") |
+| `symptom` | `String` | - |
+| `action` | `String` | @default("CONTACT_HOSPITAL") |
+| `careJourney` | `CareJourney` | @relation(fields: [careJourneyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: ClinicalObservation (`db: clinical_observations`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `visitId` | `String` | @map("visit_id") |
+| `type` | `String` | - |
+| `value` | `String` | - |
+| `unit` | `String?` | - |
+| `severity` | `String` | @default("NORMAL") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `visit` | `Visit` | @relation(fields: [visitId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: MedicalRecord (`db: medical_records`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `fileName` | `String` | @map("file_name") |
+| `fileUrl` | `String` | @map("file_url") |
+| `fileType` | `String?` | @map("file_type") |
+| `uploadedAt` | `DateTime` | @default(now()) @map("uploaded_at") |
+| `deletedAt` | `DateTime?` | @map("deleted_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: AuditLog (`db: audit_logs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `userId` | `String` | @map("user_id") |
+| `hospitalId` | `String?` | @map("hospital_id") |
+| `action` | `String` | - |
+| `entity` | `String` | - |
+| `entityId` | `String` | @map("entity_id") |
+| `details` | `Json?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: RolePermission (`db: role_permissions`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `staffId` | `String?` | @map("staff_id") |
+| `role` | `Role` | - |
+| `module` | `String` | - |
+| `action` | `String` | - |
+| `allowed` | `Boolean` | @default(true) |
+| `conditions` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `staff` | `Staff?` | @relation(fields: [staffId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PatientRecord (`db: patient_records`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `doctorId` | `String` | @map("doctor_id") |
+| `visitId` | `String?` | @map("visit_id") |
+| `diagnosis` | `String` | - |
+| `prescription` | `String?` | - |
+| `notes` | `String?` | - |
+| `vitals` | `Json?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `deletedAt` | `DateTime?` | @map("deleted_at") |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Agent (`db: agents`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `fullName` | `String` | @map("full_name") |
+| `mobile` | `String` | @unique |
+| `email` | `String` | @unique |
+| `password` | `String` | - |
+| `area` | `String?` | - |
+| `city` | `String?` | - |
+| `state` | `String?` | - |
+| `kycStatus` | `KycStatus` | @default(PENDING) @map("kyc_status") |
+| `accountStatus` | `AccountStatus` | @default(ACTIVE) @map("account_status") |
+| `commissionRate` | `Float?` | @map("commission_rate") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospitals` | `HospitalsMaster[]` | - |
+| `patients` | `Patient[]` | - |
+
+---
+
+### Model: FamilyMember (`db: family_members`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `name` | `String` | - |
+| `relation` | `String` | - |
+| `dob` | `DateTime?` | @db.Date |
+| `gender` | `String?` | - |
+| `bloodGroup` | `String?` | @map("blood_group") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PatientMedicalHistory (`db: patient_medical_history`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @unique @map("patient_id") |
+| `chronicDiseases` | `String?` | @map("chronic_diseases") |
+| `pastIllnesses` | `String?` | @map("past_illnesses") |
+| `surgeries` | `String?` | - |
+| `allergies` | `String?` | - |
+| `drugAllergies` | `String?` | @map("drug_allergies") |
+| `hospitalizations` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PatientMedication (`db: patient_medications`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `drugName` | `String` | @map("drug_name") |
+| `dose` | `String?` | - |
+| `frequency` | `String?` | - |
+| `startDate` | `DateTime?` | @map("start_date") @db.Date |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: VitalRecord (`db: vital_records`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `weight` | `Decimal?` | - |
+| `height` | `Decimal?` | - |
+| `bmi` | `Decimal?` | - |
+| `bloodPressure` | `String?` | @map("blood_pressure") |
+| `pulse` | `Int?` | - |
+| `bloodSugar` | `Decimal?` | @map("blood_sugar") |
+| `spo2` | `Decimal?` | - |
+| `temperature` | `Decimal?` | - |
+| `recordedAt` | `DateTime` | @default(now()) @map("recorded_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: VaccinationRecord (`db: vaccination_records`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `vaccineName` | `String` | @map("vaccine_name") |
+| `dateGiven` | `DateTime?` | @map("date_given") @db.Date |
+| `nextDueDate` | `DateTime?` | @map("next_due_date") @db.Date |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PregnancyProfile (`db: pregnancy_profiles`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @unique @map("patient_id") |
+| `lmp` | `DateTime?` | @db.Date |
+| `edd` | `DateTime?` | @db.Date |
+| `usgEdd` | `DateTime?` | @map("usg_edd") @db.Date |
+| `gestationalAge` | `Int?` | @map("gestational_age") |
+| `gravida` | `Int` | @default(1) |
+| `para` | `Int` | @default(0) |
+| `abortions` | `Int` | @default(0) |
+| `livingChildren` | `Int` | @default(0) @map("living_children") |
+| `bloodGroup` | `String?` | @map("blood_group") |
+| `rhFactor` | `String?` | @map("rh_factor") |
+| `bmiPrePregnancy` | `Float?` | @map("bmi_pre_pregnancy") |
+| `heightCm` | `Int?` | @map("height_cm") |
+| `previousComplications` | `String[]` | @map("previous_complications") |
+| `conceptionMethod` | `String?` | @map("conception_method") |
+| `registeredAt` | `DateTime` | @default(now()) @map("registered_at") |
+| `mcpCardNumber` | `String?` | @map("mcp_card_number") |
+| `highRisk` | `Boolean` | @default(false) @map("high_risk") |
+| `highRiskReasons` | `String[]` | @default([]) @map("high_risk_reasons") |
+| `ancVisits` | `Int?` | @map("anc_visits") |
+| `dangerSigns` | `String?` | @map("danger_signs") |
+| `deliveryPlan` | `String?` | @map("delivery_plan") |
+| `schemeEnrolled` | `String[]` | @default([]) @map("scheme_enrolled") |
+| `ashaWorkerId` | `String?` | @map("asha_worker_id") |
+| `dropoutRiskScore` | `Int?` | @map("dropout_risk_score") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `visits` | `AncVisit[]` | - |
+| `supplements` | `AncSupplementLog[]` | - |
+| `obstetricHistory` | `ObstetricHistory[]` | - |
+| `mcpCard` | `McpCard?` | - |
+| `retentionAlerts` | `AncRetentionAlert[]` | - |
+| `newborns` | `NewbornRecord[]` | - |
+| `referrals` | `ReferralSlip[]` | - |
+| `partographs` | `PartographRecord[]` | - |
+| `nearMissAudits` | `NearMissAudit[]` | - |
+
+---
+
+### Model: AncVisit (`db: anc_visits`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `visitNumber` | `Int` | @map("visit_number") |
+| `visitDate` | `DateTime` | @map("visit_date") @db.Date |
+| `gestationalAge` | `Int?` | @map("gestational_age") |
+| `bpSystolic` | `Int?` | @map("bp_systolic") |
+| `bpDiastolic` | `Int?` | @map("bp_diastolic") |
+| `weightKg` | `Float?` | @map("weight_kg") |
+| `fundalHeightCm` | `Float?` | @map("fundal_height_cm") |
+| `fetalHeartRate` | `Int?` | @map("fetal_heart_rate") |
+| `edema` | `String?` | - |
+| `presentation` | `String?` | - |
+| `hemoglobin` | `Float?` | - |
+| `urineAlbumin` | `String?` | @map("urine_albumin") |
+| `bloodSugar` | `Float?` | @map("blood_sugar") |
+| `nextVisitDate` | `DateTime?` | @map("next_visit_date") @db.Date |
+| `highRiskNotes` | `String?` | @map("high_risk_notes") |
+| `conductedBy` | `String?` | @map("conducted_by") |
+| `conductedByRole` | `String?` | @map("conducted_by_role") |
+| `hospitalId` | `String?` | @map("hospital_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: ObstetricHistory (`db: obstetric_history`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `previousDeliveryType` | `String?` | @map("previous_delivery_type") |
+| `previousComplications` | `String?` | @map("previous_complications") |
+| `previousBabyWeight` | `Float?` | @map("previous_baby_weight") |
+| `previousGestationalAge` | `Int?` | @map("previous_gestational_age") |
+| `pregnancyOutcome` | `String?` | @map("pregnancy_outcome") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: AncSupplementLog (`db: anc_supplement_logs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `supplementType` | `String` | @map("supplement_type") |
+| `targetDose` | `Int` | @map("target_dose") |
+| `dosesTaken` | `Int` | @default(0) @map("doses_taken") |
+| `doseUnit` | `String` | @map("dose_unit") |
+| `startDate` | `DateTime` | @map("start_date") @db.Date |
+| `endDate` | `DateTime?` | @map("end_date") @db.Date |
+| `remindersEnabled` | `Boolean` | @default(true) @map("reminders_enabled") |
+| `lastReminderAt` | `DateTime?` | @map("last_reminder_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: McpCard (`db: mcp_cards`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @unique @map("pregnancy_id") |
+| `cardData` | `Json` | @map("card_data") |
+| `qrCodeUrl` | `String?` | @map("qr_code_url") |
+| `printedAt` | `DateTime?` | @map("printed_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: AncRetentionAlert (`db: anc_retention_alerts`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `alertType` | `String` | @map("alert_type") |
+| `triggerEvent` | `String` | @map("trigger_event") |
+| `channel` | `String` | @default("sms") |
+| `status` | `String` | @default("pending") |
+| `scheduledAt` | `DateTime` | @map("scheduled_at") |
+| `sentAt` | `DateTime?` | @map("sent_at") |
+| `message` | `String?` | - |
+| `response` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: NewbornRecord (`db: newborn_records`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `babyPatientId` | `String` | @unique @map("baby_patient_id") |
+| `birthWeightKg` | `Float` | @map("birth_weight_kg") |
+| `apgarScore` | `Int?` | @map("apgar_score") |
+| `deliveryDate` | `DateTime` | @map("delivery_date") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+| `baby` | `Patient` | @relation(fields: [babyPatientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: ReferralSlip (`db: referral_slips`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `referralReason` | `String` | @map("referral_reason") |
+| `referredTo` | `String` | @map("referred_to") |
+| `referringDoctor` | `String` | @map("referring_doctor") |
+| `isUrgent` | `Boolean` | @default(false) @map("is_urgent") |
+| `smsSent` | `Boolean` | @default(false) @map("sms_sent") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PartographRecord (`db: partograph_records`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `cervicalDil` | `Int` | @map("cervical_dil") |
+| `fetalHeartRate` | `Int` | @map("fetal_heart_rate") |
+| `contractionFreq` | `Int` | @map("contraction_freq") |
+| `bpSystolic` | `Int` | @map("bp_systolic") |
+| `bpDiastolic` | `Int` | @map("bp_diastolic") |
+| `recordedAt` | `DateTime` | @default(now()) @map("recorded_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: NearMissAudit (`db: near_miss_audits`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `pregnancyId` | `String` | @map("pregnancy_id") |
+| `criteriaMet` | `String[]` | @map("criteria_met") |
+| `savingIntervent` | `String` | @map("saving_intervention") |
+| `auditNotes` | `String?` | @map("audit_notes") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `pregnancy` | `PregnancyProfile` | @relation(fields: [pregnancyId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: InsuranceDetail (`db: insurance_details`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `company` | `String` | - |
+| `policyNumber` | `String?` | @map("policy_number") |
+| `coverageAmount` | `Decimal?` | @map("coverage_amount") |
+| `expiryDate` | `DateTime?` | @map("expiry_date") @db.Date |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: OtpCode (`db: otp_codes`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `phone` | `String` | @unique |
+| `code` | `String` | - |
+| `expiresAt` | `DateTime` | @map("expires_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: DoctorSlot (`db: doctor_slots`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `startTime` | `DateTime` | @map("start_time") |
+| `endTime` | `DateTime` | @map("end_time") |
+| `capacity` | `Int` | @default(1) |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: DoctorSchedule (`db: doctor_schedules`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `dayOfWeek` | `Int` | @map("day_of_week") |
+| `startTime` | `String` | @map("start_time") |
+| `endTime` | `String` | @map("end_time") |
+| `slotDurationMinutes` | `Int` | @default(30) @map("slot_duration_minutes") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: DoctorSlotBlock (`db: doctor_slot_blocks`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `doctorId` | `String` | @map("doctor_id") |
+| `blockStart` | `DateTime` | @map("block_start") |
+| `blockEnd` | `DateTime` | @map("block_end") |
+| `reason` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: OutboxEvent (`db: outbox_events`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `eventType` | `String` | @map("event_type") |
+| `payload` | `Json` | - |
+| `processed` | `Boolean` | @default(false) |
+| `processedAt` | `DateTime?` | @map("processed_at") |
+| `errorCount` | `Int` | @default(0) @map("error_count") |
+| `lastError` | `String?` | @map("last_error") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: EventLog (`db: event_logs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `eventType` | `String` | @map("event_type") |
+| `payload` | `Json` | @default("{}") |
+| `executedBy` | `String?` | @map("executed_by") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospitalId` | `String?` | @map("hospital_id") |
+| `patientId` | `String?` | @map("patient_id") |
+
+---
+
+### Model: WaitlistEntry (`db: waitlist_entries`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String?` | @map("hospital_id") |
+| `doctorId` | `String` | @map("doctor_id") |
+| `patientGlobalId` | `String` | @map("patient_global_id") |
+| `priority` | `Int` | @default(1) |
+| `status` | `String` | @default("waiting") |
+| `identityHash` | `String?` | @map("identity_hash") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: EscalationAlert (`db: escalation_alerts`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `doctorId` | `String` | @map("doctor_id") |
+| `followUpId` | `String` | @map("follow_up_id") // the missed follow-up that triggered this |
+| `appointmentId` | `String` | @map("appointment_id") // FK to the original appointment |
+| `missedCount` | `Int` | @default(2) // consecutive missed follow-ups at trigger time |
+| `chronicTag` | `String?` | @map("chronic_tag") // e.g. DIABETES, CANCER, CARDIAC |
+| `isAcknowledged` | `Boolean` | @default(false) @map("is_acknowledged") |
+| `acknowledgedAt` | `DateTime?` | @map("acknowledged_at") |
+| `notificationSent` | `Boolean` | @default(false) @map("notification_sent") |
+| `sentVia` | `String?` | @map("sent_via") // WHATSAPP | SMS | PENDING |
+| `sentAt` | `DateTime?` | @map("sent_at") |
+| `attempts` | `Int` | @default(0) |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PatientConsent (`db: patient_consents`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientGlobalId` | `String` | @map("patient_global_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `consentType` | `String?` | @map("consent_type") |
+| `version` | `Int` | @default(1) |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: OverrideLog (`db: override_logs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `executorId` | `String?` | @map("executor_id") |
+| `actionType` | `String` | @map("action_type") |
+| `targetEntity` | `String?` | @map("target_entity") |
+| `targetId` | `String?` | @map("target_id") |
+| `reason` | `String` | - |
+| `approvedBy` | `String?` | @map("approved_by") |
+| `oldState` | `Json?` | @map("old_state") |
+| `newState` | `Json?` | @map("new_state") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: FollowUp (`db: follow_ups`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `appointmentId` | `String?` | @map("appointment_id") |
+| `billId` | `String?` | @map("bill_id") |
+| `type` | `FollowUpType` | @default(GENERAL) |
+| `status` | `FollowUpStatus` | @default(PENDING) |
+| `scheduledAt` | `DateTime` | @map("scheduled_at") |
+| `completedAt` | `DateTime?` | @map("completed_at") |
+| `notes` | `String?` | - |
+| `source` | `String?` | - |
+| `payload` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `appointment` | `Appointment?` | @relation(fields: [appointmentId], references: [id]) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Admission (`db: admissions`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `bedId` | `String?` | @map("bed_id") |
+| `attendingDoctorId` | `String?` | @map("attending_doctor_id") |
+| `admissionNumber` | `String` | @map("admission_number") |
+| `status` | `String` | @default("ADMITTED") |
+| `reason` | `String?` | - |
+| `admittedAt` | `DateTime` | @default(now()) @map("admitted_at") |
+| `expectedDischargeAt` | `DateTime?` | @map("expected_discharge_at") |
+| `dischargedAt` | `DateTime?` | @map("discharged_at") |
+| `dischargeSummary` | `String?` | @map("discharge_summary") |
+| `dailyBedCharge` | `Decimal?` | @map("daily_bed_charge") |
+| `payload` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `bed` | `Bed?` | @relation(fields: [bedId], references: [id]) |
+| `attendingDoctor` | `DoctorMaster?` | @relation(fields: [attendingDoctorId], references: [id]) |
+| `invoices` | `Invoice[]` | - |
+
+---
+
+### Model: Invoice (`db: invoices`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String?` | @map("patient_id") |
+| `appointmentId` | `String?` | @map("appointment_id") |
+| `admissionId` | `String?` | @map("admission_id") |
+| `diagnosticOrderId` | `String?` | @map("diagnostic_order_id") |
+| `billId` | `String?` | @map("bill_id") |
+| `invoiceNumber` | `String` | @map("invoice_number") |
+| `source` | `String` | @default("DIRECT") |
+| `status` | `String` | @default("DRAFT") |
+| `subtotal` | `Decimal` | @default(0) |
+| `gstTotal` | `Decimal` | @default(0) @map("gst_total") |
+| `discountTotal` | `Decimal` | @default(0) @map("discount_total") |
+| `totalAmount` | `Decimal` | @default(0) @map("total_amount") |
+| `paidAmount` | `Decimal` | @default(0) @map("paid_amount") |
+| `balanceAmount` | `Decimal` | @default(0) @map("balance_amount") |
+| `finalizedAt` | `DateTime?` | @map("finalized_at") |
+| `paidAt` | `DateTime?` | @map("paid_at") |
+| `cancelledAt` | `DateTime?` | @map("cancelled_at") |
+| `payload` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient?` | @relation(fields: [patientId], references: [id]) |
+| `appointment` | `Appointment?` | @relation(fields: [appointmentId], references: [id]) |
+| `admission` | `Admission?` | @relation(fields: [admissionId], references: [id]) |
+| `diagnosticOrder` | `DiagnosticOrder?` | @relation(fields: [diagnosticOrderId], references: [id]) |
+| `bill` | `Bill?` | @relation(fields: [billId], references: [id]) |
+| `lineItems` | `InvoiceLineItem[]` | - |
+| `payments` | `InvoicePayment[]` | - |
+| `pharmacyDispenses` | `PharmacyDispense[]` | - |
+
+---
+
+### Model: InvoiceLineItem (`db: invoice_line_items`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `invoiceId` | `String` | @map("invoice_id") |
+| `serviceId` | `String?` | @map("service_id") |
+| `description` | `String` | - |
+| `type` | `ServiceType` | - |
+| `quantity` | `Decimal` | @default(1) |
+| `unitPrice` | `Decimal` | @map("unit_price") |
+| `gstRate` | `Float` | @default(0) @map("gst_rate") |
+| `gstInclusive` | `Boolean` | @default(false) @map("gst_inclusive") |
+| `discountAmount` | `Decimal` | @default(0) @map("discount_amount") |
+| `taxableAmount` | `Decimal` | @default(0) @map("taxable_amount") |
+| `gstAmount` | `Decimal` | @default(0) @map("gst_amount") |
+| `totalAmount` | `Decimal` | @default(0) @map("total_amount") |
+| `metadata` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `invoice` | `Invoice` | @relation(fields: [invoiceId], references: [id], onDelete: Cascade) |
+| `service` | `ServiceCatalog?` | @relation(fields: [serviceId], references: [id]) |
+
+---
+
+### Model: InvoicePayment (`db: invoice_payments`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `invoiceId` | `String` | @map("invoice_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `amount` | `Decimal` | - |
+| `method` | `String` | - |
+| `status` | `String` | @default("SUCCESS") |
+| `referenceNumber` | `String?` | @map("reference_number") |
+| `gatewayProvider` | `String?` | @map("gateway_provider") |
+| `payload` | `Json?` | @default("{}") |
+| `paidAt` | `DateTime` | @default(now()) @map("paid_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `invoice` | `Invoice` | @relation(fields: [invoiceId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Notification (`db: notifications`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String?` | @map("patient_id") |
+| `channel` | `String` | - |
+| `templateKey` | `String?` | @map("template_key") |
+| `recipient` | `String` | - |
+| `subject` | `String?` | - |
+| `body` | `String` | - |
+| `status` | `String` | @default("PENDING") |
+| `scheduledAt` | `DateTime?` | @map("scheduled_at") |
+| `sentAt` | `DateTime?` | @map("sent_at") |
+| `failureReason` | `String?` | @map("failure_reason") |
+| `payload` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient?` | @relation(fields: [patientId], references: [id]) |
+
+---
+
+### Model: PharmacyDispense (`db: pharmacy_dispenses`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `prescriptionId` | `String?` | @map("prescription_id") |
+| `invoiceId` | `String?` | @map("invoice_id") |
+| `status` | `String` | @default("DISPENSED") |
+| `dispensedBy` | `String?` | @map("dispensed_by") |
+| `notes` | `String?` | - |
+| `totalAmount` | `Decimal` | @default(0) @map("total_amount") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `prescription` | `PatientPrescription?` | @relation(fields: [prescriptionId], references: [id]) |
+| `invoice` | `Invoice?` | @relation(fields: [invoiceId], references: [id]) |
+| `items` | `PharmacyDispenseItem[]` | - |
+
+---
+
+### Model: PharmacyDispenseItem (`db: pharmacy_dispense_items`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `dispenseId` | `String` | @map("dispense_id") |
+| `drugStockId` | `String` | @map("drug_stock_id") |
+| `drugName` | `String` | @map("drug_name") |
+| `batchNumber` | `String?` | @map("batch_number") |
+| `quantity` | `Int` | - |
+| `unitPrice` | `Decimal` | @default(0) @map("unit_price") |
+| `totalAmount` | `Decimal` | @default(0) @map("total_amount") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `dispense` | `PharmacyDispense` | @relation(fields: [dispenseId], references: [id], onDelete: Cascade) |
+| `drugStock` | `DrugStock` | @relation(fields: [drugStockId], references: [id]) |
+
+---
+
+### Model: PatientLifecycleTag (`db: patient_lifecycle_tags`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `tag` | `String` | - |
+| `source` | `String?` | - |
+| `metadata` | `Json?` | @default("{}") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Bed (`db: beds`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `unitId` | `String?` | @map("unit_id") |
+| `departmentId` | `String?` | @map("department_id") |
+| `bedNumber` | `String` | @map("bed_number") |
+| `type` | `BedType` | @default(GENERAL) |
+| `status` | `BedStatus` | @default(AVAILABLE) |
+| `amenities` | `Json?` | @default("[]") @map("amenities") |
+| `patientId` | `String?` | @unique @map("patient_id") |
+| `admittedAt` | `DateTime?` | @map("admitted_at") |
+| `expectedDischargeAt` | `DateTime?` | @map("expected_discharge_at") |
+| `notes` | `String?` | - |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient?` | @relation(fields: [patientId], references: [id]) |
+| `unit` | `Unit?` | @relation(fields: [unitId], references: [id]) |
+| `department` | `Department?` | @relation("DepartmentBeds", fields: [departmentId], references: [id]) |
+| `admissions` | `Admission[]` | - |
+
+---
+
+### Model: Bill (`db: bills`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String?` | @map("patient_id") |
+| `branchId` | `String?` | @map("branch_id") |
+| `status` | `String` | @default("PENDING") |
+| `totalAmount` | `Decimal` | @default(0) @map("total_amount") |
+| `paidAt` | `DateTime?` | @map("paid_at") |
+| `payload` | `Json?` | @default("{}") |
+| `source` | `String?` | @default("direct") @map("source") |
+| `followUpId` | `String?` | @map("follow_up_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `branch` | `Branch?` | @relation(fields: [branchId], references: [id]) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient?` | @relation(fields: [patientId], references: [id]) |
+| `invoices` | `Invoice[]` | - |
+
+---
+
+### Model: DrugStock (`db: drug_stocks`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `stock` | `Int` | @default(0) |
+| `minLevel` | `Int` | @default(10) @map("min_level") |
+| `expiryDate` | `DateTime` | @map("expiry_date") |
+| `category` | `String?` | - |
+| `type` | `String?` | // e.g., TABLET, SYRUP, INJECTION |
+| `batchNumber` | `String?` | @map("batch_number") |
+| `mrp` | `Float?` | @default(0) |
+| `purchasePrice` | `Float?` | @default(0) @map("purchase_price") |
+| `genericName` | `String?` | @map("generic_name") |
+| `formulation` | `String?` | // TABLET, CAPSULE, SYRUP, etc. |
+| `strength` | `String?` | // 500mg, 250ml |
+| `packSize` | `Int` | @default(10) @map("pack_size") |
+| `reorderPoint` | `Int` | @default(20) @map("reorder_point") |
+| `isControlled` | `Boolean` | @default(false) @map("is_controlled") |
+| `storageCondition` | `String` | @default("ROOM_TEMP") @map("storage_condition") |
+| `manufacturer` | `String?` | @map("manufacturer") |
+| `supplierId` | `String?` | @map("supplier_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `supplier` | `Supplier?` | @relation(fields: [supplierId], references: [id]) |
+| `dispenseItems` | `PharmacyDispenseItem[]` | - |
+
+---
+
+### Model: LabOrder (`db: lab_orders`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `testName` | `String` | @map("test_name") |
+| `status` | `String` | @default("PENDING") |
+| `result` | `String?` | - |
+| `orderedAt` | `DateTime` | @default(now()) @map("ordered_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Enum: HospitalStatus
+
+Values:
+- `PENDING`
+- `APPROVED`
+- `SUSPENDED`
+
+---
+
+### Enum: AppointmentStatus
+
+Values:
+- `AWAITING_PAYMENT`
+- `BOOKED`
+- `CONFIRMED`
+- `COMPLETED`
+- `CANCELLED`
+- `NO_SHOW`
+
+---
+
+### Enum: PaymentStatus
+
+Values:
+- `PENDING`
+- `SUCCESS`
+- `FAILED`
+- `REFUNDED`
+
+---
+
+### Enum: Role
+
+Values:
+- `SUPER_ADMIN`
+- `HOSPITAL_ADMIN`
+- `DOCTOR`
+- `RECEPTIONIST`
+- `STAFF`
+- `NURSE`
+- `BILLING`
+- `PHARMACIST`
+- `LAB_TECH`
+- `PATIENT`
+
+---
+
+### Enum: KycStatus
+
+Values:
+- `PENDING`
+- `VERIFIED`
+- `REJECTED`
+
+---
+
+### Enum: AccountStatus
+
+Values:
+- `ACTIVE`
+- `SUSPENDED`
+- `INACTIVE`
+
+---
+
+### Enum: VerificationStatus
+
+Values:
+- `PENDING`
+- `VERIFIED`
+- `REJECTED`
+
+---
+
+### Enum: FacilityType
+
+Values:
+- `HOSPITAL`
+- `CLINIC`
+
+---
+
+### Enum: ClinicTier
+
+Values:
+- `SINGLE_DOCTOR`
+- `MULTI_SPECIALITY`
+
+---
+
+### Enum: HospitalType
+
+Values:
+- `HOSPITAL`
+- `CLINIC`
+- `DIAGNOSTIC_CENTER`
+- `MULTISPECIALTY`
+- `NURSING_HOME`
+- `CORPORATE`
+
+---
+
+### Enum: FollowUpType
+
+Values:
+- `GENERAL`
+- `POST_DISCHARGE`
+- `MEDICATION_REMINDER`
+- `LAB_RESULT`
+- `PAYMENT_REMINDER`
+- `RETENTION`
+
+---
+
+### Enum: FollowUpStatus
+
+Values:
+- `PENDING`
+- `CONTACTED`
+- `COMPLETED`
+- `CANCELLED`
+- `NO_RESPONSE`
+
+---
+
+### Enum: BedType
+
+Values:
+- `GENERAL`
+- `ICU`
+- `NICU`
+- `PRIVATE`
+- `SEMI_PRIVATE`
+- `EMERGENCY`
+
+---
+
+### Enum: BedStatus
+
+Values:
+- `AVAILABLE`
+- `OCCUPIED`
+- `RESERVED`
+- `UNDER_MAINTENANCE`
+- `CLEANING`
+
+---
+
+### Enum: DeptType
+
+Values:
+- `OPD`
+- `IPD`
+- `BOTH`
+- `EMERGENCY`
+
+---
+
+### Enum: ServiceType
+
+Values:
+- `CONSULTATION`
+- `PROCEDURE`
+- `LAB_TEST`
+- `IMAGING`
+- `BED_CHARGE`
+- `MEDICINE`
+- `PACKAGE`
+
+---
+
+### Enum: GatewayProvider
+
+Values:
+- `RAZORPAY`
+- `STRIPE`
+- `CASH`
+- `UPI`
+
+---
+
+### Enum: ShiftType
+
+Values:
+- `MORNING`
+- `EVENING`
+- `NIGHT`
+- `ROTATIONAL`
+
+---
+
+### Enum: IntegrationProvider
+
+Values:
+- `RAZORPAY`
+- `WHATSAPP_META`
+- `WHATSAPP_TWILIO`
+- `WHATSAPP_WATI`
+- `WHATSAPP_INTERAKT`
+- `WHATSAPP_GUPSHUP`
+- `SMS_FAST2SMS`
+- `SMS_MSG91`
+- `SMS_TEXTLOCAL`
+- `SMS_2FACTOR`
+- `ABHA_ABDM`
+- `GOOGLE_CALENDAR`
+
+---
+
+### Model: Department (`db: departments`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `code` | `String` | - |
+| `type` | `DeptType` | @default(OPD) |
+| `headDoctorId` | `String?` | @map("head_doctor_id") |
+| `description` | `String?` | @db.Text |
+| `billingRules` | `Json?` | @map("billing_rules") |
+| `maxCapacity` | `Int` | @default(0) @map("max_capacity") |
+| `analyticsEnabled` | `Boolean` | @default(true) @map("analytics_enabled") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `sortOrder` | `Int` | @default(0) @map("sort_order") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `units` | `Unit[]` | - |
+| `beds` | `Bed[]` | @relation("DepartmentBeds") |
+
+---
+
+### Model: Unit (`db: units`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `departmentId` | `String` | @map("department_id") |
+| `name` | `String` | - |
+| `capacity` | `Int` | @default(0) |
+| `bedType` | `BedType` | @default(GENERAL) |
+| `wardNumber` | `String?` | @map("ward_number") |
+| `floor` | `String?` | - |
+| `type` | `String?` | // e.g. "General", "Semi-Private", "Private" |
+| `sortOrder` | `Int` | @default(0) @map("sort_order") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `department` | `Department` | @relation(fields: [departmentId], references: [id], onDelete: Cascade) |
+| `beds` | `Bed[]` | - |
+
+---
+
+### Model: ServiceCatalog (`db: service_catalog`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `code` | `String` | - |
+| `name` | `String` | - |
+| `type` | `ServiceType` | @default(CONSULTATION) |
+| `departmentId` | `String?` | @map("department_id") |
+| `basePrice` | `Decimal` | @map("base_price") |
+| `gstRate` | `Float` | @default(0) @map("gst_rate") |
+| `gstInclusive` | `Boolean` | @default(false) @map("gst_inclusive") |
+| `isAddOn` | `Boolean` | @default(false) @map("is_add_on") |
+| `isSurgical` | `Boolean` | @default(false) @map("is_surgical") |
+| `hsnCode` | `String?` | @map("hsn_code") |
+| `packageId` | `String?` | @map("package_id") |
+| `inventoryItemId` | `String?` | @map("inventory_item_id") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `invoiceLineItems` | `InvoiceLineItem[]` | - |
+
+---
+
+### Model: PaymentGateway (`db: payment_gateways`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `provider` | `GatewayProvider` | - |
+| `encryptedKey` | `String?` | @map("encrypted_key") |
+| `encryptedSecret` | `String?` | @map("encrypted_secret") |
+| `extraConfig` | `Json?` | @map("extra_config") |
+| `isLive` | `Boolean` | @default(false) @map("is_live") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `lastTestedAt` | `DateTime?` | @map("last_tested_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: RetentionRule (`db: retention_rules`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `trigger` | `Json` | // { event, daysAfter, condition } |
+| `action` | `Json` | // { type, templateId, channel } |
+| `audience` | `Json?` | // { segment, condition } |
+| `priority` | `String` | @default("MEDIUM") |
+| `maxPerMonth` | `Int` | @default(1) @map("max_per_month") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `sortOrder` | `Int` | @default(0) @map("sort_order") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: ChronicCondition (`db: chronic_conditions`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `followUpFrequency` | `Int` | @default(30) @map("follow_up_frequency") |
+| `requiredTests` | `String[]` | @map("required_tests") |
+| `reminderCadence` | `String` | @default("MONTHLY") @map("reminder_cadence") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: OpdConfig (`db: opd_configs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @unique @map("hospital_id") |
+| `tokenMode` | `String` | @default("AUTO") @map("token_mode") |
+| `tokenPrefix` | `String` | @default("OPD") @map("token_prefix") |
+| `resetDaily` | `Boolean` | @default(true) @map("reset_daily") |
+| `displayQueueOnTV` | `Boolean` | @default(false) @map("display_queue_on_tv") |
+| `allowWalkIn` | `Boolean` | @default(true) @map("allow_walk_in") |
+| `allowOnline` | `Boolean` | @default(true) @map("allow_online") |
+| `avgConsultationMinutes` | `Int` | @default(15) @map("avg_consultation_minutes") |
+| `notifyPatientSms` | `Boolean` | @default(false) @map("notify_patient_sms") |
+| `patientsAheadAlert` | `Int` | @default(2) @map("patients_ahead_alert") |
+| `allowOverbooking` | `Boolean` | @default(false) @map("allow_overbooking") |
+| `maxOverbookingPercent` | `Int` | @default(10) @map("max_overbooking_percent") |
+| `noShowPolicy` | `String` | @default("WARN") @map("no_show_policy") |
+| `blockAfterNoShows` | `Int` | @default(3) @map("block_after_no_shows") |
+| `noShowCooldownDays` | `Int` | @default(30) @map("no_show_cooldown_days") |
+| `enableSmartSlots` | `Boolean` | @default(true) @map("enable_smart_slots") |
+| `slotBufferMinutes` | `Int` | @default(5) @map("slot_buffer_minutes") |
+| `dailySlotCap` | `Int?` | @map("daily_slot_cap") |
+| `lunchBreakStart` | `String?` | @map("lunch_break_start") |
+| `lunchBreakEnd` | `String?` | @map("lunch_break_end") |
+| `noShowFee` | `Decimal` | @default(0) @map("no_show_fee") |
+| `showEstimatedWait` | `Boolean` | @default(true) @map("show_estimated_wait") |
+| `allowPhone` | `Boolean` | @default(true) @map("allow_phone") |
+| `allowReferral` | `Boolean` | @default(true) @map("allow_referral") |
+| `smartSlotAlgorithm` | `String` | @default("FIFO") @map("smart_slot_algorithm") |
+| `emergencySlotReserve` | `Int` | @default(5) @map("emergency_slot_reserve") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: IntegrationConfig (`db: integration_configs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `provider` | `IntegrationProvider` | - |
+| `encryptedConfig` | `Json?` | @map("encrypted_config") |
+| `isActive` | `Boolean` | @default(false) @map("is_active") |
+| `isLive` | `Boolean` | @default(false) @map("is_live") |
+| `testMode` | `Boolean` | @default(true) @map("test_mode") |
+| `webhookUrl` | `String?` | @map("webhook_url") |
+| `webhookSecret` | `String?` | @map("webhook_secret") |
+| `scope` | `String[]` | @default([]) |
+| `lastTestedAt` | `DateTime?` | @map("last_tested_at") |
+| `lastTestStatus` | `String?` | @map("last_test_status") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Branch (`db: branches`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `code` | `String?` | @unique |
+| `address` | `String?` | - |
+| `addressLine1` | `String?` | @map("address_line1") |
+| `addressLine2` | `String?` | @map("address_line2") |
+| `city` | `String?` | - |
+| `state` | `String?` | - |
+| `pincode` | `String?` | - |
+| `phone` | `String?` | - |
+| `branchType` | `String` | @default("MAIN") @map("branch_type") |
+| `facilities` | `String[]` | @default([]) |
+| `openTime` | `String?` | @map("open_time") |
+| `closeTime` | `String?` | @map("close_time") |
+| `isHeadquarters` | `Boolean` | @default(false) @map("is_headquarters") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `staff` | `Staff[]` | - |
+| `bills` | `Bill[]` | - |
+
+---
+
+### Model: StaffInvite (`db: staff_invites`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `email` | `String` | - |
+| `role` | `Role` | @default(RECEPTIONIST) |
+| `token` | `String` | @unique |
+| `expiresAt` | `DateTime` | @map("expires_at") |
+| `isAccepted` | `Boolean` | @default(false) @map("is_accepted") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+
+---
+
+### Model: NotificationTemplate (`db: notification_templates`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `channel` | `String` | // WHATSAPP, SMS, EMAIL |
+| `body` | `String` | @db.Text // Support for {{variable}} |
+| `headerText` | `String?` | @map("header_text") |
+| `footerText` | `String?` | @map("footer_text") |
+| `buttons` | `Json?` | // For WhatsApp interactive |
+| `language` | `String` | @default("en") |
+| `isApproved` | `Boolean` | @default(false) @map("is_approved") |
+| `providerId` | `String?` | @map("provider_id") // DLT ID or WhatsApp Template Name |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `NotificationEventMapping` | `NotificationEventMapping[]` | - |
+
+---
+
+### Model: NotificationEventMapping (`db: notification_event_mappings`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `event` | `String` | // e.g. "APPOINTMENT_BOOKED" |
+| `templateId` | `String` | @map("template_id") |
+| `channel` | `String` | // WHATSAPP, SMS, EMAIL |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `template` | `NotificationTemplate` | @relation(fields: [templateId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: Supplier (`db: Supplier`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(cuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `name` | `String` | - |
+| `contactName` | `String?` | @map("contact_name") |
+| `phone` | `String?` | - |
+| `email` | `String?` | - |
+| `address` | `String?` | - |
+| `gstNumber` | `String?` | @map("gst_number") |
+| `leadTime` | `Int` | @default(7) @map("lead_time") |
+| `isActive` | `Boolean` | @default(true) @map("is_active") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `drugs` | `DrugStock[]` | - |
+
+---
+
+### Enum: ConsentPurpose
+
+Values:
+- `APPOINTMENT_BOOKING`
+- `HEALTH_RECORDS`
+- `MARKETING`
+
+---
+
+### Model: Consent (`db: consents`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `patientId` | `String` | @map("patient_id") |
+| `purpose` | `ConsentPurpose` | - |
+| `givenAt` | `DateTime` | @default(now()) @map("given_at") |
+| `withdrawnAt` | `DateTime?` | @map("withdrawn_at") |
+| `version` | `Int` | @default(1) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: ClinicProfile (`db: clinic_profiles`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @unique @map("hospital_id") |
+| `tier` | `ClinicTier` | - |
+| `doctorInCharge` | `String?` | @map("doctor_in_charge") |
+| `specialization` | `String?` | - |
+| `numDoctors` | `Int?` | @map("num_doctors") |
+| `hasPharmacy` | `Boolean` | @default(false) @map("has_pharmacy") |
+| `hasOwnLab` | `Boolean` | @default(false) @map("has_own_lab") |
+| `avgDailyPatients` | `Int?` | @map("avg_daily_patients") |
+| `clinicMode` | `Boolean` | @default(true) @map("clinic_mode") |
+| `allowedFeatures` | `String[]` | @default([]) @map("allowed_features") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `updatedAt` | `DateTime` | @updatedAt @map("updated_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: PatientAcquisition (`db: patient_acquisitions`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `source` | `PatientAcquisitionSource` | - |
+| `referrerId` | `String?` | @map("referrer_id") |
+| `referrerType` | `String?` | @map("referrer_type") // DOCTOR, CLINIC, HOSPITAL, AGENT |
+| `specialty` | `String?` | - |
+| `bookedApptId` | `String?` | @map("booked_appt_id") |
+| `converted` | `Boolean` | @default(false) @map("converted") |
+| `revenueAtCents` | `Decimal?` | @map("revenue_at_cents") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Enum: PatientAcquisitionSource
+
+Values:
+- `DIRECT`
+- `SEO`
+- `WHATSAPP`
+- `REFERRAL_DOCTOR`
+- `REFERRAL_CLINIC`
+- `REFERRAL_HOSPITAL`
+- `AGENT`
+- `SOCIAL_MEDIA`
+- `WALK_IN`
+- `OTHER`
+
+---
+
+### Model: AIDocument (`db: ai_documents`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `apptId` | `String?` | @map("appt_id") |
+| `docType` | `AIDocumentType` | - |
+| `inputPrompt` | `String?` | @map("input_prompt") @db.Text // Stored for audit |
+| `generatedText` | `String` | @map("generated_text") @db.Text |
+| `isAssisted` | `Boolean` | @default(true) @map("is_assisted") // false = fully AI |
+| `doctorApproved` | `Boolean` | @default(false) @map("is_doctor_approved") |
+| `approvedAt` | `DateTime?` | @map("approved_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Enum: AIDocumentType
+
+Values:
+- `OPD_NOTE`
+- `DISCHARGE_SUMMARY`
+- `PRESCRIPTION_DRAFT`
+- `FOLLOW_UP_SUMMARY`
+- `CLINICAL_SUMMARY`
+
+---
+
+### Model: ClinicOperationalProfile (`db: clinic_operational_profiles`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @unique @map("hospital_id") |
+| `isSingleDoctor` | `Boolean` | @default(true) @map("is_single_doctor") |
+| `hasConsultants` | `Boolean` | @default(false) @map("has_consultants") |
+| `dailyStaffCount` | `Int` | @default(1) @map("daily_staff_count") |
+| `hasReceptionist` | `Boolean` | @default(false) @map("has_receptionist") |
+| `hasNursingStaff` | `Boolean` | @default(false) @map("has_nursing_staff") |
+| `hasPharmacy` | `Boolean` | @default(false) @map("has_pharmacy") |
+| `hasOwnLab` | `Boolean` | @default(false) @map("has_own_lab") |
+| `admitsPatients` | `Boolean` | @default(false) @map("admits_patients") |
+| `avgDailyPatients` | `Int` | @default(10) @map("avg_daily_patients") |
+| `opdOnly` | `Boolean` | @default(true) @map("opd_only") |
+| `currentWorkflow` | `Json?` | @map("current_workflow") // appointments, records, billing, followups |
+| `digitalMaturity` | `Json?` | @map("digital_maturity") // prev_software, comfort_level, preferred_device |
+| `retentionLeaks` | `Json?` | @map("retention_leaks") // missed_appointments, WhatsApp_reminders |
+| `pharmacyConfig` | `Json?` | @map("pharmacy_config") // stock_mgmt, billing, expiry_alert |
+| `labConfig` | `Json?` | @map("lab_config") // reports_mgmt, upload_req |
+| `communicationPrefs` | `Json?` | @map("communication_prefs") // WhatsApp_no, reminders_req, preferred_lang |
+| `deploymentMode` | `String` | @default("CLOUD") @map("deployment_mode") |
+| `primaryLanguage` | `String` | @default("en") @map("primary_language") |
+| `offlineEnabled` | `Boolean` | @default(false) @map("offline_enabled") |
+| `printerType` | `String` | @default("NONE") @map("printer_type") |
+| `paymentModes` | `Json?` | @map("payment_modes") |
+| `networkProfile` | `String` | @default("BROADBAND") @map("network_profile") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+
+---
+
+### Model: InternalReferral (`db: internal_referrals`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `patientId` | `String` | @map("patient_id") |
+| `fromDoctorId` | `String` | @map("from_doctor_id") |
+| `toDoctorId` | `String` | @map("to_doctor_id") |
+| `reason` | `String?` | - |
+| `status` | `ReferralStatus` | @default(PENDING) |
+| `priority` | `ReferralPriority` | @default(ROUTINE) |
+| `notes` | `String?` | - |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `completedAt` | `DateTime?` | @map("completed_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `patient` | `Patient` | @relation(fields: [patientId], references: [id], onDelete: Cascade) |
+| `fromDoctor` | `DoctorMaster` | @relation("ReferralsSent", fields: [fromDoctorId], references: [id], onDelete: Cascade) |
+| `toDoctor` | `DoctorMaster` | @relation("ReferralsReceived", fields: [toDoctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Enum: ReferralStatus
+
+Values:
+- `PENDING`
+- `COMPLETED`
+- `EXPIRED`
+- `CANCELLED`
+
+---
+
+### Enum: ReferralPriority
+
+Values:
+- `ROUTINE`
+- `URGENT`
+- `EMERGENCY`
+
+---
+
+### Model: ConsultantSettlement (`db: consultant_settlements`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `doctorId` | `String` | @map("doctor_id") |
+| `settlementPeriodStart` | `DateTime` | @map("settlement_period_start") |
+| `settlementPeriodEnd` | `DateTime` | @map("settlement_period_end") |
+| `totalConsultations` | `Int` | @map("total_consultations") |
+| `grossRevenueCents` | `Int` | @map("gross_revenue_cents") |
+| `revenueSharePercent` | `Decimal` | @map("revenue_share_percent") |
+| `consultantShareCents` | `Int` | @map("consultant_share_cents") |
+| `hospitalShareCents` | `Int` | @map("hospital_share_cents") |
+| `status` | `SettlementStatus` | @default(PENDING) |
+| `paidAt` | `DateTime?` | @map("paid_at") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `doctor` | `DoctorMaster` | @relation(fields: [doctorId], references: [id], onDelete: Cascade) |
+
+---
+
+### Enum: SettlementStatus
+
+Values:
+- `PENDING`
+- `APPROVED`
+- `SETTLED`
+
+---
+
+### Model: DepartmentHandoff (`db: department_handoffs`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `visitId` | `String` | @map("visit_id") |
+| `hospitalId` | `String` | @map("hospital_id") |
+| `fromStage` | `HandoffStage` | @map("from_stage") |
+| `toStage` | `HandoffStage` | @map("to_stage") |
+| `status` | `HandoffStatus` | @default(PENDING) |
+| `notes` | `String?` | - |
+| `assignedStaffId` | `String?` | @map("assigned_staff_id") |
+| `createdAt` | `DateTime` | @default(now()) @map("created_at") |
+| `completedAt` | `DateTime?` | @map("completed_at") |
+| `visit` | `Visit` | @relation(fields: [visitId], references: [id], onDelete: Cascade) |
+| `hospital` | `HospitalsMaster` | @relation(fields: [hospitalId], references: [id], onDelete: Cascade) |
+| `assignedStaff` | `Staff?` | @relation(fields: [assignedStaffId], references: [id]) |
+
+---
+
+### Enum: HandoffStage
+
+Values:
+- `RECEPTION`
+- `TRIAGE`
+- `CONSULTATION`
+- `INVESTIGATION_LAB`
+- `INVESTIGATION_RAD`
+- `DISPENSARY_PHARMACY`
+- `BILLING`
+- `DISCHARGE`
+
+---
+
+### Enum: HandoffStatus
+
+Values:
+- `PENDING`
+- `IN_PROGRESS`
+- `COMPLETED`
+- `BYPASSED`
+
+---
+
+### Model: Concept (`db: concepts`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `name` | `String` | - |
+| `description` | `String?` | - |
+| `mappings` | `ConceptMap[]` | - |
+
+---
+
+### Model: ConceptMap (`db: concept_mappings`)
+
+| Field | Type | Attributes / Mappings |
+| --- | --- | --- |
+| `id` | `String` | @id @default(uuid()) |
+| `conceptId` | `String` | @map("concept_id") |
+| `source` | `String` | // e.g., "SNOMED-CT", "LOINC", "CIEL" |
+| `code` | `String` | // e.g., "38341003" |
+| `displayName` | `String?` | @map("display_name") |
+| `concept` | `Concept` | @relation(fields: [conceptId], references: [id], onDelete: Cascade) |
+
+---
+
